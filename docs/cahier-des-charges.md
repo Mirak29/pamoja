@@ -1,0 +1,916 @@
+# Cahier des charges — Pamoja
+
+Oct 7, 2026 · @Abdou Karim Sow
+
+**Where developers don't just connect. They build together.** Pamoja (« ensemble » en swahili) est une plateforme communautaire et collaborative africaine, pensée pour les développeurs et par les développeurs. Elle construit la couche humaine autour du code : découvrir, s'entraider, reviewer, contribuer, et transformer ce travail réel en réputation.
+
+Ce document est la version de référence. Les faits techniques ont été vérifiés dans le code de Tournament et dans le code source de `@01edu/api` 0.2.10 et `@01edu/db`. Ce qui n'a pas pu l'être est listé dans les points ouverts.
+
+## 1. Vision et positionnement
+
+L'activité d'un développeur est dispersée : le code sur GitHub, les discussions sur Discord ou Slack, les questions sur Stack Overflow, l'organisation sur Trello ou Linear, la visibilité sur LinkedIn. Aucun outil ne montre comment un développeur construit avec les autres.
+
+Le produit s'organise autour de deux objets : **Developer** et **Project**. Toutes les interactions relient les deux.
+
+**Promesse** : *Meet developers. Build together. Let your work speak for you.* La plateforme transforme Post / Like / Follow en Build / Help / Review / Contribute / Mentor / Ship, puis transforme ces actions en réputation, visibilité et opportunités.
+
+**Boucle principale** : Discover → Connect → Help → Collaborate → Build → Ship → Prove → Get discovered.
+
+**Positionnement** : *Developer Collaboration Network*, avec pour vision long terme un *Developer Collaboration OS*. Ce n'est ni un GitHub, ni un LinkedIn, ni un Trello, ni un Reddit, ni un Stack Overflow bis. GitHub reste l'infrastructure du code ; la plateforme ajoute le contexte, la découverte, le matching, la collaboration et la réputation.
+
+**Angle africain** : il est visible dans l'expérience, pas seulement dans le branding. Développeurs par pays, communautés par pays, projets africains, collaborations transfrontalières (Collaboration Map, badge Cross-border Builder).
+
+**Principes produit**
+
+- **Build > Scroll** : on optimise l'aide, les reviews et les contributions, pas les likes ni le temps passé.
+- **Collaboration > Connection** : une contribution commune vaut plus qu'un follow.
+- **Evidence > Claims** : « 8 reviews vérifiées en Go » vaut plus que « expert Go ».
+- **Realtime invisible** : l'utilisateur voit les notifications et les mises à jour arriver, sans y penser.
+- **Infrastructure simple d'abord** : une instance Deno, SQLite, SSE. Pas de microservices, Kafka, Redis ni Kubernetes tant que le produit n'en a pas besoin.
+
+## 2. Décisions arrêtées
+
+Ces choix ne sont plus en discussion. Toute la suite du document en découle.
+
+| Sujet | Décision | Raison |
+| --- | --- | --- |
+| Périmètre | Toutes les fonctionnalités sont livrées, dans un ordre de construction, avec critères d'acceptation et deux niveaux de finition (§4) | Objectif : gagner CADEV ; stack maîtrisée grâce à Tournament |
+| Repositories | Publics uniquement | Aucun accès à gérer, aucune donnée privée à protéger |
+| Identité GitHub | Une GitHub App en lecture seule, pour le login et les webhooks | Permissions fines, un seul endpoint webhook |
+| Tokens GitHub | Aucun token utilisateur stocké en base | Le login n'en a besoin que quelques secondes ; la synchro utilise des tokens serveur |
+| Import | Deux niveaux : vitrine sans installation, synchro live avec installation | Présenter un projet en 3 clics |
+| Build | esbuild + `@luca/esbuild-deno-loader`, comme Tournament | Setup déjà éprouvé en production |
+| UI | Tailwind CSS compilé + DaisyUI comme primitives, design system maison par-dessus | Choix de l'équipe ; impose de quitter twind (§12) |
+| Base de données | SQLite via `@01edu/db`, une seule instance | Suffisant pour CADEV, migration PostgreSQL seulement si nécessaire |
+| Temps réel | Entries `@01edu/db/entries` + SSE, écritures en HTTP | Mécanisme déjà en production dans Tournament |
+| Réputation | Calculée uniquement depuis le journal d'entries, jamais depuis une déclaration | Badges vérifiables |
+| IA | Utilisée, toujours avec un repli déterministe | La plateforme fonctionne sans IA |
+| Matching | Score SQL déterministe et explicable, enrichi par embeddings | Chaque match affiche ses raisons |
+| Organisation d'un projet | Quatre canaux imposés : `#général`, `#suivi` (alertes GitHub et CI/CD), `#aide`, `#annonces` | Lisible comme Discord, sans canaux vides ; les alertes mènent à la boucle d'aide |
+| Recherche | Meilisearch auto-hébergé, alimenté depuis les entries ; SQLite reste la source de vérité | Recherche instantanée, tolérance aux fautes, filtres |
+| Reverse proxy | Caddy | HTTPS automatique, HTTP/2 par défaut, SSE transmis sans tampon |
+| Hébergement | Systalink : une VM avec Docker, Caddy, l'app, SQLite et Meilisearch | Imposé par CADEV ; cloud souverain, données au Sénégal |
+| Calendrier et équipe | 10 jours (7 – 16 octobre 2026), deux développeurs : Abdou et niangoos | Cadre du concours |
+
+## 3. Utilisateurs et rôles
+
+Un compte = un utilisateur GitHub. Les rôles de projet sont portés par `ProjectMember.role`, les rôles de communauté par `CommunityMember.role`.
+
+| Rôle | Portée | Peut |
+| --- | --- | --- |
+| Developer | Plateforme | Se connecter, personnaliser son profil, publier, commenter, rejoindre communautés et projets, demander et apporter de l'aide, reviewer, gagner des badges |
+| Owner | Projet | Tout ce que fait un Maintainer + importer le repo, activer la synchro live, gérer les rôles, supprimer le projet |
+| Maintainer | Projet | Gérer les besoins, le Board et la Roadmap, accepter les candidatures, assigner des tâches, créer des demandes d'aide pour le projet |
+| Contributor | Projet | Prendre des tâches, écrire dans `#général` et `#aide`, apparaître dans l'équipe |
+| Reviewer | Projet | Comme Contributor, spécialisé dans les reviews |
+| Observer | Projet | Suivre le projet, lire `#suivi` et `#annonces` |
+| Moderator | Communauté | Gérer les membres et les publications, appliquer les règles |
+
+Chaque route vérifie le rôle côté serveur. Le client n'affiche ou ne masque les actions qu'à titre d'ergonomie.
+
+## 4. Périmètre et ordre de construction
+
+Toutes les fonctionnalités sont dans le périmètre. Elles sont construites dans un ordre imposé par leurs dépendances : presque tout lit les entries, donc les fondations passent en premier, et la boucle de démo est terminée avant les fonctionnalités qui ne font que l'enrichir.
+
+**Cadre** : 10 jours, du mercredi 7 au vendredi 16 octobre 2026, avec deux développeurs (Abdou et niangoos) assistés de Claude Code. Le bloc 1 passe en premier ; ensuite, les blocs avancent en parallèle selon la répartition, la boucle de démo restant prioritaire ; le suivi détaillé se fait dans `TODO.md` à la racine du repo.
+
+| Bloc | Contenu | Dépend de | Jours |
+| --- | --- | --- | --- |
+| 1. Fondations | Projet Deno, build esbuild + Tailwind/DaisyUI, schéma et migrations, liste des entries et relations, flux SSE, login GitHub App, session, seed, Caddy et conteneur Meilisearch | — | J1 – J2 (7 – 8 oct.) |
+| 2. Boucle de démo | Profil de base, import niveaux 1 et 2, webhooks, demande d'aide, matching, notifications temps réel, détection de review, confirmation, badges | 1 | J3 – J5 (9 – 11 oct.) |
+| 3. Vitrines | Profil complet et thèmes, Passport, Share Card, OG, Pulse (déterministe + IA), Project DNA, Health, Story, Collaboration Map et Graph | 1, entries du bloc 2 | J6 – J7 (12 – 13 oct.) |
+| 4. Gestion de projet | Needs, Team et candidatures, Board, Roadmap, canaux du projet et `#suivi`, présence, Collaboration Requests | 1 | J8 (14 oct.) |
+| 5. Social et découverte | Feed, Communities, Explore, Search, Smart Contribution Discovery, préférences et digest | 1 | J9 (15 oct.) |
+| Gel | Plus de nouvelles fonctionnalités : seed final, répétitions de la démo en prod, corrections | Tout | J10 (16 oct.) |
+
+Règles d'équipe :
+
+- **Chaque fonctionnalité écrit ses entries dès le premier jour.** Sans entries, les vitrines, le Pulse et les badges n'ont rien à afficher.
+- **Deux développeurs, un responsable par bloc.** La répartition est notée dans `TODO.md`. Chaque PR est relue et approuvée par l'autre développeur avant d'être mergée. Chaque soir, l'avancement est comparé au planning de `TODO.md`. Un retard sur le bloc 2 se rattrape avant de commencer le bloc suivant ; un retard sur les blocs 3 à 5 laisse leurs fonctionnalités au niveau *fonctionnel*.
+- **La boucle de démo (bloc 2) est prioritaire** sur tout le reste en cas de retard.
+
+**Deux niveaux de finition.** Rien n'est retiré du périmètre ; ce qui varie, c'est le degré de finition.
+
+- **Fonctionnel** : la fonctionnalité fait son travail, avec les règles métier et les cas limites, sur une interface propre mais sans polish.
+- **Démo** : écran maquetté, animé, responsive, testé de bout en bout. Seuls les écrans du scénario de démo (§18) visent ce niveau : profil, page projet, Pulse, demande d'aide, notification, Share Card.
+
+En cas de retard sur un bloc, ses fonctionnalités restent au niveau *fonctionnel* ; on ne les supprime pas.
+
+**Critères d'acceptation.** Un bloc est terminé quand tous ses critères sont vérifiés sur l'environnement de production.
+
+| Bloc | Critères d'acceptation |
+| --- | --- |
+| 1. Fondations | Login GitHub de bout en bout en prod via Caddy (protocole `h2` visible) ; une entry insérée côté serveur arrive dans un autre navigateur en moins d'1 s ; `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage ; seed rejouable en une commande ; Meilisearch répond depuis l'app et n'est pas joignable depuis l'extérieur |
+| 2. Boucle de démo | Import niveau 1 en 3 clics ; une review GitHub réelle fait passer la demande en `review_submitted` en moins de 10 s ; un webhook reçu pendant un redémarrage est traité après la reprise ; deux acceptations simultanées n'en retiennent qu'une ; la confirmation met à jour le badge du profil sans rafraîchir |
+| 3. Vitrines | Un lien `/@username` collé dans WhatsApp et LinkedIn affiche l'aperçu avec la Share Card ; chaque chiffre du profil mène à ses preuves ; le Pulse s'affiche même IA coupée |
+| 4. Gestion de projet | Deux utilisateurs déplacent des cartes en même temps sans perte ; une PR mergée déplace sa carte en Done ; une candidature s'accepte depuis la notification ; une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic |
+| 5. Social et découverte | Recherche tolérante aux fautes (« postgress » trouve PostgreSQL) ; la recherche reste utilisable Meilisearch arrêté ; un contenu signalé puis masqué disparaît pour tous |
+
+Hors périmètre : repos privés, GitLab, Bitbucket, voix, vidéo, partage d'écran, curseurs collaboratifs, application mobile native, API publique.
+
+## 5. GitHub : authentification, import, synchronisation
+
+Une seule GitHub App, en lecture seule, sert à la connexion et aux webhooks. Seuls les repos publics sont gérés. GitHub reste la source de vérité du code, des PRs, des issues et des releases ; la plateforme en garde une copie locale pour l'affichage.
+
+### 5.1 Configuration de la GitHub App
+
+- **Permissions de repository**, toutes en lecture : Metadata, Contents, Issues, Pull requests, Actions, Checks, Commit statuses (les trois dernières pour les alertes CI/CD de `#suivi`, §6.8).
+- **Permission de compte** : Email addresses en lecture, facultative (sans elle, seul l'email public est connu ; l'email n'est jamais obligatoire).
+- **Événements webhook** : `installation`, `installation_repositories`, `push`, `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `workflow_run`, `check_run`, `status`.
+- **Callback URL** (login) et **Setup URL** (retour après installation) pointent vers le frontend.
+- Option **« Request user authorization (OAuth) during installation »** activée : l'installation renvoie aussi un `code`, ce qui permet de vérifier qui a installé (§5.4).
+
+### 5.2 Tokens et secrets
+
+Aucun token utilisateur n'est stocké. Les appels serveur utilisent des tokens serveur.
+
+| Usage | Moyen | Stocké en base |
+| --- | --- | --- |
+| Login | Token utilisateur obtenu avec le `code`, utilisé pour lire `GET /user`, puis jeté | Non |
+| Import niveau 1 et rafraîchissement périodique | Token d'un compte bot de l'équipe (fine-grained, lecture des repos publics) | Non : variable d'environnement |
+| Synchro niveau 2 | Token d'installation généré à la demande depuis la clé privée de l'app, valable 1 h, gardé en mémoire | Non |
+| Webhooks | Signature HMAC SHA-256 vérifiée avec le secret webhook | Non |
+
+Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
+
+### 5.3 Connexion
+
+1. Le frontend appelle `GET/api/auth/github`, qui génère un `state` (à la manière du `StateManager` de `api/gitea-oauth.ts`) et renvoie l'URL d'autorisation GitHub.
+2. GitHub redirige vers la page frontend de callback avec `code` et `state`.
+3. Le frontend envoie `POST/api/auth/github/callback` avec `code` et `state`.
+4. Le serveur vérifie le `state`, échange le `code`, lit `GET /user`, crée ou retrouve l'utilisateur par `githubId`, jette le token.
+5. Le serveur pose le cookie `session` : `httpOnly`, `secure`, `SameSite=Lax`, comme `createSessionResponse` dans Tournament.
+
+L'utilisateur peut utiliser toute la plateforme sans jamais installer l'app.
+
+### 5.4 Import d'un projet
+
+**Niveau 1 — vitrine, sans installation**
+
+1. « + Create » → « Import from GitHub ».
+2. La plateforme liste les repos publics de l'utilisateur (`GET /users/{username}/repos` avec le token bot).
+3. L'utilisateur en choisit un. Sont récupérés : nom, description, README, langages, topics, stars, forks, contributeurs, issues et PRs ouvertes, dernière release.
+4. L'IA propose skills et besoins (§11) ; l'utilisateur valide. Le projet est en ligne.
+5. Synchro par rafraîchissement toutes les 15 minutes avec requêtes conditionnelles (`syncMode = poll`).
+
+Seul le propriétaire d'un repo personnel peut l'importer au niveau 1. Un repo d'organisation s'importe par le niveau 2 : l'installation, réservée aux owners de l'organisation et aux admins du repo, prouve le droit de l'importer.
+
+**Niveau 2 — synchro live, avec installation**
+
+1. Redirection vers la page d'installation de l'app, l'utilisateur coche le repo.
+2. GitHub le renvoie sur la Setup URL avec `installation_id`, `setup_action` et `code`.
+3. Le frontend envoie `POST/api/github/installation/confirm`. Le serveur échange le `code` contre un token utilisateur temporaire et vérifie **trois choses**, toutes obligatoires :
+   1. **Identité** : `GET /user` renvoie le `githubId` du compte connecté sur la plateforme.
+   2. **Couverture** : `GET /user/installations/{installation_id}/repositories` contient ce repo précis.
+   3. **Droit** : `GET /repos/{owner}/{repo}` renvoie `permissions.admin` ou `permissions.maintain` à `true` pour cet utilisateur.
+4. Le token est jeté. Si les trois contrôles passent, le repo passe en `syncMode = live` ; sinon, refus avec le contrôle en échec.
+
+Pourquoi trois contrôles : `GET /user/installations` liste aussi les installations auxquelles l'utilisateur n'a qu'un accès en lecture. Y figurer ne prouve pas qu'on administre le repo.
+
+Passage automatique en live : si le repo importé est déjà couvert par une installation connue (événements `installation` et `installation_repositories`), l'import passe directement en `syncMode = live` **seulement si** l'importeur est le propriétaire du repo personnel. Pour un repo d'organisation, les trois contrôles ci-dessus restent obligatoires.
+
+Sur un repo d'organisation, seuls un owner de l'organisation ou un admin du repo peuvent installer l'app ; un simple membre peut seulement en faire la demande.
+
+### 5.5 Webhooks
+
+La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur de `@01edu/api` ne lit alors pas le corps, et le handler peut lire le corps brut avec `ctx.req.text()` (vérifié dans `router.ts`). Elle n'a pas d'`authorize`. Traitement :
+
+1. Lire le corps brut et vérifier `X-Hub-Signature-256` (HMAC SHA-256, comparaison en temps constant). Refuser sinon.
+2. Insérer la livraison dans `WebhookDelivery` avec `githubDeliveryId` (UNIQUE), l'événement, le **payload complet** et `status = received`. Une livraison déjà connue n'est pas réinsérée.
+3. Répondre 202 immédiatement. GitHub attend une réponse en moins de 10 secondes.
+4. Un worker prend les livraisons `received`, les passe en `processing`, met à jour SQLite et insère les entries dans **une seule transaction**, puis passe en `done`. En cas d'erreur : `attempts + 1`, `lastError`, nouvel essai avec délai croissant ; après 5 échecs, `failed` et alerte dans les logs.
+
+`WebhookDelivery` **est la file** : elle survit aux redémarrages. Au démarrage, le worker reprend les livraisons `received` et celles restées en `processing` depuis plus de 2 minutes. Le traitement est idempotent (mise à jour par `githubId`, entries créées une seule fois par livraison), donc le rejouer est sans effet de bord. « Reçu » et « traité avec succès » sont deux statuts distincts.
+
+### 5.6 Fiabilité et quota
+
+- **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.
+- **Quota** : 5 000 requêtes par heure et par token. Cache local, `lastSyncedAt`, ETag et requêtes conditionnelles : une réponse 304 ne compte pas dans le quota. GraphQL pour les imports. Jamais d'appel GitHub pendant l'affichage d'une page.
+- **Board** : synchro en sens unique, GitHub → plateforme. L'app étant en lecture seule, la plateforme n'écrit jamais sur GitHub.
+- **Dev local** : tunnel HTTPS (`cloudflared` ou smee.io) pour recevoir les webhooks.
+
+## 6. Onboarding, Home et projets
+
+### 6.1 Onboarding (moins de 2 minutes)
+
+1. **Continue with GitHub** (§5.3).
+2. **Profil** pré-rempli depuis GitHub (avatar, nom, username, bio, localisation), à compléter : headline, pays, ville, site web.
+3. **Skills** : domaines (Backend, Frontend, Mobile, DevOps, Cloud, AI/ML, Blockchain, Data, Cybersecurity, Game Development, UI Engineering) et technologies, choisies dans un vocabulaire contrôlé. Les langages GitHub sont proposés automatiquement via `SkillAlias`.
+4. **Intentions** : Find projects, Find contributors, Review code, Get code reviews, Help developers, Contribute to open source, Mentor, Find a mentor, Build projects, Find collaborators. Elles alimentent le matching.
+5. **Import** d'un premier projet, facultatif.
+
+Vocabulaire contrôlé : « Postgres », « postgresql » et « PG » pointent tous vers le skill `postgresql`. Un utilisateur ne crée pas de skill ; il en suggère un, validé par un admin.
+
+Une compétence a trois sources possibles, affichées séparément : `declared`, `github` (langages des repos), `platform_activity` (reviews et aides confirmées).
+
+### 6.2 Navigation et Home
+
+Navigation : Home, Explore, Projects, Help, Communities, Notifications, Profile. Action globale **+ Create** : Post, Project, Help Request, Community.
+
+La Home est personnalisée, pas chronologique. Blocs dans l'ordre : demandes d'aide qui matchent (« 3 help requests match your skills »), PRs qui attendent une review, projet à découvrir, projets qui cherchent des contributeurs, discussion tendance, développeurs avec qui construire.
+
+### 6.3 Page projet
+
+En-tête : nom, description, technologies, lien GitHub, puis contributeurs, issues ouvertes, PRs ouvertes, demandes d'aide ouvertes, et les actions Follow, Offer help, Join.
+
+Onglets : Overview, Pulse, Canaux (§6.8), Pull Requests, Issues, Team, Activity, Board, Roadmap. L'Overview répond à : qu'est-ce que c'est, que se passe-t-il, qui construit, de quoi a-t-il besoin, puis-je aider.
+
+L'Overview affiche aussi une **galerie** (jusqu'à 8 captures d'écran) et une **vidéo de démo** intégrée par lien (§17.3).
+
+Un projet peut aussi être créé sans repo (« Create from scratch » : nom, description, vision, technologies, visibilité, besoins) et connecté à un repo plus tard.
+
+### 6.4 Project Pulse (feature phare)
+
+Comprendre un projet en quelques secondes. Deux couches :
+
+- **Pulse déterministe** (toujours affiché) : sur les 7 derniers jours, ou depuis la dernière visite, compte des PRs mergées, issues fermées, contributeurs arrivés, reviews demandées, PRs en attente de review, releases. Calculé par requêtes sur les entries et les données GitHub synchronisées.
+- **Résumé IA** (3 à 5 phrases) : « Le développement est actif. Le principal goulot est la review. » Pré-calculé (§11). Absent si l'IA ne répond pas, sans casser la page.
+
+### 6.5 Project DNA, Health et Story
+
+- **DNA** : répartition des langages (données GitHub), domaines du projet (Backend, Frontend, Testing, DevOps, Documentation, déduits des fichiers et labels), besoins principaux.
+- **Health** : indicateurs lisibles, chacun avec sa règle affichée au survol. Activité (commits et PRs sur 14 jours), vélocité des PRs (délai médian avant merge), PRs en attente de review, bloqueurs (issues label `blocked`), évolution des contributeurs, documentation (présence et taille du README). Pas de score global opaque.
+- **Story** : frise des moments marquants, générée depuis les entries : création, premier contributeur, première collaboration transfrontalière, releases, paliers de contributeurs.
+
+### 6.6 Needs, Team et candidatures
+
+- **Needs** : chaque besoin a un type, des skills requis, une description et un statut. Ils alimentent le matching et « This project needs you ».
+- **Join project** : formulaire (comment aider : Backend, Frontend, Testing, DevOps, Documentation ; disponibilité ; message). L'Owner ou un Maintainer reçoit la notification en temps réel et accepte ou refuse directement depuis elle. Si accepté : membre ajouté avec un rôle, entry `PROJECT_MEMBER_JOINED`.
+- **Aucun accès GitHub à donner** : les repos sont publics, un contributeur passe par un fork et une PR.
+- **People who could help** : le matching (§7) propose des développeurs pour chaque besoin ouvert.
+
+### 6.7 Board et Roadmap
+
+- **Board** : Kanban à 5 colonnes (Backlog, Ready, In progress, Review, Done). Une carte est une tâche interne, ou liée à une issue ou une PR GitHub (lecture seule côté GitHub). Une PR mergée déplace sa carte en Done. Ordre des cartes par rang fractionnaire (§14) pour que deux personnes puissent déplacer des cartes en même temps. Chaque déplacement produit une entry et rafraîchit le Board des autres en temps réel.
+- **Roadmap** : milestones (titre, description, statut Done / Active / Planned, objectifs), auxquels on rattache tâches et issues. Progression = tâches terminées / tâches du milestone.
+
+### 6.8 Canaux du projet et présence
+
+Chaque projet est organisé comme un serveur Discord, avec **quatre canaux imposés**. On ne peut ni en créer, ni en supprimer, ni en renommer : un petit projet n'a pas de canaux vides, et tous les projets se lisent de la même façon.
+
+| Canal | Qui écrit | Qui lit | Contenu |
+| --- | --- | --- | --- |
+| `#général` | Membres | Membres | Discussion libre de l'équipe |
+| `#suivi` | La plateforme uniquement (les membres répondent en fil) | Membres et abonnés | Alertes GitHub et CI/CD, en temps réel |
+| `#aide` | Membres et plateforme | Membres | Demandes d'aide du projet, leurs changements d'état et leurs échanges |
+| `#annonces` | Owner et Maintainers | Membres et abonnés | Releases, nouveaux besoins, arrivées dans l'équipe |
+
+**Messages** : Markdown avec une image ou une vidéo intégrée par lien (§17.3), réactions, réponses en **fil de discussion** sous un message ou sous une alerte. Stockés dans `ProjectMessage` ; chaque message produit une entry `MESSAGE_CREATED`. Pas de voix ni de vidéo en direct.
+
+**`#suivi`** n'a pas de stockage propre : c'est l'affichage des entries produites par les webhooks et la synchro (§5.5, §13.3). Alertes affichées :
+
+- PR ouverte, review soumise (approuvée ou changements demandés), PR mergée ou fermée ;
+- CI en échec, puis « CI réparée » quand elle repasse au vert, sur la branche principale et sur les PRs ouvertes (GitHub Actions via `workflow_run`, autres outils via `check_run` et `status`) ;
+- PR sans review depuis 2 jours (vérification planifiée) ;
+- release publiée ; issue ouverte ou fermée ;
+- pushes regroupés (« 3 commits sur main ») pour éviter le bruit.
+
+**Alertes actionnables** : une alerte ne fait pas qu'informer, elle mène à la boucle d'aide (§7).
+
+- « CI en échec » → bouton **Demander de l'aide**, qui crée une demande Debugging pré-remplie (PR, branche, lien du job en échec).
+- « PR sans review depuis 2 jours » → bouton **Demander une review**, qui ouvre « Request Review » sur cette PR.
+
+**Non lus et notifications** : compteur de messages non lus par canal. Chaque membre règle chaque canal : tout, mentions seulement, rien ; pour `#suivi`, une option « seulement mes PRs ». Par défaut, `#suivi` est réglé sur « seulement mes PRs ».
+
+**Limite** : pour un projet en synchro par rafraîchissement (niveau 1, §5.4), `#suivi` se met à jour toutes les 15 minutes. Le temps réel suppose la synchro live.
+
+- **Présence** : « 5 developers active », avec un état léger (viewing project, viewing PR, working on task). En mémoire uniquement (§13), jamais en entries.
+
+## 7. Demandes d'aide, matching, notifications et reviews
+
+C'est le cœur du produit et de la démo : un besoin précis est poussé automatiquement vers les bons développeurs, et l'aide apportée devient de la réputation vérifiée.
+
+### 7.1 Demande d'aide
+
+Types : Code Review, Debugging, Architecture, Security, Testing, DevOps, UI/UX, Documentation, Pair Programming, Mentorship, Contributor Search.
+
+Champs : titre, description (Markdown), jusqu'à 4 captures d'écran, un lien vidéo facultatif (par exemple un Loom qui montre le bug), type, projet et PR GitHub optionnels, skills requis (vocabulaire contrôlé), niveau attendu, durée estimée. Depuis une PR, le bouton **Request Review** pré-remplit projet, repo, PR et skills (langages des fichiers modifiés).
+
+Une demande peut aussi naître d'une alerte de `#suivi` (§6.8) : « Demander de l'aide » sur une CI en échec, « Demander une review » sur une PR qui attend.
+
+### 7.2 Cycle de vie
+
+| Statut | Entrée dans le statut | Sorties |
+| --- | --- | --- |
+| `open` | Création ou réouverture ; matching par vagues | Un aidant accepte → `accepted` ; le demandeur annule → `cancelled` ; 7 jours sans acceptation → `expired` |
+| `accepted` | Acceptation atomique par un aidant ; les autres matchs sont prévenus que la demande est prise | Review GitHub détectée → `review_submitted` ; pour les types sans PR, l'aidant déclare « terminé » → `delivered` ; l'aidant se désiste → `open` ; le demandeur libère la demande après 72 h d'inactivité de l'aidant → `open` ; le demandeur annule → `cancelled` |
+| `review_submitted` / `delivered` | Le demandeur reçoit « Was this helpful? » | Oui → `completed` ; Non → `closed_unhelpful` ; 7 jours sans réponse → `closed_unconfirmed` |
+| `completed` | Entry `HELP_CONFIRMED` ou `REVIEW_HELP_CONFIRMED` | Final |
+| `closed_unhelpful` / `closed_unconfirmed` / `expired` | — | Le demandeur rouvre → `open`, avec les mêmes données |
+| `cancelled` | Le demandeur annule | Final |
+
+Règles des transitions :
+
+- **Acceptation atomique** : `UPDATE HelpRequest SET status = 'accepted', acceptedBy = ? WHERE id = ? AND status = 'open'`, puis vérification qu'une seule ligne a été modifiée. Sinon, le second aidant reçoit « Déjà prise ».
+- **Désistement et libération** : l'aidant sorti passe en `withdrawn` ou `released` dans `HelpMatch` et est exclu des vagues suivantes de cette demande. Le matching reprend à la vague suivante ; le demandeur n'a rien à recréer.
+- **Inactivité** : sans review ni message de l'aidant, relance à 24 h ; à 72 h, le bouton « Libérer la demande » apparaît pour le demandeur.
+- **Réouverture** : remet la demande en `open` et relance le matching en excluant les aidants déjà sortis.
+- Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`.
+
+Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes.
+
+### 7.3 Matching
+
+Déterministe, en SQL, explicable. Score sur 100 :
+
+| Critère | Poids | Source |
+| --- | --- | --- |
+| Skills requis possédés | 45 | `UserSkill`, pondéré par source : activité plateforme > GitHub > déclaré |
+| Type d'aide accepté | 15 | Intentions et préférences (ex. « Review code » coché) |
+| Aides confirmées sur ces skills | 15 | Entries `REVIEW_HELP_CONFIRMED` / `HELP_CONFIRMED` |
+| Proximité sémantique | 10 | Similarité d'embeddings demande / profil (§11) ; 0 si indisponible |
+| Disponibilité | 10 | `Profile.availability` et activité récente |
+| Affinité | 5 | Mêmes communautés, projet suivi |
+
+Exclus : le demandeur, les développeurs ayant mis le matching sur Off, ceux sous le seuil minimum qu'ils ont choisi. **Why this match?** affiche exactement les critères qui ont compté (« Go · SQLite · Backend · 14 reviews confirmées · Open to code reviews »).
+
+Diffusion : les 5 meilleurs sont notifiés, dont une place réservée à un profil peu expérimenté mais bien aligné sur les skills (moins de 3 aides confirmées ; affiché « Nouveau profil prometteur » dans Why this match?). Sans acceptation après 2 h, les 5 suivants. Un utilisateur reçoit au maximum 10 notifications de matching par jour. Chaque notification crée une ligne `HelpMatch` (score, raisons, `notifiedAt`).
+
+### 7.4 Notifications
+
+- **Temps réel** : insertion de la ligne `Notification` + entry → SSE → toast « This project needs you » sur l'écran du développeur, sans rafraîchir.
+- **Centre de notifications** : catégories For you, Projects, Communities, Social, System. Exemples : match, review demandée, invitation, candidature, contribution confirmée, badge débloqué, release d'un projet suivi.
+- **Préférences** : matching en Instant, Daily digest ou Off ; filtres par skills, types d'aide, score minimum, projets, communautés.
+- **Digest quotidien** : tâche planifiée, envoi par email (sur le modèle de `api/email.ts`) aux utilisateurs dont l'email est connu.
+
+### 7.5 Vérification d'une review
+
+La review se fait sur GitHub. La plateforme la détecte via le webhook `pull_request_review` (synchro live) ou la resynchronisation (synchro par rafraîchissement).
+
+Une review valide une demande d'aide si toutes ces conditions sont vraies :
+
+1. La demande est `accepted` et porte sur cette PR.
+2. Le `githubId` du reviewer est celui de l'aidant qui a accepté.
+3. Le reviewer n'est ni l'auteur de la PR ni le demandeur.
+4. La review est postérieure à l'acceptation.
+5. La review est de type `approved`, `changes_requested` ou `commented` avec au moins un commentaire.
+
+La demande passe en `review_submitted`. Elle ne devient `completed` qu'après confirmation du demandeur. GitHub n'a pas de notion de « review acceptée » : notre événement de confiance est `REVIEW_HELP_CONFIRMED`.
+
+### 7.6 Collaboration Requests
+
+Depuis un profil, **Request collaboration** : Review my PR, Help me debug, Architecture advice, Join my project, Pair programming, Mentor me, Build something together. C'est une demande d'aide adressée à une seule personne : même cycle de vie, sans matching.
+
+## 8. Réputation, badges et anti-abus
+
+Toute réputation est calculée à partir du journal d'entries, jamais d'une déclaration. Chaque chiffre affiché est cliquable et mène aux preuves (PR, projet, demande d'aide).
+
+### 8.1 Réputation par dimensions
+
+Pas de score global de type « 93/100 ». Cinq dimensions affichées en barres : Code Review, Project Building, Mentoring, Open Source, Community Help. Chaque barre se déplie en preuves, par exemple : 18 reviews réalisées, 14 confirmées utiles, dont Go 8, TypeScript 4, Rust 2.
+
+| Dimension | Entries prises en compte |
+| --- | --- |
+| Code Review | `REVIEW_HELP_CONFIRMED` |
+| Project Building | `PROJECT_CREATED` avec au moins 2 membres actifs, `RELEASE_PUBLISHED`, `PR_MERGED` sur ses projets |
+| Mentoring | `HELP_CONFIRMED` de type Mentorship ou Pair Programming |
+| Open Source | `PR_MERGED` dont l'auteur n'est pas Owner du projet |
+| Community Help | `HELP_CONFIRMED` (autres types), `ANSWER_ACCEPTED` |
+
+### 8.2 Badges
+
+Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables dans un fichier de constantes.
+
+| Badge | Mesure | Bronze | Silver | Gold | Platinum |
+| --- | --- | --- | --- | --- | --- |
+| Trusted Reviewer | Reviews confirmées utiles | 3 | 10 | 20 | 50 |
+| First Responder | Demandes d'aide complétées | 3 | 10 | 25 | 50 |
+| Mentor | Aides Mentorship / Pair Programming complétées | 2 | 5 | 15 | 30 |
+| Open Source Contributor | PRs mergées sur des projets d'autres | 3 | 10 | 25 | 50 |
+| Builder | Projets avec au moins 2 contributeurs et une release | 1 | 3 | 5 | 10 |
+| Maintainer | Mois consécutifs de projet actif en tant qu'Owner ou Maintainer | 1 | 3 | 6 | 12 |
+| Cross-border Builder | Pays distincts des collaborateurs confirmés | 2 | 3 | 5 | 8 |
+| Community Pillar | Réponses acceptées dans les communautés | 5 | 15 | 40 | 100 |
+
+Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit l'entry `BADGE_UNLOCKED` et une notification.
+
+### 8.3 Preuves et calcul
+
+**Chaque preuve est autosuffisante.** Une entry de réputation (`REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED`, `PR_MERGED`…) fige dans ses `fields` (mécanisme natif de `@01edu/db/entries`) tout ce qui a servi à la décision :
+
+- demandeur et aidant ;
+- skills au moment de l'aide (ids et noms) et type d'aide ;
+- référence GitHub : repo, numéro de PR, id de la review, URL ;
+- résultat (état de la review, réponse du demandeur) ;
+- `eligible` et, sinon, `exclusionReason` ;
+- `rulesVersion` : version des règles appliquées ;
+- `source` : `github` ou `demo`.
+
+Une modification de profil ou la suppression d'une demande ne change donc aucun résultat passé.
+
+**L'éligibilité est décidée une fois, à la confirmation, puis figée.** Un changement de règles ne réécrit jamais l'historique en silence : appliquer de nouvelles règles au passé est une migration explicite et versionnée.
+
+**Les entries de réputation ne sont jamais archivées**, sauf par une sanction de modération (§10.5), qui retire volontairement la preuve. L'évaluateur de badges s'exécute après chaque entry concernée et recalcule `BadgeProgress` à partir des seules entries éligibles : entry → évaluateur → `BadgeProgress` → stats du profil.
+
+### 8.4 Anti-abus
+
+Objectif : empêcher que « A reviewe B, B reviewe A, 100 fois » fabrique de la réputation.
+
+- **Plafond par paire** : au plus 2 confirmations comptabilisées par paire demandeur / aidant sur 30 jours glissants.
+- **Pas d'auto-review** : le reviewer n'est ni l'auteur de la PR ni le demandeur.
+- **Une seule confirmation** par demande d'aide.
+- **Confirmation du demandeur** obligatoire.
+- **Pas de seuil de taille de PR** : une correction d'une ligne peut être décisive, et la taille ne prouve pas la qualité. Les règles ci-dessus et la diversité ci-dessous suffisent contre la triche.
+- **Diversité par badge** pour les niveaux Gold et Platinum :
+
+| Badge | Gold | Platinum |
+| --- | --- | --- |
+| Trusted Reviewer | 3 demandeurs et 2 projets distincts | 6 demandeurs et 4 projets distincts |
+| First Responder, Mentor | 3 demandeurs distincts | 6 demandeurs distincts |
+| Community Pillar | Réponses acceptées par 5 auteurs distincts | 10 auteurs distincts |
+| Open Source Contributor | PRs mergées dans 3 projets distincts | 5 projets distincts |
+| Builder | Chaque projet compté a au moins 3 contributeurs autres que l'Owner | au moins 5 |
+| Maintainer | Un mois compte si au moins 2 autres contributeurs y ont été actifs | au moins 4 |
+| Cross-border Builder | Au moins 2 collaborateurs distincts par pays compté | au moins 3 |
+
+Une action qui ne passe pas ces règles reste visible dans l'activité, mais ne compte pas dans la réputation.
+
+## 9. Profil développeur et partage
+
+Le profil est un produit à part entière : public, partageable, indexable, servi à l'URL `/@username`. Il doit pouvoir servir de portfolio, de carte de visite et de preuve de collaboration. Principe : *Your work is your profile.*
+
+### 9.1 Contenu
+
+- **Hero** : cover, avatar, nom et drapeau du pays, headline, ville et pays, technologies mises en avant, bio, boutons GitHub, Website, Follow, Request collaboration.
+- **Currently Building** : projets actifs avec le rôle et le travail de l'utilisateur (commits, PRs mergées, reviews).
+- **Real Contributions** : par projet, le rôle, les faits marquants et les liens vers les preuves.
+- **Activity stats** : projets, reviews vérifiées, contributions mergées, développeurs aidés, collaborations.
+- **Réputation et badges** (§8).
+- **Sections** : Overview, Projects, Contributions, Reviews, Activity, Badges, Communities, GitHub.
+
+### 9.2 Personnalisation
+
+Cover, couleur d'accent, thème (Minimal, Terminal, Cyber, Light, Dark), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+
+### 9.3 Vitrines visuelles
+
+- **Developer Passport** : vue condensée (projets actifs, contributions, reviews, développeurs aidés, pays des collaborateurs, top skills).
+- **Share Card** : image générée côté serveur (nom, pays, headline, 3 chiffres clés, technologies). C'est aussi l'image Open Graph du profil (§17). Bouton de partage LinkedIn, X, WhatsApp, et téléchargement PNG.
+- **Collaboration Map** : « Collaborated across Africa », nombre de collaborateurs par pays, puis carte interactive de l'Afrique. Calculée depuis les collaborations confirmées et le pays des profils.
+- **Collaboration Graph** : réseau développeurs ↔ projets ↔ communautés, construit uniquement sur des liens de travail (projets communs, aides, reviews, contributions), jamais sur les follows.
+
+Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'apparaît pas sur la carte.
+
+## 10. Communautés, feed, exploration et recherche
+
+### 10.1 Feed
+
+Types de publication : Discussion, Question, Project Update, Help Request, Showcase, Resource, Opportunity, Release. Contenu en Markdown avec blocs de code, jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. Interactions : réaction, commentaire, bookmark, follow, partage. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
+
+### 10.2 Communautés
+
+Types : technologie (Go, Rust, React, Deno, AI, DevOps…), pays (Senegal Developers, Côte d'Ivoire Developers, Cameroon Developers…), domaine (Open Source, Architecture, Code Review, Cybersecurity…). Une communauté a un feed, des membres, des projets, des demandes d'aide et une page About. Les communautés de pays sont créées d'office par le seed.
+
+### 10.3 Explore
+
+- **Développeurs** : filtres technologie, pays, intentions, disponibilité, type de contribution, communauté. Carte : nom et pays, technologies, projets, reviews, contributions, « Open to ».
+- **Projets** : filtres technologie, stade, cherche des contributeurs, beginner friendly (issues `good first issue`), pays, activité.
+- **What can I work on?** : liste personnalisée de choses concrètes à faire, triées par match : reviews demandées, issues `good first issue`, besoins de projets, documentation.
+
+### 10.4 Recherche
+
+Recherche globale sur développeurs, projets, communautés, publications, demandes d'aide et skills, avec **Meilisearch** auto-hébergé : résultats pendant la frappe, tolérance aux fautes (« postgress » trouve PostgreSQL), filtres combinés (pays, skill, disponibilité).
+
+- **Index** : `developers`, `projects`, `communities`, `posts`, `help_requests`. Chaque document contient l'`id` SQLite, les champs cherchables et les champs filtrables.
+- **SQLite reste la source de vérité.** Meilisearch n'est qu'un index : on peut le reconstruire entièrement à partir de la base.
+- **Synchronisation pilotée par les entries** : un worker écoute les entries concernées (`PROFILE_UPDATED`, `PROJECT_UPDATED`, `POST_CREATED`, `HELP_REQUEST_CREATED`…), relit la ligne en SQLite et envoie le document à Meilisearch, par lots. Une réindexation complète tourne chaque nuit et au démarrage si un index est vide.
+- **Contenu non public** jamais indexé : projets `unlisted`, messages des canaux.
+- **Accès** uniquement via `GET/api/search` côté serveur. La clé de Meilisearch ne quitte jamais le serveur.
+- **Repli** : si Meilisearch ne répond pas, `GET/api/search` bascule sur une recherche SQL `LIKE` et la page reste fonctionnelle. Toute la recherche passe par une seule fonction `search(query, filters)`.
+
+### 10.5 Signalement et modération
+
+Tout contenu publié par un utilisateur peut être signalé : post, commentaire, message d'un canal, demande d'aide, profil, projet.
+
+1. **Signaler** : bouton sur chaque contenu, motif (spam, harcèlement, contenu inapproprié, usurpation, triche à la réputation, autre) et commentaire facultatif. Un utilisateur ne signale qu'une fois le même contenu.
+2. **Traiter** : les signalements arrivent dans une file de modération. Un contenu de communauté est traité par ses Moderators ; le reste par les admins de la plateforme.
+3. **Agir** : ignorer, masquer le contenu, avertir l'auteur, suspendre le compte (durée choisie), retirer une preuve de réputation (fraude avérée). Chaque action exige un motif.
+4. **Tracer** : chaque signalement et chaque action produisent une entry et une ligne `ModerationAction` (qui, quoi, pourquoi, quand). L'auteur est notifié de l'action et de son motif.
+
+Un contenu masqué disparaît pour tous sauf son auteur et les modérateurs. Un compte suspendu ne peut plus écrire ; son profil affiche « compte suspendu ». Au-delà de 3 signalements distincts, un contenu est masqué en attendant la décision d'un modérateur.
+
+## 11. IA
+
+L'IA améliore le produit mais n'en est jamais une condition : chaque usage a un repli déterministe, et la page s'affiche normalement si l'IA ne répond pas.
+
+| Usage | Entrée | Sortie | Déclenchement | Repli sans IA |
+| --- | --- | --- | --- | --- |
+| Résumé Pulse | Entries du projet sur la période, besoins, demandes d'aide ouvertes | 3 à 5 phrases | En tâche de fond après des entries du projet, au plus une fois toutes les 10 min par projet | Pulse déterministe seul |
+| Extraction skills et besoins | README, langages, topics, issues ouvertes | JSON validé contre la liste de skills | À l'import et à la resynchronisation | Langages GitHub via `SkillAlias` |
+| Embeddings de matching | Texte de la demande d'aide ; profil (headline, bio, skills, activité) | Vecteur stocké en BLOB SQLite | À la création d'une demande ; à la mise à jour d'un profil | Critère « proximité sémantique » à 0 |
+| Description de projet | README | Texte proposé, éditable | Sur clic de l'utilisateur | Champ vide |
+| Recommandations | Profil, historique, besoins des projets | Liste ordonnée pour « What can I work on? » | En tâche de fond, quotidienne | Tri par score de matching SQL |
+
+Règles :
+
+- **Appels côté serveur uniquement**, clé API en variable d'environnement.
+- **Jamais de calcul pendant l'affichage d'une page.** Le résultat est stocké, puis une entry signale au client qu'il est prêt.
+- **Sorties structurées** (JSON) pour tout ce qui va en base, validées avant l'écriture ; une sortie invalide est rejetée et le repli s'applique.
+- **Le contenu GitHub est une donnée, pas une instruction** : un README ou une issue peut contenir du texte conçu pour détourner le modèle. Le prompt l'encadre comme donnée, et la sortie est validée.
+- **Budget** : nombre d'appels par jour plafonné dans un fichier de constantes, et mise en cache par empreinte de l'entrée.
+- **Fournisseur et modèles** : à fixer par l'équipe (points ouverts). Le modèle de génération et le modèle d'embeddings peuvent être différents.
+
+Pour la démo, les résumés et embeddings du seed sont pré-calculés.
+
+## 12. Architecture technique
+
+Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec SQLite comme unique base. Le setup reprend celui de Tournament partout, sauf pour le CSS.
+
+### 12.1 Stack
+
+| Couche | Choix | Version de référence (Tournament) |
+| --- | --- | --- |
+| Runtime | Deno 2.x, TypeScript | — |
+| API | `@01edu/api` | ^0.2.11 |
+| Client API | `@01edu/api-client` (signals) | ^0.2.6 |
+| Base | `@01edu/db` + `@01edu/db/entries`, SQLite | ^0.2.6 |
+| Routage SPA | `@01edu/signal-router` | ^0.2.3 |
+| UI | Preact, `@preact/signals` | ^10.29, ^2.9 |
+| Build JS | esbuild + `@luca/esbuild-deno-loader` | comme `build-config.ts` |
+| CSS | Tailwind CSS compilé + daisyUI | nouveau par rapport à Tournament |
+| Temps réel | Server-Sent Events | — |
+| GitHub | GitHub App, REST, GraphQL, webhooks | — |
+| Déploiement | Dockerfile multi-stage + binaire `deno compile` | comme Tournament |
+| Recherche | Meilisearch (conteneur séparé) | nouveau par rapport à Tournament |
+| Reverse proxy | Caddy | — |
+
+### 12.2 Build et développement
+
+- **Dev** : comme `task-dev.ts`, esbuild en mode watch sert `dist/` et le serveur Deno route `/api` vers l'API et le reste vers esbuild. Il n'y a pas de `@01edu/api-proxy` dans Tournament et il n'en faut pas.
+- **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17).
+
+### 12.3 CSS : Tailwind + daisyUI, sans twind
+
+Tournament utilise `@twind/preact`, qui génère le CSS dans le navigateur. daisyUI est un plugin de Tailwind : il exige le compilateur Tailwind et ne fonctionne pas avec twind. Conséquences :
+
+- Supprimer twind. Compiler le CSS avec la CLI Tailwind (version standalone ou npm) et le plugin daisyUI, en watch pendant le dev et dans l'étape de build du Dockerfile.
+- Tailwind trouve les classes en lisant les fichiers source : les noms de classes doivent apparaître en entier dans le code. Une classe construite par concaténation (`'bg-' + color`) n'est pas générée.
+- Les thèmes de profil (§9.2) et les couleurs du design system sont des thèmes daisyUI personnalisés. Le design system maison (ProjectCard, DeveloperCard, HelpRequestCard, ProjectPulse, Badge, ProfileHero, ContributionCard, NotificationItem) est construit par-dessus, pour ne pas ressembler à une démo daisyUI.
+
+### 12.4 Faits vérifiés sur `@01edu/api`
+
+Lus dans `router.ts` (0.2.10) :
+
+- **Pas de paramètres de chemin.** Une route est une clé `'METHODE/chemin'` et le routeur cherche le chemin exact. `/api/projects/:slug` est impossible ; on écrit `GET/api/project` avec `slug` en entrée.
+- **Entrée** : pour `GET`, les paramètres de l'URL ; pour les autres méthodes, le corps JSON (un JSON invalide devient `{}`). L'entrée est validée par le schéma `input` avant `authorize` et le handler.
+- **Route sans `input`** : le corps n'est pas lu, le handler y accède lui-même. C'est ce qui rend possible la vérification HMAC des webhooks.
+
+### 12.5 Faits vérifiés sur `@01edu/db`
+
+- **PRAGMA appliqués par la librairie** : `temp_store = memory`, `synchronous = NORMAL`, `encoding = UTF-8`, et `journal_mode = WAL` **seulement si `APP_ENV === 'prod'`**.
+- **Non appliqués** : `busy_timeout` (présent en commentaire seulement) et `foreign_keys`. À exécuter nous-mêmes au démarrage : `PRAGMA foreign_keys = ON` et `PRAGMA busy_timeout = 5000`. Sans `foreign_keys = ON`, les clés étrangères déclarées avec `join` ne sont pas appliquées par SQLite.
+- **Clé primaire** : une seule colonne, de type `INTEGER`, créée en `PRIMARY KEY AUTOINCREMENT`. Pas de clé composite : on utilise un `id` technique + `CREATE UNIQUE INDEX` via `sql`.
+- **Types de colonnes** : `TEXT`, `JSON`, `BLOB`, `INTEGER`, `REAL`.
+- **Migrations** : `runMigrations` suit la version avec `PRAGMA user_version`. Elles s'exécutent avant `createTable`, qui vérifie que la table existante correspond au schéma déclaré (voir le commentaire en tête de `api/schema.ts` dans Tournament).
+
+### 12.6 Arborescence
+
+Calquée sur Tournament :
+
+- `api/` : `server.ts`, `routes.ts`, `schema.ts`, `entries.ts`, et un fichier par domaine (`auth.ts`, `github.ts`, `project.ts`, `help.ts`, `matching.ts`, `notification.ts`, `badge.ts`, `community.ts`, `ai.ts`), plus `api/lib/` (env, log, queue, encoding).
+- `web/` : `app.tsx`, `pages/`, `ui/` (design system), `lib/` (`api.ts`, `session.ts`, `realtime.ts`).
+- `migrations/`, `task-dev.ts`, `task-prod.ts`, `task-db-seed.ts`, `prod-server.ts`, `build-config.ts`, `Dockerfile`.
+- Tests Deno à côté des fichiers (`*.test.ts`), comme dans Tournament.
+
+### 12.7 Direction artistique et responsive
+
+Objectif : un produit pour développeurs haut de gamme. Références : Linear, GitHub, Raycast, Vercel, Arc.
+
+- Thèmes sombre et clair, typographie forte, bordures discrètes, espacements généreux, forte densité d'information, peu de bruit visuel.
+- Animations courtes et utiles : arrivée d'une notification, progression d'un badge, mise à jour du Pulse.
+- Responsive obligatoire. Priorité au desktop, mais Feed, Notifications, demandes d'aide, Profil et Explore doivent être confortables sur mobile. La gestion de projet (Board, Roadmap) reste pensée pour le desktop.
+- Les écrans de la démo (profil, page projet, Pulse, notification, demande d'aide) sont maquettés avant d'être développés.
+
+### 12.8 Tests
+
+Comme Tournament : tests Deno à côté du code, lancés en continu pendant le dev. Couverture obligatoire sur ce qui casserait la démo ou la réputation :
+
+- vérification de signature, déduplication et reprise après redémarrage de la file de webhooks ;
+- cycle de vie d'une demande d'aide (dont l'acceptation simultanée, le désistement et la réouverture) et règles de validation d'une review (§7.5) ;
+- règles anti-abus et calcul des badges ;
+- score de matching et ses raisons ;
+- `trigger` de chaque type d'entry (qui reçoit quoi) ; les trois contrôles d'installation GitHub (§5.4) ; le calcul des badges à partir des seules preuves éligibles.
+
+Un test de bout en bout du scénario de démo, sur le modèle du dossier `qa/` de Tournament, est rejoué avant chaque répétition.
+
+## 13. Temps réel : entries et SSE
+
+Le client écrit en HTTP ; le serveur prévient en SSE qu'un état a changé, et le client relit la donnée. SQLite reste la seule source de vérité. Principe : *Something changed. Fetch the current truth.* C'est le mécanisme de Tournament, sans changement.
+
+### 13.1 Fonctionnement vérifié de `@01edu/db/entries`
+
+- `initEntries(entries, relations, définitions)` crée la table `entryInternal` et la vue `entry` (qui exclut les entries archivées via `archivedAt`).
+- `entries` est une liste fermée de types numérotés (comme `api/entries.ts`). **Un numéro n'est jamais réutilisé ni renuméroté.**
+- `relations` fixe les colonnes de liaison. Chaque type peut déclarer des `fields` supplémentaires et un `trigger(entry, sub)`.
+- À l'insertion d'un type qui a un `trigger`, la librairie parcourt `insertListeners` et envoie `data: [createdAt,type,id]` à chaque listener pour lequel `trigger` renvoie vrai. **Un type sans `trigger` n'est jamais diffusé** : le comportement par défaut est sûr.
+
+### 13.2 Route SSE
+
+`GET/api/events`, sur le modèle de Tournament (`api/routes.ts`) :
+
+1. Exige une session et l'en-tête `Accept: text/event-stream`.
+2. Calcule côté serveur ce que l'utilisateur peut recevoir : `userId`, ensemble des projets dont il est membre ou qu'il suit, ensemble de ses communautés. **Le client ne choisit jamais ses abonnements.**
+3. Ajoute le listener (`{ userId, projectIds, communityIds, connectionId, controller }`) à `insertListeners`.
+4. Envoie un événement `ack` toutes les 15 secondes (heartbeat).
+5. Retire le listener à la fermeture ou dès qu'un envoi échoue.
+
+Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en mémoire.
+
+### 13.3 Qui reçoit quoi
+
+| Entry | Relations | `trigger` : reçu par |
+| --- | --- | --- |
+| `NOTIFICATION_CREATED` | userId, notificationId | Le destinataire |
+| `HELP_REQUEST_MATCHED` | userId, helpRequestId | Le développeur matché |
+| `HELP_REQUEST_ACCEPTED`, `REVIEW_SUBMITTED` | userId, helpRequestId, projectId | Le demandeur et les membres du projet |
+| `REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED` | userId, helpRequestId, projectId | L'aidant et les membres du projet |
+| `BADGE_UNLOCKED` | userId | L'utilisateur |
+| `PROJECT_UPDATED`, `PROJECT_MEMBER_JOINED`, `PR_UPDATED`, `PR_MERGED`, `ISSUE_UPDATED`, `RELEASE_PUBLISHED` | projectId (+ userId) | Membres et abonnés du projet |
+| `TASK_UPDATED` | projectId, taskId | Membres du projet |
+| `MESSAGE_CREATED` | projectId, messageId | Membres du projet ; abonnés aussi pour `#annonces` |
+| `PR_OPENED`, `PR_REVIEWED`, `PR_CLOSED`, `CI_FAILED`, `CI_FIXED`, `PR_REVIEW_STALE`, `COMMITS_PUSHED` | projectId, pullRequestId (+ userId) | Membres et abonnés du projet ; alimentent `#suivi` |
+| `POST_CREATED`, `COMMENT_CREATED` | communityId, postId | Membres de la communauté |
+| `PULSE_READY` | projectId | Membres et abonnés du projet |
+| `USER_LOGIN`, `PROJECT_CREATED`, `ANSWER_ACCEPTED` | userId, projectId ou postId | Personne (journal et réputation uniquement) |
+| PROFILE\_UPDATED, POST\_UPDATED, HELP\_REQUEST\_CREATED | userId, postId ou helpRequestId | Personne en SSE ; lues par le worker de réindexation Meilisearch |
+| HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
+| CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
+
+### 13.4 Client
+
+`web/lib/realtime.ts`, écrit à partir de `web/lib/session.ts` de Tournament :
+
+- Ouvre un `EventSource` sur `api/events` une fois la session connue.
+- `onEvent(types, handler)` abonne un composant à des types d'entries ; le handler appelle le `.fetch()` du signal concerné (`notifications.fetch()`, `project.fetch()`, `board.fetch()`, `profile.fetch()`).
+- Si aucun `ack` n'arrive pendant 20 secondes, la connexion est considérée perdue (signal `sourceDisconnectedAt`) et un bandeau discret l'indique.
+- À la reconnexion, les signals critiques sont relus (notifications, page courante).
+
+### 13.5 Plusieurs onglets
+
+Chaque onglet ouvre sa propre connexion. En HTTP/1.1, un navigateur limite à 6 connexions simultanées par domaine : au-delà de quelques onglets, les requêtes restent bloquées. Le reverse proxy de production doit servir en **HTTP/2**. En complément, un `BroadcastChannel` peut faire partager une seule connexion entre onglets.
+
+### 13.6 Présence
+
+La présence est éphémère et n'utilise pas les entries (elles sont persistées). Elle est tenue en mémoire dans une `Map` indexée par **connexion SSE** (pas par utilisateur, sinon fermer un onglet efface la présence des autres). Le client déclare son état par `POST/api/presence`. Le serveur envoie un événement SSE `presence` aux membres du projet, au plus une fois toutes les 5 secondes par projet.
+
+## 14. Modèle de données
+
+Conventions : clé primaire `id INTEGER` partout (seul cas supporté par `@01edu/db`), unicité par `CREATE UNIQUE INDEX`, dates en `REAL` (timestamp en millisecondes, comme Tournament), données structurées en colonne `JSON` validée à l'écriture, clés étrangères déclarées avec `join` (appliquées grâce à `PRAGMA foreign_keys = ON`). Il n'y a **pas de table Activity** : l'activité est une requête sur les entries.
+
+**Données de démonstration.** Toute ligne et toute entry créées par le seed portent `source = demo`. L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
+
+### 14.1 Identité et profil
+
+| Table | Champs | Contraintes |
+| --- | --- | --- |
+| `User` | id, githubId, githubUsername, avatarUrl, email?, suspendedUntil?, source, createdAt, updatedAt | UNIQUE(githubId). On identifie par `githubId`, jamais par le username, qui peut changer |
+| `Profile` | id, userId, displayName, headline, bio, country, city, website, coverUrl, theme, accent, availability, sectionOrder (JSON), featured (JSON), matchingMode (instant / digest / off), matchingFilters (JSON), createdAt, updatedAt | UNIQUE(userId) |
+| `Skill` | id, slug, name, category | UNIQUE(slug) |
+| `SkillAlias` | id, alias, skillId | UNIQUE(alias) ; ex. `postgres` → `postgresql` |
+| `UserSkill` | id, userId, skillId, source (declared / github / platform\_activity), createdAt | UNIQUE(userId, skillId, source) |
+| `UserIntent` | id, userId, intent | UNIQUE(userId, intent) |
+| `Follow` | id, followerId, targetType (user / project / community), targetId, createdAt | UNIQUE(followerId, targetType, targetId) |
+
+### 14.2 GitHub
+
+| Table | Champs | Contraintes |
+| --- | --- | --- |
+| `GithubInstallation` | id, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId, createdAt, updatedAt | UNIQUE(githubInstallationId) |
+| `Repository` | id, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag (JSON), lastSyncedAt | UNIQUE(githubId) |
+| `PullRequest` | id, repositoryId, githubId, number, title, state, authorGithubId, additions, deletions, mergedAt?, createdAt, updatedAt | UNIQUE(repositoryId, number) |
+| `Issue` | id, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, createdAt, updatedAt | UNIQUE(repositoryId, number) |
+| `Review` | id, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId? | UNIQUE(githubReviewId) |
+| `WebhookDelivery` | id, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
+
+Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
+
+### 14.3 Projets
+
+| Table | Champs | Contraintes |
+| --- | --- | --- |
+| `Project` | id, ownerId, name, slug, description, vision, visibility (public / unlisted), status, createdAt, updatedAt | UNIQUE(slug) |
+| `ProjectMember` | id, projectId, userId, role (owner / maintainer / contributor / reviewer / observer), joinedAt | UNIQUE(projectId, userId) |
+| `JoinRequest` | id, projectId, userId, areas (JSON), availability, message, status, createdAt | Index (projectId, status) |
+| `ProjectNeed` | id, projectId, type, title, description, skills (JSON d'ids), status, createdAt, updatedAt | Index (projectId, status) |
+| `Milestone` | id, projectId, title, description, status (planned / active / done), position, createdAt | — |
+| `Task` | id, projectId, milestoneId?, column (backlog / ready / in\_progress / review / done), title, description, priority, assigneeId?, issueId?, pullRequestId?, rank (TEXT), createdAt, updatedAt | Index (projectId, column, rank) |
+| `ProjectMessage` | id, projectId, channel (general / help / announcements), authorId, body, parentMessageId?, parentEntryId? (fil sous une alerte de `#suivi`), hiddenAt?, createdAt | Index (projectId, channel, createdAt) |
+| `ChannelState` | id, userId, projectId, channel (general / tracking / help / announcements), lastReadAt, notify (all / mentions / mine / none) | UNIQUE(userId, projectId, channel) |
+| `CiRun` | id, repositoryId, githubId, source (actions / checks / status), name, headSha, branch, pullRequestId?, conclusion, url, completedAt | UNIQUE(repositoryId, source, githubId) ; sert à détecter « CI réparée » |
+| `MessageReaction` | id, messageId, userId, emoji | UNIQUE(messageId, userId, emoji) |
+| `ProjectSummary` | id, projectId, period, content, inputHash, createdAt | Résumés IA du Pulse |
+
+`Task.rank` est un rang fractionnaire en texte : insérer une carte entre deux autres ne renumérote pas la colonne.
+
+### 14.4 Aide, matching, réputation
+
+| Table | Champs | Contraintes |
+| --- | --- | --- |
+| `HelpRequest` | id, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, createdAt, updatedAt | Index (status), (authorId) |
+| `HelpMatch` | id, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
+| `Notification` | id, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
+| `BadgeProgress` | id, userId, badge, level, count, updatedAt | UNIQUE(userId, badge) |
+| `Embedding` | id, targetType (user / help\_request), targetId, model, vector (BLOB), inputHash, createdAt | UNIQUE(targetType, targetId, model) |
+
+Les badges sont définis dans le code (constantes, §8.2), pas en base.
+
+### 14.5 Communautés et feed
+
+| Table | Champs | Contraintes |
+| --- | --- | --- |
+| `Community` | id, slug, name, type (technology / country / domain), description, countryCode?, createdAt | UNIQUE(slug) |
+| `CommunityMember` | id, communityId, userId, role (member / moderator), joinedAt | UNIQUE(communityId, userId) |
+| `Post` | id, authorId, communityId?, projectId?, type, title, body, attachments (JSON), acceptedCommentId?, hiddenAt?, createdAt, updatedAt | Index (communityId, createdAt) |
+| `Comment` | id, postId, authorId, body, hiddenAt?, createdAt | Index (postId, createdAt) |
+| `Reaction` | id, userId, targetType, targetId, kind | UNIQUE(userId, targetType, targetId, kind) |
+| `Bookmark` | id, userId, postId, createdAt | UNIQUE(userId, postId) |
+| Report | id, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
+| ModerationAction | id, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
+| Media | id, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
+
+### 14.6 Entries
+
+Relations déclarées dans `initEntries` dès le départ : `userId`, `projectId`, `helpRequestId`, `pullRequestId`, `issueId`, `taskId`, `messageId`, `postId`, `communityId`, `notificationId`. Les types et leurs destinataires sont listés au §13.3. Liste complète des types à maintenir dans `api/entries.ts`, en ajoutant toujours à la fin.
+
+## 15. Routes API
+
+Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identifiants en query string pour `GET`, en corps JSON pour `POST`. Lecture en `GET`, toute écriture en `POST`. Chaque route déclare `input`, `output`, `authorize` et `description` (la doc est générée à partir de ces déclarations, comme dans Tournament).
+
+| Domaine | Routes |
+| --- | --- |
+| Auth | `GET/api/auth/github` · `POST/api/auth/github/callback` · `POST/api/auth/logout` · `GET/api/user/me` |
+| Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/passport` (username) · `GET/api/user/card` (username) |
+| GitHub | `GET/api/github/repositories` · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
+| Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
+| Équipe | `POST/api/project/join` · `GET/api/project/join-requests` · `POST/api/project/join-request/decide` · `POST/api/project/member/role` · `POST/api/project/member/remove` |
+| Besoins | `GET/api/project/needs` · `POST/api/project/need/create` · `POST/api/project/need/update` · `GET/api/project/recommended-contributors` |
+| Board, Roadmap | `GET/api/project/board` · `POST/api/task/create` · `POST/api/task/update` · `POST/api/task/move` · `POST/api/task/delete` · `GET/api/project/roadmap` · `POST/api/milestone/create` · `POST/api/milestone/update` |
+| Canaux, présence | `GET/api/project/channel` (projectId, channel, curseur) · `GET/api/project/channel/thread` · `POST/api/project/message/create` (channel, parent facultatif) · `POST/api/project/message/react` · `POST/api/project/channel/read` · `POST/api/project/channel/notify` · `POST/api/presence` |
+| Aide | `GET/api/help` (filtres) · `GET/api/help/detail` (id) · `POST/api/help/create` · `POST/api/help/accept` · `POST/api/help/deliver` · `POST/api/help/confirm` · `POST/api/help/cancel` · `GET/api/help/for-me` |
+| Notifications | `GET/api/notifications` · `POST/api/notification/read` · `POST/api/notifications/read-all` · `POST/api/notification/preferences` |
+| Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (curseur) · `POST/api/post/create` · `POST/api/comment/create` · `POST/api/comment/accept` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
+| Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
+| Temps réel | `GET/api/events` |
+| Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
+| Aide (suite) | POST/api/help/withdraw · POST/api/help/release · POST/api/help/reopen |
+
+## 16. Sécurité
+
+L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitHub expose des données déjà publiques, sans possibilité de modifier le code. Les risques réels sont sur la plateforme elle-même.
+
+| Risque | Conséquence | Parade |
+| --- | --- | --- |
+| Webhook falsifié | Faux « PR merged » ou fausse review, badges fabriqués | Vérification HMAC SHA-256 de `X-Hub-Signature-256` sur le corps brut, comparaison en temps constant, avant tout traitement |
+| Rejeu de webhook | Double comptage | `WebhookDelivery` avec UNIQUE(githubDeliveryId) |
+| `installation_id` forgé dans la Setup URL | Rattacher l'installation d'un autre | Trois contrôles : identité, repo couvert par l'installation, droit admin ou maintain sur le repo (§5.4) |
+| CSRF au login | Victime connectée sur le compte de l'attaquant | `state` aléatoire à usage unique, expiration 5 min (`StateManager` de Tournament) |
+| Vol de session | Prise de compte | Cookie `httpOnly`, `secure`, `SameSite=Lax` ; toutes les écritures en `POST` JSON |
+| Fuite de secrets | Usurpation de l'app ou du bot | Variables d'environnement uniquement, jamais dans le repo ni côté client, rotation documentée |
+| XSS par Markdown | Script exécuté chez les visiteurs (README importés, posts, messages) | Rendu Markdown avec HTML désactivé ou sanitizer, liens externes en `rel="noopener nofollow"` |
+| Usurpation d'identité GitHub | Un username libéré puis repris | Identification par `githubId` |
+| Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
+| Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
+| Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
+| Injection SQL | Lecture ou écriture arbitraire | Requêtes paramétrées uniquement (tag `sql` de `@01edu/db`) |
+| Détournement de l'IA | Sortie manipulée par un README | Contenu encadré comme donnée, sortie JSON validée (§11) |
+| Meilisearch exposé | Lecture ou modification de l'index par n'importe qui | Conteneur joignable uniquement depuis l'app, clé maître côté serveur, aucun contenu non public indexé |
+| Photo publiée avec sa position GPS | Fuite du lieu de vie d'un utilisateur | Réencodage dans le navigateur avant l'envoi, qui supprime les métadonnées EXIF (§17.3) |
+| Iframe vidéo malveillante | Contenu tiers arbitraire dans la page | Liste fermée de fournisseurs, URL du lecteur construite par le serveur, \`frame-src\` limité à ces domaines |
+
+## 17. Pages publiques, médias, déploiement et sauvegardes
+
+### 17.1 Aperçus de partage et SEO
+
+Une SPA seule renvoie un `index.html` vide de contenu : un lien `/@abdou` collé sur LinkedIn, X, WhatsApp, Discord ou Slack n'aurait aucun aperçu. Le serveur de production lit déjà `dist/index.html` au démarrage (comme `prod-server.ts`) ; pour `/@username` et `/project/slug`, il y injecte avant de répondre :
+
+- `<title>`, `<meta name="description">`, `og:title`, `og:description`, `og:image`, `og:url`, `twitter:card = summary_large_image` ;
+- valeurs lues en base et **échappées en HTML** (un nom de profil peut contenir du HTML).
+
+Toutes les autres routes reçoivent les balises par défaut. Un `sitemap.xml` liste les profils et projets publics.
+
+### 17.2 Share Card et images OG
+
+Image PNG 1200 × 630 générée côté serveur : composant JSX → SVG avec `satori`, puis SVG → PNG avec `@resvg/resvg-wasm`, polices embarquées dans le binaire. Mise en cache sur disque, clé = empreinte des données affichées ; régénérée quand elles changent. Servie par `GET/api/user/card` et utilisée comme `og:image`.
+
+### 17.3 Images et vidéos
+
+Les images sont uploadées et hébergées par la plateforme. Les vidéos ne le sont pas : elles sont intégrées par lien.
+
+**Images**
+
+| Usage | Limite |
+| --- | --- |
+| Cover de profil | 1 |
+| Galerie de la page projet | 8 captures d'écran |
+| Post du feed | 4 |
+| Demande d'aide (capture d'une erreur, d'un écran) | 4 |
+| Message d'un canal | 1 |
+| Share Card et images OG | Générées par le serveur (§17.2) |
+
+Les avatars restent ceux de GitHub.
+
+- **Préparation dans le navigateur** : avant l'envoi, l'image est redimensionnée (2 000 px maximum sur le plus grand côté) et réencodée en WebP ou JPEG via un canvas. L'upload est plus léger et les métadonnées EXIF disparaissent, dont les **coordonnées GPS** que contiennent souvent les photos prises au téléphone.
+- **Upload** : route `POST/api/media/upload`, déclarée sans `input` (lecture du `FormData` dans le handler). Formats JPEG, PNG, WebP ; type vérifié sur les premiers octets du fichier, pas sur l'extension ; 2 Mo maximum ; 20 uploads par utilisateur et par heure.
+- **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande ou au projet à l'enregistrement. Une image jamais rattachée est supprimée au bout de 24 h.
+- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire. Les images sont servies avec leur vrai type MIME et un cache long.
+- **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
+
+**Vidéos intégrées par lien**
+
+Un lien YouTube, Loom ou Vimeo collé dans un post, une page projet (vidéo de démo), une demande d'aide (par exemple un Loom qui montre le bug) ou un message de canal s'affiche en lecteur intégré.
+
+- **Fournisseurs autorisés** : YouTube (lecteur `youtube-nocookie.com`), Loom, Vimeo. Tout autre lien reste un lien simple.
+- **Stockage** : uniquement les métadonnées (`provider`, identifiant de la vidéo, URL, titre, miniature), récupérées une fois côté serveur via oEmbed et mises en cache.
+- **Affichage** : la miniature s'affiche d'abord ; le lecteur (iframe) ne se charge qu'au clic. La page reste rapide et aucun tiers n'est contacté tant que la vidéo n'est pas lancée.
+- **Sécurité** : iframes limitées à ces domaines par la politique de sécurité de contenu (`frame-src`).
+
+L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des formats (un iPhone filme en HEVC, que beaucoup de navigateurs ne lisent pas), du stockage lourd et du streaming. Si le besoin apparaît ensuite, il passera par un service spécialisé (Cloudflare Stream, Mux, Bunny Stream).
+
+### 17.4 Déploiement
+
+- Dockerfile multi-stage et binaire `deno compile`, comme Tournament ; l'étape de build compile aussi le CSS Tailwind.
+- **`APP_ENV=prod` obligatoire** : c'est cette variable qui active le mode WAL dans `@01edu/db`.
+- Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume, version fixée, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
+- Caddy en reverse proxy : HTTPS automatique et **HTTP/2** (§13.5), sans mise en tampon des réponses SSE.
+- Les logs passent par l'équivalent de `api/lib/log.ts`.
+
+### 17.5 Sauvegardes
+
+La réputation est la donnée la plus précieuse du produit.
+
+- Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours.
+- Copie quotidienne hors de la VM, sur un autre stockage Systalink (les données restent au Sénégal), en complément des sauvegardes proposées par Systalink.
+- Une restauration testée au moins une fois avant la démo.
+
+### 17.6 Évolution
+
+Passage à PostgreSQL et à un bus d'événements distribué seulement si l'un de ces besoins apparaît : plusieurs instances backend, écritures concurrentes très nombreuses, workers distribués, haute disponibilité. Rien de cela n'est nécessaire pour CADEV.
+
+## 18. Démo CADEV
+
+La démo raconte une seule histoire continue, en conditions réelles : vrai login GitHub, vraie PR, vraie review, vrai webhook, sur l'environnement de production.
+
+### 18.1 Prérequis
+
+- [ ] **Repo public OpenPay Africa** sous le compte GitHub perso d'Abdou (pas sous une organisation : l'installation de l'app est alors immédiate).
+- [ ] **App installée** sur ce repo avant la démo, webhook testé vers l'URL de prod.
+- [ ] **Deux vrais comptes GitHub** : Abdou, auteur de la PR #81, et Moussa, reviewer. GitHub interdit d'approuver sa propre PR, et nos règles excluent l'auto-review.
+- [ ] **PR #81 ouverte par Abdou**, sans review.
+- [ ] **Deux machines ou navigateurs** côte à côte : écran d'Abdou et écran de Moussa, tous deux connectés.
+- [ ] **Seed** : développeurs de plusieurs pays, projets, communautés, historique d'entries. Moussa (Côte d'Ivoire) a les skills Go, SQLite, Backend, le matching en Instant et 14 reviews confirmées seedées (source = demo) venant d'au moins 3 demandeurs et 2 projets. Les autres profils seedés ont un score plus bas, pour que Moussa soit dans les 5 premiers.
+- [ ] **Résumés IA et embeddings du seed** pré-calculés.
+- [ ] **Plan B webhook** : si la review n'apparaît pas après 10 secondes, relancer la livraison depuis les paramètres de l'app GitHub (« Recent deliveries » → Redeliver) ou déclencher la resynchronisation du repo.
+- [ ] **Trois répétitions complètes** en prod pendant le gel, chronométrées.
+
+### 18.2 Scénario
+
+1. **Login** — Abdou clique « Continue with GitHub ». Son profil est initialisé depuis GitHub.
+2. **Profil** — ABDOU SOW, Backend Engineer, Dakar, Go · TypeScript · Deno.
+3. **Import** — « + Create » → « Import from GitHub » → OpenPay Africa. Trois clics. Le repo étant déjà couvert par l'installation, il passe directement en synchro live.
+4. **Pulse** — 3 PRs en attente de review, 1 bloqueur, 2 contributeurs actifs. Le résumé IA s'affiche quelques secondes après, sans rafraîchir.
+5. **Demande** — Abdou ouvre la PR #81 et clique « Request Review ». Skills pré-remplis : Go, SQLite, Concurrency.
+6. **Matching** — la plateforme affiche les développeurs trouvés et, pour Moussa, « Why this match? » : Go, SQLite, Backend, 14 reviews confirmées.
+7. **Temps réel** — sur l'écran de Moussa apparaît, sans rafraîchir : « THIS PROJECT NEEDS YOU — OpenPay Africa — PR #81 — Go · SQLite », avec le score.
+8. **Acceptation** — Moussa accepte ; l'écran d'Abdou se met à jour.
+9. **Review sur GitHub** — Moussa fait une vraie review de la PR #81.
+10. **Détection** — le webhook `pull_request_review` arrive ; « Review submitted » s'affiche sur les deux écrans, et l'alerte apparaît en direct dans `#suivi`.
+11. **Confirmation** — Abdou répond « Was this helpful? → Yes ».
+12. **Réputation** — entry `REVIEW_HELP_CONFIRMED`. Profil de Moussa : reviews 14 → 15, Trusted Reviewer 15 / 20 vers le niveau Gold. La 15e review porte « vérifiée par GitHub », les 14 précédentes « donnée de démonstration » : le jury voit la différence entre une preuve réelle et une donnée de démo.
+13. **Pulse** — « Review reçue » sur la PR #81 ; PRs en attente de review : 3 → 2. Le bloqueur reste affiché tant qu'aucune action explicite ne le lève.
+14. **Profil** — le jury ouvre le profil de Moussa : reviews vérifiées, contributions, développeurs aidés, Collaboration Map (Côte d'Ivoire, Sénégal, Cameroun), puis sa Share Card.
+
+**Variante, si le temps le permet** : une PR dont la CI échoue apparaît dans `#suivi` ; Abdou clique « Demander de l'aide » et la demande Debugging est créée, pré-remplie avec le job en échec.
+
+**Message final** : *Developers shouldn't only connect. They should build together. Every collaboration becomes part of their story. Your work is your profile.*
+
+## 19. Métriques et définition du succès
+
+**North Star** : nombre de collaborations réussies par semaine. Une collaboration réussie = une demande d'aide `completed` (dont les reviews confirmées), une PR mergée d'un contributeur externe, ou une tâche terminée par un membre arrivé via la plateforme.
+
+**Métriques secondaires** : développeurs actifs, projets actifs, demandes d'aide créées, taux de demandes acceptées, délai médian avant première réponse, reviews confirmées, collaborations entre pays différents, rétention des contributeurs. Toutes se calculent par requêtes sur les entries.
+
+**Le produit est réussi si un développeur peut :**
+
+1. Se connecter avec GitHub.
+2. Créer une vraie identité de développeur.
+3. Importer un projet en quelques clics.
+4. Comprendre immédiatement l'état d'un projet.
+5. Demander une aide précise.
+6. Atteindre automatiquement les bonnes personnes.
+7. Recevoir cette aide.
+8. Voir la collaboration vérifiée grâce à GitHub.
+9. La voir transformée en réputation.
+10. Partager un profil qui montre ce qu'il a réellement fait.
+
+## 20. Points ouverts
+
+Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
+
+- [ ] **Nom et identifiants** : nom retenu, Pamoja. Vérifier la disponibilité du domaine, de l'organisation GitHub et du nom de la GitHub App (unique sur tout GitHub).
+- [ ] **Fournisseur IA** : modèle de génération, modèle d'embeddings, budget.
+- [ ] **Hébergement Systalink**, à valider avant la fin de J2 : VM avec Docker ; IP publique et ports 80/443 ouverts (certificat HTTPS automatique de Caddy) ; sortie autorisée vers `api.github.com` et le fournisseur IA ; entrée des webhooks GitHub ; taille de disque ; offre de sauvegarde ; nom de domaine et DNS.
+- [ ] **Reverse proxy** : Caddy retenu (HTTP/2 actif par défaut avec HTTPS, réponses SSE transmises sans tampon). À vérifier une fois en prod : protocole h2 dans l'onglet Réseau et arrivée instantanée des notifications.
+- [ ] **Meilisearch** : version à fixer, emplacement du conteneur chez l'hébergeur, réglages de pertinence (champs cherchables et leur ordre) à ajuster après le seed.
+- [ ] **Thèmes daisyUI** : palette et typographie du design system.
+- [ ] **Seuils** de badges et poids du matching : ajuster après le seed.
+- [ ] **Mentions légales** : conditions d'utilisation et politique de confidentialité (données GitHub, emails).
