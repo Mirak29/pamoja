@@ -25,6 +25,9 @@ même découpage en blocs, et chaque tâche renvoie à sa section (`§`).
   vérifiés **en production**.
 - **Niveau de finition** (§4) : `[démo]` = écran du scénario, maquetté, animé,
   testé de bout en bout. Sans mention = niveau *fonctionnel*.
+- **Trois états par page** : chaque page livrée a ses états vide, chargement et erreur.
+- **Le prototype est une référence, pas du code** : `docs/prototype/` montre les écrans et
+  les parcours ; on n'en reprend ni les `#` dans les adresses, ni les styles en ligne.
 - **Changer le périmètre ou une règle** : modifier d'abord le cahier des charges,
   puis cette liste, et noter la décision dans le journal en bas.
 
@@ -49,8 +52,9 @@ Après le bloc 1, les blocs 3 à 5 peuvent avancer en parallèle du bloc 2, selo
 - [ ] **PAM-004** · Vérifier la disponibilité du domaine, de l'org GitHub `pamoja` et du nom de la GitHub App
 - [ ] **PAM-005** · Choisir le fournisseur IA, le modèle de génération, le modèle d'embeddings et le budget (§11)
 - [ ] **PAM-006** · Fixer la version de Meilisearch (§10.4)
-- [ ] **PAM-007** · Définir palette et typographie des thèmes daisyUI (§12.3, §12.7)
-- [ ] **PAM-008** · Maquetter les écrans de la démo : profil, page projet, Pulse, demande d'aide, notification, Share Card (§12.7)
+- [x] **PAM-007** · Identité visuelle validée : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) et prototype Pamoja v2 (§12.7)
+- [x] **PAM-008** · Prototype complet avec Claude Design : Pamoja v2, copié dans `docs/prototype/` avec la liste de ce que le code ne reprend pas (§12.7)
+- [x] **PAM-009** · ~~Installer le skill `hairline-create`~~ — abandonnée : figures isométriques maison à la place (voir journal)
 
 ## Bloc 1 — Fondations (J1 – J2 · 7 – 8 oct.)
 
@@ -66,7 +70,7 @@ Responsable : _à répartir_
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
 - [ ] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
-- [ ] **PAM-111** · Socle UI : layout, navigation, composants de base du design system, thèmes clair et sombre (§6.2, §12.3, §12.7)
+- [ ] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7)
 - [ ] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
 - [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` (§17.4)
 - [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
@@ -82,6 +86,7 @@ Responsable : _à répartir_
 - [ ] `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage
 - [ ] Seed rejouable en une commande
 - [ ] Meilisearch répond depuis l'app et n'est pas joignable depuis l'extérieur
+- [ ] Toutes les routes en vrais chemins, sans `#` ; `/@login` ouvert sans connexion renvoie la page avec ses balises OG
 
 ## Bloc 2 — Boucle de démo (J3 – J5 · 9 – 11 oct.)
 
@@ -114,17 +119,18 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 
 Responsable : _à répartir_
 
-- [ ] **PAM-301** · Profil complet : hero, Currently Building, Real Contributions, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
-- [ ] **PAM-302** · Personnalisation : cover, accent, thèmes, ordre des sections (§9.2)
+- [ ] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
+- [ ] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2)
 - [ ] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
-- [ ] **PAM-304** · Developer Passport (§9.3)
+- [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
 - [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
 - [ ] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]`
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
-- [ ] **PAM-309** · Collaboration Map et Collaboration Graph (§9.3) `[démo]`
+- [ ] **PAM-309** · Collaboration Map (une colonne par pays sur grille isométrique, sans contour de l'Afrique, pays du profil exclu des pays reliés) et Collaboration Graph (§9.3, §12.7) `[démo]`
 - [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
+- [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 
 **Critères d'acceptation (§4)**
 
@@ -160,22 +166,24 @@ Responsable : _à répartir_
 
 Responsable : _à répartir_
 
-- [ ] **PAM-501** · Feed : types de posts, commentaires, réactions, bookmarks, réponse acceptée, pagination par curseur (§10.1)
+- [ ] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réactions dont « Utile », bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
 - [ ] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2)
 - [ ] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1)
-- [ ] **PAM-504** · Home personnalisée (§6.2)
+- [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
 - [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
 - [ ] **PAM-506** · « What can I work on? » (§10.3, §11)
 - [ ] **PAM-507** · Meilisearch : index, worker de synchro depuis les entries, réindexation nocturne, repli `LIKE` (§10.4)
-- [ ] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements (§10.5)
+- [ ] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements ; un contenu masqué reste visible pour son auteur, avec un bandeau (§10.5)
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
 - [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
+- [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
 
 **Critères d'acceptation (§4)**
 
 - [ ] Recherche tolérante aux fautes (« postgress » trouve PostgreSQL)
 - [ ] La recherche reste utilisable Meilisearch arrêté
+- [ ] Une réponse à une réponse s'affiche imbriquée et se déplie à la demande ; une republication apparaît dans le fil des abonnés
 - [ ] Un contenu signalé puis masqué disparaît pour tous
 
 ## Gel — Préparation de la démo (J10 · 16 oct.)
@@ -204,5 +212,13 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-07 · Calendrier : 10 jours (7 – 16 octobre 2026), un seul développeur (Abdou) · §2, §4
 - 2026-10-07 · Hébergement imposé : Systalink (VM + Docker) · §2, §17.4
 - 2026-10-07 · Projets organisés en 4 canaux imposés façon Discord (`#général`, `#suivi`, `#aide`, `#annonces`) ; alertes CI/CD actionnables · §2, §6.8
+- 2026-10-07 · Identité visuelle : design system Pamoja (fil indigo, lignes fines isométriques), illustrations Hairline sur mesure · §2, §12.7
+- 2026-10-07 · Vibe isométrique pour toute la DA ; dix figures isométriques maison remplacent Hairline et son skill (aucune dépendance) · §2, §12.7
+- 2026-10-07 · Interface en français, au tutoiement ; signatures de marque en anglais · §2
 - 2026-10-07 · Équipe à deux : Abdou et niangoos ; un responsable par bloc, revue croisée de chaque PR · §2, §4
 - 2026-10-07 · `CLAUDE.md` versionné dans le repo, contexte commun des sessions Claude Code · —
+- 2026-10-08 · Prototype Pamoja v2 adopté comme référence d'interface (`docs/prototype/`) · §2, §12.7
+- 2026-10-08 · Interface entièrement isométrique (dalles, touches, puits, formes par type d'objet) ; figures décoratives abandonnées · §12.7
+- 2026-10-08 · Accueil en fil social (abonnements, republications, réponses imbriquées) ; une réponse est un post · §6.2, §10.1, §14.5
+- 2026-10-08 · Profil à une seule adresse `/@login`, le passeport devient sa vue publique · §9
+- 2026-10-08 · Routage en vrais chemins, sans `#` · §2, §12.2

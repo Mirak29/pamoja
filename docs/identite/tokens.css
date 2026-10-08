@@ -1,0 +1,82 @@
+/* Pamoja — generated from tokens.json */
+:root, [data-theme="light"] {
+  --surface-000: #F6F6F8;
+  --surface-100: #FFFFFF;
+  --surface-200: #EEEEF2;
+  --line: #E0E0E6;
+  --line-strong: #C3C3CB;
+  --line-control: #85859A;
+  --ink: #1D1D25;
+  --ink-muted: #5D5D6B;
+  --figure-edge: #A4A4AE;
+  --side: #ECECF1;
+  --indigo-side: #25308F;
+  --indigo-edge: #18206A;
+  --indigo-soft-side: #CBD0F4;
+  --scrim: rgba(29, 29, 37, 0.32);
+  --indigo: #3340B8;
+  --indigo-soft: #E8EAFB;
+  --on-indigo: #FFFFFF;
+  --verified: #1E7A4E;
+  --verified-soft: #E3F3EA;
+  --warning: #8A5700;
+  --warning-soft: #FBF0DC;
+  --danger: #B42318;
+  --danger-soft: #FCE8E6;
+  --shadow-pop: 0 14px 32px rgba(29, 29, 37, 0.12);
+}
+[data-theme="dark"] {
+  --surface-000: #0E0E13;
+  --surface-100: #16161D;
+  --surface-200: #1F1F28;
+  --line: #2C2C37;
+  --line-strong: #4A4A58;
+  --line-control: #72728A;
+  --ink: #EDEDF3;
+  --ink-muted: #A2A2B2;
+  --figure-edge: #5A5A68;
+  --side: #101016;
+  --indigo-side: #5C66CF;
+  --indigo-edge: #3D4597;
+  --indigo-soft-side: #171935;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --indigo: #8C96FF;
+  --indigo-soft: #23264D;
+  --on-indigo: #0E0E13;
+  --verified: #4FC88A;
+  --verified-soft: #12301F;
+  --warning: #E9B04C;
+  --warning-soft: #33270F;
+  --danger: #FF7B6E;
+  --danger-soft: #3A1715;
+  --shadow-pop: 0 14px 32px rgba(0, 0, 0, 0.6);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+  --stroke-hairline: 1px;
+  --stroke-figure: 1px;
+  --stroke-thread: 1.5px;
+  --stroke-focus: 2px;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 48px; line-height: 52px; font-weight: 700; letter-spacing: -0.02em; }
+.display-l { font-family: var(--font-display); font-size: 32px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em; }
+.heading { font-family: var(--font-display); font-size: 20px; line-height: 28px; font-weight: 600; }
+.body { font-family: var(--font-sans); font-size: 15px; line-height: 24px; font-weight: 400; }
+.body-strong { font-family: var(--font-sans); font-size: 15px; line-height: 24px; font-weight: 600; }
+.small { font-family: var(--font-sans); font-size: 13px; line-height: 20px; font-weight: 400; }
+.label { font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.06em; }
+.data { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 500; }
+.code { font-family: var(--font-mono); font-size: 13px; line-height: 20px; font-weight: 400; }

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Pamoja">
+  <line x1="22" y1="12" x2="22" y2="54" stroke="#EDEDF3" stroke-width="4" stroke-linecap="round"/>
+  <path d="M22 12 C 51 12, 51 38, 22 38" fill="none" stroke="#8C96FF" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="22" cy="12" r="5.5" fill="#8C96FF"/>
+  <circle cx="22" cy="38" r="5.5" fill="#8C96FF"/>
+</svg>

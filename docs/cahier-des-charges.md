@@ -40,10 +40,14 @@ Ces choix ne sont plus en discussion. Toute la suite du document en découle.
 | Tokens GitHub | Aucun token utilisateur stocké en base | Le login n'en a besoin que quelques secondes ; la synchro utilise des tokens serveur |
 | Import | Deux niveaux : vitrine sans installation, synchro live avec installation | Présenter un projet en 3 clics |
 | Build | esbuild + `@luca/esbuild-deno-loader`, comme Tournament | Setup déjà éprouvé en production |
-| UI | Tailwind CSS compilé + DaisyUI comme primitives, design system maison par-dessus | Choix de l'équipe ; impose de quitter twind (§12) |
+| UI | Tailwind CSS compilé + DaisyUI (maintien à confirmer, §20) ; système isométrique maison par-dessus | Choix de l'équipe ; impose de quitter twind (§12) |
 | Base de données | SQLite via `@01edu/db`, une seule instance | Suffisant pour CADEV, migration PostgreSQL seulement si nécessaire |
 | Temps réel | Entries `@01edu/db/entries` + SSE, écritures en HTTP | Mécanisme déjà en production dans Tournament |
 | Réputation | Calculée uniquement depuis le journal d'entries, jamais depuis une déclaration | Badges vérifiables |
+| Langue de l'interface | Français, au tutoiement ; les deux signatures de marque (*Your work is your profile*, *Where developers don't just connect. They build together.*) restent en anglais | Choix de l'équipe. Les libellés cités en anglais dans ce document (scénario du §18, exemples) sont traduits dans l'interface ; les canaux s'appellent , , ,  |
+| Identité visuelle | Design system Pamoja + prototype Pamoja v2 : le fil indigo, une interface entièrement isométrique (dalles, touches, puits, formes par type d'objet) | Un style reconnaissable, où formes et volumes encodent les objets et leurs valeurs |
+| Référence d'interface | Prototype Pamoja v2 (`docs/prototype/`) | Écrans et parcours validés ; ses écarts avec ce document sont tranchés ici |
+| Routage | Vrais chemins (`/@moussa`, `/projet/openpay-africa`), jamais de `#` | Le serveur doit voir l'adresse pour servir l'aperçu de partage (§17.1) |
 | IA | Utilisée, toujours avec un repli déterministe | La plateforme fonctionne sans IA |
 | Matching | Score SQL déterministe et explicable, enrichi par embeddings | Chaque match affiche ses raisons |
 | Organisation d'un projet | Quatre canaux imposés : `#général`, `#suivi` (alertes GitHub et CI/CD), `#aide`, `#annonces` | Lisible comme Discord, sans canaux vides ; les alertes mènent à la boucle d'aide |
@@ -80,12 +84,13 @@ Toutes les fonctionnalités sont dans le périmètre. Elles sont construites dan
 | 2. Boucle de démo | Profil de base, import niveaux 1 et 2, webhooks, demande d'aide, matching, notifications temps réel, détection de review, confirmation, badges | 1 | J3 – J5 (9 – 11 oct.) |
 | 3. Vitrines | Profil complet et thèmes, Passport, Share Card, OG, Pulse (déterministe + IA), Project DNA, Health, Story, Collaboration Map et Graph | 1, entries du bloc 2 | J6 – J7 (12 – 13 oct.) |
 | 4. Gestion de projet | Needs, Team et candidatures, Board, Roadmap, canaux du projet et `#suivi`, présence, Collaboration Requests | 1 | J8 (14 oct.) |
-| 5. Social et découverte | Feed, Communities, Explore, Search, Smart Contribution Discovery, préférences et digest | 1 | J9 (15 oct.) |
+| 5. Social et découverte | Accueil en fil social (republications, abonnements, réponses imbriquées), Communities, Explore, Search, Smart Contribution Discovery, préférences et digest | 1 | J9 (15 oct.) |
 | Gel | Plus de nouvelles fonctionnalités : seed final, répétitions de la démo en prod, corrections | Tout | J10 (16 oct.) |
 
 Règles d'équipe :
 
 - **Chaque fonctionnalité écrit ses entries dès le premier jour.** Sans entries, les vitrines, le Pulse et les badges n'ont rien à afficher.
+- **Chaque page livrée a ses trois états** : vide, chargement, erreur. Le prototype n'a presque que des états vides ; le code les a tous.
 - **Deux développeurs, un responsable par bloc.** La répartition est notée dans `TODO.md`. Chaque PR est relue et approuvée par l'autre développeur avant d'être mergée. Chaque soir, l'avancement est comparé au planning de `TODO.md`. Un retard sur le bloc 2 se rattrape avant de commencer le bloc suivant ; un retard sur les blocs 3 à 5 laisse leurs fonctionnalités au niveau *fonctionnel*.
 - **La boucle de démo (bloc 2) est prioritaire** sur tout le reste en cas de retard.
 
@@ -100,11 +105,11 @@ En cas de retard sur un bloc, ses fonctionnalités restent au niveau *fonctionne
 
 | Bloc | Critères d'acceptation |
 | --- | --- |
-| 1. Fondations | Login GitHub de bout en bout en prod via Caddy (protocole `h2` visible) ; une entry insérée côté serveur arrive dans un autre navigateur en moins d'1 s ; `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage ; seed rejouable en une commande ; Meilisearch répond depuis l'app et n'est pas joignable depuis l'extérieur |
+| 1. Fondations | Login GitHub de bout en bout en prod via Caddy (protocole `h2` visible) ; une entry insérée côté serveur arrive dans un autre navigateur en moins d'1 s ; `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage ; seed rejouable en une commande ; Meilisearch répond depuis l'app et n'est pas joignable depuis l'extérieur ; toutes les routes en vrais chemins, sans `#`, et `/@login` ouvert sans connexion renvoie la page avec ses balises OG |
 | 2. Boucle de démo | Import niveau 1 en 3 clics ; une review GitHub réelle fait passer la demande en `review_submitted` en moins de 10 s ; un webhook reçu pendant un redémarrage est traité après la reprise ; deux acceptations simultanées n'en retiennent qu'une ; la confirmation met à jour le badge du profil sans rafraîchir |
 | 3. Vitrines | Un lien `/@username` collé dans WhatsApp et LinkedIn affiche l'aperçu avec la Share Card ; chaque chiffre du profil mène à ses preuves ; le Pulse s'affiche même IA coupée |
 | 4. Gestion de projet | Deux utilisateurs déplacent des cartes en même temps sans perte ; une PR mergée déplace sa carte en Done ; une candidature s'accepte depuis la notification ; une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic |
-| 5. Social et découverte | Recherche tolérante aux fautes (« postgress » trouve PostgreSQL) ; la recherche reste utilisable Meilisearch arrêté ; un contenu signalé puis masqué disparaît pour tous |
+| 5. Social et découverte | Recherche tolérante aux fautes (« postgress » trouve PostgreSQL) ; la recherche reste utilisable Meilisearch arrêté ; un contenu signalé puis masqué disparaît pour tous sauf son auteur ; une réponse à une réponse s'affiche imbriquée et se déplie à la demande ; une republication apparaît dans le fil des abonnés |
 
 Hors périmètre : repos privés, GitLab, Bitbucket, voix, vidéo, partage d'écran, curseurs collaboratifs, application mobile native, API publique.
 
@@ -203,11 +208,17 @@ Vocabulaire contrôlé : « Postgres », « postgresql » et « PG » pointent t
 
 Une compétence a trois sources possibles, affichées séparément : `declared`, `github` (langages des repos), `platform_activity` (reviews et aides confirmées).
 
-### 6.2 Navigation et Home
+### 6.2 Navigation et Accueil
 
-Navigation : Home, Explore, Projects, Help, Communities, Notifications, Profile. Action globale **+ Create** : Post, Project, Help Request, Community.
+Navigation : Accueil, Explorer, Projets, Aide, Communautés, Notifications, Profil. Action globale **+ Créer** : Post, Projet, Demande d'aide, Communauté. Recherche centrée dans l'en-tête (⌘K / Ctrl+K). **Pas d'en-tête de page qui répète la navigation** (ni fil d'Ariane, ni titre qui redit le nom de la page). Menu de l'avatar : profil, réglages, Modération (modérateurs uniquement), déconnexion.
 
-La Home est personnalisée, pas chronologique. Blocs dans l'ordre : demandes d'aide qui matchent (« 3 help requests match your skills »), PRs qui attendent une review, projet à découvrir, projets qui cherchent des contributeurs, discussion tendance, développeurs avec qui construire.
+**L'Accueil est un fil social**, construit pour faire construire (*Build > Scroll*) :
+
+- **Rédaction** en haut : texte, code, images, communauté, type de post. Une demande d'aide ne se publie pas ici : elle passe par son formulaire (§7.1).
+- **Onglets** : Pour toi, Abonnements, Communautés, Questions.
+- **Insertions** : les événements GitHub des projets de l'utilisateur, et une carte « Ce projet a besoin de toi » en 2ᵉ position quand une demande lui correspond.
+- **Colonne de droite**, à défilement indépendant : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs.
+- Le fil remplace la « discussion tendance » : les posts les plus actifs remontent dans Pour toi.
 
 ### 6.3 Page projet
 
@@ -427,7 +438,7 @@ Une action qui ne passe pas ces règles reste visible dans l'activité, mais ne 
 
 ## 9. Profil développeur et partage
 
-Le profil est un produit à part entière : public, partageable, indexable, servi à l'URL `/@username`. Il doit pouvoir servir de portfolio, de carte de visite et de preuve de collaboration. Principe : *Your work is your profile.*
+Le profil est un produit à part entière : public, partageable, indexable, servi à **une seule adresse, `/@username`** : sans connexion, la version publique en lecture seule (qui tient lieu de passeport) ; connecté, la version complète. Il n'existe pas d'autre adresse de profil. Il doit pouvoir servir de portfolio, de carte de visite et de preuve de collaboration. Principe : *Your work is your profile.*
 
 ### 9.1 Contenu
 
@@ -436,17 +447,17 @@ Le profil est un produit à part entière : public, partageable, indexable, serv
 - **Real Contributions** : par projet, le rôle, les faits marquants et les liens vers les preuves.
 - **Activity stats** : projets, reviews vérifiées, contributions mergées, développeurs aidés, collaborations.
 - **Réputation et badges** (§8).
-- **Sections** : Overview, Projects, Contributions, Reviews, Activity, Badges, Communities, GitHub.
+- **Sections** : Overview, Projects, Contributions, Reviews, Activity, Badges, Communities, GitHub. Une seule colonne, dans l'ordre choisi par le développeur.
 
 ### 9.2 Personnalisation
 
-Cover, couleur d'accent, thème (Minimal, Terminal, Cyber, Light, Dark), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+Cover, couleur d'accent, thème (Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
 
 ### 9.3 Vitrines visuelles
 
-- **Developer Passport** : vue condensée (projets actifs, contributions, reviews, développeurs aidés, pays des collaborateurs, top skills).
+- **Developer Passport** : c'est la vue publique de `/@username` (sans connexion) : projets actifs, contributions, reviews, développeurs aidés, pays des collaborateurs, top skills.
 - **Share Card** : image générée côté serveur (nom, pays, headline, 3 chiffres clés, technologies). C'est aussi l'image Open Graph du profil (§17). Bouton de partage LinkedIn, X, WhatsApp, et téléchargement PNG.
-- **Collaboration Map** : « Collaborated across Africa », nombre de collaborateurs par pays, puis carte interactive de l'Afrique. Calculée depuis les collaborations confirmées et le pays des profils.
+- **Collaboration Map** : « Collaborations à travers l'Afrique » : une colonne par pays posée sur une grille isométrique, sa hauteur selon le nombre de collaborations, un fil indigo vers le pays du profil. Pas de contour de l'Afrique, pour ne pas dessiner une carte approximative. Le pays du profil n'est jamais compté parmi les pays reliés. Calculée depuis les collaborations confirmées et le pays des profils.
 - **Collaboration Graph** : réseau développeurs ↔ projets ↔ communautés, construit uniquement sur des liens de travail (projets communs, aides, reviews, contributions), jamais sur les follows.
 
 Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'apparaît pas sur la carte.
@@ -455,7 +466,7 @@ Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'a
 
 ### 10.1 Feed
 
-Types de publication : Discussion, Question, Project Update, Help Request, Showcase, Resource, Opportunity, Release. Contenu en Markdown avec blocs de code, jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. Interactions : réaction, commentaire, bookmark, follow, partage. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
+Le fil est l'Accueil (§6.2). Types de publication : Discussion, Question, Mise à jour de projet, Vitrine, Ressource, Opportunité, Release (une demande d'aide passe par son formulaire, §7.1). Contenu en Markdown avec blocs de code, jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. **Une réponse est un post** rattaché à un autre, avec les mêmes actions (réagir, republier, répondre, signaler). Imbrication sans limite, avec des lignes de rattachement ; à l'ouverture, seules les réponses directes s'affichent, les suivantes se déplient à la demande. Interactions : réactions (dont « Utile »), republication, bookmark, partage par lien, abonnement à une personne, un projet ou une communauté. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
 
 ### 10.2 Communautés
 
@@ -480,14 +491,14 @@ Recherche globale sur développeurs, projets, communautés, publications, demand
 
 ### 10.5 Signalement et modération
 
-Tout contenu publié par un utilisateur peut être signalé : post, commentaire, message d'un canal, demande d'aide, profil, projet.
+Tout contenu publié par un utilisateur peut être signalé : post, réponse, message d'un canal, demande d'aide, profil, projet.
 
 1. **Signaler** : bouton sur chaque contenu, motif (spam, harcèlement, contenu inapproprié, usurpation, triche à la réputation, autre) et commentaire facultatif. Un utilisateur ne signale qu'une fois le même contenu.
 2. **Traiter** : les signalements arrivent dans une file de modération. Un contenu de communauté est traité par ses Moderators ; le reste par les admins de la plateforme.
 3. **Agir** : ignorer, masquer le contenu, avertir l'auteur, suspendre le compte (durée choisie), retirer une preuve de réputation (fraude avérée). Chaque action exige un motif.
 4. **Tracer** : chaque signalement et chaque action produisent une entry et une ligne `ModerationAction` (qui, quoi, pourquoi, quand). L'auteur est notifié de l'action et de son motif.
 
-Un contenu masqué disparaît pour tous sauf son auteur et les modérateurs. Un compte suspendu ne peut plus écrire ; son profil affiche « compte suspendu ». Au-delà de 3 signalements distincts, un contenu est masqué en attendant la décision d'un modérateur.
+Un contenu masqué disparaît pour tous sauf les modérateurs et son auteur, qui le voit avec un bandeau indiquant qu'il est masqué et pourquoi. Un compte suspendu ne peut plus écrire ; son profil affiche « compte suspendu ». Au-delà de 3 signalements distincts, un contenu est masqué en attendant la décision d'un modérateur.
 
 ## 11. IA
 
@@ -538,6 +549,7 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 
 - **Dev** : comme `task-dev.ts`, esbuild en mode watch sert `dist/` et le serveur Deno route `/api` vers l'API et le reste vers esbuild. Il n'y a pas de `@01edu/api-proxy` dans Tournament et il n'en faut pas.
 - **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17).
+- **Routage** : vrais chemins (`/@moussa`, `/projet/openpay-africa`) avec `@01edu/signal-router`, **jamais de `#`** : le serveur doit voir l'adresse pour injecter l'aperçu de partage. Le prototype utilise des `#` ; le code ne les reprend pas.
 
 ### 12.3 CSS : Tailwind + daisyUI, sans twind
 
@@ -580,6 +592,22 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 - Animations courtes et utiles : arrivée d'une notification, progression d'un badge, mise à jour du Pulse.
 - Responsive obligatoire. Priorité au desktop, mais Feed, Notifications, demandes d'aide, Profil et Explore doivent être confortables sur mobile. La gestion de projet (Board, Roadmap) reste pensée pour le desktop.
 - Les écrans de la démo (profil, page projet, Pulse, notification, demande d'aide) sont maquettés avant d'être développés.
+
+**Identité visuelle** : définie par le [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) (tokens, typographie, logo, composants, avec une copie des tokens et du logo dans `docs/identite/`) et par le **prototype Pamoja v2** (`docs/prototype/`), référence des écrans. L'idée centrale : *des personnes reliées par un fil*.
+
+- Le fil qui relie les personnes est **indigo**, seule couleur de marque ; tout le reste est en gris.
+- Trait plein = vérifié par GitHub ; trait pointillé = donnée de démonstration ou lien pas encore créé.
+- Typographie : Bricolage Grotesque (titres), IBM Plex Sans (texte), IBM Plex Mono (chiffres, IDs, code).
+
+**Système isométrique** : toute l'interface est en isométrie à 30°, sans ombre floue. L'épaisseur est faite de couches décalées vers le bas à droite (pas de 0,87 × 0,5 px), en CSS (`box-shadow` empilées), sans image. Valeurs exactes dans le design system et le prototype.
+
+- **Dalles** : cartes, barre latérale, menus, dialogues. Épaisseur de 8px (faces `side`, arête `figure-edge`) ; 12px au survol ; sélectionnée, faces `indigo-soft-side` et arête `indigo`.
+- **Touches** : boutons, puces, onglets actifs. Épaisseur de 4px ; au survol la touche monte (5px) ; au clic elle s'enfonce entièrement (translation de 3,46 × 2px, épaisseur nulle), en 120 ms. Primaire : faces `indigo-side`, arête `indigo-edge` ; secondaire : `side` et `line-control` ; danger : `side` et `danger`.
+- **Puits** : champs, recherche, rails d'onglets, creusés dans le sol (ombre intérieure `line` puis `surface-200`).
+- **Formes par type d'objet** : personne = disque, projet = cube, événement = tuile, état = losange.
+- **Colonnes** : les métriques du Pulse, les badges et la Collaboration Map sont des colonnes dont la hauteur suit la valeur. Le volume encode une donnée réelle, jamais une décoration.
+- **Fond uni** (`surface-000`) : la grille isométrique au sol a été essayée puis retirée, elle gênait la lecture.
+- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu.
 
 ### 12.8 Tests
 
@@ -629,7 +657,7 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | `TASK_UPDATED` | projectId, taskId | Membres du projet |
 | `MESSAGE_CREATED` | projectId, messageId | Membres du projet ; abonnés aussi pour `#annonces` |
 | `PR_OPENED`, `PR_REVIEWED`, `PR_CLOSED`, `CI_FAILED`, `CI_FIXED`, `PR_REVIEW_STALE`, `COMMITS_PUSHED` | projectId, pullRequestId (+ userId) | Membres et abonnés du projet ; alimentent `#suivi` |
-| `POST_CREATED`, `COMMENT_CREATED` | communityId, postId | Membres de la communauté |
+| `POST_CREATED`, `POST_REPLIED`, `POST_REPOSTED` | communityId, postId | Membres de la communauté ; abonnés de l'auteur pour les republications |
 | `PULSE_READY` | projectId | Membres et abonnés du projet |
 | `USER_LOGIN`, `PROJECT_CREATED`, `ANSWER_ACCEPTED` | userId, projectId ou postId | Personne (journal et réputation uniquement) |
 | PROFILE\_UPDATED, POST\_UPDATED, HELP\_REQUEST\_CREATED | userId, postId ou helpRequestId | Personne en SSE ; lues par le worker de réindexation Meilisearch |
@@ -720,9 +748,8 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 | --- | --- | --- |
 | `Community` | id, slug, name, type (technology / country / domain), description, countryCode?, createdAt | UNIQUE(slug) |
 | `CommunityMember` | id, communityId, userId, role (member / moderator), joinedAt | UNIQUE(communityId, userId) |
-| `Post` | id, authorId, communityId?, projectId?, type, title, body, attachments (JSON), acceptedCommentId?, hiddenAt?, createdAt, updatedAt | Index (communityId, createdAt) |
-| `Comment` | id, postId, authorId, body, hiddenAt?, createdAt | Index (postId, createdAt) |
-| `Reaction` | id, userId, targetType, targetId, kind | UNIQUE(userId, targetType, targetId, kind) |
+| `Post` | id, authorId, communityId?, projectId?, type, title?, body, attachments (JSON), parentId? (réponse à un post), rootId? (premier post du fil), repostOfId? (republication), acceptedReplyId?, hiddenAt?, createdAt, updatedAt | Index (communityId, createdAt), (parentId, createdAt), (rootId) |
+| `Reaction` | id, userId, targetType, targetId, kind (like / useful) | UNIQUE(userId, targetType, targetId, kind) |
 | `Bookmark` | id, userId, postId, createdAt | UNIQUE(userId, postId) |
 | Report | id, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
 | ModerationAction | id, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
@@ -739,7 +766,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Domaine | Routes |
 | --- | --- |
 | Auth | `GET/api/auth/github` · `POST/api/auth/github/callback` · `POST/api/auth/logout` · `GET/api/user/me` |
-| Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/passport` (username) · `GET/api/user/card` (username) |
+| Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/card` (username) |
 | GitHub | `GET/api/github/repositories` · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
 | Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
 | Équipe | `POST/api/project/join` · `GET/api/project/join-requests` · `POST/api/project/join-request/decide` · `POST/api/project/member/role` · `POST/api/project/member/remove` |
@@ -748,7 +775,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Canaux, présence | `GET/api/project/channel` (projectId, channel, curseur) · `GET/api/project/channel/thread` · `POST/api/project/message/create` (channel, parent facultatif) · `POST/api/project/message/react` · `POST/api/project/channel/read` · `POST/api/project/channel/notify` · `POST/api/presence` |
 | Aide | `GET/api/help` (filtres) · `GET/api/help/detail` (id) · `POST/api/help/create` · `POST/api/help/accept` · `POST/api/help/deliver` · `POST/api/help/confirm` · `POST/api/help/cancel` · `GET/api/help/for-me` |
 | Notifications | `GET/api/notifications` · `POST/api/notification/read` · `POST/api/notifications/read-all` · `POST/api/notification/preferences` |
-| Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (curseur) · `POST/api/post/create` · `POST/api/comment/create` · `POST/api/comment/accept` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
+| Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (onglet, curseur) · `POST/api/post/create` · `POST/api/post/reply` · `POST/api/post/repost` · `GET/api/post/thread` (id, profondeur) · `POST/api/post/accept-answer` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
@@ -781,7 +808,7 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 
 ### 17.1 Aperçus de partage et SEO
 
-Une SPA seule renvoie un `index.html` vide de contenu : un lien `/@abdou` collé sur LinkedIn, X, WhatsApp, Discord ou Slack n'aurait aucun aperçu. Le serveur de production lit déjà `dist/index.html` au démarrage (comme `prod-server.ts`) ; pour `/@username` et `/project/slug`, il y injecte avant de répondre :
+Une SPA seule renvoie un `index.html` vide de contenu : un lien `/@abdou` collé sur LinkedIn, X, WhatsApp, Discord ou Slack n'aurait aucun aperçu. Le serveur de production lit déjà `dist/index.html` au démarrage (comme `prod-server.ts`) ; pour `/@username` et `/projet/slug`, il y injecte avant de répondre :
 
 - `<title>`, `<meta name="description">`, `og:title`, `og:description`, `og:image`, `og:url`, `twitter:card = summary_large_image` ;
 - valeurs lues en base et **échappées en HTML** (un nom de profil peut contenir du HTML).
@@ -911,6 +938,6 @@ Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
 - [ ] **Hébergement Systalink**, à valider avant la fin de J2 : VM avec Docker ; IP publique et ports 80/443 ouverts (certificat HTTPS automatique de Caddy) ; sortie autorisée vers `api.github.com` et le fournisseur IA ; entrée des webhooks GitHub ; taille de disque ; offre de sauvegarde ; nom de domaine et DNS.
 - [ ] **Reverse proxy** : Caddy retenu (HTTP/2 actif par défaut avec HTTPS, réponses SSE transmises sans tampon). À vérifier une fois en prod : protocole h2 dans l'onglet Réseau et arrivée instantanée des notifications.
 - [ ] **Meilisearch** : version à fixer, emplacement du conteneur chez l'hébergeur, réglages de pertinence (champs cherchables et leur ordre) à ajuster après le seed.
-- [ ] **Thèmes daisyUI** : palette et typographie du design system.
+- [ ] **daisyUI** : le système isométrique rend presque tous les composants sur mesure ; décider avant PAM-111 s'il reste utile ou si Tailwind seul suffit.
 - [ ] **Seuils** de badges et poids du matching : ajuster après le seed.
 - [ ] **Mentions légales** : conditions d'utilisation et politique de confidentialité (données GitHub, emails).

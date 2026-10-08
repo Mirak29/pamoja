@@ -18,7 +18,10 @@ réputation visible sur son profil. Promesse : *Your work is your profile.*
 | `docs/cahier-des-charges.md` | **Référence** du produit et des choix techniques (sections `§1` à `§20`) |
 | `TODO.md` | Suivi des tâches `PAM-xxx`, planning jour par jour, critères d'acceptation, journal des décisions |
 | [Doc en ligne](https://claude.ai/code/artifact/e7a00b2e-5fef-42ba-b949-7d181200909a) | Copie partagée avec les relecteurs (accessible seulement si elle a été partagée depuis le menu Share) ; à resynchroniser après chaque changement important du fichier du repo |
+| `docs/prototype/` | Prototype interactif Pamoja v2 : référence des écrans et parcours (voir son README pour ce que le code ne reprend pas) |
+| `docs/brief-prototype-claude-design.md` | Brief autonome pour le prototype interactif complet (toutes les pages, workflows, données fictives) |
 | `docs/cadev-inscription.md` | Textes saisis dans le formulaire d'inscription CADEV |
+| [Design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) | Identité visuelle : README (règles), tokens, composants, logo. Copie des tokens et du logo dans `docs/identite/`. À lire avant tout travail d'interface |
 
 **Règle de cohérence** : toute décision qui change le périmètre ou une règle modifie
 d'abord `docs/cahier-des-charges.md`, puis `TODO.md`, puis ajoute une ligne au journal
@@ -81,6 +84,8 @@ Différence volontaire : Pamoja utilise **Tailwind compilé + daisyUI**, pas twi
 - Recherche : Meilisearch auto-hébergé, SQLite reste la source de vérité — §10.4.
 - Reverse proxy : Caddy (HTTPS, HTTP/2, SSE sans tampon) — §17.4.
 - Images uploadées ; vidéos uniquement intégrées par lien (YouTube, Loom, Vimeo) — §17.3.
+- DA : interface entièrement isométrique (dalles, touches, puits, formes par type d'objet, colonnes pour les valeurs), sans illustration décorative ; référence visuelle : prototype Pamoja v2 (`docs/prototype/`) — §12.7.
+- Routage en vrais chemins (`/@moussa`), jamais de `#` ; profil à une seule adresse `/@login` — §9, §12.2.
 - IA toujours avec un repli déterministe ; fournisseur encore à choisir — §11, §20.
 
 ## Où on en est
