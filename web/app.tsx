@@ -1,6 +1,7 @@
 import { Fragment, h, type JSX, render } from 'preact'
 import { url } from '@01edu/signal-router'
 import { HelpPage } from '/web/pages/help/help-page.tsx'
+import { NotificationsPage } from '/web/pages/notifications.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
 import { AppLayout } from '/web/ui/layout.tsx'
@@ -13,6 +14,7 @@ Object.assign(globalThis, { h, Fragment })
 const routes: Record<string, () => JSX.Element | null> = {
   aide: HelpPage,
   dev: SoclePage,
+  notifications: NotificationsPage,
   projet: ProjectPage,
 }
 

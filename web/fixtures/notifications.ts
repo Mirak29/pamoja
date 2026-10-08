@@ -1,3 +1,4 @@
+import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import type { Login } from '/web/fixtures/people.ts'
 
@@ -16,6 +17,7 @@ export type NotificationKind =
   | 'community'
   | 'moderation'
   | 'promising'
+  | 'application'
 
 export type Notification = {
   id: string
@@ -27,10 +29,26 @@ export type Notification = {
   at: number
   read: boolean
   href: string
+  /** A join request, accepted or refused from the notification (§6.6) */
+  application?: 'pending' | 'accepted' | 'refused'
   demo: boolean
 }
 
 export const notifications: Notification[] = [
+  {
+    id: 'n9',
+    to: 'abdou',
+    category: 'projects',
+    kind: 'application',
+    title: 'Awa veut rejoindre OpenPay Africa',
+    body:
+      'Frontend et Tests, 4 h par semaine : « J’aimerais contribuer au projet. »',
+    at: hoursAgo(1),
+    read: true,
+    href: 'projet/openpay-africa/equipe',
+    application: 'pending',
+    demo: true,
+  },
   {
     id: 'n1',
     to: 'abdou',
@@ -131,3 +149,25 @@ export const notifications: Notification[] = [
     demo: true,
   },
 ]
+
+// Session changes until the notification routes exist (PAM-210)
+export const notificationsChanged = signal(0)
+
+export const markRead = (notification: Notification) => {
+  notification.read = true
+  notificationsChanged.value++
+}
+
+export const markAllRead = (login: string) => {
+  for (const n of notifications) n.to === login && (n.read = true)
+  notificationsChanged.value++
+}
+
+/** POST/api/project/join-request/decide, from the notification */
+export const decideApplication = (
+  notification: Notification,
+  accept: boolean,
+) => {
+  notification.application = accept ? 'accepted' : 'refused'
+  markRead(notification)
+}

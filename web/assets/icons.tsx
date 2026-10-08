@@ -15,6 +15,12 @@ export const Check = (props: IconProps) => (
   </Icon>
 )
 
+export const CheckCheck = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M18 6 7 17l-5-5M22 10l-7.5 7.5L13 16' />
+  </Icon>
+)
+
 export const ChevronDown = (props: IconProps) => (
   <Icon {...props}>
     <path d='m6 9 6 6 6-6' />
@@ -255,6 +261,12 @@ export const ShieldCheck = (props: IconProps) => (
   </Icon>
 )
 
+export const Sparkles = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.13a.5.5 0 0 1 .96 0l1.58 6.13a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0zM20 3v4M22 5h-4M4 17v2M5 18H3' />
+  </Icon>
+)
+
 export const Sun = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='4' />
@@ -288,6 +300,14 @@ export const UserMinus = (props: IconProps) => (
     <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
     <circle cx='9' cy='7' r='4' />
     <path d='M22 11h-6' />
+  </Icon>
+)
+
+export const UserPlus = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
+    <circle cx='9' cy='7' r='4' />
+    <path d='M19 8v6M22 11h-6' />
   </Icon>
 )
 

@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact'
 import { A } from '@01edu/signal-router'
 import { useState } from 'preact/hooks'
-import { GitPullRequest, Send } from '/web/assets/icons.tsx'
+import { GitPullRequest, LifeBuoy, Send } from '/web/assets/icons.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
 import {
   DemoBadge,
@@ -198,6 +198,24 @@ export const SoclePage = () => {
               })}
           >
             Afficher un toast
+          </Button>
+          <Button
+            variant='secondary'
+            onClick={() =>
+              notify({
+                title: 'Ce projet a besoin de toi',
+                body:
+                  'OpenPay Africa · PR #81 · Relire la gestion des transactions',
+                icon: LifeBuoy,
+                href: 'aide/h3',
+                match: {
+                  skills: ['Go', 'SQLite'],
+                  score: 93,
+                  duration: '~20 min',
+                },
+              })}
+          >
+            Toast de match
           </Button>
         </div>
       </Section>

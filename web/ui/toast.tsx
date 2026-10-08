@@ -20,6 +20,8 @@ type Toast = {
   verified?: boolean
   /** Shows "Voir" and "Plus tard" actions */
   href?: string
+  /** A help request that matches the viewer: skills, score, duration */
+  match?: { skills: string[]; score: number; duration: string }
 }
 
 const toasts = signal<Toast[]>([])
@@ -35,7 +37,10 @@ const dismiss = (id: number) => {
  * @example
  * notify({ title: 'Demande publiée', icon: Send, tone: 'verified' })
  */
-export const notify = (toast: Omit<Toast, 'id'>, duration = 6500) => {
+export const notify = (
+  toast: Omit<Toast, 'id'>,
+  duration = toast.match ? 12000 : 6500,
+) => {
   const id = ++lastId
   toasts.value = [...toasts.peek(), { ...toast, id }].slice(-4)
   setTimeout(() => dismiss(id), duration)
@@ -56,6 +61,23 @@ const ToastCard = ({ toast }: { toast: Toast }) => {
         {toast.body && (
           <span class='text-small text-ink-muted'>{toast.body}</span>
         )}
+        {toast.match && (
+          <>
+            <div class='mt-1 flex flex-wrap gap-1'>
+              {toast.match.skills.map((skill) => (
+                <span
+                  key={skill}
+                  class='inline-flex h-5 items-center rounded-sm bg-indigo-soft px-1.5 text-[12px] font-medium text-indigo'
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+            <span class='mt-0.5 font-mono text-[13px] leading-5 font-medium'>
+              {toast.match.score} / 100 · {toast.match.duration}
+            </span>
+          </>
+        )}
         {toast.verified && (
           <span class='mt-1 inline-flex h-5 items-center gap-1 self-start rounded-sm border border-verified bg-verified-soft px-1.5 font-mono text-[10px] leading-none font-medium tracking-[.06em] text-verified uppercase'>
             <ShieldCheck class='size-3' />
@@ -69,7 +91,7 @@ const ToastCard = ({ toast }: { toast: Toast }) => {
               onClick={() => dismiss(toast.id)}
               class='inline-flex h-7 items-center rounded-md border border-indigo bg-indigo px-2.5 text-[13px] leading-none font-semibold text-on-indigo hover:no-underline'
             >
-              Voir
+              {toast.match ? 'Voir la demande' : 'Voir'}
             </A>
             <button
               type='button'

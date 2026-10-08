@@ -12,7 +12,10 @@ import {
   Users,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
-import { notifications } from '/web/fixtures/notifications.ts'
+import {
+  notifications,
+  notificationsChanged,
+} from '/web/fixtures/notifications.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
@@ -20,8 +23,10 @@ import { Menu } from '/web/ui/menu.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
-export const unread = () =>
-  notifications.filter((n) => n.to === me.login && !n.read).length
+export const unread = () => {
+  notificationsChanged.value
+  return notifications.filter((n) => n.to === me.login && !n.read).length
+}
 
 // key: first path segment, short: label of the mobile tab bar
 const navItems: {

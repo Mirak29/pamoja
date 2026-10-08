@@ -177,6 +177,20 @@ Le matching et les transitions de §7.2 sont joués par `web/fixtures/` (matchin
 - **Livrable** : `web/pages/help/`, `web/ui/help-request-card.tsx`, `web/fixtures/matching.ts`, `web/lib/fuzzy.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-217 · Écran Notifications
+
+Centre de notifications sur données fictives :
+- catégories en onglets (`?categorie=`) avec leurs non lus ;
+- notification non lue sur fond indigo doux et marquée d'un losange ;
+- ouverture qui marque comme lue ;
+- « Tout marquer comme lu » ;
+- acceptation ou refus d'une candidature depuis la notification.
+
+Le toast gagne la variante « Ce projet a besoin de toi » (skills, score, durée, Voir la demande / Plus tard), visible dans `/dev/socle`. Les compteurs de la navigation suivent les lectures.
+
+- **Livrable** : `web/pages/notifications.tsx`, `web/ui/toast.tsx`, `web/fixtures/notifications.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
