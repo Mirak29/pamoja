@@ -48,3 +48,26 @@ export const Diamond = (
 ) => (
   <span aria-hidden='true' class={`diamond size-3 ${diamondStates[state]}`} />
 )
+
+/**
+ * Faces of an isometric column standing at (cx, by): half width `a`, half
+ * depth `b`, height `h`. Columns encode values: Pulse metrics, milestones,
+ * badges and the Collaboration Map.
+ *
+ * @example
+ * const { top, left, right } = prism(22, 58, 14, 8, 30)
+ * <polygon points={top} />
+ */
+export const prism = (
+  cx: number,
+  by: number,
+  a: number,
+  b: number,
+  h: number,
+) => ({
+  top: [cx, by - h - b, cx + a, by - h, cx, by - h + b, cx - a, by - h].join(
+    ' ',
+  ),
+  left: [cx - a, by - h, cx, by - h + b, cx, by + b, cx - a, by].join(' '),
+  right: [cx, by - h + b, cx + a, by - h, cx + a, by, cx, by + b].join(' '),
+})

@@ -138,6 +138,13 @@ En-tête du projet (synchro, chiffres, Suivre, Proposer mon aide, Rejoindre), ra
 - **Livrable** : `web/pages/project/`, `web/fixtures/` (PRs, issues, canaux), `web/lib/time.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-414 · Onglet Pulse
+
+Résumé IA (squelette puis texte, comme à l'arrivée de `PULSE_READY`), six métriques en colonnes isométriques dont la hauteur suit la valeur, événements de la semaine, bloqueurs, Health avec la règle de chaque indicateur au survol, DNA et Story. Les données viennent de `web/fixtures/pulse.ts`, à la forme des futures routes `GET/api/project/pulse`, `health` et `story`.
+
+- **Livrable** : `web/pages/project/pulse-tab.tsx`, `event-list.tsx`, `web/fixtures/pulse.ts`, `prism()` dans `web/ui/shapes.tsx`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

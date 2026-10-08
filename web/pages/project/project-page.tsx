@@ -13,6 +13,7 @@ import {
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { appliedTo, JoinDialog } from '/web/pages/project/join-dialog.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
+import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -39,6 +40,7 @@ const tabContents: Partial<
   Record<TabKey, (props: { project: Project }) => preact.JSX.Element>
 > = {
   '': OverviewTab,
+  pulse: PulseTab,
 }
 
 const activeHelp: HelpStatus[] = [
