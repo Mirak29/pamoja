@@ -265,6 +265,20 @@ Un projet importé arrive avec ses issues, sa release et un message dans #suivi 
 - **Livrable** : `web/pages/projects/`, `web/pages/project/sync-dialog.tsx`, `web/fixtures/repos.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-513 · Écran Accueil
+
+Accueil (`/`) sur données fictives :
+- **Rédaction** : texte, images, bloc de code, communauté et type ; Ctrl + Entrée publie.
+- **Fil** : onglets Pour toi, Abonnements, Communautés, Questions (`?fil=`) ; posts et republications, événements GitHub des projets suivis, et dans Pour toi la demande d'aide qui correspond le mieux (« Plus tard » la met de côté).
+- **Posts** : réagir (J'aime, Utile), republier, enregistrer, partager le lien, signaler ; les réponses s'ouvrent sous le post, en fil imbriqué avec ses lignes de rattachement, repliées sous le premier niveau.
+- **Colonne « Pour toi »** (dès 1100 px, sinon deux raccourcis en haut) : demandes qui correspondent, PRs à relire, développeurs avec qui construire, projets qui cherchent des contributeurs.
+- **Nouveau post** (`?dialog=new-post`, depuis le menu Créer) : type, communauté (la rejoindre au passage), titre, contenu, images, lien vidéo.
+
+La carte de post, le fil de réponses et le dialogue « Nouveau post » sont dans `web/ui/`, pour les écrans Communauté et Post (PAM-515).
+
+- **Livrable** : `web/pages/home/`, `web/ui/post.tsx`, `web/ui/new-post-dialog.tsx`, actions de `web/fixtures/posts.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

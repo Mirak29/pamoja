@@ -24,12 +24,14 @@ export type Tab = Pick<LinkProps, 'href' | 'params'> & {
  * />
  */
 export const Tabs = (
-  { tabs, current, label, wide }: {
+  { tabs, current, label, wide, roomy }: {
     tabs: Tab[]
     current: string
     label: string
     /** Sized to its tabs instead of the start of a column */
     wide?: boolean
+    /** 14px on each side instead of 12px, for the feed */
+    roomy?: boolean
   },
 ) => (
   <nav aria-label={label} class={`rail ${wide ? 'w-max' : 'self-start'}`}>
@@ -40,7 +42,9 @@ export const Tabs = (
           key={key}
           {...link}
           aria-current={active ? 'page' : undefined}
-          class={`flex h-[34px] flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border px-3 text-[13px] leading-none font-semibold whitespace-nowrap no-underline transition-shadow duration-150 ease-out hover:text-ink hover:no-underline ${
+          class={`flex h-[34px] flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border ${
+            roomy ? 'px-3.5' : 'px-3'
+          } text-[13px] leading-none font-semibold whitespace-nowrap no-underline transition-shadow duration-150 ease-out hover:text-ink hover:no-underline ${
             active
               ? 'border-figure-edge bg-surface-100 text-ink shadow-tile'
               : 'border-transparent text-ink-muted'

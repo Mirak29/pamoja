@@ -1,4 +1,3 @@
-import { useState } from 'preact/hooks'
 import { A, url } from '@01edu/signal-router'
 import {
   Check,
@@ -19,7 +18,9 @@ import {
   type Login,
   me,
   people,
+  peopleChanged,
   type Person,
+  toggleFollowing,
 } from '/web/fixtures/people.ts'
 import {
   profileChanged,
@@ -70,9 +71,7 @@ const profileLogin = () => {
 }
 
 const Actions = ({ login }: { login: Login }) => {
-  const [following, setFollowing] = useState(
-    me.follows?.includes(login) ?? false,
-  )
+  const following = me.follows?.includes(login) ?? false
   if (isMe(login)) {
     return (
       <div class='flex flex-wrap gap-3 pb-1'>
@@ -87,7 +86,7 @@ const Actions = ({ login }: { login: Login }) => {
   }
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
-      <Button variant='secondary' onClick={() => setFollowing(!following)}>
+      <Button variant='secondary' onClick={() => toggleFollowing(login)}>
         {following ? <Check /> : <UserPlus />}
         {following ? 'Suivi' : 'Suivre'}
       </Button>
@@ -397,6 +396,7 @@ const sections: Record<
  */
 export const ProfilePage = () => {
   profileChanged.value
+  peopleChanged.value
   const login = profileLogin()
   if (!login) return <NotFound login={url.relativePath.slice(2)} />
   const { theme, accent, order } = settingsOf(login)

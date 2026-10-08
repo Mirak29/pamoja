@@ -6,6 +6,8 @@ import {
   GitPullRequest,
   Handshake,
   LifeBuoy,
+  MessageSquare,
+  Repeat2,
   ShieldCheck,
   Sparkles,
   UserPlus,
@@ -59,6 +61,8 @@ const icons: Record<NotificationKind, IconComponent> = {
   promising: Sparkles,
   application: UserPlus,
   collaboration: Handshake,
+  reply: MessageSquare,
+  repost: Repeat2,
 }
 
 const open = (notification: Notification) => {

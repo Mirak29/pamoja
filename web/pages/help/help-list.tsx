@@ -1,7 +1,10 @@
 import { url } from '@01edu/signal-router'
 import { Plus } from '/web/assets/icons.tsx'
-import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
-import { match, MIN_SCORE } from '/web/fixtures/matching.ts'
+import {
+  helpChanged,
+  helpRequests,
+  matchingRequests,
+} from '/web/fixtures/help.ts'
 import { isMe, me } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { Button } from '/web/ui/button.tsx'
@@ -40,11 +43,7 @@ const tabs = [
 /** Help requests for me, mine, accepted by me and those of my projects */
 export const HelpList = () => {
   helpChanged.value
-  const scored = helpRequests
-    .filter((h) => h.status === 'open' && !isMe(h.author))
-    .map((h) => ({ request: h, score: match(me, h).total }))
-    .filter((h) => h.score >= MIN_SCORE)
-    .sort((a, b) => b.score - a.score)
+  const scored = matchingRequests(me)
   const lists: Record<
     string,
     { request: typeof helpRequests[0]; score?: number }[]

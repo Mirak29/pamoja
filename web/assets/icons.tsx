@@ -15,6 +15,32 @@ export const Bell = (props: IconProps) => (
   </Icon>
 )
 
+export const BookOpen = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z' />
+  </Icon>
+)
+
+export const Bookmark = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z' />
+  </Icon>
+)
+
+export const BookmarkCheck = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z' />
+    <path d='m9 10 2 2 4-4' />
+  </Icon>
+)
+
+export const Briefcase = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' />
+    <rect width='20' height='14' x='2' y='6' rx='2' />
+  </Icon>
+)
+
 export const Check = (props: IconProps) => (
   <Icon {...props}>
     <path d='M20 6 9 17l-5-5' />
@@ -78,6 +104,13 @@ export const CircleDot = (props: IconProps) => (
   </Icon>
 )
 
+export const CircleHelp = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='12' cy='12' r='10' />
+    <path d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17z' />
+  </Icon>
+)
+
 export const CircleSlash = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='10' />
@@ -107,6 +140,12 @@ export const Clock = (props: IconProps) => (
   </Icon>
 )
 
+export const Code = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m16 18 6-6-6-6M8 6l-6 6 6 6' />
+  </Icon>
+)
+
 export const Columns3 = (props: IconProps) => (
   <Icon {...props}>
     <rect width='18' height='18' x='3' y='3' rx='2' />
@@ -118,6 +157,13 @@ export const Compass = (props: IconProps) => (
   <Icon {...props}>
     <path d='m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27l-5.41 1.8 1.8-5.41a2 2 0 0 1 1.27-1.27z' />
     <circle cx='12' cy='12' r='10' />
+  </Icon>
+)
+
+export const CornerDownRight = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m15 10 5 5-5 5' />
+    <path d='M4 4v7a4 4 0 0 0 4 4h12' />
   </Icon>
 )
 
@@ -204,6 +250,14 @@ export const House = (props: IconProps) => (
   </Icon>
 )
 
+export const Image = (props: IconProps) => (
+  <Icon {...props}>
+    <rect width='18' height='18' x='3' y='3' rx='2' ry='2' />
+    <circle cx='9' cy='9' r='2' />
+    <path d='m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21' />
+  </Icon>
+)
+
 export const Info = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='10' />
@@ -216,6 +270,12 @@ export const LifeBuoy = (props: IconProps) => (
     <circle cx='12' cy='12' r='10' />
     <path d='m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24' />
     <circle cx='12' cy='12' r='4' />
+  </Icon>
+)
+
+export const Lightbulb = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4' />
   </Icon>
 )
 
@@ -257,6 +317,12 @@ export const MessageSquareText = (props: IconProps) => (
   </Icon>
 )
 
+export const Minus = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M5 12h14' />
+  </Icon>
+)
+
 export const Moon = (props: IconProps) => (
   <Icon {...props}>
     <path d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9' />
@@ -286,6 +352,14 @@ export const Play = (props: IconProps) => (
 export const Plus = (props: IconProps) => (
   <Icon {...props}>
     <path d='M5 12h14M12 5v14' />
+  </Icon>
+)
+
+export const Repeat2 = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m2 9 3-3 3 3' />
+    <path d='M13 18H7a2 2 0 0 1-2-2V6M22 15l-3 3-3-3' />
+    <path d='M11 6h6a2 2 0 0 1 2 2v10' />
   </Icon>
 )
 
@@ -329,6 +403,15 @@ export const Settings = (props: IconProps) => (
   </Icon>
 )
 
+export const Share2 = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='18' cy='5' r='3' />
+    <circle cx='6' cy='12' r='3' />
+    <circle cx='18' cy='19' r='3' />
+    <path d='m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98' />
+  </Icon>
+)
+
 export const ShieldCheck = (props: IconProps) => (
   <Icon {...props}>
     <path d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.2 1.2 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z' />
@@ -360,6 +443,12 @@ export const Tag = (props: IconProps) => (
   <Icon {...props}>
     <path d='M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z' />
     <circle cx='7.5' cy='7.5' r='.5' fill='currentColor' />
+  </Icon>
+)
+
+export const ThumbsUp = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88' />
   </Icon>
 )
 

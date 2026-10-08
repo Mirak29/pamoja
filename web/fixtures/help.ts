@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import { waves } from '/web/fixtures/matching.ts'
-import { type Login, me, people } from '/web/fixtures/people.ts'
+import { match, MIN_SCORE, waves } from '/web/fixtures/matching.ts'
+import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 /** Lifecycle of a help request (cahier des charges §7.2) */
@@ -129,6 +129,14 @@ export const helpRequests: HelpRequest[] = [
 // Session changes until the help routes exist (PAM-207, PAM-208): screens
 // read this signal to refresh, as they will on an SSE entry
 export const helpChanged = signal(0)
+
+/** Open requests of others that match a developer, best first (§7.3) */
+export const matchingRequests = (person: Person) =>
+  helpRequests
+    .filter((h) => h.status === 'open' && h.author !== person.login)
+    .map((h) => ({ request: h, score: match(person, h).total }))
+    .filter((h) => h.score >= MIN_SCORE)
+    .sort((a, b) => b.score - a.score)
 
 const firstName = (login: Login) => people[login].name.split(' ')[0]
 const log = (request: HelpRequest, text: string) => {

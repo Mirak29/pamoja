@@ -19,6 +19,8 @@ export type NotificationKind =
   | 'promising'
   | 'application'
   | 'collaboration'
+  | 'reply'
+  | 'repost'
 
 export type Notification = {
   id: string

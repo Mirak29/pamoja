@@ -1,5 +1,8 @@
+import { signal } from '@preact/signals'
 import { hoursAgo } from '/web/fixtures/clock.ts'
-import type { Login } from '/web/fixtures/people.ts'
+import { communities } from '/web/fixtures/communities.ts'
+import { pushNotification } from '/web/fixtures/notifications.ts'
+import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 export type PostType =
@@ -28,6 +31,11 @@ export type Post = {
   acceptedReply?: string
   link?: ProjectSlug
   images?: number
+  /** Embedded by link only: YouTube, Loom or Vimeo (§17.3) */
+  video?: string
+  bookmarks?: Login[]
+  /** Hidden by moderation: only its author still sees it */
+  hidden?: boolean
   demo: boolean
 }
 
@@ -254,3 +262,127 @@ const reposts: Record<string, Post['reposts']> = {
   po7: [{ by: 'awa', at: hoursAgo(3) }],
 }
 for (const p of posts) p.reposts = reposts[p.id] ?? []
+
+// Session changes until the post routes exist (PAM-501)
+export const postsChanged = signal(0)
+
+const changed = () => postsChanged.value++
+
+const firstName = (login: Login) => people[login].name.split(' ')[0]
+
+/** Direct replies: the accepted answer first, then oldest first */
+export const childrenOf = (id: string) => {
+  const parent = posts.find((p) => p.id === id)
+  const root = posts.find((p) => p.id === (parent?.root ?? id))
+  return posts
+    .filter((p) => p.parent === id)
+    .sort((a, b) =>
+      Number(b.id === root?.acceptedReply) -
+        Number(a.id === root?.acceptedReply) || a.at - b.at
+    )
+}
+
+export const descendantCount = (id: string): number =>
+  childrenOf(id).reduce((sum, child) => sum + 1 + descendantCount(child.id), 0)
+
+export type Reaction = 'like' | 'useful'
+
+/** POST/api/reaction/toggle */
+export const toggleReaction = (post: Post, kind: Reaction, login: Login) => {
+  const list = post.reactions[kind] ?? []
+  post.reactions[kind] = list.includes(login)
+    ? list.filter((l) => l !== login)
+    : [...list, login]
+  changed()
+}
+
+/** POST/api/post/repost: the post shows in the feed of followers */
+export const toggleRepost = (post: Post, login: Login) => {
+  const on = !post.reposts.some((r) => r.by === login)
+  post.reposts = on
+    ? [...post.reposts, { by: login, at: Date.now() }]
+    : post.reposts.filter((r) => r.by !== login)
+  if (on && post.author !== login) {
+    pushNotification({
+      to: post.author,
+      category: 'social',
+      kind: 'repost',
+      title: `${firstName(login)} a republié ton post`,
+      body: post.title || post.body.slice(0, 90),
+      href: `post/${post.id}`,
+    })
+  }
+  changed()
+  return on
+}
+
+/** POST/api/bookmark/toggle */
+export const toggleBookmark = (post: Post, login: Login) => {
+  const list = post.bookmarks ?? []
+  post.bookmarks = list.includes(login)
+    ? list.filter((l) => l !== login)
+    : [...list, login]
+  changed()
+}
+
+let created = 0
+const nextId = () => `session-${++created}`
+
+/** POST/api/post/reply: a reply is a post, its author is notified */
+export const replyTo = (parent: Post, login: Login, body: string) => {
+  const reply: Post = {
+    id: nextId(),
+    community: parent.community,
+    author: login,
+    type: 'Réponse',
+    title: '',
+    body,
+    at: Date.now(),
+    reactions: {},
+    reposts: [],
+    parent: parent.id,
+    root: parent.root ?? parent.id,
+    demo: false,
+  }
+  posts.push(reply)
+  if (parent.author !== login) {
+    pushNotification({
+      to: parent.author,
+      category: 'communities',
+      kind: 'reply',
+      title: `${firstName(login)} a répondu à ${
+        parent.parent ? 'ton commentaire' : 'ton post'
+      }`,
+      body: body.slice(0, 90),
+      href: `post/${reply.id}`,
+    })
+  }
+  changed()
+  return reply
+}
+
+export type PostDraft = Pick<
+  Post,
+  'community' | 'type' | 'title' | 'body' | 'images' | 'video'
+>
+
+/** POST/api/post/create: publishing in a community joins it */
+export const publishPost = (draft: PostDraft, author: Person) => {
+  const post: Post = {
+    ...draft,
+    id: nextId(),
+    author: author.login as Login,
+    at: Date.now(),
+    reactions: {},
+    reposts: [],
+    demo: false,
+  }
+  posts.unshift(post)
+  if (!author.communities.includes(draft.community)) {
+    author.communities.push(draft.community)
+    const community = communities.find((c) => c.slug === draft.community)
+    if (community) community.members++
+  }
+  changed()
+  return post
+}

@@ -1,17 +1,26 @@
 import type { ComponentChildren, JSX } from 'preact'
 import {
+  BookOpen,
+  Briefcase,
   Check,
   Circle,
   CircleCheck,
   CircleDot,
+  CircleHelp,
   CircleSlash,
   CircleX,
   Clock,
+  CornerDownRight,
+  FolderGit2,
   GitMerge,
   GitPullRequest,
+  LifeBuoy,
+  MessageSquare,
   MessageSquareText,
   PackageCheck,
   ShieldCheck,
+  Sparkles,
+  Tag,
   UserCheck,
   X,
 } from '/web/assets/icons.tsx'
@@ -51,6 +60,7 @@ const statuses = {
   'milestone-done': ['Terminé', CircleCheck, 'verified'],
   'milestone-active': ['En cours', CircleDot, 'indigo'],
   'milestone-planned': ['Prévu', Circle, 'planned'],
+  answered: ['Résolue', Check, 'verified'],
 } as const satisfies Record<string, [string, IconComponent, Tone]>
 
 export type Status = keyof typeof statuses
@@ -81,6 +91,37 @@ export const VerifiedBadge = () => (
     Vérifié par GitHub
   </span>
 )
+
+// Icon and tone of each post type (§10.1)
+const postTypes = {
+  Discussion: [MessageSquare, 'muted'],
+  Question: [CircleHelp, 'warning'],
+  'Mise à jour de projet': [FolderGit2, 'indigo'],
+  'Demande d’aide': [LifeBuoy, 'indigo'],
+  Vitrine: [Sparkles, 'indigo'],
+  Ressource: [BookOpen, 'muted'],
+  Opportunité: [Briefcase, 'verified'],
+  Release: [Tag, 'indigo'],
+  Réponse: [CornerDownRight, 'muted'],
+} as const satisfies Record<string, [IconComponent, Tone]>
+
+export type PostTypeName = keyof typeof postTypes
+
+/**
+ * Type of a post, its icon and tone.
+ *
+ * @example
+ * <PostTypeBadge type='Question' />
+ */
+export const PostTypeBadge = ({ type }: { type: PostTypeName }) => {
+  const [Icon, tone] = postTypes[type]
+  return (
+    <span class={`${pill} ${tones[tone]}`}>
+      <Icon class='size-3' />
+      {type}
+    </span>
+  )
+}
 
 /** Dashed line: demonstration data, never confused with a real proof */
 export const DemoBadge = () => (

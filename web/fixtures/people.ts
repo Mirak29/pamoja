@@ -1,3 +1,4 @@
+import { signal } from '@preact/signals'
 export type Person = {
   login: string
   name: string
@@ -175,3 +176,15 @@ export const me: Person & { login: Login } = {
 }
 
 export const isMe = (login: string) => login === me.login
+
+// Session changes until POST/api/follow/toggle exists (PAM-505)
+export const peopleChanged = signal(0)
+
+/** Follow or unfollow a developer: their posts and reposts reach the feed */
+export const toggleFollowing = (login: string) => {
+  const follows = me.follows ?? []
+  me.follows = follows.includes(login)
+    ? follows.filter((l) => l !== login)
+    : [...follows, login]
+  peopleChanged.value++
+}

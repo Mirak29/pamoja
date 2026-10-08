@@ -27,13 +27,15 @@ export const Input = (
 )
 
 export const Textarea = (
-  { class: className, ...props }: JSX.IntrinsicElements['textarea'],
+  { compact, class: className, ...props }:
+    & { compact?: boolean }
+    & JSX.IntrinsicElements['textarea'],
 ) => (
   <textarea
     {...props}
-    class={`${field} px-3 py-2.5 text-[15px] leading-[22px] resize-y ${
-      className ?? ''
-    }`}
+    class={`${field} px-3 py-2.5 ${
+      compact ? 'text-[14px]' : 'text-[15px]'
+    } leading-[22px] resize-y ${className ?? ''}`}
   />
 )
 
