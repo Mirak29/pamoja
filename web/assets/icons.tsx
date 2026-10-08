@@ -15,6 +15,13 @@ export const Check = (props: IconProps) => (
   </Icon>
 )
 
+export const CircleAlert = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='12' cy='12' r='10' />
+    <path d='M12 8v4M12 16z' />
+  </Icon>
+)
+
 export const CircleCheck = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='10' />
@@ -90,6 +97,13 @@ export const GitPullRequest = (props: IconProps) => (
   </Icon>
 )
 
+export const Github = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a5.4 5.4 0 0 0-1-3.5A7.4 7.4 0 0 0 19 2s-1 0-3 1.5c-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2a7 7 0 0 0 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5A4.7 4.7 0 0 0 9 18v4' />
+    <path d='M9 18c-4.51 2-5-2-7-2' />
+  </Icon>
+)
+
 export const House = (props: IconProps) => (
   <Icon {...props}>
     <path d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8' />
@@ -140,6 +154,12 @@ export const PackageCheck = (props: IconProps) => (
 export const PenLine = (props: IconProps) => (
   <Icon {...props}>
     <path d='M12 20h9M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z' />
+  </Icon>
+)
+
+export const Play = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m6 3 14 9-14 9z' />
   </Icon>
 )
 
@@ -216,5 +236,11 @@ export const Users = (props: IconProps) => (
 export const X = (props: IconProps) => (
   <Icon {...props}>
     <path d='M18 6 6 18M6 6l12 12' />
+  </Icon>
+)
+
+export const Zap = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z' />
   </Icon>
 )

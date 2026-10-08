@@ -57,7 +57,7 @@ export function Button(
     ButtonProps,
 ) {
   const classes = [
-    'key',
+    'key rounded-md',
     variants[variant],
     square ? squares[size] : sizes[size],
     className,

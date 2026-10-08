@@ -46,14 +46,12 @@ const ModalFrame = (
 ) => {
   const { ref, isOpen } = useModal(id)
   return (
-    // autofocus keeps the initial focus on the dialog, not on its close key
     <dialog
       ref={ref}
-      autofocus
       aria-label={label}
       onClose={() => url.params.dialog === id && close()}
       onPointerDown={(event) => event.target === ref.current && close()}
-      class='fixed inset-0 m-0 size-full max-h-none max-w-none overflow-auto bg-transparent px-4 pt-[7vh] pb-6 outline-none backdrop:bg-scrim'
+      class='fixed inset-0 m-0 size-full max-h-none max-w-none overflow-auto bg-transparent px-4 pt-[7vh] pb-6 backdrop:bg-scrim'
     >
       {isOpen && children}
     </dialog>
@@ -92,7 +90,14 @@ export const Dialog = (
   },
 ) => (
   <ModalFrame id={id} label={title}>
-    <div class={`slab-pop mx-auto mb-3 w-full animate-enter ${widths[width]}`}>
+    {/* The panel takes the initial focus, not the close key */}
+    <div
+      tabIndex={-1}
+      autofocus
+      class={`slab-pop mx-auto mb-3 w-full animate-enter outline-none ${
+        widths[width]
+      }`}
+    >
       <Header>
         <Eyebrow>{title}</Eyebrow>
       </Header>
@@ -120,7 +125,9 @@ export const Drawer = (
 ) => (
   <ModalFrame id={id} label={label}>
     <aside
-      class={`slab-pop fixed top-4 right-6 bottom-6 flex animate-enter flex-col overflow-auto ${
+      tabIndex={-1}
+      autofocus
+      class={`slab-pop fixed top-4 right-6 bottom-6 flex animate-enter flex-col overflow-auto outline-none ${
         drawerWidths[width]
       }`}
     >

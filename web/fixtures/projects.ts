@@ -1,3 +1,4 @@
+import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import type { Login } from '/web/fixtures/people.ts'
 
 export type ProjectRole =
@@ -24,8 +25,28 @@ export type Project = {
   blockers: number[]
   stage: 'Idée' | 'Prototype' | 'Bêta' | 'Production'
   activity: 'Très actif' | 'Actif' | 'Calme'
+  about?: string
+  vision?: string
+  releasedAt: number
+  milestones: Milestone[]
+  gallery: string[]
+  /** Embedded by link only (cahier des charges §17.3) */
+  demoVideo?: { provider: 'YouTube' | 'Loom' | 'Vimeo'; duration: string }
+  /** Events imported with the project, before any live entry */
+  events: { text: string; at: number }[]
   demo: boolean
 }
+
+export type Milestone = {
+  title: string
+  description: string
+  done: number
+  total: number
+  state: 'done' | 'active' | 'planned'
+  date: string
+}
+
+const defaultGallery = ['Écran principal', 'Détail', 'Version mobile']
 
 export const projects = {
   'openpay-africa': {
@@ -48,6 +69,65 @@ export const projects = {
     blockers: [44],
     stage: 'Bêta',
     activity: 'Très actif',
+    about:
+      'OpenPay Africa unifie Wave, Orange Money et MTN MoMo derrière une seule API. Les marchands encaissent sans réécrire leur intégration pour chaque opérateur.',
+    vision:
+      'Qu’un développeur d’Afrique de l’Ouest puisse accepter un paiement mobile en dix lignes.',
+    releasedAt: daysAgo(9),
+    milestones: [
+      {
+        title: 'v0.2 · Fondations',
+        description: 'API marchands et modèle de transactions',
+        done: 8,
+        total: 8,
+        state: 'done',
+        date: 'juin 2026',
+      },
+      {
+        title: 'v0.3 · Wave et Orange Money',
+        description: 'Paiements en sandbox chez les deux opérateurs',
+        done: 12,
+        total: 12,
+        state: 'done',
+        date: 'sept. 2026',
+      },
+      {
+        title: 'v0.4 · Réconciliation et webhooks',
+        description: 'Ledger, idempotence, signature des webhooks',
+        done: 7,
+        total: 11,
+        state: 'active',
+        date: 'nov. 2026',
+      },
+      {
+        title: 'v0.5 · MTN MoMo et production',
+        description: 'Troisième opérateur, passage en production',
+        done: 0,
+        total: 9,
+        state: 'planned',
+        date: 'janv. 2027',
+      },
+    ],
+    gallery: [
+      'Tableau de bord marchand',
+      'Flux de paiement Wave',
+      'Logs de réconciliation',
+    ],
+    demoVideo: { provider: 'Loom', duration: '2:40' },
+    events: [
+      {
+        text: 'PR #77 mergée : gestion des devises XOF et XAF',
+        at: daysAgo(2),
+      },
+      {
+        text: 'Fatou ouvre la PR #84 sur la réconciliation du ledger',
+        at: hoursAgo(6),
+      },
+      {
+        text: 'Issue #44 marquée blocked : verrou SQLite sous charge',
+        at: daysAgo(3),
+      },
+    ],
     demo: true,
   },
   'senegal-maps': {
@@ -67,6 +147,36 @@ export const projects = {
     blockers: [],
     stage: 'Production',
     activity: 'Actif',
+    releasedAt: daysAgo(9),
+    milestones: [
+      {
+        title: 'v1.1 · Transports',
+        description: 'Lignes de bus et cars rapides',
+        done: 9,
+        total: 9,
+        state: 'done',
+        date: 'août 2026',
+      },
+      {
+        title: 'v1.2 · Points d’eau',
+        description: 'Forages et bornes fontaines',
+        done: 6,
+        total: 6,
+        state: 'done',
+        date: 'sept. 2026',
+      },
+      {
+        title: 'v1.3 · Mode hors ligne',
+        description: 'Cache des tuiles sur mobile',
+        done: 3,
+        total: 8,
+        state: 'active',
+        date: 'nov. 2026',
+      },
+    ],
+    gallery: defaultGallery,
+    demoVideo: { provider: 'Loom', duration: '2:40' },
+    events: [],
     demo: true,
   },
   'dakar-transit': {
@@ -86,6 +196,11 @@ export const projects = {
     blockers: [],
     stage: 'Prototype',
     activity: 'Calme',
+    releasedAt: daysAgo(9),
+    milestones: [],
+    gallery: defaultGallery,
+    demoVideo: { provider: 'Loom', duration: '2:40' },
+    events: [],
     demo: true,
   },
   africommerce: {
@@ -105,6 +220,11 @@ export const projects = {
     blockers: [],
     stage: 'Prototype',
     activity: 'Actif',
+    releasedAt: daysAgo(9),
+    milestones: [],
+    gallery: defaultGallery,
+    demoVideo: { provider: 'Loom', duration: '2:40' },
+    events: [],
     demo: true,
   },
 } satisfies Record<string, Project>

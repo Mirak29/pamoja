@@ -110,14 +110,14 @@
   @apply shadow-slab-pop;
 }
 
-/* Key: a button 4px thick that rises on hover and sinks when pressed */
+/* Key: a button 4px thick that rises on hover and sinks when pressed.
+ * No radius here: keys are rounded-md, or round for a play key */
 @utility key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border: 1px solid;
-  border-radius: var(--radius-md);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;

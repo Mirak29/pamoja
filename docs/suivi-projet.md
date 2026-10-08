@@ -131,6 +131,13 @@ Thème généré depuis `docs/identite/tokens.json` (`deno task theme`), polices
 - **Livrable** : `web/ui/`, `web/assets/styles/`, `web/fixtures/`, `task-generate-theme.ts`, `task-generate-icons.js`, page `/dev/socle`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-413 · Page projet : en-tête, onglets, Aperçu
+
+En-tête du projet (synchro, chiffres, Suivre, Proposer mon aide, Rejoindre), rail des dix onglets en vrais chemins (`/projet/openpay-africa/pulse`), onglet Aperçu (à propos, vision, captures, vidéo de démo, activité récente, milestone en cours, besoins, équipe, dernière release) et dialogue Rejoindre avec sa validation. Les autres onglets affichent « Écran à venir » jusqu'à leur tâche.
+
+- **Livrable** : `web/pages/project/`, `web/fixtures/` (PRs, issues, canaux), `web/lib/time.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
