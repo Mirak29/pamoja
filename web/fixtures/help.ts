@@ -1,5 +1,7 @@
+import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import type { Login } from '/web/fixtures/people.ts'
+import { waves } from '/web/fixtures/matching.ts'
+import { type Login, me, people } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 /** Lifecycle of a help request (cahier des charges §7.2) */
@@ -27,8 +29,19 @@ export type HelpRequest = {
   duration: string
   status: HelpStatus
   at: number
+  acceptedAt?: number
   issue?: number
   pullRequest?: number
+  branch?: string
+  /** Failing CI job, for a request born from a #suivi alert */
+  job?: string
+  video?: string
+  /** Screenshot URLs, 4 at most */
+  captures?: string[]
+  /** Developers who withdrew or were released: excluded from next waves */
+  withdrawn?: Login[]
+  wave?: number
+  log?: { text: string; at: number; verified?: boolean }[]
   demo: boolean
 }
 
@@ -112,3 +125,182 @@ export const helpRequests: HelpRequest[] = [
     demo: true,
   },
 ]
+
+// Session changes until the help routes exist (PAM-207, PAM-208): screens
+// read this signal to refresh, as they will on an SSE entry
+export const helpChanged = signal(0)
+
+const firstName = (login: Login) => people[login].name.split(' ')[0]
+const log = (request: HelpRequest, text: string) => {
+  request.log = [
+    ...(request.log ?? [{ text: 'Demande publiée', at: request.at }]),
+    { text, at: Date.now() },
+  ]
+}
+
+export type HelpDraft = Pick<
+  HelpRequest,
+  | 'type'
+  | 'title'
+  | 'description'
+  | 'project'
+  | 'pullRequest'
+  | 'skills'
+  | 'level'
+  | 'duration'
+  | 'branch'
+  | 'job'
+  | 'video'
+  | 'captures'
+>
+
+/** POST/api/help/create: publish and notify the first wave */
+export const publishHelp = (draft: HelpDraft) => {
+  const at = Date.now()
+  const request: HelpRequest = {
+    ...draft,
+    id: `h${at}`,
+    author: me.login,
+    status: 'open',
+    at,
+    wave: 1,
+    demo: false,
+  }
+  request.log = [
+    { text: 'Demande publiée', at },
+    {
+      text: `Vague 1 : ${waves(request)[0].length} développeurs notifiés`,
+      at,
+    },
+  ]
+  helpRequests.unshift(request)
+  helpChanged.value++
+  return request
+}
+
+export type HelpAction =
+  | 'accept'
+  | 'later'
+  | 'withdraw'
+  | 'release'
+  | 'cancel'
+  | 'reopen'
+  | 'deliver'
+  | 'confirm'
+  | 'decline'
+
+type Feedback = {
+  title: string
+  body?: string
+  tone: 'verified' | 'warning' | 'muted'
+}
+
+/** The lifecycle transitions of §7.2, played by the signed-in developer */
+export const actOnHelp = (
+  request: HelpRequest,
+  action: HelpAction,
+): Feedback => {
+  const helper = request.helper
+  const feedback = ((): Feedback => {
+    switch (action) {
+      case 'accept':
+        if (request.status !== 'open') {
+          return {
+            title: 'Déjà prise',
+            body: helper
+              ? `${firstName(helper)} a accepté cette demande avant toi.`
+              : 'Cette demande n’est plus ouverte.',
+            tone: 'warning',
+          }
+        }
+        Object.assign(request, {
+          status: 'accepted',
+          helper: me.login,
+          acceptedAt: Date.now(),
+        })
+        log(request, `${firstName(me.login)} a accepté la demande`)
+        return {
+          title: 'Demande acceptée',
+          body: request.pullRequest
+            ? 'Fais ta review sur GitHub : Pamoja la détectera automatiquement.'
+            : 'Marque l’aide comme livrée quand c’est fait.',
+          tone: 'verified',
+        }
+      case 'later':
+        return {
+          title: 'Demande mise de côté',
+          body: 'Tu la retrouves dans Aide, onglet Pour moi.',
+          tone: 'muted',
+        }
+      case 'withdraw':
+      case 'release':
+        request.withdrawn = [...(request.withdrawn ?? []), helper!]
+        Object.assign(request, {
+          status: 'open',
+          helper: undefined,
+          wave: (request.wave ?? 1) + 1,
+        })
+        if (action === 'withdraw') {
+          log(request, `${firstName(helper!)} s’est désisté`)
+          return {
+            title: 'Tu t’es désisté',
+            body: 'La demande repasse en Ouverte.',
+            tone: 'muted',
+          }
+        }
+        log(
+          request,
+          `${firstName(me.login)} a libéré la demande après 72 h sans activité`,
+        )
+        return {
+          title: 'Demande libérée',
+          body: 'Elle repasse en Ouverte et la vague suivante est notifiée.',
+          tone: 'muted',
+        }
+      case 'cancel':
+        request.status = 'cancelled'
+        log(request, 'Demande annulée')
+        return { title: 'Demande annulée', tone: 'muted' }
+      case 'reopen':
+        Object.assign(request, {
+          status: 'open',
+          at: Date.now(),
+          helper: undefined,
+          wave: 1,
+        })
+        log(request, 'Demande rouverte avec les mêmes données')
+        return {
+          title: 'Demande rouverte',
+          body: 'La vague 1 est notifiée à nouveau.',
+          tone: 'verified',
+        }
+      case 'deliver':
+        request.status = 'delivered'
+        log(request, `${firstName(me.login)} a marqué l’aide comme livrée`)
+        return {
+          title: 'Aide livrée',
+          body: `En attente de la confirmation de ${
+            firstName(request.author)
+          }.`,
+          tone: 'verified',
+        }
+      case 'decline':
+        request.status = 'closed_unhelpful'
+        log(
+          request,
+          `${firstName(me.login)} a indiqué que l’aide n’était pas utile`,
+        )
+        return { title: 'Demande fermée', tone: 'muted' }
+      case 'confirm':
+        request.status = 'completed'
+        log(request, `${firstName(me.login)} a confirmé que l’aide était utile`)
+        return {
+          title: 'Merci pour la confirmation',
+          body: `${firstName(helper!)} reçoit une preuve sur son profil.`,
+          tone: 'verified',
+        }
+    }
+  })()
+  helpChanged.value++
+  return feedback
+}

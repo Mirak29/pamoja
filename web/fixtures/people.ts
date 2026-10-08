@@ -12,6 +12,8 @@ export type Person = {
   helpTypes: string[]
   available: boolean
   confirmedHelps: number
+  /** Shown in « Pourquoi ce match ? » when available */
+  openTo?: string
   promising?: boolean
   moderator?: boolean
   communities: string[]
@@ -53,6 +55,7 @@ export const people = {
     helpTypes: ['Review de code', 'Debug', 'Architecture'],
     available: true,
     confirmedHelps: 14,
+    openTo: 'Ouvert aux reviews',
     communities: ['go', 'code-review', 'cote-divoire-developers'],
     intents: ['Ouvert aux reviews', 'Mentorat'],
   },

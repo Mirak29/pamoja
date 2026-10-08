@@ -165,6 +165,18 @@ Liste des PRs (état de review et de CI), panneau latéral de détail (`?dialog=
 - **Livrable** : `web/pages/project/pull-requests-tab.tsx`, `issues-tab.tsx`, `web/fixtures/board.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-216 · Écrans Aide
+
+Trois écrans d'aide sur données fictives :
+- **Liste** : onglets Pour moi (avec le score de matching), Mes demandes, Acceptées par moi, Demandes des projets.
+- **Nouvelle demande** : pré-remplie depuis une PR (`?pr=`) ou une alerte CI (`?ci=`), skills en vocabulaire contrôlé tolérant aux fautes, captures, aperçu « Qui sera notifié ».
+- **Détail** : frise du cycle de vie, actions selon le rôle et l'état, panneau de matching par vague avec « Pourquoi ce match ? ».
+
+Le matching et les transitions de §7.2 sont joués par `web/fixtures/` (matching, publication, actions), comme le feront les routes `POST/api/help/*`.
+
+- **Livrable** : `web/pages/help/`, `web/ui/help-request-card.tsx`, `web/fixtures/matching.ts`, `web/lib/fuzzy.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

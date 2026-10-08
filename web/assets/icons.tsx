@@ -15,6 +15,18 @@ export const Check = (props: IconProps) => (
   </Icon>
 )
 
+export const ChevronDown = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m6 9 6 6 6-6' />
+  </Icon>
+)
+
+export const ChevronUp = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m18 15-6-6-6 6' />
+  </Icon>
+)
+
 export const CircleAlert = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='10' />
@@ -124,6 +136,13 @@ export const House = (props: IconProps) => (
   </Icon>
 )
 
+export const Info = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='12' cy='12' r='10' />
+    <path d='M12 16v-4M12 8z' />
+  </Icon>
+)
+
 export const LifeBuoy = (props: IconProps) => (
   <Icon {...props}>
     <circle cx='12' cy='12' r='10' />
@@ -186,6 +205,13 @@ export const Play = (props: IconProps) => (
 export const Plus = (props: IconProps) => (
   <Icon {...props}>
     <path d='M5 12h14M12 5v14' />
+  </Icon>
+)
+
+export const RotateCcw = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M3 12a9 9 0 1 0 9-9 9.8 9.8 0 0 0-6.74 2.74L3 8' />
+    <path d='M3 3v5h5' />
   </Icon>
 )
 
@@ -254,6 +280,14 @@ export const UserCheck = (props: IconProps) => (
     <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
     <circle cx='9' cy='7' r='4' />
     <path d='m16 11 2 2 4-4' />
+  </Icon>
+)
+
+export const UserMinus = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
+    <circle cx='9' cy='7' r='4' />
+    <path d='M22 11h-6' />
   </Icon>
 )
 
