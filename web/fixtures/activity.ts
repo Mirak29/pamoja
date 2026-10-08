@@ -20,6 +20,13 @@ export const logActivity = (project: ProjectSlug, text: string) => {
   activityChanged.value++
 }
 
+/** Session entries and latest events, newest first (Aperçu, Pulse) */
+export const recentActivityOf = (project: Project): ActivityEntry[] =>
+  [
+    ...sessionLog.filter((entry) => entry.project === project.slug),
+    ...project.events,
+  ].sort((a, b) => b.at - a.at)
+
 /** Session entries, latest events and older journal, newest first */
 export const activityOf = (project: Project): ActivityEntry[] =>
   [

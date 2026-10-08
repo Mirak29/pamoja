@@ -44,6 +44,11 @@ const Gallery = ({ project }: { project: Project }) => {
   return (
     <Card class='gap-3.5 p-[22px]'>
       <Eyebrow>Captures et démo</Eyebrow>
+      {!project.gallery.length && !video && (
+        <span class='text-[14px] text-ink-muted'>
+          Pas encore de captures ni de vidéo de démo.
+        </span>
+      )}
       <div class='grid grid-cols-3 gap-3.5'>
         {project.gallery.map((caption) => (
           <div
@@ -174,7 +179,9 @@ const Release = ({ project }: { project: Project }) => (
       {project.release}
     </span>
     <span class='text-[13px] text-ink-muted'>
-      Publiée {ago(project.releasedAt)}
+      {project.release === '—'
+        ? 'Aucune release pour l’instant.'
+        : `Publiée ${ago(project.releasedAt)}`}
     </span>
   </Card>
 )

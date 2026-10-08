@@ -3,6 +3,12 @@ import { Icon } from '/web/ui/icon-wrapper.tsx'
 import type { JSX } from 'preact'
 type IconProps = JSX.IntrinsicElements['svg']
 
+export const ArrowLeft = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m12 19-7-7 7-7M19 12H5' />
+  </Icon>
+)
+
 export const Bell = (props: IconProps) => (
   <Icon {...props}>
     <path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0' />
@@ -121,6 +127,12 @@ export const Download = (props: IconProps) => (
   </Icon>
 )
 
+export const ExternalLink = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' />
+  </Icon>
+)
+
 export const Flag = (props: IconProps) => (
   <Icon {...props}>
     <path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7' />
@@ -211,6 +223,12 @@ export const Link = (props: IconProps) => (
   <Icon {...props}>
     <path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' />
     <path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' />
+  </Icon>
+)
+
+export const Loader = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M12 2v4M16.2 7.8l2.9-2.9M18 12h4M16.2 16.2l2.9 2.9M12 18v4M4.9 19.1l2.9-2.9M2 12h4M4.9 4.9l2.9 2.9' />
   </Icon>
 )
 

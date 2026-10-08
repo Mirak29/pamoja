@@ -15,8 +15,8 @@ export type Project = {
   name: string
   owner: Login
   stack: string[]
-  /** live: GitHub App installed, poll: refreshed every 15 minutes */
-  sync: 'live' | 'poll'
+  /** Live via the GitHub App, polled every 15 min, or no repo yet */
+  sync: 'live' | 'poll' | 'none'
   /** The GitHub App is installed: live sync comes back without a dialog */
   appInstalled?: boolean
   description: string
@@ -269,11 +269,22 @@ export const needSuggestions = [
 // Session changes until the project routes exist (PAM-401)
 export const projectsChanged = signal(0)
 
+/** POST/api/follow/toggle on a project */
+export const toggleFollow = (project: Project, login: Login) => {
+  project.followers = project.followers.includes(login)
+    ? project.followers.filter((l) => l !== login)
+    : [...project.followers, login]
+  projectsChanged.value++
+}
+
 /** POST/api/project/update, journaled */
 export const updateProject = (
   project: Project,
   patch: Partial<
-    Pick<Project, 'name' | 'description' | 'vision' | 'needs' | 'sync'>
+    Pick<
+      Project,
+      'name' | 'description' | 'vision' | 'needs' | 'sync' | 'appInstalled'
+    >
   >,
   journal: string,
 ) => {

@@ -253,6 +253,18 @@ Un non-propriétaire qui ouvre l'adresse voit « Réservé au Propriétaire ». 
 - **Livrable** : `web/pages/project/settings-tab.tsx`, `updateProject` dans `web/fixtures/projects.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-420 · Écran Projets
+
+Écran `/projets` sur données fictives :
+- **Tes projets** (propriétaire ou membre) et **projets suivis**, avec « Ne plus suivre » ; suivre depuis la page d'un projet l'ajoute ici.
+- **Nouveau projet** (`?dialog=new-project`) : importer un repo public (liste, aperçu, skills et besoins proposés par l'IA à valider) ou créer de zéro (nom, description, vision, technologies, visibilité, besoins).
+- **Synchro live** (`?dialog=sync`, depuis la page du projet ou ses réglages) : présentation, page d'installation GitHub simulée, trois contrôles (identité, repo couvert, droit admin), puis passage en Live avec un message dans #suivi.
+
+Un projet importé arrive avec ses issues, sa release et un message dans #suivi ; un projet créé de zéro est « Sans repo ». L'Aperçu affiche maintenant les actions de la session dans « Activité récente ».
+
+- **Livrable** : `web/pages/projects/`, `web/pages/project/sync-dialog.tsx`, `web/fixtures/repos.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

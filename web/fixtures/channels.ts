@@ -121,3 +121,25 @@ export const channels: Partial<
     ],
   },
 }
+
+/** An alert the platform writes in #suivi, like the webhook handler will */
+export const postAlert = (
+  project: ProjectSlug,
+  kind: AlertKind,
+  text: string,
+) => {
+  const store = channels[project] ??= {
+    general: [],
+    tracking: [],
+    help: [],
+    announcements: [],
+  }
+  store.tracking.push({
+    id: `alert-${project}-${store.tracking.length + 1}`,
+    author: 'platform',
+    kind,
+    text,
+    at: Date.now(),
+    demo: false,
+  })
+}

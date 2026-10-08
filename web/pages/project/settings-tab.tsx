@@ -177,39 +177,45 @@ const SyncMode = ({ project }: { project: Project }) => {
   return (
     <section class='slab flex flex-col gap-3 p-[22px]'>
       <Eyebrow>Mode de synchro</Eyebrow>
-      {syncModes.map(([mode, label, description, Icon]) => {
-        const active = project.sync === mode
-        return (
-          <button
-            key={mode}
-            type='button'
-            aria-pressed={active}
-            onClick={() => pick(mode)}
-            class={`flex w-[calc(100%-4px)] cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 text-left text-ink transition-[translate,box-shadow] duration-120 ease-out active:translate-x-[2.6px] active:translate-y-[1.5px] active:shadow-none ${
-              active
-                ? 'border-indigo bg-indigo-soft shadow-key-selected'
-                : 'border-figure-edge bg-surface-100 shadow-tile'
-            }`}
-          >
-            <span class={`pt-0.5 ${active ? 'text-indigo' : 'text-ink'}`}>
-              <Icon class='size-[18px]' />
-            </span>
-            <span class='flex flex-1 flex-col gap-1'>
-              <span class='flex justify-between gap-2 font-semibold'>
-                {label}
-                {active && (
-                  <span class='font-mono text-[11px] leading-[18px] font-medium tracking-[.06em] text-indigo uppercase'>
-                    Actif
-                  </span>
-                )}
+      {project.sync === 'none' && (
+        <span class='text-[14px] text-ink-muted'>
+          Ce projet n’est pas encore lié à un repo GitHub.
+        </span>
+      )}
+      {project.sync !== 'none' &&
+        syncModes.map(([mode, label, description, Icon]) => {
+          const active = project.sync === mode
+          return (
+            <button
+              key={mode}
+              type='button'
+              aria-pressed={active}
+              onClick={() => pick(mode)}
+              class={`flex w-[calc(100%-4px)] cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 text-left text-ink transition-[translate,box-shadow] duration-120 ease-out active:translate-x-[2.6px] active:translate-y-[1.5px] active:shadow-none ${
+                active
+                  ? 'border-indigo bg-indigo-soft shadow-key-selected'
+                  : 'border-figure-edge bg-surface-100 shadow-tile'
+              }`}
+            >
+              <span class={`pt-0.5 ${active ? 'text-indigo' : 'text-ink'}`}>
+                <Icon class='size-[18px]' />
               </span>
-              <span class='text-[13px] leading-5 text-ink-muted'>
-                {description}
+              <span class='flex flex-1 flex-col gap-1'>
+                <span class='flex justify-between gap-2 font-semibold'>
+                  {label}
+                  {active && (
+                    <span class='font-mono text-[11px] leading-[18px] font-medium tracking-[.06em] text-indigo uppercase'>
+                      Actif
+                    </span>
+                  )}
+                </span>
+                <span class='text-[13px] leading-5 text-ink-muted'>
+                  {description}
+                </span>
               </span>
-            </span>
-          </button>
-        )
-      })}
+            </button>
+          )
+        })}
     </section>
   )
 }

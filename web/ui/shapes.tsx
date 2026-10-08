@@ -5,7 +5,19 @@
  * <Cube size={44} />
  * <Diamond state='done' />
  */
-export const Cube = ({ size = 28 }: { size?: number }) => (
+const cubeTops = {
+  soft: 'var(--indigo-soft)',
+  filled: 'var(--indigo)',
+  plain: 'var(--surface-100)',
+} as const
+
+export const Cube = (
+  { size = 28, top = 'soft' }: {
+    size?: number
+    /** Filled for one's own projects, plain for followed ones */
+    top?: keyof typeof cubeTops
+  },
+) => (
   <svg
     width={size}
     height={size}
@@ -15,7 +27,7 @@ export const Cube = ({ size = 28 }: { size?: number }) => (
   >
     <polygon
       points='14,2 25,8 14,14 3,8'
-      fill='var(--indigo-soft)'
+      fill={cubeTops[top]}
       stroke='var(--ink)'
       stroke-width='1'
       stroke-linejoin='round'

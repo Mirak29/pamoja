@@ -5,6 +5,7 @@ import { NotificationsPage } from '/web/pages/notifications.tsx'
 import { ProfileEditPage } from '/web/pages/profile/profile-edit.tsx'
 import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
+import { ProjectsPage } from '/web/pages/projects/projects-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
 import { AppLayout } from '/web/ui/layout.tsx'
 import { UpcomingState } from '/web/ui/states.tsx'
@@ -20,6 +21,7 @@ const routes: Record<string, () => JSX.Element | null> = {
   notifications: NotificationsPage,
   profil: ProfileEditPage,
   projet: ProjectPage,
+  projets: ProjectsPage,
 }
 
 const App = () => {

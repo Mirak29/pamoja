@@ -1,6 +1,12 @@
-import { useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
-import { Check, Clock, Github, Plus, Zap } from '/web/assets/icons.tsx'
+import {
+  Check,
+  CircleSlash,
+  Clock,
+  Github,
+  Plus,
+  Zap,
+} from '/web/assets/icons.tsx'
 import {
   applications,
   applicationsChanged,
@@ -14,6 +20,7 @@ import {
   projects,
   projectsChanged,
   type ProjectSlug,
+  toggleFollow,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { JoinDialog } from '/web/pages/project/join-dialog.tsx'
@@ -25,6 +32,7 @@ import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
 import { RoadmapTab } from '/web/pages/project/roadmap-tab.tsx'
 import { SettingsTab } from '/web/pages/project/settings-tab.tsx'
+import { SyncDialog } from '/web/pages/project/sync-dialog.tsx'
 import { PullRequestsTab } from '/web/pages/project/pull-requests-tab.tsx'
 import { TeamTab } from '/web/pages/project/team-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -71,16 +79,27 @@ const activeHelp: HelpStatus[] = [
   'delivered',
 ]
 
-const SyncBadge = ({ live }: { live: boolean }) => (
-  <span
-    class={`inline-flex h-[22px] items-center gap-1 rounded-sm border px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] whitespace-nowrap uppercase ${
-      live ? 'border-indigo text-indigo' : 'border-line-control text-ink-muted'
-    }`}
-  >
-    {live ? <Zap class='size-3' /> : <Clock class='size-3' />}
-    {live ? 'Synchro live' : 'Synchro toutes les 15 min'}
-  </span>
-)
+const syncLabels = {
+  live: [Zap, 'Synchro live'],
+  poll: [Clock, 'Synchro toutes les 15 min'],
+  none: [CircleSlash, 'Sans repo'],
+} as const
+
+const SyncBadge = ({ sync }: { sync: Project['sync'] }) => {
+  const [Icon, label] = syncLabels[sync]
+  return (
+    <span
+      class={`inline-flex h-[22px] items-center gap-1 rounded-sm border px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] whitespace-nowrap uppercase ${
+        sync === 'live'
+          ? 'border-indigo text-indigo'
+          : 'border-line-control text-ink-muted'
+      }`}
+    >
+      <Icon class='size-3' />
+      {label}
+    </span>
+  )
+}
 
 const Stat = ({ value, label }: { value: number; label: string }) => (
   <div class='tile flex flex-col gap-0.5 px-3 py-2.5'>
@@ -91,19 +110,8 @@ const Stat = ({ value, label }: { value: number; label: string }) => (
   </div>
 )
 
-// Its own component: one with hooks only re-renders when its props change,
-// and the project object is mutated in place
-const FollowButton = ({ initial }: { initial: boolean }) => {
-  const [following, setFollowing] = useState(initial)
-  return (
-    <Button variant='secondary' onClick={() => setFollowing(!following)}>
-      {following ? <Check /> : <Plus />}
-      {following ? 'Suivi' : 'Suivre'}
-    </Button>
-  )
-}
-
 const Actions = ({ project }: { project: Project }) => {
+  const following = project.followers.some(isMe)
   const isOwner = project.owner === me.login
   const isMember = project.members.some((m) => m.login === me.login)
   const applied = applications.some((a) =>
@@ -112,7 +120,13 @@ const Actions = ({ project }: { project: Project }) => {
   )
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
-      <FollowButton initial={project.followers.some(isMe)} />
+      <Button
+        variant='secondary'
+        onClick={() => toggleFollow(project, me.login)}
+      >
+        {following ? <Check /> : <Plus />}
+        {following ? 'Suivi' : 'Suivre'}
+      </Button>
       <Button variant='secondary' href={`projet/${project.slug}/canaux/aide`}>
         Proposer mon aide
       </Button>
@@ -155,7 +169,7 @@ const Header = ({ project }: { project: Project }) => {
               {project.name}
             </h1>
             <div class='flex flex-wrap items-center gap-2'>
-              <SyncBadge live={project.sync === 'live'} />
+              <SyncBadge sync={project.sync} />
               {project.demo && <DemoBadge />}
             </div>
           </div>
@@ -261,6 +275,7 @@ export const ProjectPage = () => {
         ? <Content project={project} />
         : <UpcomingState path={url.relativePath.slice(1)} />}
       <JoinDialog project={project} />
+      {project.owner === me.login && <SyncDialog project={project} />}
     </Page>
   )
 }
