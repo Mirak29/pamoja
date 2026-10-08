@@ -80,6 +80,26 @@ sans twind ni daisyUI (§12.3).
 Lancer le projet : `deno task dev` sur `http://localhost:8800` (port distinct de
 Tournament pour faire tourner les deux). Build de prod : `deno task prod`.
 
+## Interface : conventions du socle
+
+- **Référence visuelle** : `docs/prototype/pamoja-v2.dc.html`. Catalogue vivant des
+  composants : page `/dev/socle` (comme `/dev/docs` dans Tournament).
+- **Thème** : `web/assets/styles/theme.css` est généré (`deno task theme`) ; les
+  utilitaires isométriques (`slab`, `key-*`, `well`, `disc`, `tile`, `rail`) sont dans
+  `style.css`. Couleurs, textes et reliefs passent par les tokens (`bg-surface-100`,
+  `text-ink-muted`, `shadow-slab`) ; la palette par défaut de Tailwind est désactivée.
+- **Composants** dans `web/ui/` : `Button` (tailles en pixels du prototype), `Tabs`,
+  `Dialog` et `Drawer` (ouverts par `?dialog=id`), `Menu` (popover), `notify()`, états
+  `EmptyState`, `LoadingState`, `ErrorState`. Une page est dans `web/pages/` ; un
+  composant ne va dans `web/ui/` que s'il sert à plusieurs écrans.
+- **Pas de fusion de classes** : jamais deux classes Tailwind sur la même propriété
+  (`h-10` et `h-12`) ; une variante passe par une prop.
+- **JSX classique** (`h` global, comme Tournament) : ne jamais nommer une variable `h`.
+- **Icônes** : importer le nom Lucide depuis `/web/assets/icons.tsx` puis lancer
+  `deno task icon` (Lucide figé sur la 0.460 du prototype).
+- **Données fictives** dans `web/fixtures/` en attendant l'API ; elles disparaissent
+  quand un écran passe sur `api[...].signal()`.
+
 ## Décisions clés (détail dans le cahier des charges)
 
 - GitHub App **en lecture seule**, repos **publics uniquement**, **aucun token

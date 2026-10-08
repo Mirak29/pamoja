@@ -1,0 +1,21 @@
+// Controlled vocabulary of the prototype (SkillAlias comes with PAM-201)
+export const skills = [
+  'Go',
+  'TypeScript',
+  'Deno',
+  'SQLite',
+  'PostgreSQL',
+  'React',
+  'UI',
+  'Docker',
+  'Kubernetes',
+  'CI',
+  'Flutter',
+  'Dart',
+  'Python',
+  'SQL',
+  'Security',
+  'Concurrency',
+  'Backend',
+  'Code review',
+]

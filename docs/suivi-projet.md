@@ -124,6 +124,13 @@ La CLI Tailwind v4 (`npm:@tailwindcss/cli`) tourne sous Deno : en watch dans `ta
 - **Livrable** : `web/assets/styles/style.css`, `task-dev.ts`, `task-prod.ts`, `docs/cahier-des-charges.md` §2, §12.3, §20
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-111 · Socle UI
+
+Thème généré depuis `docs/identite/tokens.json` (`deno task theme`), polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques, tuiles, rail d'onglets), composants communs, coquille de l'app (barre latérale, en-tête avec recherche centrée, barre mobile, menus, palette ⌘K, toasts), routage en vrais chemins, thèmes clair et sombre. Données fictives partagées dans `web/fixtures/`. Rendu comparé au prototype à 1280 px et 390 px, dans les deux thèmes. Les figures Hairline du prototype ne sont pas reprises (§12.7).
+
+- **Livrable** : `web/ui/`, `web/assets/styles/`, `web/fixtures/`, `task-generate-theme.ts`, `task-generate-icons.js`, page `/dev/socle`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
