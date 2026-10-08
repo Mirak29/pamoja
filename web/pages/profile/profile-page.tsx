@@ -21,7 +21,12 @@ import {
   people,
   type Person,
 } from '/web/fixtures/people.ts'
-import { projectsOf } from '/web/fixtures/projects.ts'
+import {
+  profileChanged,
+  type ProfileSection,
+  settingsOf,
+} from '/web/fixtures/profile-settings.ts'
+import { type ProjectSlug, projectsOf } from '/web/fixtures/projects.ts'
 import { type Dimension, proofsOf } from '/web/fixtures/reputation.ts'
 import { ago } from '/web/lib/time.ts'
 import { initials } from '/web/ui/avatar.tsx'
@@ -42,6 +47,7 @@ import {
   CountryCode,
 } from '/web/pages/profile/collaboration.tsx'
 import { CollaborationDialog } from '/web/pages/profile/collaboration-dialog.tsx'
+import { Cover } from '/web/pages/profile/cover.tsx'
 import { Passport } from '/web/pages/profile/passport.tsx'
 import { proofMeta, ProofsDrawer } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
@@ -62,27 +68,6 @@ const profileLogin = () => {
   const login = url.relativePath.slice(2).split('/')[0]
   return Object.hasOwn(people, login) ? login as Login : undefined
 }
-
-const Cover = () => (
-  <div class='relative h-[140px] border-b border-figure-edge bg-surface-000'>
-    <svg
-      width='100%'
-      height='140'
-      viewBox='0 0 800 140'
-      preserveAspectRatio='none'
-      aria-hidden='true'
-      class='absolute inset-0'
-    >
-      <path
-        d='M0 108 C 220 10, 520 150, 800 30'
-        stroke='var(--indigo)'
-        stroke-width='1.5'
-        fill='none'
-        vector-effect='non-scaling-stroke'
-      />
-    </svg>
-  </div>
-)
 
 const Actions = ({ login }: { login: Login }) => {
   const [following, setFollowing] = useState(
@@ -129,7 +114,7 @@ const Hero = ({ login }: { login: Login }) => {
   const person: Person = people[login]
   return (
     <section class='slab mr-2 overflow-hidden'>
-      <Cover />
+      <Cover cover={settingsOf(login).cover} />
       <div class='flex flex-col gap-3 px-6 pb-6'>
         <div class='relative -mt-12 flex flex-wrap items-end justify-between gap-4'>
           <span class='flex size-24 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[32px] leading-none font-bold shadow-slab'>
@@ -225,7 +210,10 @@ const Stats = ({ login }: { login: Login }) => {
 }
 
 const Building = ({ login }: { login: Login }) => {
-  const list = projectsOf(login)
+  const { featured } = settingsOf(login)
+  const list = projectsOf(login).filter((project) =>
+    !featured.length || featured.includes(project.slug as ProjectSlug)
+  )
   if (!list.length) return null
   return (
     <section class='flex flex-col gap-4'>
@@ -389,26 +377,46 @@ const NotFound = ({ login }: { login: string }) => (
   </Page>
 )
 
+const sections: Record<
+  ProfileSection,
+  (props: { login: Login }) => preact.JSX.Element | null
+> = {
+  building: Building,
+  contributions: Contributions,
+  reputation: Reputation,
+  badges: Badges,
+  activity: Activity,
+  communities: Communities,
+  map: CollaborationMap,
+  graph: CollaborationGraph,
+}
+
 /**
- * /@login: hero, stats then the sections in the default order of §9.1
- * (the order chosen by the developer comes with PAM-314).
+ * /@login: hero, stats then the sections in the order chosen by the
+ * developer, in the theme and accent of the profile (§9.1, §9.2).
  */
 export const ProfilePage = () => {
+  profileChanged.value
   const login = profileLogin()
   if (!login) return <NotFound login={url.relativePath.slice(2)} />
+  const { theme, accent, order } = settingsOf(login)
   return (
-    <Page title={people[login].name} class='flex flex-col gap-8 pt-5'>
-      <Hero login={login} />
-      <Stats login={login} />
-      <div class='mr-2 flex flex-col gap-8'>
-        <Building login={login} />
-        <Contributions login={login} />
-        <Reputation login={login} />
-        <Badges login={login} />
-        <Activity login={login} />
-        <Communities login={login} />
-        <CollaborationMap login={login} />
-        <CollaborationGraph login={login} />
+    <Page title={people[login].name} class='pt-5'>
+      <div
+        data-ptheme={theme}
+        data-paccent={accent}
+        class={`flex flex-col gap-8 rounded-[14px] bg-surface-000 text-ink ${
+          theme === 'minimal' ? '' : 'px-[18px] pt-5 pb-7'
+        }`}
+      >
+        <Hero login={login} />
+        <Stats login={login} />
+        <div class='mr-2 flex flex-col gap-8'>
+          {order.map((key) => {
+            const Section = sections[key]
+            return <Section key={key} login={login} />
+          })}
+        </div>
       </div>
       <ProofsDrawer login={login} />
       <ShareDialog login={login} />

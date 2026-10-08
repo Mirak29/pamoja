@@ -148,6 +148,17 @@ export const GraduationCap = (props: IconProps) => (
   </Icon>
 )
 
+export const GripVertical = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='9' cy='12' r='1' />
+    <circle cx='9' cy='5' r='1' />
+    <circle cx='9' cy='19' r='1' />
+    <circle cx='15' cy='12' r='1' />
+    <circle cx='15' cy='5' r='1' />
+    <circle cx='15' cy='19' r='1' />
+  </Icon>
+)
+
 export const Handshake = (props: IconProps) => (
   <Icon {...props}>
     <path d='m11 17 2 2a1 1 0 1 0 3-3' />

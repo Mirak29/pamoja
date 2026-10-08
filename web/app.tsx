@@ -2,6 +2,7 @@ import { Fragment, h, type JSX, render } from 'preact'
 import { url } from '@01edu/signal-router'
 import { HelpPage } from '/web/pages/help/help-page.tsx'
 import { NotificationsPage } from '/web/pages/notifications.tsx'
+import { ProfileEditPage } from '/web/pages/profile/profile-edit.tsx'
 import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
@@ -17,6 +18,7 @@ const routes: Record<string, () => JSX.Element | null> = {
   aide: HelpPage,
   dev: SoclePage,
   notifications: NotificationsPage,
+  profil: ProfileEditPage,
   projet: ProjectPage,
 }
 

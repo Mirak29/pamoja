@@ -205,6 +205,20 @@ La réputation, les badges et les liens de travail sont calculés depuis les pre
 - **Livrable** : `web/pages/profile/`, `web/fixtures/reputation.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-314 · Écran Modifier le profil
+
+`/profil/modifier` sur données fictives :
+- **Identité** : headline, bio, site.
+- **Apparence** : thème (Minimal, Terminal, Cyber, Clair, Sombre), couleur d'accent (Indigo, Vert, Ambre, Corail), couverture (Le fil, Grille, Plaques, Uni).
+- **Technologies et projets** : technologies du vocabulaire contrôlé, projets mis en avant.
+- **Ordre des sections** : glisser-déposer ou flèches.
+- **Aperçu en direct** dans le thème choisi ; « Enregistrer » applique le tout au profil.
+
+Les thèmes et accents sont définis dans `docs/identite/tokens.json` et générés par `deno task theme` : ils redéfinissent les variables de couleur sur le profil seulement. Sur un thème sombre, l'accent prend sa valeur sombre.
+
+- **Livrable** : `web/pages/profile/profile-edit.tsx`, `web/pages/profile/cover.tsx`, `web/fixtures/profile-settings.ts`, `task-generate-theme.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

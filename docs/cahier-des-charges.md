@@ -451,7 +451,7 @@ Le profil est un produit à part entière : public, partageable, indexable, serv
 
 ### 9.2 Personnalisation
 
-Cover, couleur d'accent, thème (Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
 
 ### 9.3 Vitrines visuelles
 
@@ -557,7 +557,7 @@ Tournament utilise `@twind/preact`, qui génère le CSS dans le navigateur. Pamo
 
 - Pas de twind. La CLI Tailwind (`npm:@tailwindcss/cli`, lancée par Deno) compile `web/assets/styles/style.css` : en watch pendant le dev (`task-dev.ts`), minifiée dans le build (`task-prod.ts`, donc aussi dans le Dockerfile). Seul `web/` est lu pour trouver les classes.
 - Tailwind trouve les classes en lisant les fichiers source : les noms de classes doivent apparaître en entier dans le code. Une classe construite par concaténation (`'bg-' + color`) n'est pas générée.
-- Les couleurs du design system sont des variables CSS générées depuis `docs/identite/tokens.json` (clair et sombre), exposées à Tailwind par `@theme`. Les thèmes de profil (§9.2) redéfinissent ces variables sur le profil. Le système isométrique (dalles, touches, puits) est écrit en utilitaires CSS, et les composants maison (ProjectCard, DeveloperCard, HelpRequestCard, ProjectPulse, Badge, ProfileHero, ContributionCard, NotificationItem) sont construits par-dessus.
+- Les couleurs du design system sont des variables CSS générées depuis `docs/identite/tokens.json` (clair et sombre), exposées à Tailwind par `@theme`. Les thèmes et accents de profil (§9.2), définis dans le même fichier, redéfinissent ces variables sur le profil seulement. Le système isométrique (dalles, touches, puits) est écrit en utilitaires CSS, et les composants maison (ProjectCard, DeveloperCard, HelpRequestCard, ProjectPulse, Badge, ProfileHero, ContributionCard, NotificationItem) sont construits par-dessus.
 
 ### 12.4 Faits vérifiés sur `@01edu/api`
 
@@ -607,7 +607,7 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 - **Formes par type d'objet** : personne = disque, projet = cube, événement = tuile, état = losange.
 - **Colonnes** : les métriques du Pulse, les badges et la Collaboration Map sont des colonnes dont la hauteur suit la valeur. Le volume encode une donnée réelle, jamais une décoration.
 - **Fond uni** (`surface-000`) : la grille isométrique au sol a été essayée puis retirée, elle gênait la lecture.
-- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu.
+- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu. Seule exception : la couverture « Plaques » d'un profil, que le développeur choisit lui-même (§9.2).
 
 ### 12.8 Tests
 
