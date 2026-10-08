@@ -18,6 +18,7 @@ export type Person = {
   moderator?: boolean
   communities: string[]
   intents: string[]
+  follows?: string[]
 }
 
 export const people = {
@@ -39,6 +40,7 @@ export const people = {
     confirmedHelps: 3,
     communities: ['go', 'senegal-developers', 'open-source'],
     intents: ['Cherche des contributeurs', 'Ouvert aux reviews'],
+    follows: ['moussa', 'awa', 'fatou'],
   },
   moussa: {
     login: 'moussa',

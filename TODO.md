@@ -136,7 +136,7 @@ Responsable : _à répartir_
 - [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
-- [ ] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]`
+- [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
 - [ ] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2)
 
 **Critères d'acceptation (§4)**

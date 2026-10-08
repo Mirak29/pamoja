@@ -4,6 +4,7 @@ import {
   Check,
   CheckCheck,
   GitPullRequest,
+  Handshake,
   LifeBuoy,
   ShieldCheck,
   Sparkles,
@@ -53,6 +54,7 @@ const icons: Record<NotificationKind, IconComponent> = {
   moderation: ShieldCheck,
   promising: Sparkles,
   application: UserPlus,
+  collaboration: Handshake,
 }
 
 const open = (notification: Notification) => {

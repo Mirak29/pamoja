@@ -97,6 +97,12 @@ export const Compass = (props: IconProps) => (
   </Icon>
 )
 
+export const Download = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3' />
+  </Icon>
+)
+
 export const Flag = (props: IconProps) => (
   <Icon {...props}>
     <path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7' />
@@ -135,6 +141,21 @@ export const Github = (props: IconProps) => (
   </Icon>
 )
 
+export const GraduationCap = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M21.42 10.92a1 1 0 0 0-.02-1.84l-8.57-3.9a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0zM22 10v6' />
+    <path d='M6 12.5V16a6 3 0 0 0 12 0v-3.5' />
+  </Icon>
+)
+
+export const Handshake = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m11 17 2 2a1 1 0 1 0 3-3' />
+    <path d='m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.8 5.8 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4' />
+    <path d='m21 3 1 11h-2M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3M3 4h8' />
+  </Icon>
+)
+
 export const House = (props: IconProps) => (
   <Icon {...props}>
     <path d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8' />
@@ -154,6 +175,13 @@ export const LifeBuoy = (props: IconProps) => (
     <circle cx='12' cy='12' r='10' />
     <path d='m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24' />
     <circle cx='12' cy='12' r='4' />
+  </Icon>
+)
+
+export const Link = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' />
+    <path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' />
   </Icon>
 )
 

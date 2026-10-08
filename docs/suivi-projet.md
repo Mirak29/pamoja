@@ -191,6 +191,20 @@ Le toast gagne la variante « Ce projet a besoin de toi » (skills, score, duré
 - **Livrable** : `web/pages/notifications.tsx`, `web/ui/toast.tsx`, `web/fixtures/notifications.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-313 · Écran Profil
+
+Profil `/@login` sur données fictives :
+- **Vue complète** : hero (cover « fil », Suivre, Proposer une collaboration, Partager, Signaler ; Partager et Modifier le profil sur son propre profil), chiffres d'activité, puis les sections dans l'ordre par défaut : en train de construire, contributions réelles, réputation en cinq dimensions, badges avec progression, activité, communautés, Collaboration Map, Collaboration Graph.
+- **Preuves** : tiroir de toutes les preuves (`?dialog=preuves`) ou d'une dimension (`?dialog=preuves-review`), ouvert depuis les contributions, les barres de réputation et les badges.
+- **Carte de partage** (`?dialog=partage`) : aperçu de l'image Open Graph, liens de partage LinkedIn, X et WhatsApp réels, aperçu du lien dans WhatsApp et LinkedIn.
+- **Proposer une collaboration** (`?dialog=collaboration`) : type, projet et PR, message ; la proposition arrive dans les notifications du destinataire.
+- **Passeport** : la vue publique, sans la coquille de l'app, affichée à `/@login?vue=publique` tant que les sessions n'existent pas (PAM-110).
+
+La réputation, les badges et les liens de travail sont calculés depuis les preuves de `web/fixtures/reputation.ts`, comme le feront `GET/api/user` et `GET/api/user/badges`. Le passeport reprend le même calcul que la vue complète. La Collaboration Map n'ajoute jamais le pays du profil aux pays reliés (§9.3) ; sa vue s'agrandit vers le haut pour ne pas couper la plus haute colonne. Pas de figure décorative dans la carte de partage (§12.7). Le téléchargement du PNG arrive avec PAM-305.
+
+- **Livrable** : `web/pages/profile/`, `web/fixtures/reputation.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -2,6 +2,7 @@ import { Fragment, h, type JSX, render } from 'preact'
 import { url } from '@01edu/signal-router'
 import { HelpPage } from '/web/pages/help/help-page.tsx'
 import { NotificationsPage } from '/web/pages/notifications.tsx'
+import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
 import { AppLayout } from '/web/ui/layout.tsx'
@@ -12,6 +13,7 @@ Object.assign(globalThis, { h, Fragment })
 // Pages by first path segment; each page reads the rest of its path
 // (/projet/openpay-africa/pulse). A profile lives at /@login.
 const routes: Record<string, () => JSX.Element | null> = {
+  '@': ProfilePage,
   aide: HelpPage,
   dev: SoclePage,
   notifications: NotificationsPage,
@@ -21,6 +23,8 @@ const routes: Record<string, () => JSX.Element | null> = {
 const App = () => {
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
+  // The passport is the profile seen without a session: no app shell
+  if (section === '@' && url.params.vue === 'publique') return <PassportPage />
   const Route = routes[section]
   return (
     <AppLayout>

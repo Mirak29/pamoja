@@ -18,6 +18,7 @@ export type NotificationKind =
   | 'moderation'
   | 'promising'
   | 'application'
+  | 'collaboration'
 
 export type Notification = {
   id: string
@@ -160,6 +161,20 @@ export const markRead = (notification: Notification) => {
 
 export const markAllRead = (login: string) => {
   for (const n of notifications) n.to === login && (n.read = true)
+  notificationsChanged.value++
+}
+
+/** What the server does when an action notifies someone */
+export const pushNotification = (
+  notification: Omit<Notification, 'id' | 'at' | 'read' | 'demo'>,
+) => {
+  notifications.unshift({
+    ...notification,
+    id: `n${notifications.length + 1}`,
+    at: Date.now(),
+    read: false,
+    demo: false,
+  })
   notificationsChanged.value++
 }
 

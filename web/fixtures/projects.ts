@@ -230,3 +230,10 @@ export const projects = {
 } satisfies Record<string, Project>
 
 export type ProjectSlug = keyof typeof projects
+
+/** Projects someone owns or is a member of */
+export const projectsOf = (login: Login): Project[] =>
+  Object.values(projects).filter((project) =>
+    project.owner === login ||
+    project.members.some((member) => member.login === login)
+  )
