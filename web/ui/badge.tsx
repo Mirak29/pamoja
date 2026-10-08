@@ -50,6 +50,8 @@ const statuses = {
 
 export type Status = keyof typeof statuses
 
+export const statusLabel = (status: Status) => statuses[status][0]
+
 /**
  * State of a help request, a CI run or a review.
  *

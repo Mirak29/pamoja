@@ -158,6 +158,13 @@ Les messages envoyés restent en mémoire pendant la session, en attendant l'API
 - **Livrable** : `web/pages/project/channels-tab.tsx`, `web/ui/rich-text.tsx`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-416 · Onglets Pull requests et Issues
+
+Liste des PRs (état de review et de CI), panneau latéral de détail (`?dialog=pr-81`) avec « Demander une review » pré-rempli et le lien vers GitHub ; liste des issues avec labels, filtre `good first issue` (`?filtre=good-first-issue`), place sur le Board et « Ajouter au board ».
+
+- **Livrable** : `web/pages/project/pull-requests-tab.tsx`, `issues-tab.tsx`, `web/fixtures/board.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -65,6 +65,13 @@ export const Clock = (props: IconProps) => (
   </Icon>
 )
 
+export const Columns3 = (props: IconProps) => (
+  <Icon {...props}>
+    <rect width='18' height='18' x='3' y='3' rx='2' />
+    <path d='M9 3v18M15 3v18' />
+  </Icon>
+)
+
 export const Compass = (props: IconProps) => (
   <Icon {...props}>
     <path d='m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27l-5.41 1.8 1.8-5.41a2 2 0 0 1 1.27-1.27z' />

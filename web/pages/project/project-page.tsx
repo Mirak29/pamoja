@@ -13,8 +13,10 @@ import {
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { appliedTo, JoinDialog } from '/web/pages/project/join-dialog.tsx'
 import { ChannelsTab } from '/web/pages/project/channels-tab.tsx'
+import { IssuesTab } from '/web/pages/project/issues-tab.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
+import { PullRequestsTab } from '/web/pages/project/pull-requests-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -43,6 +45,8 @@ const tabContents: Partial<
   '': OverviewTab,
   pulse: PulseTab,
   canaux: ChannelsTab,
+  prs: PullRequestsTab,
+  issues: IssuesTab,
 }
 
 const activeHelp: HelpStatus[] = [

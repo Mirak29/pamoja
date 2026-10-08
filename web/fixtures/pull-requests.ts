@@ -10,6 +10,8 @@ export type PullRequest = {
   branch: string
   state: 'open' | 'merged' | 'closed'
   review: 'waiting' | 'received' | 'approved'
+  /** Reviewers detected on GitHub */
+  reviewers?: Login[]
   ci: 'ok' | 'failed'
   at: number
   demo: boolean
