@@ -1,6 +1,7 @@
 import type { ComponentChildren, JSX } from 'preact'
 import {
   Check,
+  Circle,
   CircleCheck,
   CircleDot,
   CircleSlash,
@@ -21,6 +22,7 @@ const tones = {
   verified: 'border-verified bg-verified-soft text-verified',
   danger: 'border-danger bg-danger-soft text-danger',
   muted: 'border-line-control text-ink-muted',
+  planned: 'border-dashed border-line-control text-ink-muted',
 } as const
 
 type Tone = keyof typeof tones
@@ -46,6 +48,9 @@ const statuses = {
   'review-received': ['Review reçue', MessageSquareText, 'verified'],
   'review-approved': ['Approuvée', Check, 'verified'],
   merged: ['Mergée', GitMerge, 'indigo'],
+  'milestone-done': ['Terminé', CircleCheck, 'verified'],
+  'milestone-active': ['En cours', CircleDot, 'indigo'],
+  'milestone-planned': ['Prévu', Circle, 'planned'],
 } as const satisfies Record<string, [string, IconComponent, Tone]>
 
 export type Status = keyof typeof statuses

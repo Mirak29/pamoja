@@ -1,7 +1,11 @@
-import { signal } from '@preact/signals'
 import { navigate, url } from '@01edu/signal-router'
 import { CircleAlert, CircleDot, Columns3 } from '/web/assets/icons.tsx'
-import { boardColumns, boards } from '/web/fixtures/board.ts'
+import {
+  addCard,
+  boardChanged,
+  boardColumns,
+  boards,
+} from '/web/fixtures/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { me, people } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
@@ -23,12 +27,9 @@ const labelTones: Record<string, string> = {
 
 const columnNames: Record<string, string> = Object.fromEntries(boardColumns)
 
-// Issues added to the board during the session, until
-// POST/api/task/create exists (PAM-404)
-const addedToBoard = signal<string[]>([])
-
 /** Issues synced from GitHub, filterable on good first issue */
 export const IssuesTab = ({ project }: { project: Project }) => {
+  boardChanged.value
   const open = issues
     .filter((issue) => issue.project === project.slug && issue.state === 'open')
     .sort((a, b) => b.at - a.at)
@@ -68,13 +69,8 @@ export const IssuesTab = ({ project }: { project: Project }) => {
       </div>
       {list.map((issue) => {
         const blocked = issue.labels.includes('blocked')
-        const key = `${project.slug}:${issue.number}`
         const card = cards.find((c) => c.issue === issue.number)
-        const column = card
-          ? columnNames[card.column]
-          : addedToBoard.value.includes(key)
-          ? 'Backlog'
-          : undefined
+        const column = card && columnNames[card.column]
         return (
           <div
             key={issue.number}
@@ -127,7 +123,11 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                   variant='secondary'
                   size={32}
                   onClick={() => {
-                    addedToBoard.value = [...addedToBoard.peek(), key]
+                    addCard(
+                      project.slug as ProjectSlug,
+                      issue.title,
+                      issue.number,
+                    )
                     notify({
                       title: 'Ajoutée au board',
                       body: `Issue #${issue.number} dans la colonne Backlog.`,

@@ -17,10 +17,12 @@ import {
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { JoinDialog } from '/web/pages/project/join-dialog.tsx'
 import { ActivityTab } from '/web/pages/project/activity-tab.tsx'
+import { BoardTab } from '/web/pages/project/board-tab.tsx'
 import { ChannelsTab } from '/web/pages/project/channels-tab.tsx'
 import { IssuesTab } from '/web/pages/project/issues-tab.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
+import { RoadmapTab } from '/web/pages/project/roadmap-tab.tsx'
 import { PullRequestsTab } from '/web/pages/project/pull-requests-tab.tsx'
 import { TeamTab } from '/web/pages/project/team-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -55,6 +57,8 @@ const tabContents: Partial<
   issues: IssuesTab,
   equipe: TeamTab,
   activite: ActivityTab,
+  board: BoardTab,
+  roadmap: RoadmapTab,
 }
 
 const activeHelp: HelpStatus[] = [

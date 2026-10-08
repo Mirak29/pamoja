@@ -230,6 +230,17 @@ Les candidatures ont maintenant une seule source, `web/fixtures/applications.ts`
 - **Livrable** : `web/pages/project/team-tab.tsx`, `web/pages/project/activity-tab.tsx`, `web/fixtures/applications.ts`, `web/fixtures/activity.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-418 · Onglets Board et Roadmap
+
+Deux onglets du projet sur données fictives :
+- **Board** : cinq colonnes, cartes liées à une PR (CI, mergée), à une issue (blocked) ou internes ; un membre les déplace par glisser-déposer ou par flèches et en ajoute au Backlog ; lecture seule pour un non-membre.
+- **Roadmap** : chaque milestone est une colonne qui grandit avec la roadmap, pleine si terminée, en pointillé si prévue, avec sa progression.
+
+Déplacer ou ajouter une carte s'inscrit au journal du projet ; « Ajouter au board » depuis une issue crée maintenant une vraie carte.
+
+- **Livrable** : `web/pages/project/board-tab.tsx`, `web/pages/project/roadmap-tab.tsx`, `web/fixtures/board.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

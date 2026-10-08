@@ -27,9 +27,27 @@ export const ChevronDown = (props: IconProps) => (
   </Icon>
 )
 
+export const ChevronLeft = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m15 18-6-6 6-6' />
+  </Icon>
+)
+
+export const ChevronRight = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='m9 18 6-6-6-6' />
+  </Icon>
+)
+
 export const ChevronUp = (props: IconProps) => (
   <Icon {...props}>
     <path d='m18 15-6-6-6 6' />
+  </Icon>
+)
+
+export const Circle = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx='12' cy='12' r='10' />
   </Icon>
 )
 
@@ -303,6 +321,13 @@ export const ShieldCheck = (props: IconProps) => (
 export const Sparkles = (props: IconProps) => (
   <Icon {...props}>
     <path d='M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.13a.5.5 0 0 1 .96 0l1.58 6.13a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0zM20 3v4M22 5h-4M4 17v2M5 18H3' />
+  </Icon>
+)
+
+export const StickyNote = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z' />
+    <path d='M15 3v4a2 2 0 0 0 2 2h4' />
   </Icon>
 )
 

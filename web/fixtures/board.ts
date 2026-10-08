@@ -1,3 +1,5 @@
+import { signal } from '@preact/signals'
+import { logActivity } from '/web/fixtures/activity.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 /** Columns of the Kanban board (cahier des charges §6.7) */
@@ -66,4 +68,38 @@ export const boards: Partial<Record<ProjectSlug, Card[]>> = {
       issue: 47,
     },
   ],
+}
+
+// Session changes until the task routes exist (PAM-404)
+export const boardChanged = signal(0)
+
+const columnName = (column: BoardColumn) =>
+  boardColumns.find(([key]) => key === column)![1]
+
+/** POST/api/task/move */
+export const moveCard = (
+  project: ProjectSlug,
+  card: Card,
+  column: BoardColumn,
+) => {
+  if (card.column === column) return
+  card.column = column
+  logActivity(
+    project,
+    `Carte « ${card.title} » déplacée vers ${columnName(column)}`,
+  )
+  boardChanged.value++
+}
+
+/** POST/api/task/create: a new card goes to the backlog */
+export const addCard = (
+  project: ProjectSlug,
+  title: string,
+  issue?: number,
+) => {
+  const cards = boards[project] ??= []
+  const id = `c${Object.values(boards).flat().length + 1}`
+  cards.push({ id, title, column: 'backlog', issue })
+  logActivity(project, `Carte « ${title} » ajoutée au board`)
+  boardChanged.value++
 }
