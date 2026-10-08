@@ -61,9 +61,9 @@ Après le bloc 1, les blocs 3 à 5 peuvent avancer en parallèle du bloc 2, selo
 
 Responsable : _à répartir_
 
-- [ ] **PAM-101** · Initialiser le projet Deno : `deno.json` (imports `@01edu` aux versions de Tournament, fmt et lint), arborescence `api/`, `web/`, `migrations/` (§12.1, §12.6)
-- [ ] **PAM-102** · Build esbuild + `task-dev.ts` (route `/api` vers l'API) + `prod-server.ts` (§12.2)
-- [ ] **PAM-103** · **Prototype à risque** : Tailwind CLI + daisyUI sans twind, en watch en dev et dans le build (§12.3) — à finir fin J1
+- [x] **PAM-101** · Initialiser le projet Deno : `deno.json` (imports `@01edu` aux versions de Tournament, fmt et lint), arborescence `api/`, `web/`, `migrations/` (§12.1, §12.6) — @niangoos
+- [x] **PAM-102** · Build esbuild + `task-dev.ts` (route `/api` vers l'API) + `prod-server.ts` (§12.2) — @niangoos
+- [x] **PAM-103** · **Prototype à risque** : Tailwind CLI v4 sans twind ni daisyUI, en watch en dev et dans le build (§12.3) — à finir fin J1 — @niangoos
 - [ ] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — à finir fin J1
 - [ ] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
 - [ ] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
@@ -71,7 +71,7 @@ Responsable : _à répartir_
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
 - [ ] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
-- [ ] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7)
+- [ ] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
 - [ ] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
 - [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` (§17.4)
 - [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
@@ -79,6 +79,7 @@ Responsable : _à répartir_
 - [ ] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [ ] **PAM-117** · CI : fmt, lint, tests sur chaque PR
 - [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
+- [ ] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7)
 
 **Critères d'acceptation (§4)**
 
@@ -107,6 +108,9 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [ ] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [ ] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
+- [ ] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1)
+- [ ] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]`
+- [ ] **PAM-217** · Écran Notifications sur données fictives : centre par catégories, actions directes, toast « Ce projet a besoin de toi » (§7.4) `[démo]`
 
 **Critères d'acceptation (§4)**
 
@@ -132,6 +136,8 @@ Responsable : _à répartir_
 - [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
+- [ ] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]`
+- [ ] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2)
 
 **Critères d'acceptation (§4)**
 
@@ -155,6 +161,14 @@ Responsable : _à répartir_
 - [ ] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3)
 - [ ] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]`
 - [ ] **PAM-412** · Non lus et notifications par canal (`ChannelState`), « seulement mes PRs » par défaut sur `#suivi` (§6.8)
+- [ ] **PAM-413** · Page projet sur données fictives : en-tête, onglets, Aperçu, dialogue Rejoindre (§6.3, §6.6) `[démo]`
+- [ ] **PAM-414** · Onglet Pulse sur données fictives : Pulse, résumé IA, Health, DNA, Story (§6.4, §6.5) `[démo]`
+- [ ] **PAM-415** · Onglet Canaux sur données fictives : quatre canaux, messages, fils, alertes `#suivi` actionnables, présence (§6.8) `[démo]`
+- [ ] **PAM-416** · Onglets Pull requests et Issues sur données fictives, panneau de détail d'une PR (§6.3) `[démo]`
+- [ ] **PAM-417** · Onglets Équipe et Activité sur données fictives (§6.6)
+- [ ] **PAM-418** · Onglets Board et Roadmap sur données fictives (§6.7)
+- [ ] **PAM-419** · Réglages du projet sur données fictives (§6.3)
+- [ ] **PAM-420** · Écran Projets sur données fictives : mes projets et projets suivis, nouveau projet (import ou création), activation de la synchro live (§5.4, §6.3)
 
 **Critères d'acceptation (§4)**
 
@@ -179,6 +193,10 @@ Responsable : _à répartir_
 - [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
 - [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
+- [ ] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1)
+- [ ] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4)
+- [ ] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2)
+- [ ] **PAM-516** · Écrans Réglages et Modération sur données fictives, dialogue Signaler (§7.4, §10.5)
 
 **Critères d'acceptation (§4)**
 
@@ -223,3 +241,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-08 · Accueil en fil social (abonnements, republications, réponses imbriquées) ; une réponse est un post · §6.2, §10.1, §14.5
 - 2026-10-08 · Profil à une seule adresse `/@login`, le passeport devient sa vue publique · §9
 - 2026-10-08 · Routage en vrais chemins, sans `#` · §2, §12.2
+- 2026-10-08 · Tailwind v4 seul, sans daisyUI : le système isométrique rend tous les composants sur mesure · §2, §12.3, §20
+- 2026-10-08 · Écrans construits d'abord sur données fictives côté web, une tâche par écran (PAM-119, PAM-215 à PAM-217, PAM-313 et PAM-314, PAM-413 à PAM-420, PAM-513 à PAM-516) ; les tâches existantes les branchent ensuite sur l'API · §4

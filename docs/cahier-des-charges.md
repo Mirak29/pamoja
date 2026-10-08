@@ -40,7 +40,7 @@ Ces choix ne sont plus en discussion. Toute la suite du document en découle.
 | Tokens GitHub | Aucun token utilisateur stocké en base | Le login n'en a besoin que quelques secondes ; la synchro utilise des tokens serveur |
 | Import | Deux niveaux : vitrine sans installation, synchro live avec installation | Présenter un projet en 3 clics |
 | Build | esbuild + `@luca/esbuild-deno-loader`, comme Tournament | Setup déjà éprouvé en production |
-| UI | Tailwind CSS compilé + DaisyUI (maintien à confirmer, §20) ; système isométrique maison par-dessus | Choix de l'équipe ; impose de quitter twind (§12) |
+| UI | Tailwind CSS v4 compilé, sans daisyUI ; système isométrique maison en utilitaires et composants Preact | Le système isométrique rend tous les composants sur mesure ; une dépendance de moins (§12.3) |
 | Base de données | SQLite via `@01edu/db`, une seule instance | Suffisant pour CADEV, migration PostgreSQL seulement si nécessaire |
 | Temps réel | Entries `@01edu/db/entries` + SSE, écritures en HTTP | Mécanisme déjà en production dans Tournament |
 | Réputation | Calculée uniquement depuis le journal d'entries, jamais depuis une déclaration | Badges vérifiables |
@@ -80,7 +80,7 @@ Toutes les fonctionnalités sont dans le périmètre. Elles sont construites dan
 
 | Bloc | Contenu | Dépend de | Jours |
 | --- | --- | --- | --- |
-| 1. Fondations | Projet Deno, build esbuild + Tailwind/DaisyUI, schéma et migrations, liste des entries et relations, flux SSE, login GitHub App, session, seed, Caddy et conteneur Meilisearch | — | J1 – J2 (7 – 8 oct.) |
+| 1. Fondations | Projet Deno, build esbuild + Tailwind, schéma et migrations, liste des entries et relations, flux SSE, login GitHub App, session, seed, Caddy et conteneur Meilisearch | — | J1 – J2 (7 – 8 oct.) |
 | 2. Boucle de démo | Profil de base, import niveaux 1 et 2, webhooks, demande d'aide, matching, notifications temps réel, détection de review, confirmation, badges | 1 | J3 – J5 (9 – 11 oct.) |
 | 3. Vitrines | Profil complet et thèmes, Passport, Share Card, OG, Pulse (déterministe + IA), Project DNA, Health, Story, Collaboration Map et Graph | 1, entries du bloc 2 | J6 – J7 (12 – 13 oct.) |
 | 4. Gestion de projet | Needs, Team et candidatures, Board, Roadmap, canaux du projet et `#suivi`, présence, Collaboration Requests | 1 | J8 (14 oct.) |
@@ -538,7 +538,7 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 | Routage SPA | `@01edu/signal-router` | ^0.2.3 |
 | UI | Preact, `@preact/signals` | ^10.29, ^2.9 |
 | Build JS | esbuild + `@luca/esbuild-deno-loader` | comme `build-config.ts` |
-| CSS | Tailwind CSS compilé + daisyUI | nouveau par rapport à Tournament |
+| CSS | Tailwind CSS v4 compilé (`@tailwindcss/cli`) | nouveau par rapport à Tournament |
 | Temps réel | Server-Sent Events | — |
 | GitHub | GitHub App, REST, GraphQL, webhooks | — |
 | Déploiement | Dockerfile multi-stage + binaire `deno compile` | comme Tournament |
@@ -551,13 +551,13 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 - **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17).
 - **Routage** : vrais chemins (`/@moussa`, `/projet/openpay-africa`) avec `@01edu/signal-router`, **jamais de `#`** : le serveur doit voir l'adresse pour injecter l'aperçu de partage. Le prototype utilise des `#` ; le code ne les reprend pas.
 
-### 12.3 CSS : Tailwind + daisyUI, sans twind
+### 12.3 CSS : Tailwind v4 compilé, sans twind ni daisyUI
 
-Tournament utilise `@twind/preact`, qui génère le CSS dans le navigateur. daisyUI est un plugin de Tailwind : il exige le compilateur Tailwind et ne fonctionne pas avec twind. Conséquences :
+Tournament utilise `@twind/preact`, qui génère le CSS dans le navigateur. Pamoja compile son CSS avec Tailwind v4. daisyUI a été écarté : le système isométrique (§12.7) rend tous les composants sur mesure, et ses composants auraient tous été restylés. Conséquences :
 
-- Supprimer twind. Compiler le CSS avec la CLI Tailwind (version standalone ou npm) et le plugin daisyUI, en watch pendant le dev et dans l'étape de build du Dockerfile.
+- Pas de twind. La CLI Tailwind (`npm:@tailwindcss/cli`, lancée par Deno) compile `web/assets/styles/style.css` : en watch pendant le dev (`task-dev.ts`), minifiée dans le build (`task-prod.ts`, donc aussi dans le Dockerfile). Seul `web/` est lu pour trouver les classes.
 - Tailwind trouve les classes en lisant les fichiers source : les noms de classes doivent apparaître en entier dans le code. Une classe construite par concaténation (`'bg-' + color`) n'est pas générée.
-- Les thèmes de profil (§9.2) et les couleurs du design system sont des thèmes daisyUI personnalisés. Le design system maison (ProjectCard, DeveloperCard, HelpRequestCard, ProjectPulse, Badge, ProfileHero, ContributionCard, NotificationItem) est construit par-dessus, pour ne pas ressembler à une démo daisyUI.
+- Les couleurs du design system sont des variables CSS générées depuis `docs/identite/tokens.json` (clair et sombre), exposées à Tailwind par `@theme`. Les thèmes de profil (§9.2) redéfinissent ces variables sur le profil. Le système isométrique (dalles, touches, puits) est écrit en utilitaires CSS, et les composants maison (ProjectCard, DeveloperCard, HelpRequestCard, ProjectPulse, Badge, ProfileHero, ContributionCard, NotificationItem) sont construits par-dessus.
 
 ### 12.4 Faits vérifiés sur `@01edu/api`
 
@@ -938,6 +938,6 @@ Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
 - [ ] **Hébergement Systalink**, à valider avant la fin de J2 : VM avec Docker ; IP publique et ports 80/443 ouverts (certificat HTTPS automatique de Caddy) ; sortie autorisée vers `api.github.com` et le fournisseur IA ; entrée des webhooks GitHub ; taille de disque ; offre de sauvegarde ; nom de domaine et DNS.
 - [ ] **Reverse proxy** : Caddy retenu (HTTP/2 actif par défaut avec HTTPS, réponses SSE transmises sans tampon). À vérifier une fois en prod : protocole h2 dans l'onglet Réseau et arrivée instantanée des notifications.
 - [ ] **Meilisearch** : version à fixer, emplacement du conteneur chez l'hébergeur, réglages de pertinence (champs cherchables et leur ordre) à ajuster après le seed.
-- [ ] **daisyUI** : le système isométrique rend presque tous les composants sur mesure ; décider avant PAM-111 s'il reste utile ou si Tailwind seul suffit.
+- [x] **daisyUI** : écarté le 8 octobre, Tailwind v4 seul (§12.3).
 - [ ] **Seuils** de badges et poids du matching : ajuster après le seed.
 - [ ] **Mentions légales** : conditions d'utilisation et politique de confidentialité (données GitHub, emails).

@@ -1,0 +1,2 @@
+/* Only web/ is scanned for class names */
+@import 'tailwindcss' source('../..');

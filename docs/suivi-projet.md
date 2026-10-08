@@ -103,6 +103,27 @@ Prototype interactif Pamoja v2 réalisé avec Claude Design : pages, parcours, d
 - **Livrable** : `docs/prototype/` (avec la liste de ce que le code ne reprend pas)
 - **Par** : Abdou, avec Claude Design
 
+### 2026-10-08 · PAM-101 · Initialiser le projet Deno
+
+`deno.json` repris de Tournament (fmt, lint, `compilerOptions`, imports `@01edu` aux mêmes versions), squelette `api/` (serveur `@01edu/api` avec `GET/api/health`) et `web/`. Le dossier `migrations/` arrivera avec PAM-105 : un dossier vide n'est pas versionné. `docs/` et les fichiers Markdown sont exclus de `deno fmt` pour ne pas réécrire la prose.
+
+- **Livrable** : `deno.json`, `api/`, `web/`, `.gitignore`, `.env-dev`, `.env-test`
+- **Par** : @niangoos
+
+### 2026-10-08 · PAM-102 · Build esbuild, serveur de dev et serveur de prod
+
+`build-config.ts`, `task-dev.ts` et `prod-server.ts` calqués sur Tournament : esbuild en watch avec rechargement automatique, `/api` routé vers l'API, toutes les autres adresses servent la SPA (vrais chemins comme `/@moussa`). `deno task dev` écoute sur le port 8800 pour cohabiter avec Tournament ; `deno task prod` construit puis sert le build minifié.
+
+- **Livrable** : `build-config.ts`, `task-dev.ts`, `task-prod.ts`, `prod-server.ts`, `web/debug.ts`
+- **Par** : @niangoos
+
+### 2026-10-08 · PAM-103 · Prototype à risque : Tailwind compilé sans twind
+
+La CLI Tailwind v4 (`npm:@tailwindcss/cli`) tourne sous Deno : en watch dans `task-dev.ts`, minifiée et intégrée à `index.html` dans `task-prod.ts`. Seul `web/` est lu pour trouver les classes. daisyUI est écarté : le système isométrique rend tous les composants sur mesure (cahier des charges §12.3, journal du 8 octobre).
+
+- **Livrable** : `web/assets/styles/style.css`, `task-dev.ts`, `task-prod.ts`, `docs/cahier-des-charges.md` §2, §12.3, §20
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

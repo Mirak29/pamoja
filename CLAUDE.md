@@ -74,8 +74,11 @@ brique, regarder comment Tournament la fait :
 | Docker multi-stage + `deno compile` | `Dockerfile` |
 | Tests de bout en bout | `qa/` |
 
-Différence volontaire : Pamoja utilise **Tailwind compilé + daisyUI**, pas twind
-(daisyUI ne fonctionne pas avec twind, §12.3).
+Différence volontaire : Pamoja compile son CSS avec **Tailwind v4** (`@tailwindcss/cli`),
+sans twind ni daisyUI (§12.3).
+
+Lancer le projet : `deno task dev` sur `http://localhost:8800` (port distinct de
+Tournament pour faire tourner les deux). Build de prod : `deno task prod`.
 
 ## Décisions clés (détail dans le cahier des charges)
 
@@ -89,6 +92,7 @@ Différence volontaire : Pamoja utilise **Tailwind compilé + daisyUI**, pas twi
 - Recherche : Meilisearch auto-hébergé, SQLite reste la source de vérité — §10.4.
 - Reverse proxy : Caddy (HTTPS, HTTP/2, SSE sans tampon) — §17.4.
 - Images uploadées ; vidéos uniquement intégrées par lien (YouTube, Loom, Vimeo) — §17.3.
+- CSS : Tailwind v4 seul, sans daisyUI ; thème généré depuis `docs/identite/tokens.json` — §12.3.
 - DA : interface entièrement isométrique (dalles, touches, puits, formes par type d'objet, colonnes pour les valeurs), sans illustration décorative ; référence visuelle : prototype Pamoja v2 (`docs/prototype/`) — §12.7.
 - Routage en vrais chemins (`/@moussa`), jamais de `#` ; profil à une seule adresse `/@login` — §9, §12.2.
 - IA toujours avec un repli déterministe ; fournisseur encore à choisir — §11, §20.

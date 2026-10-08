@@ -1,0 +1,19 @@
+# database
+pamoja.db
+pamoja.db-shm
+pamoja.db-wal
+
+# build output
+dist/
+
+# dependencies
+node_modules/
+
+# local env and editor
+.env
+.vscode
+.DS_Store
+
+# logs
+.logs
+*.log

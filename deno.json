@@ -1,0 +1,52 @@
+{
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 80,
+    "indentWidth": 2,
+    "semiColons": false,
+    "singleQuote": true,
+    "exclude": ["dist/", "docs/", "*.md"]
+  },
+  "lock": false,
+  "nodeModulesDir": "auto",
+  "lint": {
+    "rules": {
+      "exclude": ["no-import-prefix", "no-unversioned-import"]
+    },
+    "exclude": ["dist/", "docs/"]
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "dom.asynciterable",
+      "deno.ns",
+      "deno.unstable"
+    ]
+  },
+  "imports": {
+    "./": "./",
+    "/": "./",
+    "@01edu/api": "jsr:@01edu/api@^0.2.11",
+    "@01edu/signal-router": "jsr:@01edu/signal-router@^0.2.3",
+    "@preact/signals": "npm:@preact/signals@^2.9.1",
+    "@tailwindcss/cli": "npm:@tailwindcss/cli@^4.3.1",
+    "preact": "npm:preact@^10.29.2",
+    "tailwindcss": "npm:tailwindcss@^4.3.1"
+  },
+  "tasks": {
+    "dev": "deno serve --env-file=.env-dev -A --port=8800 --watch --watch-exclude='{*_,*.,}test.{js,mjs,ts,mts,jsx,tsx}' task-dev.ts & deno task test --watch api web --reporter=dot & deno task fmt --watch api web *.ts & deno task lint --watch api web *.ts",
+    "prod:build": "deno run -A task-prod.ts",
+    "prod:serve": "deno run --env-file -A prod-server.ts",
+    "prod": {
+      "command": "deno task prod:serve",
+      "dependencies": ["prod:build"]
+    },
+    "lint": "deno lint",
+    "check": "deno check",
+    "fmt": "deno fmt",
+    "test": "deno test --env-file=.env-test -A --no-check --permit-no-files"
+  }
+}
