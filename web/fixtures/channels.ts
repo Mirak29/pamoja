@@ -27,7 +27,13 @@ export type Message = {
   pullRequest?: number
   at: number
   reactions?: { like?: Login[] }
-  replies?: { id: string; author: Login; text: string; at: number }[]
+  replies?: {
+    id: string
+    author: Login
+    text: string
+    at: number
+    demo: boolean
+  }[]
   demo: boolean
 }
 
@@ -67,6 +73,7 @@ export const channels: Partial<
             text:
               'Je regarde la partie rollback ce soir si personne ne s’en charge.',
             at: hoursAgo(20),
+            demo: true,
           },
         ],
         demo: true,

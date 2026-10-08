@@ -145,6 +145,19 @@ Résumé IA (squelette puis texte, comme à l'arrivée de `PULSE_READY`), six m�
 - **Livrable** : `web/pages/project/pulse-tab.tsx`, `event-list.tsx`, `web/fixtures/pulse.ts`, `prism()` dans `web/ui/shapes.tsx`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-415 · Onglet Canaux
+
+Les quatre canaux imposés en vrais chemins (`/projet/openpay-africa/canaux/suivi`) :
+- messages et alertes de la plateforme ;
+- alertes actionnables : « Demander une review » sur une PR en attente, « Demander de l'aide » sur une CI en échec, vers le formulaire d'aide pré-rempli ;
+- fils de discussion (`?thread=`), réactions, signalement, réglage des notifications par canal (`#suivi` sur « Seulement mes PRs » par défaut) ;
+- droits d'écriture par canal, présence.
+
+Les messages envoyés restent en mémoire pendant la session, en attendant l'API.
+
+- **Livrable** : `web/pages/project/channels-tab.tsx`, `web/ui/rich-text.tsx`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

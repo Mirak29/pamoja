@@ -163,4 +163,10 @@ export const people = {
 export type Login = keyof typeof people
 
 // The signed-in developer until the session exists (PAM-110)
-export const me: Person = people.abdou
+const myLogin: Login = 'abdou'
+export const me: Person & { login: Login } = {
+  ...people[myLogin],
+  login: myLogin,
+}
+
+export const isMe = (login: string) => login === me.login

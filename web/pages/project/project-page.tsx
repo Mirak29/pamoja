@@ -4,7 +4,7 @@ import { Check, Clock, Github, Plus, Zap } from '/web/assets/icons.tsx'
 import { channels } from '/web/fixtures/channels.ts'
 import { helpRequests, type HelpStatus } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
-import { me } from '/web/fixtures/people.ts'
+import { isMe, me } from '/web/fixtures/people.ts'
 import {
   type Project,
   projects,
@@ -12,6 +12,7 @@ import {
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { appliedTo, JoinDialog } from '/web/pages/project/join-dialog.tsx'
+import { ChannelsTab } from '/web/pages/project/channels-tab.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -41,6 +42,7 @@ const tabContents: Partial<
 > = {
   '': OverviewTab,
   pulse: PulseTab,
+  canaux: ChannelsTab,
 }
 
 const activeHelp: HelpStatus[] = [
@@ -71,9 +73,7 @@ const Stat = ({ value, label }: { value: number; label: string }) => (
 )
 
 const Actions = ({ project }: { project: Project }) => {
-  const [following, setFollowing] = useState(
-    (project.followers as string[]).includes(me.login),
-  )
+  const [following, setFollowing] = useState(project.followers.some(isMe))
   const isOwner = project.owner === me.login
   const isMember = project.members.some((m) => m.login === me.login)
   const applied = appliedTo.value.includes(project.slug)
@@ -161,10 +161,20 @@ const Header = ({ project }: { project: Project }) => {
   )
 }
 
-// Every message is unread until ChannelState exists (PAM-412)
-const unreadMessages = (project: Project) =>
-  Object.values(channels[project.slug as ProjectSlug] ?? {})
-    .reduce((total, messages) => total + messages.length, 0)
+// Every message is unread until ChannelState exists (PAM-412), except in
+// the channel being read
+const unreadMessages = (project: Project, reading?: string) =>
+  Object.entries(channels[project.slug as ProjectSlug] ?? {})
+    .filter(([channel]) => channel !== reading)
+    .reduce((total, [, messages]) => total + messages.length, 0)
+
+// Path segment of a channel to its data key
+const channelKeys: Record<string, string> = {
+  general: 'general',
+  suivi: 'tracking',
+  aide: 'help',
+  annonces: 'announcements',
+}
 
 const ProjectTabs = ({ project, current }: {
   project: Project
@@ -180,8 +190,13 @@ const ProjectTabs = ({ project, current }: {
         key,
         label,
         href: key ? `projet/${project.slug}/${key}` : `projet/${project.slug}`,
-        badge: key === 'canaux' && current !== 'canaux'
-          ? unreadMessages(project)
+        badge: key === 'canaux'
+          ? unreadMessages(
+            project,
+            current === 'canaux'
+              ? channelKeys[url.relativePath.split('/')[4] ?? 'general']
+              : undefined,
+          )
           : undefined,
       }))}
   />

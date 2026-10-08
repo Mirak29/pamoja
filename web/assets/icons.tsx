@@ -72,6 +72,12 @@ export const Compass = (props: IconProps) => (
   </Icon>
 )
 
+export const Flag = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7' />
+  </Icon>
+)
+
 export const FolderGit2 = (props: IconProps) => (
   <Icon {...props}>
     <path d='M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5' />
@@ -116,6 +122,13 @@ export const LifeBuoy = (props: IconProps) => (
     <circle cx='12' cy='12' r='10' />
     <path d='m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24' />
     <circle cx='12' cy='12' r='4' />
+  </Icon>
+)
+
+export const Lock = (props: IconProps) => (
+  <Icon {...props}>
+    <rect width='18' height='11' x='3' y='11' rx='2' ry='2' />
+    <path d='M7 11V7a5 5 0 0 1 10 0v4' />
   </Icon>
 )
 
@@ -186,6 +199,12 @@ export const Search = (props: IconProps) => (
 export const Send = (props: IconProps) => (
   <Icon {...props}>
     <path d='M14.54 21.69a.5.5 0 0 0 .93-.03l6.5-19a.5.5 0 0 0-.63-.63l-19 6.5a.5.5 0 0 0-.03.93l7.93 3.18a2 2 0 0 1 1.12 1.11zM21.85 2.15 10.91 13.09' />
+  </Icon>
+)
+
+export const SendHorizontal = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M3.71 3.05a.5.5 0 0 0-.68.63l2.84 7.62a2 2 0 0 1 0 1.4l-2.84 7.63a.5.5 0 0 0 .68.62l18-8.5a.5.5 0 0 0 0-.9zM6 12h16' />
   </Icon>
 )
 
