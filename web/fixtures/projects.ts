@@ -1,3 +1,5 @@
+import { signal } from '@preact/signals'
+import { logActivity } from '/web/fixtures/activity.ts'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import type { Login } from '/web/fixtures/people.ts'
 
@@ -15,6 +17,8 @@ export type Project = {
   stack: string[]
   /** live: GitHub App installed, poll: refreshed every 15 minutes */
   sync: 'live' | 'poll'
+  /** The GitHub App is installed: live sync comes back without a dialog */
+  appInstalled?: boolean
   description: string
   contributors: number
   openIssues: number
@@ -57,6 +61,7 @@ export const projects = {
     owner: 'abdou',
     stack: ['Go', 'SQLite', 'Deno'],
     sync: 'live',
+    appInstalled: true,
     description:
       'API de paiement mobile ouverte pour les marchands d’Afrique de l’Ouest.',
     contributors: 12,
@@ -248,6 +253,34 @@ export const projects = {
 } satisfies Record<string, Project>
 
 export type ProjectSlug = keyof typeof projects
+
+// Needs offered when editing a project
+export const needSuggestions = [
+  'Backend',
+  'Frontend',
+  'Tests',
+  'DevOps',
+  'Documentation',
+  'Review de code',
+  'Design',
+  'good first issue',
+]
+
+// Session changes until the project routes exist (PAM-401)
+export const projectsChanged = signal(0)
+
+/** POST/api/project/update, journaled */
+export const updateProject = (
+  project: Project,
+  patch: Partial<
+    Pick<Project, 'name' | 'description' | 'vision' | 'needs' | 'sync'>
+  >,
+  journal: string,
+) => {
+  Object.assign(project, patch)
+  logActivity(project.slug as ProjectSlug, journal)
+  projectsChanged.value++
+}
 
 // Skills that answer each project need, until AI extraction (PAM-310)
 export const needSkills: Record<string, string[]> = {

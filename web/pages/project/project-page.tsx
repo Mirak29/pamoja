@@ -12,6 +12,7 @@ import { isMe, me } from '/web/fixtures/people.ts'
 import {
   type Project,
   projects,
+  projectsChanged,
   type ProjectSlug,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
@@ -23,6 +24,7 @@ import { IssuesTab } from '/web/pages/project/issues-tab.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
 import { RoadmapTab } from '/web/pages/project/roadmap-tab.tsx'
+import { SettingsTab } from '/web/pages/project/settings-tab.tsx'
 import { PullRequestsTab } from '/web/pages/project/pull-requests-tab.tsx'
 import { TeamTab } from '/web/pages/project/team-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -59,6 +61,7 @@ const tabContents: Partial<
   activite: ActivityTab,
   board: BoardTab,
   roadmap: RoadmapTab,
+  reglages: SettingsTab,
 }
 
 const activeHelp: HelpStatus[] = [
@@ -88,21 +91,28 @@ const Stat = ({ value, label }: { value: number; label: string }) => (
   </div>
 )
 
+// Its own component: one with hooks only re-renders when its props change,
+// and the project object is mutated in place
+const FollowButton = ({ initial }: { initial: boolean }) => {
+  const [following, setFollowing] = useState(initial)
+  return (
+    <Button variant='secondary' onClick={() => setFollowing(!following)}>
+      {following ? <Check /> : <Plus />}
+      {following ? 'Suivi' : 'Suivre'}
+    </Button>
+  )
+}
+
 const Actions = ({ project }: { project: Project }) => {
-  const [following, setFollowing] = useState(project.followers.some(isMe))
   const isOwner = project.owner === me.login
   const isMember = project.members.some((m) => m.login === me.login)
-  applicationsChanged.value
   const applied = applications.some((a) =>
     a.project === project.slug && a.login === me.login &&
     a.status === 'pending'
   )
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
-      <Button variant='secondary' onClick={() => setFollowing(!following)}>
-        {following ? <Check /> : <Plus />}
-        {following ? 'Suivi' : 'Suivre'}
-      </Button>
+      <FollowButton initial={project.followers.some(isMe)} />
       <Button variant='secondary' href={`projet/${project.slug}/canaux/aide`}>
         Proposer mon aide
       </Button>
@@ -234,6 +244,10 @@ const NotFound = ({ slug }: { slug: string }) => (
 
 /** /projet/:slug/:tab, each tab in its own file */
 export const ProjectPage = () => {
+  // Read here, not in children: with @preact/signals, a component that reads
+  // a signal or has hooks only re-renders when its props or state change
+  projectsChanged.value
+  applicationsChanged.value
   const [, slug = '', tab = ''] = url.relativePath.slice(1).split('/')
   const project = projects[slug as ProjectSlug]
   if (!project) return <NotFound slug={slug} />

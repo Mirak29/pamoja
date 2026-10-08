@@ -98,7 +98,12 @@ Tournament pour faire tourner les deux). Build de prod : `deno task prod`.
 - **Icônes** : importer le nom Lucide depuis `/web/assets/icons.tsx` puis lancer
   `deno task icon` (Lucide figé sur la 0.460 du prototype).
 - **Données fictives** dans `web/fixtures/` en attendant l'API ; elles disparaissent
-  quand un écran passe sur `api[...].signal()`.
+  quand un écran passe sur `api[...].signal()`. Les actions de session modifient les
+  objets sur place puis incrémentent un signal (`helpChanged`, `projectsChanged`…).
+- **Signaux et re-rendu** : avec `@preact/signals`, un composant qui lit un signal ou
+  qui a des hooks ne se re-rend que si ses props ou son état changent. Lire le signal
+  dans la page, et ne pas donner à un composant à hooks un objet muté sur place qu'il
+  doit afficher (passer des valeurs simples, ou isoler le hook).
 
 ## Décisions clés (détail dans le cahier des charges)
 

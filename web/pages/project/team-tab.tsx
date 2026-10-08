@@ -71,6 +71,53 @@ const PersonLink = (
   </A>
 )
 
+/** Members and their role, which the owner changes (except their own) */
+export const MemberRows = (
+  { project, isOwner }: { project: Project; isOwner: boolean },
+) => (
+  <>
+    {project.members.map((member) => {
+      const person = people[member.login]
+      return (
+        <div
+          key={member.login}
+          class='flex flex-wrap items-center gap-3.5 border-t border-line px-5 py-3.5'
+        >
+          <PersonLink
+            login={member.login}
+            size={38}
+            detail={`@${member.login} · ${person.city}, ${person.country}`}
+          />
+          {isOwner && member.role !== 'Propriétaire'
+            ? (
+              <select
+                aria-label='Rôle'
+                value={member.role}
+                onChange={(event) => {
+                  member.role = event.currentTarget.value as ProjectRole
+                  logActivity(
+                    project.slug as ProjectSlug,
+                    `${person.name} devient ${member.role}`,
+                  )
+                }}
+                class='well h-9 px-2.5 text-[14px] leading-none text-ink'
+              >
+                {roles.slice(1).map(([role]) => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            )
+            : (
+              <span class='tile inline-flex h-7 items-center rounded-[5px] px-2.5 text-[13px] leading-none font-semibold whitespace-nowrap'>
+                {member.role}
+              </span>
+            )}
+        </div>
+      )
+    })}
+  </>
+)
+
 const Members = (
   { project, isOwner }: { project: Project; isOwner: boolean },
 ) => {
@@ -83,45 +130,7 @@ const Members = (
           count > 1 ? 'membres' : 'membre'
         } sur Pamoja · ${project.contributors} contributeurs sur GitHub`}
       />
-      {project.members.map((member) => {
-        const person = people[member.login]
-        return (
-          <div
-            key={member.login}
-            class='flex flex-wrap items-center gap-3.5 border-t border-line px-5 py-3.5'
-          >
-            <PersonLink
-              login={member.login}
-              size={38}
-              detail={`@${member.login} · ${person.city}, ${person.country}`}
-            />
-            {isOwner && member.role !== 'Propriétaire'
-              ? (
-                <select
-                  aria-label='Rôle'
-                  value={member.role}
-                  onChange={(event) => {
-                    member.role = event.currentTarget.value as ProjectRole
-                    logActivity(
-                      project.slug as ProjectSlug,
-                      `${person.name} devient ${member.role}`,
-                    )
-                  }}
-                  class='well h-9 px-2.5 text-[14px] leading-none text-ink'
-                >
-                  {roles.slice(1).map(([role]) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-              )
-              : (
-                <span class='tile inline-flex h-7 items-center rounded-[5px] px-2.5 text-[13px] leading-none font-semibold whitespace-nowrap'>
-                  {member.role}
-                </span>
-              )}
-          </div>
-        )
-      })}
+      <MemberRows project={project} isOwner={isOwner} />
     </section>
   )
 }
@@ -149,7 +158,11 @@ const invite = (project: Project, login: Login, need: string) => {
 
 /** For each need, the three developers whose skills match it best */
 const Helpers = (
-  { project, canManage }: { project: Project; canManage: boolean },
+  { project, canManage, invitedLogins }: {
+    project: Project
+    canManage: boolean
+    invitedLogins: string[]
+  },
 ) => {
   const isMember = (login: string) =>
     project.members.some((m) => m.login === login)
@@ -182,7 +195,7 @@ const Helpers = (
             </span>
             {candidates.map(({ person, hits }) => {
               const login = person.login as Login
-              const done = invited.value[project.slug]?.includes(login)
+              const done = invitedLogins.includes(login)
               return (
                 <div
                   key={login}
@@ -357,7 +370,11 @@ export const TeamTab = ({ project }: { project: Project }) => {
     <div class='mr-2 grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
       <div class='flex min-w-0 flex-col gap-8'>
         <Members project={project} isOwner={isOwner} />
-        <Helpers project={project} canManage={canManage} />
+        <Helpers
+          project={project}
+          canManage={canManage}
+          invitedLogins={invited.value[project.slug] ?? []}
+        />
       </div>
       <div class='flex min-w-0 flex-col gap-8'>
         {canManage && <Applications project={project} />}

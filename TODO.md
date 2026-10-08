@@ -167,7 +167,7 @@ Responsable : _à répartir_
 - [x] **PAM-416** · Onglets Pull requests et Issues sur données fictives, panneau de détail d'une PR (§6.3) `[démo]` — @niangoos
 - [x] **PAM-417** · Onglets Équipe et Activité sur données fictives (§6.6) — @niangoos
 - [x] **PAM-418** · Onglets Board et Roadmap sur données fictives (§6.7) — @niangoos
-- [ ] **PAM-419** · Réglages du projet sur données fictives (§6.3)
+- [x] **PAM-419** · Réglages du projet sur données fictives (§6.3) — @niangoos
 - [ ] **PAM-420** · Écran Projets sur données fictives : mes projets et projets suivis, nouveau projet (import ou création), activation de la synchro live (§5.4, §6.3)
 
 **Critères d'acceptation (§4)**

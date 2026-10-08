@@ -241,6 +241,18 @@ Déplacer ou ajouter une carte s'inscrit au journal du projet ; « Ajouter au bo
 - **Livrable** : `web/pages/project/board-tab.tsx`, `web/pages/project/roadmap-tab.tsx`, `web/fixtures/board.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-419 · Réglages du projet
+
+Onglet Réglages sur données fictives, réservé au propriétaire :
+- **Informations** : nom, description, vision, besoins (ajout libre ou suggestions) ; « Enregistrer » ne s'active qu'après une modification.
+- **Mode de synchro** : Live ou toutes les 15 min ; repasser en Live sans GitHub App ouvre le dialogue d'activation (PAM-420).
+- **Rôles** : les membres et leur rôle, partagés avec l'onglet Équipe.
+
+Un non-propriétaire qui ouvre l'adresse voit « Réservé au Propriétaire ». Les changements mettent à jour l'en-tête et s'inscrivent au journal.
+
+- **Livrable** : `web/pages/project/settings-tab.tsx`, `updateProject` dans `web/fixtures/projects.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
