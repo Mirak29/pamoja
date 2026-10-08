@@ -1,9 +1,9 @@
-import { signal } from '@preact/signals'
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
 import { CircleAlert, Send } from '/web/assets/icons.tsx'
-import { people } from '/web/fixtures/people.ts'
-import type { Project } from '/web/fixtures/projects.ts'
+import { apply } from '/web/fixtures/applications.ts'
+import { me, people } from '/web/fixtures/people.ts'
+import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Textarea } from '/web/ui/input.tsx'
@@ -15,10 +15,6 @@ const availabilities = [
   '4 h par semaine',
   '8 h ou plus par semaine',
 ]
-
-// Projects applied to during the session, until POST/api/project/join
-// exists (PAM-403)
-export const appliedTo = signal<string[]>([])
 
 const Choices = (
   { label, children }: { label: string; children: preact.ComponentChildren },
@@ -33,11 +29,18 @@ const JoinForm = ({ project }: { project: Project }) => {
   const owner = people[project.owner].name.split(' ')[0]
   const [how, setHow] = useState<string[]>([])
   const [availability, setAvailability] = useState(availabilities[1])
+  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   const send = () => {
     if (!how.length) return setError('Choisis au moins une façon d’aider.')
-    appliedTo.value = [...appliedTo.peek(), project.slug]
+    apply({
+      project: project.slug as ProjectSlug,
+      login: me.login,
+      areas: how,
+      availability,
+      message,
+    })
     navigate({ params: { dialog: null } })
     notify({
       title: 'Candidature envoyée',
@@ -80,6 +83,8 @@ const JoinForm = ({ project }: { project: Project }) => {
       <Field label={<span>Message pour {owner}</span>}>
         <Textarea
           rows={3}
+          value={message}
+          onInput={(event) => setMessage(event.currentTarget.value)}
           placeholder='Ce que tu aimerais faire sur le projet'
         />
       </Field>

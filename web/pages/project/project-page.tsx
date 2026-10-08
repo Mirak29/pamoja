@@ -1,6 +1,10 @@
 import { useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { Check, Clock, Github, Plus, Zap } from '/web/assets/icons.tsx'
+import {
+  applications,
+  applicationsChanged,
+} from '/web/fixtures/applications.ts'
 import { channels } from '/web/fixtures/channels.ts'
 import { helpRequests, type HelpStatus } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
@@ -11,12 +15,14 @@ import {
   type ProjectSlug,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
-import { appliedTo, JoinDialog } from '/web/pages/project/join-dialog.tsx'
+import { JoinDialog } from '/web/pages/project/join-dialog.tsx'
+import { ActivityTab } from '/web/pages/project/activity-tab.tsx'
 import { ChannelsTab } from '/web/pages/project/channels-tab.tsx'
 import { IssuesTab } from '/web/pages/project/issues-tab.tsx'
 import { OverviewTab } from '/web/pages/project/overview-tab.tsx'
 import { PulseTab } from '/web/pages/project/pulse-tab.tsx'
 import { PullRequestsTab } from '/web/pages/project/pull-requests-tab.tsx'
+import { TeamTab } from '/web/pages/project/team-tab.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -47,6 +53,8 @@ const tabContents: Partial<
   canaux: ChannelsTab,
   prs: PullRequestsTab,
   issues: IssuesTab,
+  equipe: TeamTab,
+  activite: ActivityTab,
 }
 
 const activeHelp: HelpStatus[] = [
@@ -80,7 +88,11 @@ const Actions = ({ project }: { project: Project }) => {
   const [following, setFollowing] = useState(project.followers.some(isMe))
   const isOwner = project.owner === me.login
   const isMember = project.members.some((m) => m.login === me.login)
-  const applied = appliedTo.value.includes(project.slug)
+  applicationsChanged.value
+  const applied = applications.some((a) =>
+    a.project === project.slug && a.login === me.login &&
+    a.status === 'pending'
+  )
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
       <Button variant='secondary' onClick={() => setFollowing(!following)}>

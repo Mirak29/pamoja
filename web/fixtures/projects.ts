@@ -34,6 +34,8 @@ export type Project = {
   demoVideo?: { provider: 'YouTube' | 'Loom' | 'Vimeo'; duration: string }
   /** Events imported with the project, before any live entry */
   events: { text: string; at: number }[]
+  /** Older entries of the project journal (Activité tab) */
+  journal?: { text: string; at: number }[]
   demo: boolean
 }
 
@@ -126,6 +128,22 @@ export const projects = {
       {
         text: 'Issue #44 marquée blocked : verrou SQLite sous charge',
         at: daysAgo(3),
+      },
+    ],
+    journal: [
+      {
+        text: 'Release v0.3 publiée : Wave et Orange Money en sandbox',
+        at: daysAgo(9),
+      },
+      { text: 'Fatou devient Mainteneur', at: daysAgo(20) },
+      { text: 'Review reçue sur la PR #62 par Moussa', at: daysAgo(12) },
+      {
+        text: 'Carte « Lever le verrou SQLite » déplacée vers En cours',
+        at: daysAgo(2),
+      },
+      {
+        text: 'Demande d’aide publiée : verrou SQLite sous charge',
+        at: hoursAgo(30),
       },
     ],
     demo: true,
@@ -230,6 +248,20 @@ export const projects = {
 } satisfies Record<string, Project>
 
 export type ProjectSlug = keyof typeof projects
+
+// Skills that answer each project need, until AI extraction (PAM-310)
+export const needSkills: Record<string, string[]> = {
+  'Review de code Go': ['Go', 'Code review'],
+  'Tests': ['Go', 'CI', 'TypeScript'],
+  'Frontend React': ['React', 'TypeScript', 'UI'],
+  'good first issue': ['TypeScript', 'React', 'Python'],
+  'Backend': ['Backend', 'Go', 'PostgreSQL', 'SQL'],
+  'Documentation': ['TypeScript', 'Go', 'Flutter'],
+  'DevOps': ['Docker', 'Kubernetes', 'CI'],
+  'Review de code': ['Code review', 'Go'],
+  'Frontend': ['React', 'TypeScript', 'UI'],
+  'Design': ['UI'],
+}
 
 /** Projects someone owns or is a member of */
 export const projectsOf = (login: Login): Project[] =>

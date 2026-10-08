@@ -165,7 +165,7 @@ Responsable : _à répartir_
 - [x] **PAM-414** · Onglet Pulse sur données fictives : Pulse, résumé IA, Health, DNA, Story (§6.4, §6.5) `[démo]` — @niangoos
 - [x] **PAM-415** · Onglet Canaux sur données fictives : quatre canaux, messages, fils, alertes `#suivi` actionnables, présence (§6.8) `[démo]` — @niangoos
 - [x] **PAM-416** · Onglets Pull requests et Issues sur données fictives, panneau de détail d'une PR (§6.3) `[démo]` — @niangoos
-- [ ] **PAM-417** · Onglets Équipe et Activité sur données fictives (§6.6)
+- [x] **PAM-417** · Onglets Équipe et Activité sur données fictives (§6.6) — @niangoos
 - [ ] **PAM-418** · Onglets Board et Roadmap sur données fictives (§6.7)
 - [ ] **PAM-419** · Réglages du projet sur données fictives (§6.3)
 - [ ] **PAM-420** · Écran Projets sur données fictives : mes projets et projets suivis, nouveau projet (import ou création), activation de la synchro live (§5.4, §6.3)

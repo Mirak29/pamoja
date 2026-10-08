@@ -13,7 +13,11 @@ import {
   Zap,
 } from '/web/assets/icons.tsx'
 import {
+  applications,
+  applicationsChanged,
   decideApplication,
+} from '/web/fixtures/applications.ts'
+import {
   markAllRead,
   markRead,
   type Notification,
@@ -64,6 +68,9 @@ const open = (notification: Notification) => {
 
 const Row = ({ notification }: { notification: Notification }) => {
   const Icon = icons[notification.kind]
+  const application = applications.find((a) =>
+    a.id === notification.application
+  )
   return (
     <div
       class={`-mt-px flex gap-3.5 border-t border-line px-5 py-4 ${
@@ -90,29 +97,29 @@ const Row = ({ notification }: { notification: Notification }) => {
           <span>{categoryLabels[notification.category]}</span>
           {notification.demo && <DemoBadge />}
         </div>
-        {notification.application === 'pending' && (
+        {application?.status === 'pending' && (
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'
-              onClick={() => decideApplication(notification, true)}
+              onClick={() => decideApplication(application, true)}
               class='key key-primary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Accepter
             </button>
             <button
               type='button'
-              onClick={() => decideApplication(notification, false)}
+              onClick={() => decideApplication(application, false)}
               class='key key-secondary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Refuser
             </button>
           </div>
         )}
-        {notification.application && notification.application !== 'pending' &&
+        {application && application.status !== 'pending' &&
           (
             <span class='inline-flex items-center gap-1.5 text-[13px] font-semibold text-verified'>
               <Check class='size-3.5' />
-              {notification.application === 'accepted'
+              {application.status === 'accepted'
                 ? 'Candidature acceptée'
                 : 'Candidature refusée'}
             </span>
@@ -130,6 +137,7 @@ const Row = ({ notification }: { notification: Notification }) => {
 /** Notification center by category, with direct actions (§7.4) */
 export const NotificationsPage = () => {
   notificationsChanged.value
+  applicationsChanged.value
   const mine = notifications.filter((n) => n.to === me.login)
   const current = categories.find(([key]) => key === url.params.categorie) ??
     categories[0]

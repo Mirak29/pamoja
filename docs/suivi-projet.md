@@ -219,6 +219,17 @@ Les thèmes et accents sont définis dans `docs/identite/tokens.json` et génér
 - **Livrable** : `web/pages/profile/profile-edit.tsx`, `web/pages/profile/cover.tsx`, `web/fixtures/profile-settings.ts`, `task-generate-theme.ts`
 - **Par** : @niangoos
 
+### 2026-10-08 · PAM-417 · Onglets Équipe et Activité
+
+Deux onglets du projet sur données fictives :
+- **Équipe** : membres et rôles (le propriétaire change un rôle), « Ils pourraient aider » par besoin du projet avec invitation, candidatures acceptées ou refusées sur place, encart « Rejoindre » pour un non-membre, définition des rôles.
+- **Activité** : journal du projet groupé par jour, filtré par GitHub, Équipe ou Aide (`?filtre=`).
+
+Les candidatures ont maintenant une seule source, `web/fixtures/applications.ts`, utilisée par l'onglet Équipe, le dialogue « Rejoindre » et la notification de candidature. Accepter ajoute le membre et l'inscrit au journal (`web/fixtures/activity.ts`).
+
+- **Livrable** : `web/pages/project/team-tab.tsx`, `web/pages/project/activity-tab.tsx`, `web/fixtures/applications.ts`, `web/fixtures/activity.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

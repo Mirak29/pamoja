@@ -30,8 +30,8 @@ export type Notification = {
   at: number
   read: boolean
   href: string
-  /** A join request, accepted or refused from the notification (§6.6) */
-  application?: 'pending' | 'accepted' | 'refused'
+  /** Id of a join request, accepted or refused from the notification (§6.6) */
+  application?: string
   demo: boolean
 }
 
@@ -47,7 +47,7 @@ export const notifications: Notification[] = [
     at: hoursAgo(1),
     read: true,
     href: 'projet/openpay-africa/equipe',
-    application: 'pending',
+    application: 'a1',
     demo: true,
   },
   {
@@ -176,13 +176,4 @@ export const pushNotification = (
     demo: false,
   })
   notificationsChanged.value++
-}
-
-/** POST/api/project/join-request/decide, from the notification */
-export const decideApplication = (
-  notification: Notification,
-  accept: boolean,
-) => {
-  notification.application = accept ? 'accepted' : 'refused'
-  markRead(notification)
 }
