@@ -17,7 +17,8 @@ même découpage en blocs, et chaque tâche renvoie à sa section (`§`).
 - **Prendre une tâche** : ajouter `— @login` en fin de ligne **avant** de commencer, pour ne pas la faire en double. Une tâche en cours par personne.
 - **Revue croisée** : chaque PR est relue et approuvée par l'autre développeur avant le merge.
 - **Conflits sur ce fichier** : ne modifier que les lignes de ses propres tâches, et rebaser sur `master` avant le merge.
-- **Terminer une tâche** : cocher la case dans la PR qui la livre, pas après.
+- **Terminer une tâche** : cocher la case dans la PR qui la livre, pas après, et ajouter
+  son entrée dans `docs/suivi-projet.md` dans la même PR.
 - **Point du soir** : comparer l'avancement au planning ci-dessous. Un retard sur le
   bloc 2 se rattrape avant d'attaquer le bloc suivant ; un retard sur les blocs 3 à 5
   laisse leurs tâches au niveau *fonctionnel*.

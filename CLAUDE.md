@@ -20,6 +20,7 @@ réputation visible sur son profil. Promesse : *Your work is your profile.*
 | [Doc en ligne](https://claude.ai/code/artifact/e7a00b2e-5fef-42ba-b949-7d181200909a) | Copie partagée avec les relecteurs (accessible seulement si elle a été partagée depuis le menu Share) ; à resynchroniser après chaque changement important du fichier du repo |
 | `docs/prototype/` | Prototype interactif Pamoja v2 : référence des écrans et parcours (voir son README pour ce que le code ne reprend pas) |
 | `docs/brief-prototype-claude-design.md` | Brief autonome pour le prototype interactif complet (toutes les pages, workflows, données fictives) |
+| `docs/suivi-projet.md` | Journal de ce qui est réalisé, tâche par tâche ; une entrée par tâche terminée |
 | `docs/cadev-inscription.md` | Textes saisis dans le formulaire d'inscription CADEV |
 | [Design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) | Identité visuelle : README (règles), tokens, composants, logo. Copie des tokens et du logo dans `docs/identite/`. À lire avant tout travail d'interface |
 
@@ -38,6 +39,10 @@ des décisions en bas de `TODO.md`.
 - **Une tâche = une PR**, ID dans la branche et le commit, comme `TNT-xxx` dans
   Tournament : branche `PAM-204-webhook-queue`, commit `PAM-204 Add persistent webhook queue`.
   Cocher la tâche dans `TODO.md` dans la PR qui la livre.
+- **Suivi de projet, obligatoire** : dès qu'une tâche est terminée, ajoute son entrée dans
+  `docs/suivi-projet.md` (modèle en tête du fichier), **dans la même PR** que la tâche, à la fin
+  de la section « Réalisé ». Une tâche abandonnée ou fusionnée va dans « Fermé sans réalisation »,
+  avec sa raison. Une tâche n'est pas finie tant que cette entrée n'existe pas.
 - **À deux** : prendre une tâche en ajoutant `— @login` sur sa ligne avant de commencer ;
   chaque PR est relue et approuvée par l'autre développeur avant le merge.
 - **Vérifier avant d'affirmer** : les faits sur `@01edu` du §12.4 et du §12.5 ont été
