@@ -1,8 +1,24 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import { match, MIN_SCORE, waves } from '/web/fixtures/matching.ts'
+import { match, waves } from '/web/fixtures/matching.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { settings } from '/web/fixtures/settings.ts'
+
+/** Kinds of help a request asks for, and a developer accepts (§7.1) */
+export const helpTypes = [
+  'Review de code',
+  'Debug',
+  'Architecture',
+  'Sécurité',
+  'Tests',
+  'DevOps',
+  'UI/UX',
+  'Documentation',
+  'Pair programming',
+  'Mentorat',
+  'Recherche de contributeur',
+]
 
 /** Lifecycle of a help request (cahier des charges §7.2) */
 export type HelpStatus =
@@ -41,6 +57,8 @@ export type HelpRequest = {
   /** Developers who withdrew or were released: excluded from next waves */
   withdrawn?: Login[]
   wave?: number
+  /** Withdrawn by a moderator */
+  hidden?: boolean
   log?: { text: string; at: number; verified?: boolean }[]
   demo: boolean
 }
@@ -130,12 +148,15 @@ export const helpRequests: HelpRequest[] = [
 // read this signal to refresh, as they will on an SSE entry
 export const helpChanged = signal(0)
 
-/** Open requests of others that match a developer, best first (§7.3) */
-export const matchingRequests = (person: Person) =>
+/**
+ * Open requests of others that match a developer, best first, from the
+ * minimum score set in the settings (§7.3)
+ */
+export const matchingRequests = (person: Person, min = settings.minScore) =>
   helpRequests
     .filter((h) => h.status === 'open' && h.author !== person.login)
     .map((h) => ({ request: h, score: match(person, h).total }))
-    .filter((h) => h.score >= MIN_SCORE)
+    .filter((h) => h.score >= min)
     .sort((a, b) => b.score - a.score)
 
 const firstName = (login: Login) => people[login].name.split(' ')[0]

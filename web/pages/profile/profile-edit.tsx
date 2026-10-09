@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
-import { navigate, url } from '@01edu/signal-router'
+import { navigate } from '@01edu/signal-router'
 import {
   Check,
   ChevronDown,
@@ -25,7 +25,6 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
-import { UpcomingState } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
 
@@ -265,12 +264,7 @@ const Preview = ({ draft }: { draft: Draft }) => (
 )
 
 /** /profil/modifier: identity, appearance, skills and section order (§9.2) */
-export const ProfileEditPage = () =>
-  url.relativePath === '/profil/modifier'
-    ? <ProfileEditor />
-    : <UpcomingState path={url.relativePath.slice(1)} />
-
-const ProfileEditor = () => {
+export const ProfileEditPage = () => {
   const person: Person = me
   const [draft, setDraft] = useState<Draft>(() => ({
     ...settingsOf(me.login),

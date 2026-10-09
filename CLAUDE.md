@@ -118,7 +118,7 @@ Tournament pour faire tourner les deux). Build de prod : `deno task prod`.
 - Reverse proxy : Caddy (HTTPS, HTTP/2, SSE sans tampon) — §17.4.
 - Images uploadées ; vidéos uniquement intégrées par lien (YouTube, Loom, Vimeo) — §17.3.
 - CSS : Tailwind v4 seul, sans daisyUI ; thème généré depuis `docs/identite/tokens.json` — §12.3.
-- DA : interface entièrement isométrique (dalles, touches, puits, formes par type d'objet, colonnes pour les valeurs), sans illustration décorative ; référence visuelle : prototype Pamoja v2 (`docs/prototype/`) — §12.7.
+- DA : interface entièrement isométrique (dalles, touches, puits, formes par type d'objet, colonnes pour les valeurs), sans illustration décorative hors des plaques (couverture de profil, landing, 404) ; référence visuelle : prototype Pamoja v2 (`docs/prototype/`) — §12.7.
 - Routage en vrais chemins (`/@moussa`), jamais de `#` ; profil à une seule adresse `/@login` — §9, §12.2.
 - IA toujours avec un repli déterministe ; fournisseur encore à choisir — §11, §20.
 

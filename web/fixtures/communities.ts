@@ -1,3 +1,5 @@
+import { signal } from '@preact/signals'
+import type { Login, Person } from '/web/fixtures/people.ts'
 export type CommunityType = 'Technologie' | 'Pays' | 'Domaine'
 
 export type Community = {
@@ -6,11 +8,19 @@ export type Community = {
   type: CommunityType
   members: number
   description: string
+  /** Rules shown in « À propos », the default ones when absent */
+  rules?: string[]
+  /** Creator, who moderates it */
+  owner?: Login
+  moderators?: Login[]
+  /** Country of a Pays community, to list its projects */
+  country?: string
 }
 
 export const communities: Community[] = [
   {
     slug: 'go',
+    moderators: ['zeinab'],
     name: 'Go',
     type: 'Technologie',
     members: 412,
@@ -50,6 +60,7 @@ export const communities: Community[] = [
   },
   {
     slug: 'senegal-developers',
+    country: 'Sénégal',
     name: 'Senegal Developers',
     type: 'Pays',
     members: 640,
@@ -57,6 +68,7 @@ export const communities: Community[] = [
   },
   {
     slug: 'cote-divoire-developers',
+    country: 'Côte d’Ivoire',
     name: 'Côte d’Ivoire Developers',
     type: 'Pays',
     members: 455,
@@ -65,9 +77,56 @@ export const communities: Community[] = [
   },
   {
     slug: 'cameroon-developers',
+    country: 'Cameroun',
     name: 'Cameroon Developers',
     type: 'Pays',
     members: 310,
     description: 'Les développeurs du Cameroun, de Douala à Yaoundé.',
   },
 ]
+
+export const defaultRules = [
+  'Sois précis : du code, un contexte, ce que tu as essayé.',
+  'Pas d’autopromotion sans contenu utile.',
+  'Respecte les autres, signale ce qui pose problème.',
+]
+
+// Session changes until POST/api/community/join exists (PAM-502)
+export const communitiesChanged = signal(0)
+
+/** POST/api/community/join, or leave */
+export const toggleMembership = (community: Community, person: Person) => {
+  const joined = person.communities.includes(community.slug)
+  person.communities = joined
+    ? person.communities.filter((slug) => slug !== community.slug)
+    : [...person.communities, community.slug]
+  community.members += joined ? -1 : 1
+  communitiesChanged.value++
+}
+
+const slugify = (name: string) =>
+  name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'communaute'
+
+/** POST/api/community/create: its creator joins and moderates it */
+export const createCommunity = (
+  draft: Pick<Community, 'name' | 'type' | 'description'>,
+  person: Person,
+) => {
+  const base = slugify(draft.name)
+  let slug = base
+  for (let k = 2; communities.some((c) => c.slug === slug); k++) {
+    slug = `${base}-${k}`
+  }
+  const community: Community = {
+    ...draft,
+    slug,
+    members: 1,
+    rules: ['Sois précis et bienveillant.'],
+    owner: person.login as Login,
+  }
+  communities.push(community)
+  person.communities = [...person.communities, slug]
+  communitiesChanged.value++
+  return community
+}

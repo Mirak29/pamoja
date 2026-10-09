@@ -39,7 +39,7 @@ import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
-import { EmptyState, GhostSlab, UpcomingState } from '/web/ui/states.tsx'
+import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 
 const tabs = [
@@ -57,8 +57,9 @@ const tabs = [
 
 type TabKey = typeof tabs[number][0]
 
-const tabContents: Partial<
-  Record<TabKey, (props: { project: Project }) => preact.JSX.Element>
+const tabContents: Record<
+  TabKey,
+  (props: { project: Project }) => preact.JSX.Element
 > = {
   '': OverviewTab,
   pulse: PulseTab,
@@ -271,9 +272,7 @@ export const ProjectPage = () => {
     <Page title={project.name} class='flex flex-col gap-7 pt-5'>
       <Header project={project} />
       <ProjectTabs project={project} current={current} />
-      {Content
-        ? <Content project={project} />
-        : <UpcomingState path={url.relativePath.slice(1)} />}
+      <Content project={project} />
       <JoinDialog project={project} />
       {project.owner === me.login && <SyncDialog project={project} />}
     </Page>

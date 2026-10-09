@@ -135,18 +135,3 @@ export const ErrorState = (
     </GhostSlab>
   </div>
 )
-
-/** Screen not built yet: its task is listed in TODO.md */
-export const UpcomingState = ({ path }: { path: string }) => (
-  <div class='max-w-[780px] pt-5'>
-    <GhostSlab class='flex flex-col items-center gap-4 px-6 py-10 text-center'>
-      <span class='inline-flex h-6 items-center rounded-sm border border-dashed border-line-control px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] text-ink-muted uppercase'>
-        Écran à venir
-      </span>
-      <p class='max-w-[520px] text-pretty text-ink-muted'>
-        Cet écran est en cours de construction, sa tâche est dans le TODO.
-      </p>
-      <code class='font-mono text-code text-ink-muted'>/{path}</code>
-    </GhostSlab>
-  </div>
-)

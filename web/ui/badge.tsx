@@ -124,9 +124,18 @@ export const PostTypeBadge = ({ type }: { type: PostTypeName }) => {
 }
 
 /** Dashed line: demonstration data, never confused with a real proof */
-export const DemoBadge = () => (
-  <span class={`${pill} border-dashed ${tones.muted}`}>Donnée de démo</span>
+/**
+ * Dashed tag for what is not real or not complete: demo data, a simulated
+ * page, a read only view.
+ *
+ * @example
+ * <NoticeBadge>Page GitHub simulée</NoticeBadge>
+ */
+export const NoticeBadge = ({ children }: { children: ComponentChildren }) => (
+  <span class={`${pill} border-dashed ${tones.muted}`}>{children}</span>
 )
+
+export const DemoBadge = () => <NoticeBadge>Donnée de démo</NoticeBadge>
 
 /**
  * A skill, highlighted when the viewer has it.
