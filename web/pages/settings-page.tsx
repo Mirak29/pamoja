@@ -3,6 +3,7 @@ import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
 import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
+import { signOut } from '/web/fixtures/session.ts'
 import {
   matchingModes,
   notificationRows,
@@ -114,7 +115,9 @@ export const SettingsPage = () => {
             <span>@{me.login} · connecté via GitHub</span>
           </span>
         </div>
-        <Button variant='secondary' href='connexion'>Se déconnecter</Button>
+        <Button variant='secondary' href='.' onClick={signOut}>
+          Se déconnecter
+        </Button>
       </section>
       <section class='slab mr-2 px-[22px] pt-2 pb-3.5'>
         <div class='flex items-center gap-4 pt-3.5 pb-2.5'>

@@ -7,11 +7,10 @@ import { waves } from '/web/fixtures/matching.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
-import { skills as vocabulary } from '/web/fixtures/skills.ts'
-import { fuzzyMatch } from '/web/lib/fuzzy.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { SkillPicker } from '/web/ui/chips.tsx'
 import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -98,74 +97,6 @@ export const BranchLine = (
     )}
   </div>
 )
-
-const SkillsField = (
-  { skills, onChange }: {
-    skills: string[]
-    onChange: (skills: string[]) => void
-  },
-) => {
-  const [query, setQuery] = useState('')
-  // Controlled vocabulary: typing "postgres" proposes PostgreSQL (§6.1)
-  const suggestions = query.trim()
-    ? vocabulary
-      .filter((skill) => !skills.includes(skill) && fuzzyMatch(query, skill))
-      .slice(0, 5)
-    : []
-  const add = (skill: string) => {
-    onChange([...skills, skill])
-    setQuery('')
-  }
-  return (
-    <div class='flex flex-col gap-2 text-[13px] font-semibold'>
-      <span>Skills</span>
-      <div class='flex flex-wrap gap-2'>
-        {skills.map((skill) => (
-          <span
-            key={skill}
-            class='inline-flex h-[30px] items-center gap-1 rounded-[5px] border border-indigo bg-indigo-soft pr-1 pl-2.5 text-[13px] leading-none font-medium text-indigo shadow-key-selected'
-          >
-            {skill}
-            <button
-              type='button'
-              onClick={() => onChange(skills.filter((s) => s !== skill))}
-              aria-label='Retirer'
-              class='flex size-[22px] cursor-pointer items-center justify-center rounded-sm text-indigo'
-            >
-              <X class='size-3' />
-            </button>
-          </span>
-        ))}
-      </div>
-      <Input
-        value={query}
-        onInput={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter') return
-          event.preventDefault()
-          suggestions[0] && add(suggestions[0])
-        }}
-        placeholder='Ajouter un skill (essaie « postgres »)'
-        aria-label='Ajouter un skill'
-      />
-      <div class='flex flex-wrap gap-2'>
-        {suggestions.map((skill) => (
-          <button
-            key={skill}
-            type='button'
-            onClick={() => add(skill)}
-            class='h-[30px] cursor-pointer rounded-[5px] border border-dashed border-indigo px-2.5 text-[13px] leading-none font-medium text-indigo'
-          >
-            + {skill}
-          </button>
-        ))}
-      </div>
-      <span class='font-normal text-ink-muted'>
-        Vocabulaire contrôlé : Pamoja propose le nom exact du skill.
-      </span>
-    </div>
-  )
-}
 
 // Images are resized and uploaded with POST/api/media/upload (PAM-409);
 // here they stay in the browser
@@ -383,7 +314,11 @@ export const NewHelp = () => {
             )}
           </div>
           {form.branch && <BranchLine branch={form.branch} job={form.job} />}
-          <SkillsField
+          <SkillPicker
+            label='Skills'
+            inputLabel='Ajouter un skill'
+            placeholder='Ajouter un skill (essaie « postgres »)'
+            note='Vocabulaire contrôlé : Pamoja propose le nom exact du skill.'
             skills={form.skills}
             onChange={(skills) => update({ skills })}
           />
