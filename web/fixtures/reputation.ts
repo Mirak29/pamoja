@@ -22,13 +22,16 @@ export type Proof = {
   who: Login
   dimension: Dimension
   title: string
-  project: ProjectSlug
+  /** Absent for an answer accepted in a community */
+  project?: ProjectSlug
   /** The developer who was helped, absent for one's own project */
   by?: Login
   at: number
   verified: boolean
   pullRequest?: number
   help?: string
+  /** The question whose answer was accepted */
+  post?: string
   demo: boolean
 }
 

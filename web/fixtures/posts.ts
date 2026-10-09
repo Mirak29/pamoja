@@ -3,6 +3,7 @@ import { hoursAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import { proofs } from '/web/fixtures/reputation.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 export type PostType =
@@ -285,7 +286,7 @@ export const childrenOf = (id: string) => {
 export const descendantCount = (id: string): number =>
   childrenOf(id).reduce((sum, child) => sum + 1 + descendantCount(child.id), 0)
 
-export type Reaction = 'like' | 'useful'
+export type Reaction = 'like' | 'useful' | 'thanks'
 
 /** POST/api/reaction/toggle */
 export const toggleReaction = (post: Post, kind: Reaction, login: Login) => {
@@ -385,4 +386,36 @@ export const publishPost = (draft: PostDraft, author: Person) => {
   }
   changed()
   return post
+}
+
+/**
+ * POST/api/post/accept-answer: the answer counts as a help for its author,
+ * who gains a proof in Entraide (§8, §10.1)
+ */
+export const acceptAnswer = (question: Post, answer: Post) => {
+  question.acceptedReply = answer.id
+  const title = question.title || question.body.slice(0, 60)
+  proofs.push({
+    id: `p${proofs.length + 1}`,
+    who: answer.author,
+    dimension: 'help',
+    title: `Réponse acceptée : ${title}`,
+    by: question.author,
+    at: Date.now(),
+    verified: false,
+    post: question.id,
+    demo: false,
+  })
+  const count =
+    proofs.filter((p) => p.who === answer.author && p.dimension === 'help')
+      .length
+  pushNotification({
+    to: answer.author,
+    category: 'communities',
+    kind: 'reply',
+    title: 'Ta réponse a été acceptée',
+    body: `« ${title} ». Entraide : ${count} preuves.`,
+    href: `post/${question.id}`,
+  })
+  changed()
 }

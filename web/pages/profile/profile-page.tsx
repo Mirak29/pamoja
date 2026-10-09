@@ -189,7 +189,10 @@ const Stats = ({ login }: { login: Login }) => {
       ).size,
       'développeurs aidés',
     ],
-    [new Set(mine.map((p) => p.project)).size, 'collaborations'],
+    [
+      new Set(mine.map((p) => p.project).filter(Boolean)).size,
+      'collaborations',
+    ],
   ] as const
   return (
     <div class='mr-2 grid grid-cols-[repeat(auto-fit,minmax(118px,1fr))] gap-5'>
@@ -273,7 +276,11 @@ const Contributions = ({ login }: { login: Login }) => {
         return (
           <A
             key={proof.id}
-            href={proof.help ? `aide/${proof.help}` : `projet/${proof.project}`}
+            href={proof.help
+              ? `aide/${proof.help}`
+              : proof.post
+              ? `post/${proof.post}`
+              : `projet/${proof.project}`}
             class='flex flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-ink no-underline hover:bg-surface-000 hover:no-underline'
           >
             <span class='tile flex size-[34px] flex-none items-center justify-center text-ink-muted'>

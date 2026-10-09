@@ -13,7 +13,7 @@ const plural = (count: number, singular: string, plural: string) =>
 /** Project, person helped and age of a proof */
 export const proofMeta = (proof: Proof, withAge = true) =>
   [
-    projects[proof.project].name,
+    proof.project && projects[proof.project].name,
     proof.by && `pour ${people[proof.by].name.split(' ')[0]}`,
     withAge && ago(proof.at),
   ].filter(Boolean).join(' · ')
@@ -36,7 +36,10 @@ const Row = ({ proof }: { proof: Proof }) => (
           PR #{proof.pullRequest}
         </A>
       )}
-      <A href={`projet/${proof.project}`}>{projects[proof.project].name}</A>
+      {proof.project && (
+        <A href={`projet/${proof.project}`}>{projects[proof.project].name}</A>
+      )}
+      {proof.post && <A href={`post/${proof.post}`}>Question</A>}
       {proof.help && <A href={`aide/${proof.help}`}>Demande d’aide</A>}
     </div>
   </div>

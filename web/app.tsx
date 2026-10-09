@@ -1,11 +1,14 @@
 import { Fragment, h, type JSX, render } from 'preact'
 import { url } from '@01edu/signal-router'
+import { CommunitiesPage } from '/web/pages/communities/communities-page.tsx'
+import { CommunityPage } from '/web/pages/communities/community-page.tsx'
 import { ExplorePage } from '/web/pages/explore/explore-page.tsx'
 import { HelpPage } from '/web/pages/help/help-page.tsx'
 import { HomePage } from '/web/pages/home/home-page.tsx'
 import { NotificationsPage } from '/web/pages/notifications.tsx'
 import { ProfileEditPage } from '/web/pages/profile/profile-edit.tsx'
 import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
+import { PostPage } from '/web/pages/post-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { ProjectsPage } from '/web/pages/projects/projects-page.tsx'
 import { SearchPage } from '/web/pages/search-page.tsx'
@@ -21,9 +24,12 @@ const routes: Record<string, () => JSX.Element | null> = {
   '': HomePage,
   '@': ProfilePage,
   aide: HelpPage,
+  communaute: CommunityPage,
+  communautes: CommunitiesPage,
   dev: SoclePage,
   explorer: ExplorePage,
   notifications: NotificationsPage,
+  post: PostPage,
   profil: ProfileEditPage,
   projet: ProjectPage,
   projets: ProjectsPage,

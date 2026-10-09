@@ -290,6 +290,17 @@ Les cartes Développeur et Projet sont dans `web/ui/`, pour les onglets de la pa
 - **Livrable** : `web/pages/explore/`, `web/pages/search-page.tsx`, `web/ui/developer-card.tsx`, `web/ui/project-card.tsx`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-515 · Écrans Communautés, communauté et post
+
+Sur données fictives :
+- **Communautés** : par technologie, pays et domaine ; rejoindre ou quitter ; nouvelle communauté (`?dialog=new-community`, aussi depuis le menu Créer).
+- **Communauté** (`/communaute/:slug`) : Fil, Membres, Projets, Demandes d'aide, À propos (règles et modération) ; « Nouveau post » ouvre le dialogue avec la communauté et le type Question déjà choisis.
+- **Post** (`/post/:id`) : fil parent quand c'est une réponse, contenu, réactions +1, Utile et Merci, enregistrer, signaler, toutes les réponses, réponse en bas de page.
+- **Réponse acceptée** : l'auteur d'une question accepte une réponse ; son auteur gagne une preuve d'Entraide, visible sur son profil, et une notification.
+
+- **Livrable** : `web/pages/communities/`, `web/pages/post-page.tsx`, `ParentChain` et l'acceptation dans `web/ui/post.tsx`, actions de `web/fixtures/communities.ts` et `web/fixtures/posts.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
