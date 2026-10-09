@@ -37,6 +37,8 @@ export type Post = {
   bookmarks?: Login[]
   /** Hidden by moderation: only its author still sees it */
   hidden?: boolean
+  /** Reason given by the moderator, shown to the author */
+  hiddenReason?: string
   demo: boolean
 }
 

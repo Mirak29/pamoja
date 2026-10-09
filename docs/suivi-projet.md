@@ -301,6 +301,16 @@ Sur données fictives :
 - **Livrable** : `web/pages/communities/`, `web/pages/post-page.tsx`, `ParentChain` et l'acceptation dans `web/ui/post.tsx`, actions de `web/fixtures/communities.ts` et `web/fixtures/posts.ts`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-516 · Écrans Réglages et Modération, dialogue Signaler
+
+Sur données fictives :
+- **Réglages** (`/reglages`) : compte GitHub, notifications par catégorie (app et e-mail), matching (mode, score minimum avec le nombre de demandes qui passent le seuil, skills, types d'aide acceptés), thème (Clair, Sombre, Système, qui suit le système en direct), données (export JSON réel, réinitialisation de la démo ; la suppression du compte arrive avec l'API).
+- **Signaler** (`?dialog=report&report=type:id`) : un post, un message de canal, une demande d'aide ou un profil ; motif obligatoire, commentaire facultatif, anonyme pour l'auteur ; les modérateurs sont notifiés.
+- **Modération** (`/moderation`, réservée aux modérateurs) : file des signalements, action (ignorer, masquer, avertir, suspendre, retirer la preuve) avec un motif obligatoire envoyé à l'auteur, historique des décisions.
+
+- **Livrable** : `web/pages/settings-page.tsx`, `web/pages/moderation-page.tsx`, `web/ui/report-dialog.tsx`, `web/fixtures/settings.ts`, `web/fixtures/reports.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

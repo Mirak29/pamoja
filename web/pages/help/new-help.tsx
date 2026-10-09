@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import { CircleAlert, GitPullRequest, Send, X } from '/web/assets/icons.tsx'
-import { type HelpDraft, publishHelp } from '/web/fixtures/help.ts'
+import { type HelpDraft, helpTypes, publishHelp } from '/web/fixtures/help.ts'
 import { waves } from '/web/fixtures/matching.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
@@ -16,19 +16,6 @@ import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
-const helpTypes = [
-  'Review de code',
-  'Debug',
-  'Architecture',
-  'Sécurité',
-  'Tests',
-  'DevOps',
-  'UI/UX',
-  'Documentation',
-  'Pair programming',
-  'Mentorat',
-  'Recherche de contributeur',
-]
 const levels = ['Débutant', 'Intermédiaire', 'Intermédiaire+', 'Confirmé']
 const durations = ['~20 min', '~30 min', '~1 h', '~2 h']
 const MAX_CAPTURES = 4

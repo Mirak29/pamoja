@@ -49,7 +49,9 @@ const Article = ({ post }: { post: Post }) => {
     <article class='slab flex flex-col gap-4 p-6'>
       {post.hidden && (
         <div class='rounded-md border border-dashed border-warning px-3 py-2.5 text-[14px] text-warning'>
-          Masqué par la modération. Toi seul le vois encore.
+          Masqué par la modération
+          {post.hiddenReason ? ` : ${post.hiddenReason}` : ''}. Toi seul le vois
+          encore.
         </div>
       )}
       {parent && (

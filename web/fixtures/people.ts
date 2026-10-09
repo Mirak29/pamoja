@@ -17,6 +17,10 @@ export type Person = {
   openTo?: string
   promising?: boolean
   moderator?: boolean
+  /** Suspended 7 days by a moderator */
+  suspended?: boolean
+  /** Hidden from search by a moderator */
+  hiddenFromSearch?: boolean
   communities: string[]
   intents: string[]
   follows?: string[]
