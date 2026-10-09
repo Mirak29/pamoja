@@ -6,10 +6,15 @@ import { type Login, people } from '/web/fixtures/people.ts'
 import { projectsOf } from '/web/fixtures/projects.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
 import { initials } from '/web/ui/avatar.tsx'
-import { DemoBadge, SkillChip, VerifiedBadge } from '/web/ui/badge.tsx'
+import {
+  DemoBadge,
+  NoticeBadge,
+  SkillChip,
+  VerifiedBadge,
+} from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { LogoMark } from '/web/ui/logo.tsx'
+import { PublicHeader } from '/web/ui/public-header.tsx'
 import { CountryCode } from '/web/pages/profile/collaboration.tsx'
 import { proofMeta } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
@@ -31,8 +36,8 @@ const stats = (login: Login) => {
 
 /**
  * Developer Passport: the public, read only view of /@login that a visitor
- * without a session sees (§9.3). Until sessions exist (PAM-110) it shows
- * at /@login?vue=publique.
+ * without a session sees (§9.3). Signed in, /@login?vue=publique previews
+ * it.
  */
 export const Passport = ({ login }: { login: Login }) => {
   const person = people[login]
@@ -46,32 +51,11 @@ export const Passport = ({ login }: { login: Login }) => {
   }, [person.name])
   return (
     <div class='flex min-h-screen flex-col'>
-      <header class='mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-4 px-7 py-[18px]'>
-        <A
-          href='.'
-          class='flex items-center gap-2.5 text-ink no-underline hover:no-underline'
-        >
-          <LogoMark size={34} />
-          <span class='font-display text-[24px] leading-none font-bold tracking-[-.01em]'>
-            Pamoja
-          </span>
-        </A>
-        <span class='flex-1' />
-        <A
-          href='@moussa'
-          params={{ vue: 'publique' }}
-          class='text-[14px] font-semibold'
-        >
-          Voir un profil
-        </A>
-        <Button variant='secondary' href='connexion'>Se connecter</Button>
-      </header>
+      <PublicHeader />
       <main class='mx-auto flex w-full max-w-[820px] flex-col gap-6 px-6 pt-4 pb-[120px]'>
         <div class='flex flex-wrap items-center gap-3'>
           <Eyebrow>Passeport développeur</Eyebrow>
-          <span class='inline-flex h-[22px] items-center rounded-sm border border-dashed border-line-control px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] whitespace-nowrap text-ink-muted uppercase'>
-            Vue publique · lecture seule
-          </span>
+          <NoticeBadge>Vue publique · lecture seule</NoticeBadge>
         </div>
         <section class='slab mr-2 overflow-hidden'>
           <div class='relative h-[120px] border-b border-figure-edge bg-surface-000'>

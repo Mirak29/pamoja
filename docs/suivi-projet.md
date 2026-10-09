@@ -311,6 +311,17 @@ Sur données fictives :
 - **Livrable** : `web/pages/settings-page.tsx`, `web/pages/moderation-page.tsx`, `web/ui/report-dialog.tsx`, `web/fixtures/settings.ts`, `web/fixtures/reports.ts`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-119 · Écrans publics : landing, connexion, 404
+
+Sur données fictives, avec une session simulée (`web/fixtures/session.ts`) en attendant le login GitHub (PAM-110) :
+- **Landing** (`/` sans session) : accroche, boucle en quatre étapes, aperçu du profil de Moussa avec ses cinq dimensions, appel « Continuer avec GitHub ».
+- **Connexion** (`/connexion`, et toute page de l'app ouverte sans session) : page d'autorisation GitHub simulée, droits en lecture seule ; une fois autorisée, la page demandée s'ouvre.
+- **404** : toute adresse qui ne mène nulle part, avec ou sans session.
+- « Se déconnecter » (menu du compte, réglages) ramène à la landing ; sans session, `/@login` est le passeport.
+
+- **Livrable** : `web/pages/public/`, `web/ui/plates.tsx`, `web/ui/public-header.tsx`, `web/fixtures/session.ts`, routage de `web/app.tsx`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

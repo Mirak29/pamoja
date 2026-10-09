@@ -12,16 +12,20 @@ import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
 import { PostPage } from '/web/pages/post-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { ProjectsPage } from '/web/pages/projects/projects-page.tsx'
+import { ConnexionPage } from '/web/pages/public/connexion-page.tsx'
+import { LandingPage } from '/web/pages/public/landing-page.tsx'
+import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
 import { SearchPage } from '/web/pages/search-page.tsx'
 import { SettingsPage } from '/web/pages/settings-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
+import { signedIn } from '/web/fixtures/session.ts'
 import { AppLayout } from '/web/ui/layout.tsx'
-import { UpcomingState } from '/web/ui/states.tsx'
 
 Object.assign(globalThis, { h, Fragment })
 
 // Pages by first path segment; each page reads the rest of its path
-// (/projet/openpay-africa/pulse). A profile lives at /@login.
+// (/projet/openpay-africa/pulse). A profile lives at /@login. A page with
+// a single address is listed by its full path.
 const routes: Record<string, () => JSX.Element | null> = {
   '': HomePage,
   '@': ProfilePage,
@@ -33,22 +37,34 @@ const routes: Record<string, () => JSX.Element | null> = {
   moderation: ModerationPage,
   notifications: NotificationsPage,
   post: PostPage,
-  profil: ProfileEditPage,
+  'profil/modifier': ProfileEditPage,
   projet: ProjectPage,
   projets: ProjectsPage,
   recherche: SearchPage,
   reglages: SettingsPage,
 }
 
+const routeOf = (key: string) =>
+  Object.hasOwn(routes, key) ? routes[key] : undefined
+
 const App = () => {
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
+  const Route = routeOf(section) ?? routeOf(path)
+  if (section === 'connexion') return <ConnexionPage />
+  if (!signedIn.value) {
+    // Without a session: the landing, the passports, and the login before
+    // any page of the app
+    if (section === '') return <LandingPage />
+    if (section === '@') return <PassportPage />
+    return Route ? <ConnexionPage /> : <NotFoundPage />
+  }
   // The passport is the profile seen without a session: no app shell
   if (section === '@' && url.params.vue === 'publique') return <PassportPage />
-  const Route = routes[section]
+  if (!Route) return <NotFoundPage />
   return (
     <AppLayout>
-      {Route ? <Route /> : <UpcomingState path={path} />}
+      <Route />
     </AppLayout>
   )
 }

@@ -15,7 +15,8 @@ const sizes = {
   38: 'h-[38px] px-4 text-[14px]',
   40: 'h-10 px-4 text-[14px]',
   42: 'h-[42px] px-4 text-[14px]',
-  48: 'h-12 px-4 text-[14px]',
+  46: 'h-[46px] px-4 text-[15px]',
+  48: 'h-12 px-[22px] text-[16px]',
 } as const
 
 /** Icon only keys are square */
@@ -26,6 +27,7 @@ const squares = {
   38: 'size-[38px]',
   40: 'size-10',
   42: 'size-[42px]',
+  46: 'size-[46px]',
   48: 'size-12',
 } as const
 

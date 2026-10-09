@@ -79,7 +79,7 @@ Responsable : _à répartir_
 - [ ] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [ ] **PAM-117** · CI : fmt, lint, tests sur chaque PR
 - [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
-- [ ] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7)
+- [x] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7) — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -244,3 +244,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-08 · Tailwind v4 seul, sans daisyUI : le système isométrique rend tous les composants sur mesure · §2, §12.3, §20
 - 2026-10-08 · Écrans construits d'abord sur données fictives côté web, une tâche par écran (PAM-119, PAM-215 à PAM-217, PAM-313 et PAM-314, PAM-413 à PAM-420, PAM-513 à PAM-516) ; les tâches existantes les branchent ensuite sur l'API · §4
 - 2026-10-08 · Thèmes et accents de profil définis dans `docs/identite/tokens.json` ; la couverture « Plaques » reste, seule illustration, parce que le développeur la choisit · §9.2, §12.3, §12.7
+- 2026-10-09 · Plaques et figures de la boucle gardées sur les pages publiques (landing, 404), qui présentent le produit ; sans session, `/` est la landing · §6.2, §12.7
