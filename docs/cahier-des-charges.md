@@ -201,7 +201,7 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 1. **Continue with GitHub** (§5.3).
 2. **Profil** pré-rempli depuis GitHub (avatar, nom, username, bio, localisation), à compléter : headline, pays, ville, site web.
 3. **Skills** : domaines (Backend, Frontend, Mobile, DevOps, Cloud, AI/ML, Blockchain, Data, Cybersecurity, Game Development, UI Engineering) et technologies, choisies dans un vocabulaire contrôlé. Les langages GitHub sont proposés automatiquement via `SkillAlias`.
-4. **Intentions** : Find projects, Find contributors, Review code, Get code reviews, Help developers, Contribute to open source, Mentor, Find a mentor, Build projects, Find collaborators. Elles alimentent le matching.
+4. **Intentions** : Find projects, Find contributors, Review code, Get code reviews, Help developers, Contribute to open source, Mentor, Find a mentor, Build projects, Find collaborators. Elles alimentent le matching. C'est la seule liste d'intentions : celles choisies ici s'affichent sur les cartes développeur et servent de filtre dans Explore.
 5. **Import** d'un premier projet, facultatif.
 
 Vocabulaire contrôlé : « Postgres », « postgresql » et « PG » pointent tous vers le skill `postgresql`. Un utilisateur ne crée pas de skill ; il en suggère un, validé par un admin.
@@ -211,6 +211,8 @@ Une compétence a trois sources possibles, affichées séparément : `declared`,
 ### 6.2 Navigation et Accueil
 
 Navigation : Accueil, Explorer, Projets, Aide, Communautés, Notifications, Profil. Action globale **+ Créer** : Post, Projet, Demande d'aide, Communauté. Recherche centrée dans l'en-tête (⌘K / Ctrl+K). **Pas d'en-tête de page qui répète la navigation** (ni fil d'Ariane, ni titre qui redit le nom de la page). Menu de l'avatar : profil, réglages, Modération (modérateurs uniquement), déconnexion.
+
+Sans session, `/` est la landing (le produit en une page, « Continuer avec GitHub ») et `/@login` le passeport (§9) ; les autres pages de l'app demandent d'abord la connexion, puis s'ouvrent. Une adresse qui ne mène nulle part affiche la page 404, avec ou sans session.
 
 **L'Accueil est un fil social**, construit pour faire construire (*Build > Scroll*) :
 
@@ -607,7 +609,7 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 - **Formes par type d'objet** : personne = disque, projet = cube, événement = tuile, état = losange.
 - **Colonnes** : les métriques du Pulse, les badges et la Collaboration Map sont des colonnes dont la hauteur suit la valeur. Le volume encode une donnée réelle, jamais une décoration.
 - **Fond uni** (`surface-000`) : la grille isométrique au sol a été essayée puis retirée, elle gênait la lecture.
-- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu. Seule exception : la couverture « Plaques » d'un profil, que le développeur choisit lui-même (§9.2).
+- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu. Exceptions : la couverture « Plaques » d'un profil, que le développeur choisit lui-même (§9.2), et les pages publiques (landing et 404), qui présentent le produit avec les figures du système isométrique (plaques reliées par le fil, figures des quatre étapes de la boucle).
 
 ### 12.8 Tests
 

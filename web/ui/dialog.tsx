@@ -20,7 +20,14 @@ const drawerWidths = {
   480: 'w-[min(480px,calc(100vw-40px))]',
 } as const
 
-const close = () => navigate({ params: { dialog: null } })
+// Closing also clears the params that belong to the dialog (?report=)
+const close = (clear: string[] = []) =>
+  navigate({
+    params: {
+      dialog: null,
+      ...Object.fromEntries(clear.map((key) => [key, null])),
+    },
+  })
 
 // The URL carries the open dialog (?dialog=id), like in Tournament
 const useModal = (id: string) => {
@@ -38,19 +45,20 @@ const useModal = (id: string) => {
 type ModalProps = {
   id: string
   label: string
+  clear?: string[]
   children: ComponentChildren
 }
 
 const ModalFrame = (
-  { id, label, children }: ModalProps,
+  { id, label, clear, children }: ModalProps,
 ) => {
   const { ref, isOpen } = useModal(id)
   return (
     <dialog
       ref={ref}
       aria-label={label}
-      onClose={() => url.params.dialog === id && close()}
-      onPointerDown={(event) => event.target === ref.current && close()}
+      onClose={() => url.params.dialog === id && close(clear)}
+      onPointerDown={(event) => event.target === ref.current && close(clear)}
       class='fixed inset-0 m-0 size-full max-h-none max-w-none overflow-auto bg-transparent px-4 pt-[7vh] pb-6 backdrop:bg-scrim'
     >
       {isOpen && children}
@@ -58,14 +66,16 @@ const ModalFrame = (
   )
 }
 
-const Header = ({ children }: { children: ComponentChildren }) => (
+const Header = (
+  { clear, children }: { clear?: string[]; children: ComponentChildren },
+) => (
   <div class='flex items-center gap-2 border-b border-line py-3.5 pr-4 pl-5'>
     <span class='flex-1'>{children}</span>
     <Button
       variant='secondary'
       size={34}
       square
-      onClick={close}
+      onClick={() => close(clear)}
       aria-label='Fermer'
     >
       <X class='size-[18px]' />
@@ -82,14 +92,16 @@ const Header = ({ children }: { children: ComponentChildren }) => (
  * <Dialog id='join' title='Rejoindre le projet' width={600}>…</Dialog>
  */
 export const Dialog = (
-  { id, title, width = 600, children }: {
+  { id, title, width = 600, clear, children }: {
     id: string
     title: string
     width?: keyof typeof widths
+    /** URL params cleared on close, with `dialog` */
+    clear?: string[]
     children: ComponentChildren
   },
 ) => (
-  <ModalFrame id={id} label={title}>
+  <ModalFrame id={id} label={title} clear={clear}>
     {/* The panel takes the initial focus, not the close key */}
     <div
       tabIndex={-1}
@@ -98,7 +110,7 @@ export const Dialog = (
         widths[width]
       }`}
     >
-      <Header>
+      <Header clear={clear}>
         <Eyebrow>{title}</Eyebrow>
       </Header>
       {children}

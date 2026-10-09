@@ -5,6 +5,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Check,
+  CircleCheck,
   CornerDownRight,
   Flag,
   Lightbulb,
@@ -19,6 +20,7 @@ import {
 import { communities } from '/web/fixtures/communities.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import {
+  acceptAnswer,
   childrenOf,
   descendantCount,
   type Post,
@@ -42,42 +44,50 @@ type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
 const FENCE = '`'.repeat(3)
 
+const bodySizes = {
+  small: [
+    'gap-2 text-[14px] leading-[22px]',
+    'px-3 py-2.5 text-[12px] leading-5',
+  ],
+  default: [
+    'gap-2.5 text-[15px] leading-6',
+    'px-3.5 py-3 text-[13px] leading-[21px]',
+  ],
+  large: [
+    'gap-3 text-[16px] leading-[26px]',
+    'px-4 py-3.5 text-[13px] leading-[21px]',
+  ],
+}
+
 /** Paragraphs with `inline code`, and fenced code blocks */
 export const PostBody = (
-  { body, small }: { body: string; small?: boolean },
-) => (
-  <div
-    class={`flex flex-col ${
-      small
-        ? 'gap-2 text-[14px] leading-[22px]'
-        : 'gap-2.5 text-[15px] leading-6'
-    }`}
-  >
-    {body.split(FENCE).flatMap((part, i) =>
-      i % 2
-        ? [
-          <pre
-            key={i}
-            class={`overflow-x-auto rounded-md border border-line-strong bg-surface-000 font-mono inset-shadow-well ${
-              small
-                ? 'px-3 py-2.5 text-[12px] leading-5'
-                : 'px-3.5 py-3 text-[13px] leading-[21px]'
-            }`}
-          >
-            {part.replace(/^[a-z]*\n/, '').trim()}
-          </pre>,
-        ]
-        : part.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((
-          paragraph,
-          j,
-        ) => (
-          <p key={`${i}-${j}`} class='text-pretty'>
-            <RichText text={paragraph} />
-          </p>
-        ))
-    )}
-  </div>
-)
+  { body, size = 'default' }: { body: string; size?: keyof typeof bodySizes },
+) => {
+  const [text, code] = bodySizes[size]
+  return (
+    <div class={`flex flex-col ${text}`}>
+      {body.split(FENCE).flatMap((part, i) =>
+        i % 2
+          ? [
+            <pre
+              key={i}
+              class={`overflow-x-auto rounded-md border border-line-strong bg-surface-000 font-mono text-ink inset-shadow-well ${code}`}
+            >
+              {part.replace(/^[a-z]*\n/, '').trim()}
+            </pre>,
+          ]
+          : part.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((
+            paragraph,
+            j,
+          ) => (
+            <p key={`${i}-${j}`} class='text-pretty'>
+              <RichText text={paragraph} />
+            </p>
+          ))
+      )}
+    </div>
+  )
+}
 
 const actionSizes = {
   post: 'h-8 min-w-8 gap-1.5 px-[9px] text-[13px]',
@@ -116,6 +126,17 @@ const ActionKey = (
     <span>{count || ''}</span>
   </button>
 )
+
+const accept = (question: Post, answer: Post) => {
+  acceptAnswer(question, answer)
+  notify({
+    title: 'Réponse acceptée',
+    body: `${people[answer.author].name} progresse en Entraide.`,
+    icon: CircleCheck,
+    tone: 'verified',
+    href: `@${answer.author}`,
+  })
+}
 
 const share = (post: Post) => {
   const link = `${location.origin}/post/${post.id}`
@@ -391,6 +412,8 @@ const ReplyRow = (
   const root = posts.find((p) => p.id === (post.root ?? post.id))
   const masked = post.hidden && !isMe(post.author)
   const name = people[post.author].name
+  const canAccept = root && isMe(root.author) && root.type === 'Question' &&
+    !root.acceptedReply && !isMe(post.author) && !masked
   return (
     <div
       class='relative flex gap-2.5 pt-1.5 pb-2.5'
@@ -445,7 +468,7 @@ const ReplyRow = (
               Réponse masquée par la modération.
             </span>
           )
-          : <PostBody body={post.body} small />}
+          : <PostBody body={post.body} size='small' />}
         <Actions
           post={post}
           size='reply'
@@ -479,6 +502,16 @@ const ReplyRow = (
           >
             Afficher {descendantCount(post.id)}{' '}
             {descendantCount(post.id) > 1 ? 'réponses' : 'réponse'}
+          </button>
+        )}
+        {canAccept && (
+          <button
+            type='button'
+            onClick={() => accept(root, post)}
+            class='inline-flex cursor-pointer items-center gap-1 self-start p-0 text-[12px] leading-[18px] font-semibold text-verified'
+          >
+            <Check class='size-3' />
+            Accepter cette réponse
           </button>
         )}
         {replying && (
@@ -546,6 +579,57 @@ export const Thread = (
       </div>
       {onRest?.(rest)}
     </>
+  )
+}
+
+/**
+ * The posts a reply answers, from the root down, linked by a line: shown
+ * above a reply opened on its own page.
+ *
+ * @example
+ * <ParentChain post={reply} />
+ */
+export const ParentChain = ({ post }: { post: Post }) => {
+  postsChanged.value
+  const [replying, setReplying] = useState<string[]>([])
+  const chain: Post[] = []
+  for (
+    let parent = posts.find((p) => p.id === post.parent);
+    parent;
+    parent = posts.find((p) => p.id === parent!.parent)
+  ) chain.unshift(parent)
+  if (!chain.length) return null
+  return (
+    <section aria-label='Fil parent' class='slab px-5 pt-4 pb-0.5'>
+      <div class='flex flex-col'>
+        {chain.map((parent, i) => (
+          <ReplyRow
+            key={parent.id}
+            row={{
+              post: parent,
+              depth: 0,
+              rails: [
+                ...(i > 0 ? [rail(16, 0, undefined, 6)] : []),
+                rail(16, AVATAR_Y + 20, 0),
+              ],
+            }}
+            level={levelWidth()}
+            replying={replying.includes(parent.id)}
+            onToggleReply={() =>
+              setReplying(
+                replying.includes(parent.id)
+                  ? replying.filter((id) => id !== parent.id)
+                  : [...replying, parent.id],
+              )}
+            onFold={() => {}}
+            onReply={(text) => {
+              replyTo(parent, me.login, text)
+              setReplying(replying.filter((id) => id !== parent.id))
+            }}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
 

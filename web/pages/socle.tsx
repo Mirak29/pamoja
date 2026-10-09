@@ -5,6 +5,7 @@ import { GitPullRequest, LifeBuoy, Send } from '/web/assets/icons.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
 import {
   DemoBadge,
+  NoticeBadge,
   SkillChip,
   type Status,
   StatusBadge,
@@ -15,6 +16,7 @@ import { Dialog, Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
+import { Plates } from '/web/ui/plates.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { Cube, Diamond } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
@@ -151,10 +153,16 @@ export const SoclePage = () => {
           <div class='flex flex-wrap gap-2'>
             <VerifiedBadge />
             <DemoBadge />
+            <NoticeBadge>Page GitHub simulée</NoticeBadge>
             {statusSamples.map((status) => (
               <StatusBadge key={status} status={status} />
             ))}
           </div>
+          <Plates width={150} />
+          <Note>
+            Plaques : la seule illustration, en couverture de profil et sur les
+            pages publiques (landing, 404).
+          </Note>
         </Section>
         <Section>
           <Eyebrow>Puces et options</Eyebrow>

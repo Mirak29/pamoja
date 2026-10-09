@@ -3,6 +3,7 @@ import { useEffect } from 'preact/hooks'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { CreateMenu, MobileNav, Sidebar } from '/web/ui/navigation.tsx'
+import { ReportDialog } from '/web/ui/report-dialog.tsx'
 import { Toasts } from '/web/ui/toast.tsx'
 
 /** Shell of the signed-in app: sidebar, header, page, mobile tab bar */
@@ -18,6 +19,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <MobileNav />
     <CreateMenu />
     <CommandPalette />
+    <ReportDialog />
     <Toasts />
   </div>
 )

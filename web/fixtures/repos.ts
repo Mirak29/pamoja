@@ -98,7 +98,7 @@ export const repos: Repo[] = [
 ]
 
 const slugify = (name: string) =>
-  name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'projet'
 
 export type ProjectDraft = {
