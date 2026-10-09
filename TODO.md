@@ -108,7 +108,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [ ] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [ ] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
-- [ ] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1)
+- [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
 - [x] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]` — @niangoos
 - [x] **PAM-217** · Écran Notifications sur données fictives : centre par catégories, actions directes, toast « Ce projet a besoin de toi » (§7.4) `[démo]` — @niangoos
 
@@ -245,3 +245,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-08 · Écrans construits d'abord sur données fictives côté web, une tâche par écran (PAM-119, PAM-215 à PAM-217, PAM-313 et PAM-314, PAM-413 à PAM-420, PAM-513 à PAM-516) ; les tâches existantes les branchent ensuite sur l'API · §4
 - 2026-10-08 · Thèmes et accents de profil définis dans `docs/identite/tokens.json` ; la couverture « Plaques » reste, seule illustration, parce que le développeur la choisit · §9.2, §12.3, §12.7
 - 2026-10-09 · Plaques et figures de la boucle gardées sur les pages publiques (landing, 404), qui présentent le produit ; sans session, `/` est la landing · §6.2, §12.7
+- 2026-10-09 · Onboarding : les 11 domaines du §6.1, pas les 7 du prototype ; une seule liste d'intentions, celle du §6.1, affichée sur les cartes et filtrée dans Explore · §6.1

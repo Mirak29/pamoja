@@ -15,6 +15,7 @@ import { ProjectsPage } from '/web/pages/projects/projects-page.tsx'
 import { ConnexionPage } from '/web/pages/public/connexion-page.tsx'
 import { LandingPage } from '/web/pages/public/landing-page.tsx'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
+import { OnboardingPage } from '/web/pages/public/onboarding-page.tsx'
 import { SearchPage } from '/web/pages/search-page.tsx'
 import { SettingsPage } from '/web/pages/settings-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
@@ -34,6 +35,7 @@ const routes: Record<string, () => JSX.Element | null> = {
   communautes: CommunitiesPage,
   dev: SoclePage,
   explorer: ExplorePage,
+  onboarding: OnboardingPage,
   moderation: ModerationPage,
   notifications: NotificationsPage,
   post: PostPage,
@@ -61,6 +63,7 @@ const App = () => {
   }
   // The passport is the profile seen without a session: no app shell
   if (section === '@' && url.params.vue === 'publique') return <PassportPage />
+  if (section === 'onboarding') return <OnboardingPage />
   if (!Route) return <NotFoundPage />
   return (
     <AppLayout>

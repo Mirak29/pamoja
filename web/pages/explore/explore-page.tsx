@@ -12,6 +12,7 @@ import {
   type Person,
 } from '/web/fixtures/people.ts'
 import { needSkills, type Project, projects } from '/web/fixtures/projects.ts'
+import { intents } from '/web/fixtures/skills.ts'
 import { OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -22,13 +23,6 @@ import { Tabs } from '/web/ui/tabs.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
-const intents = [
-  'Ouvert aux reviews',
-  'Cherche un projet',
-  'Cherche des contributeurs',
-  'Mentorat',
-  'Cherche un mentor',
-]
 const stages = ['Idée', 'Prototype', 'Bêta', 'Production']
 const activities = ['Très actif', 'Actif', 'Calme']
 
@@ -134,19 +128,20 @@ const Developers = () => {
           </>
         }
       >
-        {intents.map((intent) => (
-          <OptionButton
-            key={intent}
-            pressed={param('intention') === intent}
-            onClick={() =>
-              setParam(
-                'intention',
-                param('intention') === intent ? '' : intent,
-              )}
-          >
-            {intent}
-          </OptionButton>
-        ))}
+        {intents.filter((intent) => all.some((p) => p.intents.includes(intent)))
+          .map((intent) => (
+            <OptionButton
+              key={intent}
+              pressed={param('intention') === intent}
+              onClick={() =>
+                setParam(
+                  'intention',
+                  param('intention') === intent ? '' : intent,
+                )}
+            >
+              {intent}
+            </OptionButton>
+          ))}
         <OptionButton
           pressed={!!param('disponible')}
           onClick={() => setParam('disponible', !param('disponible'))}

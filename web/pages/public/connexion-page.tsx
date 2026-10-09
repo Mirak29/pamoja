@@ -18,7 +18,8 @@ const scopes = [
 /**
  * /connexion, and any app page seen without a session: the GitHub
  * authorization, simulated until the login exists (PAM-110). Once
- * authorized, the page asked for opens.
+ * authorized, the onboarding follows /connexion; elsewhere the page asked
+ * for opens.
  */
 export const ConnexionPage = () => {
   const [loading, setLoading] = useState(false)
@@ -27,7 +28,7 @@ export const ConnexionPage = () => {
     setLoading(true)
     setTimeout(() => {
       signIn()
-      if (url.relativePath === '/connexion') navigate({ href: '.' })
+      if (url.relativePath === '/connexion') navigate({ href: 'onboarding' })
     }, 900)
   }
   return (
