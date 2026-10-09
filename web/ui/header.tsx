@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
+import { signOut } from '/web/fixtures/session.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { paletteOpen } from '/web/ui/command-palette.tsx'
@@ -25,8 +26,7 @@ const accountItems = [
   ...(me.moderator
     ? [{ label: 'Modération', icon: ShieldCheck, href: 'moderation' }]
     : []),
-  // Logout calls POST/api/auth/logout once the session exists (PAM-110)
-  { label: 'Se déconnecter', icon: LogOut, href: 'connexion' },
+  { label: 'Se déconnecter', icon: LogOut, href: '.', onClick: signOut },
 ]
 
 const AccountMenu = () => (
@@ -42,11 +42,12 @@ const AccountMenu = () => (
         </span>
       </span>
     </div>
-    {accountItems.map(({ label, icon: Icon, href }) => (
+    {accountItems.map(({ label, icon: Icon, href, onClick }) => (
       <A
         key={label}
         role='menuitem'
         href={href}
+        onClick={onClick}
         class='flex h-[38px] items-center gap-2.5 rounded-md px-2.5 text-[14px] text-ink no-underline hover:bg-surface-200 hover:no-underline'
       >
         <Icon />

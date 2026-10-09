@@ -301,6 +301,41 @@ Sur données fictives :
 - **Livrable** : `web/pages/communities/`, `web/pages/post-page.tsx`, `ParentChain` et l'acceptation dans `web/ui/post.tsx`, actions de `web/fixtures/communities.ts` et `web/fixtures/posts.ts`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-516 · Écrans Réglages et Modération, dialogue Signaler
+
+Sur données fictives :
+- **Réglages** (`/reglages`) : compte GitHub, notifications par catégorie (app et e-mail), matching (mode, score minimum avec le nombre de demandes qui passent le seuil, skills, types d'aide acceptés), thème (Clair, Sombre, Système, qui suit le système en direct), données (export JSON réel, réinitialisation de la démo ; la suppression du compte arrive avec l'API).
+- **Signaler** (`?dialog=report&report=type:id`) : un post, un message de canal, une demande d'aide ou un profil ; motif obligatoire, commentaire facultatif, anonyme pour l'auteur ; les modérateurs sont notifiés.
+- **Modération** (`/moderation`, réservée aux modérateurs) : file des signalements, action (ignorer, masquer, avertir, suspendre, retirer la preuve) avec un motif obligatoire envoyé à l'auteur, historique des décisions.
+
+- **Livrable** : `web/pages/settings-page.tsx`, `web/pages/moderation-page.tsx`, `web/ui/report-dialog.tsx`, `web/fixtures/settings.ts`, `web/fixtures/reports.ts`
+- **Par** : @niangoos
+
+### 2026-10-09 · PAM-119 · Écrans publics : landing, connexion, 404
+
+Sur données fictives, avec une session simulée (`web/fixtures/session.ts`) en attendant le login GitHub (PAM-110) :
+- **Landing** (`/` sans session) : accroche, boucle en quatre étapes, aperçu du profil de Moussa avec ses cinq dimensions, appel « Continuer avec GitHub ».
+- **Connexion** (`/connexion`, et toute page de l'app ouverte sans session) : page d'autorisation GitHub simulée, droits en lecture seule ; une fois autorisée, la page demandée s'ouvre.
+- **404** : toute adresse qui ne mène nulle part, avec ou sans session.
+- « Se déconnecter » (menu du compte, réglages) ramène à la landing ; sans session, `/@login` est le passeport.
+
+- **Livrable** : `web/pages/public/`, `web/ui/plates.tsx`, `web/ui/public-header.tsx`, `web/fixtures/session.ts`, routage de `web/app.tsx`
+- **Par** : @niangoos
+
+### 2026-10-09 · PAM-215 · Écran Onboarding
+
+Sur données fictives, après « Autoriser Pamoja » sur `/connexion` : cinq étapes avec frise et barre de progression, sous les 2 minutes.
+- **Profil** : ce qui vient de GitHub (avatar, nom, bio), puis headline, pays, ville et site.
+- **Skills** : les 11 domaines du §6.1, puis les technologies du vocabulaire contrôlé (« postgres » propose PostgreSQL).
+- **Intentions** : les 10 du §6.1, la même liste que les cartes développeur et le filtre d'Explore.
+- **Matching** : instantané, résumé quotidien ou désactivé, repris dans les réglages.
+- **Premier projet** : un repo public à importer, ou « Passer ». « Terminer » enregistre le profil et ouvre l'accueil, ou le projet importé.
+
+Le sélecteur de skills et ses puces passent dans `web/ui/chips.tsx` (nouvelle demande d'aide, réglages du projet, onboarding).
+
+- **Livrable** : `web/pages/public/onboarding-page.tsx`, `web/fixtures/onboarding.ts`, `web/ui/chips.tsx`, vocabulaires de `web/fixtures/skills.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

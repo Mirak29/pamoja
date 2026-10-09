@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
-import { Check, CircleAlert, Clock, Lock, X, Zap } from '/web/assets/icons.tsx'
+import { Check, CircleAlert, Clock, Lock, Zap } from '/web/assets/icons.tsx'
 import { activityChanged } from '/web/fixtures/activity.ts'
 import { me } from '/web/fixtures/people.ts'
 import {
@@ -9,6 +9,7 @@ import {
   updateProject,
 } from '/web/fixtures/projects.ts'
 import { Button } from '/web/ui/button.tsx'
+import { RemovableChip, SuggestionChip } from '/web/ui/chips.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { GhostSlab } from '/web/ui/states.tsx'
@@ -87,21 +88,13 @@ const Information = ({ project }: { project: Project }) => {
         </span>
         <div class='flex flex-wrap gap-2'>
           {draft.needs.map((value, i) => (
-            <span
+            <RemovableChip
               key={value}
-              class='inline-flex h-[30px] items-center gap-1 rounded-[5px] border border-indigo bg-indigo-soft pr-1 pl-2.5 text-[13px] leading-none font-medium text-indigo shadow-key-selected'
+              onRemove={() =>
+                update({ needs: draft.needs.filter((_, j) => j !== i) })}
             >
               {value}
-              <button
-                type='button'
-                aria-label='Retirer'
-                onClick={() =>
-                  update({ needs: draft.needs.filter((_, j) => j !== i) })}
-                class='flex size-[22px] cursor-pointer items-center justify-center rounded-sm text-indigo'
-              >
-                <X class='size-3' />
-              </button>
-            </span>
+            </RemovableChip>
           ))}
         </div>
         <Input
@@ -119,14 +112,12 @@ const Information = ({ project }: { project: Project }) => {
         <div class='flex flex-wrap gap-2'>
           {needSuggestions.filter((value) => !draft.needs.includes(value))
             .map((value) => (
-              <button
+              <SuggestionChip
                 key={value}
-                type='button'
                 onClick={() => addNeed(value)}
-                class='h-[30px] cursor-pointer rounded-[5px] border border-dashed border-indigo px-2.5 text-[13px] leading-none font-medium text-indigo'
               >
-                + {value}
-              </button>
+                {value}
+              </SuggestionChip>
             ))}
         </div>
       </div>

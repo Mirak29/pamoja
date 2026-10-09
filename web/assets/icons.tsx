@@ -15,6 +15,12 @@ export const Bell = (props: IconProps) => (
   </Icon>
 )
 
+export const BellOff = (props: IconProps) => (
+  <Icon {...props}>
+    <path d='M8.7 3A6 6 0 0 1 18 8a21 21 0 0 0 .6 5M17 17H3s3-2 3-9a5 5 0 0 1 .3-1.7M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20' />
+  </Icon>
+)
+
 export const BookOpen = (props: IconProps) => (
   <Icon {...props}>
     <path d='M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z' />

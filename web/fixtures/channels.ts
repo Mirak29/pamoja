@@ -34,6 +34,8 @@ export type Message = {
     at: number
     demo: boolean
   }[]
+  /** Hidden by a moderator: its text is replaced */
+  moderated?: boolean
   demo: boolean
 }
 
