@@ -85,12 +85,15 @@ export const search = (query: string, limit: number) => {
       'Posts',
       posts
         .filter((p) =>
-          !p.parent && fuzzyMatch(query, [p.title, p.body, p.type].join(' '))
+          !p.parent && !p.hidden &&
+          fuzzyMatch(query, [p.title, p.body, p.type].join(' '))
         )
         .map((p) => ({
           title: p.title ||
             (p.body.length > 80 ? `${p.body.slice(0, 78)}…` : p.body),
-          sub: `${p.type} · ${people[p.author].name}`,
+          sub: `${p.type} · ${people[p.author].name} · ${
+            communities.find((c) => c.slug === p.community)?.name
+          }`,
           href: `post/${p.id}`,
           lead: <MessageSquare class='size-3.5' />,
         })),

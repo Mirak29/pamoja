@@ -279,6 +279,17 @@ La carte de post, le fil de réponses et le dialogue « Nouveau post » sont dan
 - **Livrable** : `web/pages/home/`, `web/ui/post.tsx`, `web/ui/new-post-dialog.tsx`, actions de `web/fixtures/posts.ts`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-514 · Écrans Explorer et Recherche
+
+Sur données fictives :
+- **Explorer** : développeurs (skill, pays, communauté, intention, disponibilité), projets (techno, stade, pays, activité, cherche des contributeurs, beginner friendly), « Sur quoi puis-je travailler ? » (demandes qui correspondent, besoins de projets, good first issues). Les filtres sont dans l'URL, ce qui permet de partager une recherche et de venir d'un skill (`/explorer?skill=Go`).
+- **Recherche** (`/recherche?q=`) : tous les résultats de la recherche globale, par catégorie, tolérante aux fautes.
+
+Les cartes Développeur et Projet sont dans `web/ui/`, pour les onglets de la page Communauté (PAM-515).
+
+- **Livrable** : `web/pages/explore/`, `web/pages/search-page.tsx`, `web/ui/developer-card.tsx`, `web/ui/project-card.tsx`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

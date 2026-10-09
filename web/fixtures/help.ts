@@ -131,11 +131,11 @@ export const helpRequests: HelpRequest[] = [
 export const helpChanged = signal(0)
 
 /** Open requests of others that match a developer, best first (§7.3) */
-export const matchingRequests = (person: Person) =>
+export const matchingRequests = (person: Person, min = MIN_SCORE) =>
   helpRequests
     .filter((h) => h.status === 'open' && h.author !== person.login)
     .map((h) => ({ request: h, score: match(person, h).total }))
-    .filter((h) => h.score >= MIN_SCORE)
+    .filter((h) => h.score >= min)
     .sort((a, b) => b.score - a.score)
 
 const firstName = (login: Login) => people[login].name.split(' ')[0]
