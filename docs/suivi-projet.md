@@ -322,6 +322,20 @@ Sur données fictives, avec une session simulée (`web/fixtures/session.ts`) en 
 - **Livrable** : `web/pages/public/`, `web/ui/plates.tsx`, `web/ui/public-header.tsx`, `web/fixtures/session.ts`, routage de `web/app.tsx`
 - **Par** : @niangoos
 
+### 2026-10-09 · PAM-215 · Écran Onboarding
+
+Sur données fictives, après « Autoriser Pamoja » sur `/connexion` : cinq étapes avec frise et barre de progression, sous les 2 minutes.
+- **Profil** : ce qui vient de GitHub (avatar, nom, bio), puis headline, pays, ville et site.
+- **Skills** : les 11 domaines du §6.1, puis les technologies du vocabulaire contrôlé (« postgres » propose PostgreSQL).
+- **Intentions** : les 10 du §6.1, la même liste que les cartes développeur et le filtre d'Explore.
+- **Matching** : instantané, résumé quotidien ou désactivé, repris dans les réglages.
+- **Premier projet** : un repo public à importer, ou « Passer ». « Terminer » enregistre le profil et ouvre l'accueil, ou le projet importé.
+
+Le sélecteur de skills et ses puces passent dans `web/ui/chips.tsx` (nouvelle demande d'aide, réglages du projet, onboarding).
+
+- **Livrable** : `web/pages/public/onboarding-page.tsx`, `web/fixtures/onboarding.ts`, `web/ui/chips.tsx`, vocabulaires de `web/fixtures/skills.ts`
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

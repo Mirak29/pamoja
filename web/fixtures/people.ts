@@ -22,6 +22,8 @@ export type Person = {
   /** Hidden from search by a moderator */
   hiddenFromSearch?: boolean
   communities: string[]
+  /** Domains and intents of the onboarding, from the vocabularies (§6.1) */
+  domains?: string[]
   intents: string[]
   follows?: string[]
 }
@@ -44,7 +46,7 @@ export const people = {
     available: true,
     confirmedHelps: 3,
     communities: ['go', 'senegal-developers', 'open-source'],
-    intents: ['Cherche des contributeurs', 'Ouvert aux reviews'],
+    intents: ['Trouver des contributeurs', 'Faire des reviews'],
     follows: ['moussa', 'awa', 'fatou'],
   },
   moussa: {
@@ -62,9 +64,9 @@ export const people = {
     helpTypes: ['Review de code', 'Debug', 'Architecture'],
     available: true,
     confirmedHelps: 14,
-    openTo: 'Ouvert aux reviews',
+    openTo: 'Faire des reviews',
     communities: ['go', 'code-review', 'cote-divoire-developers'],
-    intents: ['Ouvert aux reviews', 'Mentorat'],
+    intents: ['Faire des reviews', 'Mentorer'],
   },
   awa: {
     login: 'awa',
@@ -82,7 +84,7 @@ export const people = {
     available: true,
     confirmedHelps: 5,
     communities: ['react', 'senegal-developers', 'open-source'],
-    intents: ['Cherche des contributeurs', 'Mentorat'],
+    intents: ['Trouver des contributeurs', 'Mentorer'],
   },
   fatou: {
     login: 'fatou',
@@ -98,7 +100,7 @@ export const people = {
     available: false,
     confirmedHelps: 4,
     communities: ['senegal-developers'],
-    intents: ['Cherche un projet'],
+    intents: ['Trouver des projets'],
   },
   amina: {
     login: 'amina',
@@ -116,7 +118,7 @@ export const people = {
     confirmedHelps: 1,
     promising: true,
     communities: ['devops', 'cameroon-developers'],
-    intents: ['Cherche un projet', 'Ouvert aux reviews'],
+    intents: ['Trouver des projets', 'Faire des reviews'],
   },
   kofi: {
     login: 'kofi',
@@ -132,7 +134,7 @@ export const people = {
     available: true,
     confirmedHelps: 2,
     communities: ['open-source'],
-    intents: ['Cherche des contributeurs'],
+    intents: ['Trouver des contributeurs'],
   },
   yao: {
     login: 'yao',
@@ -149,7 +151,7 @@ export const people = {
     available: true,
     confirmedHelps: 0,
     communities: ['cote-divoire-developers'],
-    intents: ['Cherche un projet', 'Cherche un mentor'],
+    intents: ['Trouver des projets', 'Trouver un mentor'],
   },
   zeinab: {
     login: 'zeinab',
@@ -166,17 +168,33 @@ export const people = {
     confirmedHelps: 6,
     moderator: true,
     communities: ['go'],
-    intents: ['Ouvert aux reviews', 'Mentorat'],
+    intents: ['Faire des reviews', 'Mentorer'],
   },
 } satisfies Record<string, Person>
 
 export type Login = keyof typeof people
 
-// The signed-in developer until the session exists (PAM-110)
+// The signed-in developer until the session exists (PAM-110): the same
+// record as in `people`, so a change shows everywhere
 const myLogin: Login = 'abdou'
-export const me: Person & { login: Login } = {
-  ...people[myLogin],
-  login: myLogin,
+export const me = people[myLogin] as Person & { login: Login }
+
+// Countries offered at onboarding, with their ISO code
+export const countries: Record<string, string> = {
+  'Sénégal': 'SN',
+  'Côte d’Ivoire': 'CI',
+  'Ghana': 'GH',
+  'Cameroun': 'CM',
+  'Guinée': 'GN',
+  'Nigeria': 'NG',
+  'Mali': 'ML',
+  'Bénin': 'BJ',
+  'Togo': 'TG',
+  'Burkina Faso': 'BF',
+  'Kenya': 'KE',
+  'Rwanda': 'RW',
+  'Maroc': 'MA',
+  'Afrique du Sud': 'ZA',
 }
 
 export const isMe = (login: string) => login === me.login

@@ -201,7 +201,7 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 1. **Continue with GitHub** (§5.3).
 2. **Profil** pré-rempli depuis GitHub (avatar, nom, username, bio, localisation), à compléter : headline, pays, ville, site web.
 3. **Skills** : domaines (Backend, Frontend, Mobile, DevOps, Cloud, AI/ML, Blockchain, Data, Cybersecurity, Game Development, UI Engineering) et technologies, choisies dans un vocabulaire contrôlé. Les langages GitHub sont proposés automatiquement via `SkillAlias`.
-4. **Intentions** : Find projects, Find contributors, Review code, Get code reviews, Help developers, Contribute to open source, Mentor, Find a mentor, Build projects, Find collaborators. Elles alimentent le matching.
+4. **Intentions** : Find projects, Find contributors, Review code, Get code reviews, Help developers, Contribute to open source, Mentor, Find a mentor, Build projects, Find collaborators. Elles alimentent le matching. C'est la seule liste d'intentions : celles choisies ici s'affichent sur les cartes développeur et servent de filtre dans Explore.
 5. **Import** d'un premier projet, facultatif.
 
 Vocabulaire contrôlé : « Postgres », « postgresql » et « PG » pointent tous vers le skill `postgresql`. Un utilisateur ne crée pas de skill ; il en suggère un, validé par un admin.
