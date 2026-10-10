@@ -371,6 +371,13 @@ Le propriétaire et les membres voient « Demander de l'aide » (pré-rempli ave
 - **Livrable** : `web/pages/project/project-page.tsx`, `web/pages/project/overview-tab.tsx`, `web/fixtures/repos.ts`, `web/fixtures/applications.ts`, `web/lib/plural.ts`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-422 · Liens vers l'objet exact et données cohérentes
+
+Chaque ligne du journal d'un projet (Aperçu, Pulse, Activité) mène à son objet : le panneau d'une PR ouverte, GitHub pour une PR mergée, une issue ou une release, `#aide` pour une demande, le board pour une carte. Les issues s'ouvrent sur GitHub, comme les good first issues de « Sur quoi travailler », dont les besoins mènent à « Voir l'équipe ». La colonne Review du board montre aussi les PRs #81 et #80 en attente, et le post de Fatou ne contredit plus la CI verte de la PR #84. Ajout de `web/lib/links.ts`.
+
+- **Livrable** : `web/lib/links.ts`, `web/pages/project/event-list.tsx`, `web/pages/project/activity-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/explore/explore-page.tsx`, `web/fixtures/board.ts`, `web/fixtures/posts.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

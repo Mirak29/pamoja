@@ -236,7 +236,7 @@ export const posts: Post[] = [
     type: 'Discussion',
     title: '',
     body:
-      'Le job de réconciliation du ledger passe enfin en local. Prochaine étape : faire passer la CI sur la PR #84.',
+      'Le job de réconciliation du ledger passe enfin, en local comme en CI. La PR #84 est approuvée, merci pour les reviews rapides.',
     hoursAgo: 5,
     reactions: { like: ['abdou'] },
     link: 'openpay-africa',

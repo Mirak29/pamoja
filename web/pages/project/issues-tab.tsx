@@ -9,6 +9,7 @@ import {
 import { issues } from '/web/fixtures/issues.ts'
 import { me, people } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
+import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -86,12 +87,15 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                 : <CircleDot class='size-[18px]' />}
             </span>
             <div class='flex min-w-[220px] flex-1 flex-col gap-[7px]'>
-              <span class='font-semibold text-pretty'>
+              <a
+                href={githubUrl(project, 'issues', issue.number)}
+                class='font-semibold text-pretty text-ink hover:text-indigo'
+              >
                 <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
                   #{issue.number}
                 </span>{' '}
                 {issue.title}
-              </span>
+              </a>
               <div class='flex flex-wrap gap-1.5'>
                 {issue.labels.map((label) => (
                   <span

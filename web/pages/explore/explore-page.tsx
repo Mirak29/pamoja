@@ -15,6 +15,7 @@ import { needSkills, type Project, projects } from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
 import { OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
+import { githubUrl } from '/web/lib/links.ts'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { beginnerIssues, ProjectCard } from '/web/ui/project-card.tsx'
@@ -283,7 +284,7 @@ const workGroups = (): [string, Work[]][] => {
       ? `Le projet est en ${hits.join(', ')}, que tu connais`
       : `Tu as ${hits.join(', ')}`,
     href: `projet/${project.slug}/equipe`,
-    cta: 'Voir le projet',
+    cta: 'Voir l’équipe',
   }))
   const shared = (p: Project) =>
     p.stack.filter((s) => me.skills.includes(s)).length
@@ -303,8 +304,8 @@ const workGroups = (): [string, Work[]][] => {
         where: project.name,
         title: `#${issue.number} ${issue.title}`,
         reason: project.stack.join(', '),
-        href: `projet/${project.slug}/issues`,
-        cta: 'Voir l’issue',
+        href: githubUrl(project, 'issues', issue.number),
+        cta: 'Voir l’issue sur GitHub',
       }
     })
   return [
