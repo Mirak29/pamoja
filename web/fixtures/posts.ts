@@ -382,7 +382,8 @@ export const publishPost = (draft: PostDraft, author: Person) => {
     demo: false,
   }
   posts.unshift(post)
-  if (!author.communities.includes(draft.community)) {
+  // Without a community, the post lives on the profile and in the feed
+  if (draft.community && !author.communities.includes(draft.community)) {
     author.communities.push(draft.community)
     const community = communities.find((c) => c.slug === draft.community)
     if (community) community.members++

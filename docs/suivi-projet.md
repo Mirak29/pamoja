@@ -406,6 +406,13 @@ Quitter une communauté demande maintenant confirmation, dans la liste comme sur
 - **Livrable** : `web/pages/communities/membership.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/communities/new-community-dialog.tsx`, `web/fixtures/communities.ts`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-518 · Accueil et posts
+
+La rédaction de l'Accueil ne choisit plus la communauté à ta place : par défaut le post reste sur ton profil (« Sans communauté »), et le focus revient dans le champ après publication. « Commenter » et « Répondre à … » posent le focus dans le champ de réponse. « Enregistrer » confirme par un toast qui mène à la nouvelle page `/enregistres`, aussi dans le menu du compte.
+
+- **Livrable** : `web/pages/saved-page.tsx`, `web/app.tsx`, `web/ui/header.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/home/home-page.tsx`, `web/fixtures/posts.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

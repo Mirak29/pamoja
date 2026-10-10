@@ -2,6 +2,7 @@ import { counted } from '/web/lib/plural.ts'
 import { A } from '@01edu/signal-router'
 import {
   Bell,
+  Bookmark,
   CircleUser,
   LogOut,
   Plus,
@@ -23,6 +24,7 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
 const accountItems = [
   { label: 'Mon profil', icon: CircleUser, href: `@${me.login}` },
+  { label: 'Enregistrés', icon: Bookmark, href: 'enregistres' },
   { label: 'Réglages', icon: Settings, href: 'reglages' },
   ...(me.moderator
     ? [{ label: 'Modération', icon: ShieldCheck, href: 'moderation' }]

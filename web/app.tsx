@@ -16,6 +16,7 @@ import { ConnexionPage } from '/web/pages/public/connexion-page.tsx'
 import { LandingPage } from '/web/pages/public/landing-page.tsx'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
 import { OnboardingPage } from '/web/pages/public/onboarding-page.tsx'
+import { SavedPage } from '/web/pages/saved-page.tsx'
 import { SearchPage } from '/web/pages/search-page.tsx'
 import { SettingsPage } from '/web/pages/settings-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
@@ -33,6 +34,7 @@ const routes: Record<string, () => JSX.Element | null> = {
   aide: HelpPage,
   communaute: CommunityPage,
   communautes: CommunitiesPage,
+  enregistres: SavedPage,
   dev: SoclePage,
   explorer: ExplorePage,
   onboarding: OnboardingPage,

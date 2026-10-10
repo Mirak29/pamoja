@@ -1,6 +1,6 @@
 import { counted } from '/web/lib/plural.ts'
 import type { ComponentChildren, JSX } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import {
   Bookmark,
@@ -232,7 +232,7 @@ const Actions = (
         pressed={saved}
         label={saved ? 'Retirer des enregistrés' : 'Enregistrer'}
         size={size}
-        onClick={() => toggleBookmark(post, me.login)}
+        onClick={() => save(post)}
       />
       <ActionKey
         icon={Share2}
@@ -256,6 +256,23 @@ const Actions = (
   )
 }
 
+/** Keep a post, or let it go; a kept post is in /enregistres */
+export const save = (post: Post) => {
+  const saved = !post.bookmarks?.includes(me.login)
+  toggleBookmark(post, me.login)
+  notify(
+    saved
+      ? {
+        title: 'Post enregistré',
+        body: 'Tu le retrouves dans Enregistrés.',
+        icon: BookmarkCheck,
+        tone: 'verified',
+        href: 'enregistres',
+      }
+      : { title: 'Retiré des enregistrés', icon: Bookmark, tone: 'muted' },
+  )
+}
+
 const ReplyInput = (
   { placeholder, onSend, size }: {
     placeholder: string
@@ -264,6 +281,8 @@ const ReplyInput = (
   },
 ) => {
   const [draft, setDraft] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  useEffect(() => input.current?.focus(), [])
   const send = () => {
     if (!draft.trim()) return
     onSend(draft.trim())
@@ -277,6 +296,7 @@ const ReplyInput = (
     >
       {size === 'feed' && <Avatar name={me.name} size={28} />}
       <input
+        ref={input}
         value={draft}
         placeholder={placeholder}
         aria-label={placeholder}
@@ -711,13 +731,17 @@ export const PostCard = (
             </span>
             <span class='text-ink-muted'>·</span>
             <span class='text-[13px] text-ink-muted'>{ago(post.at)}</span>
-            <span class='text-ink-muted'>·</span>
-            <A
-              href={`communaute/${post.community}`}
-              class='text-[13px] font-semibold'
-            >
-              {community?.name}
-            </A>
+            {community && (
+              <>
+                <span class='text-ink-muted'>·</span>
+                <A
+                  href={`communaute/${community.slug}`}
+                  class='text-[13px] font-semibold'
+                >
+                  {community.name}
+                </A>
+              </>
+            )}
           </div>
           {post.type !== 'Discussion' && (
             <div class='flex flex-wrap gap-1.5'>

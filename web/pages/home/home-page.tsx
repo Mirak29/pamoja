@@ -1,7 +1,7 @@
 import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
-import { useState } from 'preact/hooks'
+import { useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
   CircleCheck,
@@ -259,9 +259,8 @@ const FENCE = '`'.repeat(3)
 
 const Composer = () => {
   const [text, setText] = useState('')
-  const [community, setCommunity] = useState(
-    me.communities[0] ?? 'open-source',
-  )
+  const [community, setCommunity] = useState('')
+  const field = useRef<HTMLTextAreaElement>(null)
   const [type, setType] = useState<PostType>('Discussion')
   const [images, setImages] = useState(0)
   const ordered = [...communities].sort((a, b) =>
@@ -277,10 +276,12 @@ const Composer = () => {
     setText('')
     setImages(0)
     navigate({ params: { fil: null } })
+    field.current?.focus()
+    const name = communities.find((c) => c.slug === community)?.name
     notify({
       title: 'Publié',
-      body: `Dans ${
-        communities.find((c) => c.slug === community)?.name
+      body: `${
+        name ? `Dans ${name}` : 'Sur ton profil'
       }. Tes abonnés le voient dans leur fil.`,
       icon: Send,
       tone: 'verified',
@@ -295,6 +296,7 @@ const Composer = () => {
       <Avatar name={me.name} size={42} />
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
         <textarea
+          ref={field}
           rows={3}
           value={text}
           aria-label='Écrire un post'
@@ -351,6 +353,7 @@ const Composer = () => {
             onChange={(event) => setCommunity(event.currentTarget.value)}
             class={select}
           >
+            <option value=''>Sans communauté</option>
             {ordered.map((c) => (
               <option key={c.slug} value={c.slug}>{c.name}</option>
             ))}
