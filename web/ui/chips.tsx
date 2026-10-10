@@ -19,7 +19,9 @@ export const RemovableChip = (
     <button
       type='button'
       onClick={onRemove}
-      aria-label='Retirer'
+      aria-label={typeof children === 'string'
+        ? `Retirer ${children}`
+        : 'Retirer'}
       class='flex size-[22px] cursor-pointer items-center justify-center rounded-sm text-indigo'
     >
       <X class='size-3' />

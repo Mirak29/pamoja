@@ -93,7 +93,7 @@ export const MemberRows = (
           {isOwner && member.role !== 'Propriétaire'
             ? (
               <select
-                aria-label='Rôle'
+                aria-label={`Rôle de ${person.name}`}
                 value={member.role}
                 onChange={(event) => {
                   member.role = event.currentTarget.value as ProjectRole
@@ -219,6 +219,7 @@ const Helpers = (
                     <Button
                       variant='secondary'
                       size={32}
+                      aria-label={`Inviter ${person.name} pour ${need}`}
                       onClick={() => invite(project, login, need)}
                     >
                       Inviter
@@ -282,6 +283,9 @@ const Applications = ({ project }: { project: Project }) => {
           <div class='flex flex-wrap gap-3 pb-1'>
             <Button
               size={36}
+              aria-label={`Accepter la candidature de ${
+                people[application.login].name
+              }`}
               onClick={() => decideApplication(application, true)}
             >
               Accepter
@@ -289,6 +293,9 @@ const Applications = ({ project }: { project: Project }) => {
             <Button
               variant='secondary'
               size={36}
+              aria-label={`Refuser la candidature de ${
+                people[application.login].name
+              }`}
               onClick={() => decideApplication(application, false)}
             >
               Refuser

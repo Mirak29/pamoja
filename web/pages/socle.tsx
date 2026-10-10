@@ -70,7 +70,11 @@ const levels = ['Débutant', 'Intermédiaire', 'Confirmé']
 export const SoclePage = () => {
   const [level, setLevel] = useState('Intermédiaire')
   return (
-    <Page title='Composants de base' class='flex flex-col gap-8 pt-5'>
+    <Page
+      title='Composants de base'
+      heading={false}
+      class='flex flex-col gap-8 pt-5'
+    >
       <div class='flex flex-col gap-2'>
         <Eyebrow>Socle · système isométrique</Eyebrow>
         <h1 class='font-display text-[34px] leading-10 font-bold tracking-[-.015em] text-pretty'>

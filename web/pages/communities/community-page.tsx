@@ -244,7 +244,11 @@ export const CommunityPage = () => {
       : members.some((m) => m.login === h.author))
   )
   return (
-    <Page title={community.name} class='flex flex-col gap-6 pt-5'>
+    <Page
+      title={community.name}
+      heading={false}
+      class='flex flex-col gap-6 pt-5'
+    >
       <section class='slab mr-2 flex flex-wrap items-center gap-[18px] p-[22px]'>
         <span class='tile flex size-16 flex-none items-center justify-center font-display text-[20px] leading-none font-bold text-indigo'>
           {emblemOf(community)}

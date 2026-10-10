@@ -69,6 +69,7 @@ const CommunityCard = ({ community }: { community: Community }) => {
               </span>
               <button
                 type='button'
+                aria-label={`Quitter ${community.name}`}
                 onClick={() => toggleMembership(community, me)}
                 class='ml-auto cursor-pointer px-1.5 text-[13px] leading-none font-medium text-ink-muted hover:text-danger'
               >
@@ -77,7 +78,11 @@ const CommunityCard = ({ community }: { community: Community }) => {
             </>
           )
           : (
-            <Button size={34} onClick={() => toggleMembership(community, me)}>
+            <Button
+              size={34}
+              aria-label={`Rejoindre ${community.name}`}
+              onClick={() => toggleMembership(community, me)}
+            >
               Rejoindre
             </Button>
           )}

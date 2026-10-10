@@ -428,7 +428,7 @@ export const ProfilePage = () => {
   if (!login) return <NotFound login={url.relativePath.slice(2)} />
   const { theme, accent, order } = settingsOf(login)
   return (
-    <Page title={people[login].name} class='pt-5'>
+    <Page title={people[login].name} heading={false} class='pt-5'>
       <div
         data-ptheme={theme}
         data-paccent={accent}

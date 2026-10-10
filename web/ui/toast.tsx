@@ -49,10 +49,7 @@ export const notify = (
 const ToastCard = ({ toast }: { toast: Toast }) => {
   const { icon: Icon = Bell, tone = 'indigo' } = toast
   return (
-    <div
-      role='status'
-      class='slab-pop pointer-events-auto flex animate-enter gap-2.5 py-3 pr-3 pl-3.5'
-    >
+    <div class='slab-pop pointer-events-auto flex animate-enter gap-2.5 py-3 pr-3 pl-3.5'>
       <span class={`pt-0.5 ${tones[tone]}`}>
         <Icon class='size-[18px]' />
       </span>

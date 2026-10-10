@@ -385,6 +385,13 @@ Les chiffres viennent d'une seule source, les preuves : « aides confirmées » 
 - **Livrable** : `web/fixtures/reputation.ts`, `web/fixtures/people.ts`, `web/fixtures/matching.ts`, `web/pages/profile/`, `web/ui/developer-card.tsx`, `web/pages/project/team-tab.tsx`, `web/assets/icons.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-120 · Accessibilité du socle
+
+Un dialogue rend le focus à ce qui l'a ouvert. Quand une action remplace le bouton qui avait le focus (Rejoindre, Accepter), le focus va à ce qui le remplace ou au contrôle le plus proche ; une carte déplacée sur le board garde le focus et le déplacement est annoncé. Lien « Aller au contenu » sans `#` dans l'URL, un `h1` par page (masqué quand la page n'en montre pas), erreurs de formulaire reliées à leur champ avec `useFieldErrors` (nouvelle communauté, candidature, nouveau projet, nouveau post), boutons répétés nommés avec leur objet, et toasts annoncés une seule fois.
+
+- **Livrable** : `web/ui/layout.tsx`, `web/ui/dialog.tsx`, `web/ui/input.tsx`, `web/ui/toast.tsx`, `web/ui/chips.tsx`, formulaires et listes concernés
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

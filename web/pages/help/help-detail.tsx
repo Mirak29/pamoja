@@ -612,6 +612,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
   return (
     <Page
       title={request.title}
+      heading={false}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >
       <div class='flex min-w-0 flex-col gap-7'>

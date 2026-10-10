@@ -1,4 +1,5 @@
 import type { ComponentChildren, JSX } from 'preact'
+import { useState } from 'preact/hooks'
 import { CircleAlert } from '/web/assets/icons.tsx'
 
 const field = 'well w-full font-normal text-ink'
@@ -52,6 +53,45 @@ export const Select = (
     }`}
   />
 )
+
+/**
+ * Errors of a form, each under its field. `check` shows all the errors found
+ * at once and focuses the first field in error; `control(key)` gives the
+ * control its id and ARIA links, `field(key)` gives `Field` its message.
+ *
+ * @example
+ * const { check, control, field, clear } = useFieldErrors<'name'>('community')
+ * if (!check({ name: !name.trim() && 'Donne un nom.' })) return
+ * <Field label='Nom' {...field('name')}>
+ *   <Input {...control('name')} onInput={() => clear('name')} />
+ * </Field>
+ */
+export const useFieldErrors = <K extends string>(form: string) => {
+  const [errors, setErrors] = useState<Partial<Record<K, string>>>({})
+  const id = (key: K) => `${form}-${key}`
+  return {
+    errors,
+    /** Shows the errors found, true when there is none */
+    check: (found: Partial<Record<K, string | false | undefined>>) => {
+      const kept = Object.fromEntries(
+        Object.entries(found).filter(([, message]) => message),
+      ) as Partial<Record<K, string>>
+      setErrors(kept)
+      const first = Object.keys(kept)[0] as K | undefined
+      first && document.getElementById(id(first))?.focus()
+      return !first
+    },
+    clear: (key: K) => {
+      errors[key] && setErrors({ ...errors, [key]: undefined })
+    },
+    control: (key: K) => ({
+      id: id(key),
+      'aria-invalid': errors[key] ? true : undefined,
+      'aria-describedby': errors[key] ? `${id(key)}-error` : undefined,
+    }),
+    field: (key: K) => ({ error: errors[key], errorId: `${id(key)}-error` }),
+  }
+}
 
 /**
  * The message under a field in error. Give the control

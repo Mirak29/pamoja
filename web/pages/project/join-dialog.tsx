@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
-import { CircleAlert, Send } from '/web/assets/icons.tsx'
+import { Send } from '/web/assets/icons.tsx'
 import { apply } from '/web/fixtures/applications.ts'
 import { me, people } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
-import { Field, Textarea } from '/web/ui/input.tsx'
+import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
 const areas = ['Backend', 'Frontend', 'Tests', 'DevOps', 'Documentation']
@@ -30,10 +30,12 @@ const JoinForm = ({ project }: { project: Project }) => {
   const [how, setHow] = useState<string[]>([])
   const [availability, setAvailability] = useState(availabilities[1])
   const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const { check, clear, field } = useFieldErrors<'how'>('join')
 
   const send = () => {
-    if (!how.length) return setError('Choisis au moins une façon d’aider.')
+    if (!check({ how: !how.length && 'Choisis au moins une façon d’aider.' })) {
+      return
+    }
     apply({
       project: project.slug as ProjectSlug,
       login: me.login,
@@ -54,21 +56,28 @@ const JoinForm = ({ project }: { project: Project }) => {
     <div class='flex flex-col gap-5 px-6 pt-[22px] pb-6'>
       <h2 class='font-display text-heading'>Rejoindre {project.name}</h2>
       <Choices label='Comment veux-tu aider ?'>
-        {areas.map((area) => (
+        {areas.map((area, i) => (
           <OptionButton
             key={area}
+            id={i ? undefined : 'join-how'}
+            aria-describedby={field('how').error ? 'join-how-error' : undefined}
             pressed={how.includes(area)}
-            onClick={() =>
+            onClick={() => {
               setHow(
                 how.includes(area)
                   ? how.filter((x) => x !== area)
                   : [...how, area],
-              )}
+              )
+              clear('how')
+            }}
           >
             {area}
           </OptionButton>
         ))}
       </Choices>
+      {field('how').error && (
+        <FieldError id='join-how-error'>{field('how').error}</FieldError>
+      )}
       <Choices label='Disponibilité'>
         {availabilities.map((value) => (
           <OptionButton
@@ -88,15 +97,6 @@ const JoinForm = ({ project }: { project: Project }) => {
           placeholder='Ce que tu aimerais faire sur le projet'
         />
       </Field>
-      {error && (
-        <div
-          role='alert'
-          class='flex items-center gap-2 text-[14px] text-danger'
-        >
-          <CircleAlert />
-          {error}
-        </div>
-      )}
       <span class='text-[13px] text-ink-muted'>
         {owner}{' '}
         reçoit ta candidature et peut l’accepter directement depuis sa

@@ -306,7 +306,7 @@ export const ProjectPage = () => {
   const current = (tabs.some(([key]) => key === tab) ? tab : '') as TabKey
   const Content = tabContents[current]
   return (
-    <Page title={project.name} class='flex flex-col gap-7 pt-5'>
+    <Page title={project.name} heading={false} class='flex flex-col gap-7 pt-5'>
       <Header project={project} overview={current === ''} />
       <ProjectTabs project={project} current={current} />
       <Content project={project} />

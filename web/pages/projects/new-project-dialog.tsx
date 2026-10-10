@@ -1,19 +1,20 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { A, navigate } from '@01edu/signal-router'
-import {
-  ArrowLeft,
-  CircleAlert,
-  FolderGit2,
-  Github,
-} from '/web/assets/icons.tsx'
+import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
 import { createProject, type Repo, repos } from '/web/fixtures/repos.ts'
 import { skills } from '/web/fixtures/skills.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { Field, Input, Textarea } from '/web/ui/input.tsx'
+import {
+  Field,
+  FieldError,
+  Input,
+  Textarea,
+  useFieldErrors,
+} from '/web/ui/input.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -149,7 +150,15 @@ const RepoList = (
                 </A>
               </span>
             )
-            : <Button size={34} onClick={() => pick(repo)}>Choisir</Button>}
+            : (
+              <Button
+                size={34}
+                aria-label={`Choisir ${repo.owner}/${repo.name}`}
+                onClick={() => pick(repo)}
+              >
+                Choisir
+              </Button>
+            )}
         </div>
       ))}
       {!repos.length && (
@@ -311,10 +320,15 @@ const FromScratch = ({ back }: { back: () => void }) => {
   const [stack, setStack] = useState<string[]>([])
   const [visibility, setVisibility] = useState<'Public' | 'Privé'>('Public')
   const [needs, setNeeds] = useState<string[]>([])
-  const [error, setError] = useState('')
+  const { check, clear, control, field } = useFieldErrors<'name' | 'stack'>(
+    'project',
+  )
   const create = () => {
-    if (!name.trim()) return setError('Donne un nom à ton projet.')
-    if (!stack.length) return setError('Choisis au moins une technologie.')
+    const valid = check({
+      name: !name.trim() && 'Donne un nom à ton projet.',
+      stack: !stack.length && 'Choisis au moins une technologie.',
+    })
+    if (!valid) return
     created(
       createProject({
         name: name.trim(),
@@ -329,11 +343,15 @@ const FromScratch = ({ back }: { back: () => void }) => {
   }
   return (
     <>
-      <Field label='Nom'>
+      <Field label='Nom' {...field('name')}>
         <Input
+          {...control('name')}
           value={name}
           placeholder='Le nom de ton projet'
-          onInput={(event) => setName(event.currentTarget.value)}
+          onInput={(event) => {
+            setName(event.currentTarget.value)
+            clear('name')
+          }}
         />
       </Field>
       <Field label='Description'>
@@ -355,16 +373,28 @@ const FromScratch = ({ back }: { back: () => void }) => {
       <Choices label='Technologies'>
         {skills.filter((skill) =>
           !['Code review', 'Concurrency', 'Backend', 'UI'].includes(skill)
-        ).map((skill) => (
+        ).map((skill, i) => (
           <OptionButton
             key={skill}
+            id={i ? undefined : 'project-stack'}
+            aria-describedby={field('stack').error
+              ? 'project-stack-error'
+              : undefined}
             pressed={stack.includes(skill)}
-            onClick={() => setStack(toggle(stack, skill))}
+            onClick={() => {
+              setStack(toggle(stack, skill))
+              clear('stack')
+            }}
           >
             {skill}
           </OptionButton>
         ))}
       </Choices>
+      {field('stack').error && (
+        <FieldError id='project-stack-error'>
+          {field('stack').error}
+        </FieldError>
+      )}
       <Choices label='Visibilité'>
         {(['Public', 'Privé'] as const).map((value) => (
           <OptionButton
@@ -387,15 +417,6 @@ const FromScratch = ({ back }: { back: () => void }) => {
           </OptionButton>
         ))}
       </Choices>
-      {error && (
-        <div
-          role='alert'
-          class='flex items-center gap-2 text-[14px] text-danger'
-        >
-          <CircleAlert />
-          {error}
-        </div>
-      )}
       <Footer>
         <Button size={40} onClick={create}>Créer le projet</Button>
         <Button variant='secondary' size={40} onClick={back}>Retour</Button>

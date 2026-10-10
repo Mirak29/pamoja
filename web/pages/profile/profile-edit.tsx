@@ -190,7 +190,9 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </span>
             <button
               type='button'
-              aria-label='Monter'
+              aria-label={`Monter la section ${
+                profileSections.find(([k]) => k === key)?.[1]
+              }`}
               disabled={i === 0}
               onClick={() => move(i, i - 1)}
               class={orderKey}
@@ -199,7 +201,9 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </button>
             <button
               type='button'
-              aria-label='Descendre'
+              aria-label={`Descendre la section ${
+                profileSections.find(([k]) => k === key)?.[1]
+              }`}
               disabled={i === last}
               onClick={() => move(i, i + 1)}
               class={orderKey}

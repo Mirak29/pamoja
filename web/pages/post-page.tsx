@@ -246,7 +246,8 @@ export const PostPage = () => {
   const community = communities.find((c) => c.slug === post.community)
   return (
     <Page
-      title={post.title || 'Post'}
+      title={post.title || `Réponse de ${people[post.author].name}`}
+      heading={!post.title}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >
       <div class='flex min-w-0 flex-col gap-7'>

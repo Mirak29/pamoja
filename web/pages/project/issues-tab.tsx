@@ -126,6 +126,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                 <Button
                   variant='secondary'
                   size={32}
+                  aria-label={`Ajouter l’issue #${issue.number} au board`}
                   onClick={() => {
                     addCard(
                       project.slug as ProjectSlug,
