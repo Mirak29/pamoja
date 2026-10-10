@@ -34,7 +34,7 @@ import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 
 const reactions = [
-  ['like', ThumbsUp, '+1'],
+  ['like', ThumbsUp, 'J’aime'],
   ['useful', Lightbulb, 'Utile'],
   ['thanks', Heart, 'Merci'],
 ] as const

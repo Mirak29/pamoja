@@ -299,7 +299,7 @@ export const ProfileEditPage = () => {
     >
       <div class='flex min-w-0 flex-col gap-7'>
         <Section title='Identité'>
-          <Field label='Headline'>
+          <Field label='Accroche'>
             <Input
               value={draft.headline}
               onInput={(event) =>
@@ -313,7 +313,7 @@ export const ProfileEditPage = () => {
               onInput={(event) => update({ bio: event.currentTarget.value })}
             />
           </Field>
-          <Field label='Site'>
+          <Field label='Site web'>
             <Input
               value={draft.website}
               placeholder='ton-site.dev'

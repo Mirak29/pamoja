@@ -16,12 +16,13 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { GhostSlab } from '/web/ui/states.tsx'
+import { counted } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { NewProjectDialog } from '/web/pages/projects/new-project-dialog.tsx'
 
 const syncLabels = {
-  live: [Zap, 'Live'],
-  poll: [Clock, 'Toutes les 15 min'],
+  live: [Zap, 'Synchro live'],
+  poll: [Clock, 'Synchro toutes les 15 min'],
   none: [CircleSlash, 'Sans repo'],
 } as const
 
@@ -54,7 +55,7 @@ const facts = (project: Project) => {
   return [
     `${waiting} ${waiting > 1 ? 'PRs en attente' : 'PR en attente'}`,
     blockers && `${blockers} ${blockers > 1 ? 'bloqueurs' : 'bloqueur'}`,
-    `${project.contributors} contributeurs`,
+    counted(project.contributors, 'contributeur'),
   ].filter(Boolean).join(' · ')
 }
 

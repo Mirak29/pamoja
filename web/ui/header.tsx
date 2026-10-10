@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import { A } from '@01edu/signal-router'
 import {
   Bell,
@@ -101,7 +102,7 @@ export const Header = () => {
           square
           href='notifications'
           aria-label={count
-            ? `Notifications, ${count} non lues`
+            ? `Notifications, ${counted(count, 'non lue', 'non lues')}`
             : 'Notifications'}
           class='relative'
         >

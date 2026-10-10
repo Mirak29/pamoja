@@ -147,7 +147,7 @@ const ProfileStep = (
         <span>@{me.login}</span>
       </span>
     </div>
-    <Field label='Headline'>
+    <Field label='Accroche'>
       <Input
         value={draft.headline}
         placeholder='Ce que tu construis, en une phrase'

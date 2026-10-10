@@ -4,6 +4,7 @@ import { communities } from '/web/fixtures/communities.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 export type PostType =
@@ -416,7 +417,7 @@ export const acceptAnswer = (question: Post, answer: Post) => {
     category: 'communities',
     kind: 'reply',
     title: 'Ta réponse a été acceptée',
-    body: `« ${title} ». Entraide : ${count} preuves.`,
+    body: `« ${title} ». Entraide : ${counted(count, 'preuve')}.`,
     href: `post/${question.id}`,
   })
   changed()

@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import { A } from '@01edu/signal-router'
 import type { Login } from '/web/fixtures/people.ts'
 import {
@@ -11,9 +12,6 @@ import {
 import { Progress } from '/web/ui/progress.tsx'
 import { prism } from '/web/ui/shapes.tsx'
 
-const plural = (count: number, word: string) =>
-  `${count} ${word}${count > 1 ? 's' : ''}`
-
 /** The five dimensions, each with its count of proofs (§8.1) */
 export const dimensionsOf = (login: Login) => {
   const mine = proofsOf(login)
@@ -25,8 +23,8 @@ export const dimensionsOf = (login: Login) => {
       label,
       count: list.length,
       next: nextThreshold(key, list.length),
-      summary: plural(list.length, 'preuve') +
-        (verified ? ` · ${plural(verified, 'vérifiée')} par GitHub` : ''),
+      summary: counted(list.length, 'preuve') +
+        (verified ? ` · ${counted(verified, 'vérifiée')} par GitHub` : ''),
     }
   })
 }

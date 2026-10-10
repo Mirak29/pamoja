@@ -1,5 +1,5 @@
 import { A } from '@01edu/signal-router'
-import { type Login, people } from '/web/fixtures/people.ts'
+import { countries, type Login, people } from '/web/fixtures/people.ts'
 import { linksOf } from '/web/fixtures/reputation.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -187,7 +187,7 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
           <div class='flex flex-col gap-1.5'>
             {[...byCountry].map(([code, { count, names }]) => (
               <span key={code} class='flex items-center gap-2.5 text-[13px]'>
-                <CountryCode code={code} />
+                <span class='font-semibold'>{countryName(code)}</span>
                 {names.join(', ')} · {count}{' '}
                 {count > 1 ? 'collaborations' : 'collaboration'}
               </span>
@@ -208,11 +208,9 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   )
 }
 
-export const CountryCode = ({ code }: { code: string }) => (
-  <span class='rounded-sm border border-figure-edge px-[5px] py-[3px] font-mono text-[11px] leading-none font-medium text-ink shadow-[1.73px_1px_0_0_var(--figure-edge)]'>
-    {code}
-  </span>
-)
+// The map labels its columns with the ISO code; text names the country
+const countryName = (code: string) =>
+  Object.entries(countries).find(([, iso]) => iso === code)?.[0] ?? code
 
 /** Collaboration Graph: working links only, never follows (§9.3) */
 export const CollaborationGraph = ({ login }: { login: Login }) => {

@@ -128,9 +128,9 @@ const Members = (
     <section class='slab overflow-hidden'>
       <SectionHeader
         label='Membres'
-        title={`${count} ${
-          count > 1 ? 'membres' : 'membre'
-        } sur Pamoja · ${project.contributors} contributeurs sur GitHub`}
+        title={`${count} ${count > 1 ? 'membres' : 'membre'} sur Pamoja · ${
+          counted(project.contributors, 'contributeur')
+        } sur GitHub`}
       />
       <MemberRows project={project} isOwner={isOwner} />
     </section>

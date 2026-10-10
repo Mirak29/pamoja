@@ -210,7 +210,7 @@ const Checks = ({ project }: { project: Project }) => {
           <span class='flex-1' />
           <Button size={40} onClick={finish}>
             <Zap />
-            Passer en mode Live
+            Activer la synchro live
           </Button>
         </div>
       )}

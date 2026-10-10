@@ -14,7 +14,6 @@ import {
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
-import { CountryCode } from '/web/pages/profile/collaboration.tsx'
 import { proofMeta } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 
@@ -89,7 +88,6 @@ export const Passport = ({ login }: { login: Login }) => {
                 <span>{person.role}</span>
                 <span>·</span>
                 <span>{person.city}, {person.country}</span>
-                <CountryCode code={person.countryCode} />
               </span>
             </div>
             <p class='text-[18px] leading-[27px] text-pretty'>

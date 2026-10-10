@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import { signal } from '@preact/signals'
 import type { JSX } from 'preact'
 import { useEffect, useRef } from 'preact/hooks'
@@ -76,7 +77,7 @@ export const search = (query: string, limit: number) => {
         .filter((c) => fuzzyMatch(query, `${c.name} ${c.type}`))
         .map((c) => ({
           title: c.name,
-          sub: `${c.type} · ${c.members} membres`,
+          sub: `${c.type} · ${counted(c.members, 'membre')}`,
           href: `communaute/${c.slug}`,
           lead: <Users class='size-3.5' />,
         })),

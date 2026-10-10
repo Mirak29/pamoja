@@ -5,6 +5,7 @@ import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import { settings } from '/web/fixtures/settings.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
@@ -200,7 +201,13 @@ export const publishHelp = (draft: HelpDraft) => {
   request.log = [
     { text: 'Demande publiée', at },
     {
-      text: `Vague 1 : ${waves(request)[0].length} développeurs notifiés`,
+      text: `Vague 1 : ${
+        counted(
+          waves(request)[0].length,
+          'développeur notifié',
+          'développeurs notifiés',
+        )
+      }`,
       at,
     },
   ]

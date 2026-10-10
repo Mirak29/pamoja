@@ -56,7 +56,6 @@ import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import {
   CollaborationGraph,
   CollaborationMap,
-  CountryCode,
 } from '/web/pages/profile/collaboration.tsx'
 import { CollaborationDialog } from '/web/pages/profile/collaboration-dialog.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
@@ -142,7 +141,6 @@ const Hero = ({ login }: { login: Login }) => {
             <span>{person.role}</span>
             <span>·</span>
             <span>{person.city}, {person.country}</span>
-            <CountryCode code={person.countryCode} />
           </span>
         </div>
         <div class='sm:hidden'>

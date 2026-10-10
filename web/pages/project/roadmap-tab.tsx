@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { Milestone, Project } from '/web/fixtures/projects.ts'
 import { StatusBadge } from '/web/ui/badge.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -81,9 +82,6 @@ const Column = (
   )
 }
 
-const plural = (count: number, word: string) =>
-  `${count} ${word}${count > 1 ? 's' : ''}`
-
 export const RoadmapTab = ({ project }: { project: Project }) => {
   const { milestones } = project
   const count = (state: Milestone['state']) =>
@@ -93,9 +91,10 @@ export const RoadmapTab = ({ project }: { project: Project }) => {
       <div class='flex flex-col gap-1.5'>
         <Eyebrow>Roadmap</Eyebrow>
         <h2 class='font-display text-heading'>
-          {plural(milestones.length, 'milestone')} ·{' '}
-          {plural(count('done'), 'terminé')} · {count('active')} en cours ·{' '}
-          {plural(count('planned'), 'prévu')}
+          {counted(milestones.length, 'milestone')} ·{' '}
+          {counted(count('done'), 'terminée')} · {count('active')} en cours ·
+          {' '}
+          {counted(count('planned'), 'prévue')}
         </h2>
       </div>
       <div class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] items-end gap-x-6 gap-y-7'>

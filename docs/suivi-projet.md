@@ -392,6 +392,13 @@ Un dialogue rend le focus à ce qui l'a ouvert. Quand une action remplace le bou
 - **Livrable** : `web/ui/layout.tsx`, `web/ui/dialog.tsx`, `web/ui/input.tsx`, `web/ui/toast.tsx`, `web/ui/chips.tsx`, formulaires et listes concernés
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-121 · Textes et cohérence
+
+Tous les compteurs passent par `plural` et `counted` (`web/lib/plural.ts`) ; les copies locales disparaissent et les milestones s'accordent au féminin. « Accroche » remplace « Headline », les filtres disent « toutes » pour un nom féminin, les posts ont partout les mêmes réactions (J'aime, Utile, Merci), et les modes de synchro ont un seul nom (« Synchro live », « Synchro toutes les 15 min »). Le pays est écrit en entier, sans code « CI » ou « SN » à côté, et la landing garde sa signature en anglais (« Your work is your profile. »).
+
+- **Livrable** : `web/lib/plural.ts` et ses usages, `web/pages/profile/`, `web/pages/explore/explore-page.tsx`, `web/pages/project/`, `web/ui/post.tsx`, `web/pages/public/landing-page.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

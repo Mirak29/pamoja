@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
@@ -8,6 +9,7 @@ import {
   CircleCheck,
   CornerDownRight,
   Flag,
+  Heart,
   Lightbulb,
   Link,
   MessageSquare,
@@ -175,6 +177,7 @@ const Actions = (
 ) => {
   const likes = post.reactions.like ?? []
   const useful = post.reactions.useful ?? []
+  const thanks = post.reactions.thanks ?? []
   const saved = post.bookmarks?.includes(me.login) ?? false
   return (
     <div
@@ -214,6 +217,14 @@ const Actions = (
         label='Utile'
         size={size}
         onClick={() => toggleReaction(post, 'useful', me.login)}
+      />
+      <ActionKey
+        icon={Heart}
+        count={thanks.length}
+        pressed={thanks.some(isMe)}
+        label='Merci'
+        size={size}
+        onClick={() => toggleReaction(post, 'thanks', me.login)}
       />
       <span class='flex-1' />
       <ActionKey
@@ -772,7 +783,8 @@ export const PostCard = (
                       href={`post/${post.id}`}
                       class='text-[13px] font-semibold'
                     >
-                      Voir le fil complet · {descendantCount(post.id)} réponses
+                      Voir le fil complet ·{' '}
+                      {counted(descendantCount(post.id), 'réponse')}
                     </A>
                   )}
               />

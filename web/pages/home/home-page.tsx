@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
 import { useState } from 'preact/hooks'
@@ -387,9 +388,6 @@ const RailSection = (
   </section>
 )
 
-const plural = (count: number, one: string, many: string) =>
-  `${count} ${count > 1 ? many : one}`
-
 /** What deserves attention today: help, reviews, people, projects */
 const homeData = () => {
   const matches = matchingRequests(me)
@@ -404,7 +402,7 @@ const homeData = () => {
     waiting,
     matchTitle: matches.length
       ? `${
-        plural(
+        counted(
           matches.length,
           'demande d’aide correspond',
           'demandes d’aide correspondent',
@@ -412,7 +410,7 @@ const homeData = () => {
       } à tes skills`
       : 'Aucune demande ne correspond à tes skills',
     reviewTitle: waiting.length
-      ? plural(
+      ? counted(
         waiting.length,
         'PR attend une review',
         'PRs attendent une review',

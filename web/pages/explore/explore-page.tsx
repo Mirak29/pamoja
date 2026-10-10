@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { A, navigate, url } from '@01edu/signal-router'
 import { CircleDot, FolderGit2, LifeBuoy } from '/web/assets/icons.tsx'
@@ -42,7 +43,13 @@ const setParam = (key: string, value: string | boolean) =>
   })
 
 const FilterSelect = (
-  { name, label, options }: { name: string; label: string; options: string[] },
+  { name, label, options, feminine }: {
+    name: string
+    label: string
+    options: string[]
+    /** « toutes » instead of « tous » */
+    feminine?: boolean
+  },
 ) => (
   <select
     aria-label={label}
@@ -50,7 +57,7 @@ const FilterSelect = (
     onChange={(event) => setParam(name, event.currentTarget.value)}
     class='well h-9 max-w-full px-2.5 text-[14px] leading-none text-ink'
   >
-    <option value=''>{label} : tous</option>
+    <option value=''>{label} : {feminine ? 'toutes' : 'tous'}</option>
     {options.map((option) => (
       <option key={option} value={option}>{option}</option>
     ))}
@@ -93,9 +100,6 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
-const plural = (count: number, word: string) =>
-  `${count} ${word}${count > 1 ? 's' : ''}`
-
 const Developers = () => {
   const all = allPeople()
   const community = communities.find((c) => c.name === param('communaute'))
@@ -124,6 +128,7 @@ const Developers = () => {
             <FilterSelect
               name='communaute'
               label='Communauté'
+              feminine
               options={communities.map((c) => c.name)}
             />
           </>
@@ -151,7 +156,7 @@ const Developers = () => {
         </OptionButton>
       </Filters>
       <Count
-        label={plural(list.length, 'développeur')}
+        label={counted(list.length, 'développeur')}
         keys={['skill', 'pays', 'communaute', 'intention', 'disponible']}
       />
       <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
@@ -186,6 +191,7 @@ const Projects = () => {
             <FilterSelect
               name='techno'
               label='Techno'
+              feminine
               options={sorted(all.flatMap((p) => p.stack))}
             />
             <FilterSelect name='stade' label='Stade' options={stages} />
@@ -197,6 +203,7 @@ const Projects = () => {
             <FilterSelect
               name='activite'
               label='Activité'
+              feminine
               options={activities}
             />
           </>
@@ -216,7 +223,7 @@ const Projects = () => {
         </OptionButton>
       </Filters>
       <Count
-        label={plural(list.length, 'projet')}
+        label={counted(list.length, 'projet')}
         keys={[
           'techno',
           'stade',

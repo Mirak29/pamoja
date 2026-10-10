@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import { A, url } from '@01edu/signal-router'
 import { type Login, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
@@ -7,9 +8,6 @@ import { ago } from '/web/lib/time.ts'
 import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-
-const plural = (count: number, singular: string, plural: string) =>
-  `${count} ${count > 1 ? plural : singular}`
 
 /** Project, person helped and age of a proof */
 export const proofMeta = (proof: Proof, withAge = true) =>
@@ -73,8 +71,8 @@ export const ProofsDrawer = ({ login }: { login: Login }) => {
           {dimension ? dimension[1] : 'Toutes les preuves'}
         </h2>
         <span class='text-[13px] text-ink-muted'>
-          {plural(list.length, 'preuve', 'preuves')} ·{' '}
-          {plural(verified, 'vérifiée', 'vérifiées')} par GitHub · {plural(
+          {counted(list.length, 'preuve', 'preuves')} ·{' '}
+          {counted(verified, 'vérifiée', 'vérifiées')} par GitHub · {counted(
             list.length - verified,
             'donnée de démo',
             'données de démo',

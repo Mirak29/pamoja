@@ -2,6 +2,7 @@ import { logActivity } from '/web/fixtures/activity.ts'
 import { boards } from '/web/fixtures/board.ts'
 import { postAlert } from '/web/fixtures/channels.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { counted } from '/web/lib/plural.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { me } from '/web/fixtures/people.ts'
@@ -183,7 +184,11 @@ export const createProject = (draft: ProjectDraft): ProjectSlug => {
     postAlert(
       key,
       'import',
-      `Projet importé depuis GitHub : ${repo.owner}/${repo.name} · ${repo.issues} issues · ${repo.pullRequests} PR. Synchro toutes les 15 min.`,
+      `Projet importé depuis GitHub : ${repo.owner}/${repo.name} · ${
+        counted(repo.issues ?? 0, 'issue')
+      } · ${
+        counted(repo.pullRequests ?? 0, 'PR', 'PRs')
+      }. Synchro toutes les 15 min.`,
     )
   }
   logActivity(

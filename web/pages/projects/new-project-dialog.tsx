@@ -17,6 +17,7 @@ import {
 } from '/web/ui/input.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
+import { plural } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
 
 type Step = 'choose' | 'repos' | 'preview' | 'scratch'
@@ -185,10 +186,16 @@ const RepoPreview = ({ repo, back }: { repo: Repo; back: () => void }) => {
     return () => clearTimeout(timer)
   }, [])
   const stats = [
-    [repo.contributors, 'contributeurs'],
-    [repo.issues, 'issues ouvertes'],
-    [repo.pullRequests, 'PRs ouvertes'],
-    [repo.stars, 'étoiles'],
+    [repo.contributors, plural(repo.contributors ?? 0, 'contributeur')],
+    [
+      repo.issues,
+      plural(repo.issues ?? 0, 'issue ouverte', 'issues ouvertes'),
+    ],
+    [
+      repo.pullRequests,
+      plural(repo.pullRequests ?? 0, 'PR ouverte', 'PRs ouvertes'),
+    ],
+    [repo.stars, plural(repo.stars, 'étoile')],
   ] as const
   const create = () =>
     created(

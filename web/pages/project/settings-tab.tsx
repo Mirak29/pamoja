@@ -138,13 +138,13 @@ const Information = ({ project }: { project: Project }) => {
 const syncModes = [
   [
     'live',
-    'Live',
+    'Synchro live',
     'Temps réel via la GitHub App : PRs, reviews, CI et releases arrivent dans #suivi en quelques secondes.',
     Zap,
   ],
   [
     'poll',
-    'Toutes les 15 min',
+    'Synchro toutes les 15 min',
     'Lecture périodique de l’API GitHub, sans installation.',
     Clock,
   ],

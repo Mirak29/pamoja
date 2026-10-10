@@ -190,7 +190,7 @@ const Hero = () => (
     <div class='flex flex-col gap-[22px]'>
       <Eyebrow accent>Pour les développeurs africains</Eyebrow>
       <h1 class='font-display text-[60px] leading-[62px] font-bold tracking-[-.025em] text-balance'>
-        Ton travail est ton profil.
+        Your work is your profile.
       </h1>
       <p class='max-w-[520px] text-[18px] leading-[29px] text-pretty text-ink-muted'>
         Pamoja relie les développeurs autour de leur vrai travail : reviews,
@@ -346,7 +346,11 @@ const CallToAction = () => (
 
 /** /, seen without a session: the product in one page (§6.1) */
 export const LandingPage = () => (
-  <Page title='Ton travail est ton profil' class='flex min-h-screen flex-col'>
+  <Page
+    title='Your work is your profile'
+    heading={false}
+    class='flex min-h-screen flex-col'
+  >
     <PublicHeader />
     <main class='mx-auto flex w-full max-w-[1180px] flex-col gap-24 px-7 pt-6 pb-[120px]'>
       <Hero />
