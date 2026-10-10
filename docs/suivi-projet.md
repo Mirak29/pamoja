@@ -343,6 +343,13 @@ Sur données fictives, une demande publiée par Abdou reçoit maintenant sa rép
 - **Livrable** : `web/fixtures/help.ts`, `web/fixtures/notifications.ts`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-detail.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-219 · Matching fictif crédible
+
+Le score suit la formule du §7.3 : les points de skills ne comptent que les skills possédés, la proximité ne relie que des skills qui se recoupent vraiment (SQLite et PostgreSQL, Go et Backend), sans le faux « React ≈ TypeScript ». Un développeur sous le score minimum n'est plus notifié, la liste des notifiés est triée par score et seul le demandeur la voit : un développeur notifié voit seulement pourquoi la demande lui arrive. « Sur quoi travailler » applique le seuil des réglages, et ses besoins de projets ne s'appuient plus sur des skills sans rapport.
+
+- **Livrable** : `web/fixtures/matching.ts`, `web/fixtures/projects.ts`, `web/pages/help/help-detail.tsx`, `web/pages/help/new-help.tsx`, `web/pages/explore/explore-page.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -2,23 +2,22 @@ import { communities } from '/web/fixtures/communities.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
 
 // Deterministic matching of a help request (cahier des charges §7.3):
-// skills 45, help type 15, confirmed helps 15, proximity 10, availability 10,
-// affinity 5. Computed by the server with PAM-209, here on the fixtures.
+// skills 45, help type 15, confirmed helps 15, semantic proximity 10,
+// availability 10, affinity 5. Computed by the server with PAM-209, here on
+// the fixtures.
 
-/** Skills close enough to count as half a match */
+// Stands in for the embeddings of PAM-311: only skills that really overlap.
+// A required skill one has not, but close to one of theirs, is proximity,
+// never a skill point.
 const nearSkills: Record<string, string[]> = {
   SQLite: ['PostgreSQL', 'SQL'],
   PostgreSQL: ['SQLite', 'SQL'],
   SQL: ['SQLite', 'PostgreSQL'],
-  Concurrency: ['Go', 'Kubernetes'],
   Go: ['Backend'],
-  Backend: ['Go', 'TypeScript'],
-  React: ['UI', 'TypeScript'],
-  TypeScript: ['React', 'Deno'],
+  Backend: ['Go'],
   CI: ['Docker', 'Kubernetes'],
   Docker: ['Kubernetes', 'CI'],
   Kubernetes: ['Docker', 'CI'],
-  Security: ['Go'],
 }
 
 /** Below this score a developer is not notified */
@@ -34,13 +33,14 @@ export const match = (person: Person, request: Request) => {
     !person.skills.includes(skill) &&
     (nearSkills[skill] ?? []).some((other) => person.skills.includes(other))
   )
-  if (!exact.length && !near.length) return { total: 0, criteria: [] }
+  // Without one required skill, a developer is never notified
+  if (!exact.length) return { total: 0, criteria: [] }
 
   const criteria: Criterion[] = [{
-    label: exact.length ? `Skills : ${exact.join(', ')}` : 'Skills proches',
-    points: Math.round(
-      45 * (exact.length + near.length * 0.5) / request.skills.length,
-    ),
+    label: `Skills : ${
+      exact.join(', ')
+    } · ${exact.length} sur ${request.skills.length}`,
+    points: Math.round(45 * exact.length / request.skills.length),
   }]
   if (person.helpTypes.includes(request.type)) {
     criteria.push({
@@ -66,12 +66,12 @@ export const match = (person: Person, request: Request) => {
           }`
         ).join(', ')
       }`,
-      points: 10,
+      points: Math.round(10 * near.length / request.skills.length),
     })
   }
   criteria.push(
     person.available
-      ? { label: person.openTo ?? 'Disponible cette semaine', points: 10 }
+      ? { label: 'Disponible cette semaine', points: 10 }
       : { label: 'Peu disponible', points: 4 },
   )
   const author = people[request.author]
@@ -85,8 +85,6 @@ export const match = (person: Person, request: Request) => {
       } en commun`,
       points: 5,
     })
-  } else if (author.countryCode === person.countryCode) {
-    criteria.push({ label: `Même pays (${person.country})`, points: 5 })
   }
   return {
     total: Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0)),
@@ -107,7 +105,7 @@ export const waves = (request: Request): [Matched[], Matched[]] => {
   const ranked = (Object.values(people) as Person[])
     .filter((person) => person.login !== request.author)
     .map((person) => ({ person, ...match(person, request) }))
-    .filter((m) => m.total > 0)
+    .filter((m) => m.total >= MIN_SCORE)
     .sort((a, b) => b.total - a.total)
   const promising = ranked.find((m) => m.person.confirmedHelps < 3)
   const rest = ranked.filter((m) => m !== promising)

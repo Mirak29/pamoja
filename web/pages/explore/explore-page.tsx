@@ -251,7 +251,7 @@ type Work = {
 const workGroups = (): [string, Work[]][] => {
   const isMember = (p: Project) =>
     p.owner === me.login || p.members.some((m) => isMe(m.login))
-  const help = matchingRequests(me, 40).map(({ request, score }) => ({
+  const help = matchingRequests(me).map(({ request, score }) => ({
     key: request.id,
     icon: LifeBuoy,
     color: 'text-indigo',
@@ -264,20 +264,24 @@ const workGroups = (): [string, Work[]][] => {
     href: `aide/${request.id}`,
     cta: 'Voir la demande',
   }))
+  // good first issues have their own group below
   const needs = allProjects().filter((p) => !isMember(p)).flatMap((p) =>
-    p.needs.map((need) => ({
+    p.needs.filter((need) => need !== 'good first issue').map((need) => ({
       project: p,
       need,
+      stack: !needSkills[need],
       hits: (needSkills[need] ?? p.stack).filter((s) => me.skills.includes(s)),
     }))
-  ).filter(({ hits }) => hits.length).map(({ project, need, hits }) => ({
+  ).filter(({ hits }) => hits.length).map(({ project, need, stack, hits }) => ({
     key: `${project.slug}-${need}`,
     icon: FolderGit2,
     color: 'text-ink',
     kind: 'Besoin de projet',
     where: project.name,
     title: need,
-    reason: `Tu as ${hits.join(', ')}`,
+    reason: stack
+      ? `Le projet est en ${hits.join(', ')}, que tu connais`
+      : `Tu as ${hits.join(', ')}`,
     href: `projet/${project.slug}/equipe`,
     cta: 'Voir le projet',
   }))

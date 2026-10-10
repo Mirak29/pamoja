@@ -22,7 +22,7 @@ import {
   helpRequests,
   type HelpStatus,
 } from '/web/fixtures/help.ts'
-import { type Matched, waves } from '/web/fixtures/matching.ts'
+import { match, type Matched, waves } from '/web/fixtures/matching.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
@@ -184,7 +184,11 @@ const promptOf = (
   if (isMe(request.author)) {
     if (status === 'open') {
       return [
-        `La demande a été envoyée à ${notified.length} développeurs. Tu seras notifié dès que l’un d’eux accepte.`,
+        notified.length
+          ? `La demande a été envoyée à ${notified.length} ${
+            notified.length > 1 ? 'développeurs' : 'développeur'
+          }. Tu seras notifié dès que l’un d’eux accepte.`
+          : 'Aucun développeur ne dépasse le score minimum pour l’instant. La demande reste visible dans Aide.',
         [{
           label: 'Annuler la demande',
           variant: 'danger',
@@ -343,10 +347,11 @@ const Section = (
 )
 
 const MatchRow = (
-  { request, matched, open: initiallyOpen }: {
+  { request, matched, open: initiallyOpen, notified = true }: {
     request: HelpRequest
     matched: Matched
     open: boolean
+    notified?: boolean
   },
 ) => {
   const [open, setOpen] = useState(initiallyOpen)
@@ -355,7 +360,9 @@ const MatchRow = (
     ? 'A accepté'
     : request.withdrawn?.includes(matched.login)
     ? 'S’est désisté'
-    : 'Notifié'
+    : notified
+    ? 'Notifié'
+    : 'Pas dans cette vague'
   return (
     <div class='flex flex-col gap-2 border-t border-line py-3.5'>
       <div class='flex items-center gap-3'>
@@ -425,18 +432,62 @@ const Matching = (
   },
 ) => {
   const secondWave = (request.wave ?? 1) > 1
+  const byScore = (list: Matched[]) =>
+    [...list].sort((a, b) => b.score - a.score)
+  const formula = (
+    <span class='text-[12px] leading-[18px] text-ink-muted'>
+      Score sur 100 : skills 45, type d’aide 15, aides confirmées 15, proximité
+      10, disponibilité 10, affinité 5.
+    </span>
+  )
+  // Only the requester sees who was notified and their scores; a developer
+  // sees why the request reached them
+  if (!isMe(request.author)) {
+    const mine = match(me, request)
+    return (
+      <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
+        <Eyebrow accent>Matching</Eyebrow>
+        <span class='font-display text-[18px] leading-[25px] font-semibold'>
+          Vague 1 · {notified.length}{' '}
+          {notified.length > 1
+            ? 'développeurs notifiés'
+            : 'développeur notifié'}
+        </span>
+        {formula}
+        {mine.total > 0
+          ? (
+            <div class='flex flex-col'>
+              <MatchRow
+                request={request}
+                matched={{
+                  login: me.login,
+                  score: mine.total,
+                  criteria: mine.criteria,
+                  promising: notified.some((m) => isMe(m.login) && m.promising),
+                }}
+                notified={notified.some((m) => isMe(m.login))}
+                open
+              />
+            </div>
+          )
+          : (
+            <span class='text-[13px] text-ink-muted'>
+              Aucun de tes skills ne figure dans cette demande.
+            </span>
+          )}
+      </aside>
+    )
+  }
   return (
     <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
       <Eyebrow accent>Matching</Eyebrow>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
-        Vague 1 · {notified.length} développeurs notifiés
+        Vague 1 · {notified.length}{' '}
+        {notified.length > 1 ? 'développeurs notifiés' : 'développeur notifié'}
       </span>
-      <span class='text-[12px] leading-[18px] text-ink-muted'>
-        Score sur 100 : skills 45, type d’aide 15, aides confirmées 15,
-        proximité 10, disponibilité 10, affinité 5.
-      </span>
+      {formula}
       <div class='flex flex-col'>
-        {notified.map((m, i) => (
+        {byScore(notified).map((m, i) => (
           <MatchRow key={m.login} request={request} matched={m} open={!i} />
         ))}
       </div>
@@ -445,7 +496,7 @@ const Matching = (
       </span>
       {secondWave && next.length > 0 && (
         <div class='flex flex-col'>
-          {next.map((m) => (
+          {byScore(next).map((m) => (
             <MatchRow
               key={m.login}
               request={request}

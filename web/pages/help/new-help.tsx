@@ -46,7 +46,7 @@ const initialForm = (): Form => {
       project: pr.project,
       pullRequest: pr.number,
       skills: pr.number === 81
-        ? ['Go', 'SQLite', 'Concurrency']
+        ? ['Go', 'SQLite', 'Backend']
         : projects[pr.project].stack.slice(0, 2),
       level: 'Intermédiaire+',
       duration: '~20 min',

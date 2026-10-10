@@ -293,17 +293,15 @@ export const updateProject = (
   projectsChanged.value++
 }
 
-// Skills that answer each project need, until AI extraction (PAM-310)
+// Skills that answer each project need, until AI extraction (PAM-310).
+// A need absent from this list (tests, documentation) asks for the stack.
 export const needSkills: Record<string, string[]> = {
   'Review de code Go': ['Go', 'Code review'],
-  'Tests': ['Go', 'CI', 'TypeScript'],
-  'Frontend React': ['React', 'TypeScript', 'UI'],
-  'good first issue': ['TypeScript', 'React', 'Python'],
+  'Frontend React': ['React'],
   'Backend': ['Backend', 'Go', 'PostgreSQL', 'SQL'],
-  'Documentation': ['TypeScript', 'Go', 'Flutter'],
   'DevOps': ['Docker', 'Kubernetes', 'CI'],
-  'Review de code': ['Code review', 'Go'],
-  'Frontend': ['React', 'TypeScript', 'UI'],
+  'Review de code': ['Code review'],
+  'Frontend': ['React', 'UI'],
   'Design': ['UI'],
 }
 
