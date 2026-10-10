@@ -434,6 +434,20 @@ L'onboarding propose les 54 pays d'Afrique, plus « Autre » qui ouvre un champ 
 - **Livrable** : `web/fixtures/people.ts`, `web/fixtures/onboarding.ts`, `web/pages/public/onboarding-page.tsx`, `web/pages/public/connexion-page.tsx`, `web/pages/profile/passport.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · Audit QA front — seconde passe de validation
+
+Application lancée et parcours testés dans le navigateur sur données fictives :
+onboarding, aide, import et création de projet, synchro simulée, canaux, board,
+profil, recherche, communautés, notifications, réglages et vues mobiles. Le
+[rapport QA](qa/2026-10-10/rapport-qa-front.md) documente la couverture, les limites
+et 14 défauts reproduits, dont deux prioritaires : communication inaccessible à
+l'aidant accepté et review non répercutée sur le projet. **Le front n'est pas
+encore validé pour gel avant le back.** Aucun correctif applicatif livré par cet
+audit ; les tâches de validation en production restent ouvertes.
+
+- **Livrable** : `docs/qa/2026-10-10/rapport-qa-front.md` et captures associées
+- **Par** : Codex, à la demande d'Abdou
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
