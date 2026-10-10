@@ -116,7 +116,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-218** · Boucle de démo jouable de bout en bout (QA du 10 oct.) : la demande d'Abdou passe en « Review soumise » et le demandeur peut confirmer l'aide depuis la page ; « Pour toi » reçoit les demandes qui correspondent ; notifications triées par date et menant à l'objet exact (PR, demande) ; le rail « PRs à relire » exclut ses propres PRs et ouvre la PR (§7.2, §7.4, §8.3, §18) `[démo]` — @Mirak29
 - [x] **PAM-219** · Matching fictif crédible (QA du 10 oct.) : scores calculés avec la formule du §7.3 et des raisons qui l'expliquent, sans proximité inventée entre skills ; liste des notifiés triée par score ; un développeur notifié ne voit pas les scores des autres ; « Sur quoi travailler » applique le seuil des réglages (§7.3, §10.3) `[démo]` — @Mirak29
 - [x] **PAM-220** · Demande d'aide : formulaire et cycle de vie (QA du 10 oct.) : toutes les erreurs affichées en une fois ; choisir une PR pré-remplit la demande comme `?pr=81` ; « Se désister » demande confirmation et retire « Accepter » ; après acceptation, un lien mène vers le demandeur et le canal `#aide` du projet (§7.1, §7.2) — @Mirak29
-- [ ] **PAM-221** · Onboarding (QA du 10 oct.) : liste complète des pays africains avec « Autre », étape courante dans l'URL, après connexion retour à la page d'origine si l'utilisateur n'est pas nouveau (§6.1) — @Mirak29
+- [x] **PAM-221** · Onboarding (QA du 10 oct.) : liste complète des pays africains avec « Autre », étape courante dans l'URL, après connexion retour à la page d'origine si l'utilisateur n'est pas nouveau (§6.1) — @Mirak29
 
 **Critères d'acceptation (§4)**
 

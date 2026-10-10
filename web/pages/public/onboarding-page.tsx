@@ -1,6 +1,6 @@
 import type { ComponentChildren, JSX } from 'preact'
 import { useState } from 'preact/hooks'
-import { navigate } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
 import {
   BellOff,
   FolderGit2,
@@ -157,14 +157,27 @@ const ProfileStep = (
     <div class='grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5'>
       <Field label='Pays'>
         <Select
-          value={draft.country}
-          onChange={(event) => update({ country: event.currentTarget.value })}
+          value={draft.country in countries ? draft.country : OTHER}
+          onChange={(event) => {
+            const value = event.currentTarget.value
+            update({ country: value === OTHER ? '' : value })
+          }}
         >
           {Object.keys(countries).map((country) => (
             <option key={country} value={country}>{country}</option>
           ))}
+          <option value={OTHER}>Autre</option>
         </Select>
       </Field>
+      {!(draft.country in countries) && (
+        <Field label='Ton pays'>
+          <Input
+            value={draft.country}
+            placeholder='Le pays où tu vis'
+            onInput={(event) => update({ country: event.currentTarget.value })}
+          />
+        </Field>
+      )}
       <Field label='Ville'>
         <Input
           value={draft.city}
@@ -301,12 +314,19 @@ const ProjectStep = (
 
 const stepContents = [ProfileStep, SkillsStep, IntentsStep, MatchingStep]
 
+const OTHER = 'autre'
+
 /**
  * /onboarding, after the first GitHub login: profile, skills, intents,
  * matching and an optional first project, in less than 2 minutes (§6.1)
  */
 export const OnboardingPage = () => {
-  const [step, setStep] = useState(0)
+  const step = Math.min(
+    steps.length - 1,
+    Math.max(0, (Number(url.params.etape) || 1) - 1),
+  )
+  const setStep = (next: number) =>
+    navigate({ params: { etape: next ? next + 1 : null } })
   const [draft, setDraft] = useState(onboardingDraft)
   const [repo, setRepo] = useState<string | null>(null)
   const update: Update = (patch) => setDraft({ ...draft, ...patch })

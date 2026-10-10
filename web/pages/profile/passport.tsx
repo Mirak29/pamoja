@@ -78,7 +78,11 @@ export const Passport = ({ login }: { login: Login }) => {
               <span class='flex size-[88px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[30px] leading-none font-bold shadow-slab'>
                 {initials(person.name)}
               </span>
-              <Button size={40} href='connexion'>
+              <Button
+                size={40}
+                href='connexion'
+                params={{ retour: `/@${login}?dialog=collaboration` }}
+              >
                 Collaborer avec {person.name}
               </Button>
             </div>
@@ -146,7 +150,11 @@ export const Passport = ({ login }: { login: Login }) => {
             <Github />
             {location.host}/@{login}
           </span>
-          <A href='connexion' class='text-[14px] font-semibold'>
+          <A
+            href='connexion'
+            params={{ retour: `/@${login}` }}
+            class='text-[14px] font-semibold'
+          >
             Rejoindre Pamoja
           </A>
         </div>

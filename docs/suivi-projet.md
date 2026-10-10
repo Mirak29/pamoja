@@ -427,6 +427,13 @@ L'export télécharge le fichier JSON de façon fiable : le lien est posé dans 
 - **Livrable** : `web/pages/settings-page.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-221 · Onboarding
+
+L'onboarding propose les 54 pays d'Afrique, plus « Autre » qui ouvre un champ libre. L'étape courante est dans l'URL (`?etape=2`) : le bouton retour et le rechargement la gardent. La connexion ramène à la page d'origine passée en `?retour=` (un chemin du site uniquement) : depuis le passeport, « Collaborer avec Moussa » rouvre son profil avec le dialogue de collaboration ; sans retour, l'onboarding suit.
+
+- **Livrable** : `web/fixtures/people.ts`, `web/fixtures/onboarding.ts`, `web/pages/public/onboarding-page.tsx`, `web/pages/public/connexion-page.tsx`, `web/pages/profile/passport.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

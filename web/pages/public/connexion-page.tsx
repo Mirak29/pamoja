@@ -28,7 +28,11 @@ export const ConnexionPage = () => {
     setLoading(true)
     setTimeout(() => {
       signIn()
-      if (url.relativePath === '/connexion') navigate({ href: 'onboarding' })
+      if (url.relativePath !== '/connexion') return
+      // A path of this site only, never another one (//host)
+      const back = url.params.retour ?? ''
+      const safe = back.startsWith('/') && !back.startsWith('//')
+      navigate({ href: safe ? back.slice(1) : 'onboarding' })
     }, 900)
   }
   return (
