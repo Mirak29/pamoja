@@ -1,4 +1,5 @@
 import { counted } from '/web/lib/plural.ts'
+import { repoPath } from '/web/lib/links.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
@@ -779,11 +780,11 @@ export const PostCard = (
             >
               <Cube />
               <span class='flex min-w-0 flex-col'>
-                <span class='font-display text-[14px] leading-5 font-semibold'>
+                <span class='truncate font-display text-[14px] leading-5 font-semibold'>
                   {project.name}
                 </span>
-                <span class='font-mono text-[12px] leading-4 text-ink-muted'>
-                  github.com/{project.owner}/{project.slug}
+                <span class='truncate font-mono text-[12px] leading-4 text-ink-muted'>
+                  {repoPath(project)}
                 </span>
               </span>
             </A>

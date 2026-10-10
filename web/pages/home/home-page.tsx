@@ -296,7 +296,7 @@ const Composer = () => {
   const tool =
     'flex size-8 cursor-pointer items-center justify-center rounded-md border border-transparent text-indigo hover:bg-indigo-soft'
   const select =
-    'well h-8 max-w-[180px] px-2 text-[13px] leading-none font-medium text-ink'
+    'well h-8 w-[180px] max-w-full min-w-0 px-2 text-[13px] leading-none font-medium text-ink'
   return (
     <section class='slab mr-2 flex gap-3.5 px-[18px] py-4'>
       <Avatar name={me.name} size={42} />
@@ -573,23 +573,24 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.fil)?.[0] ??
     'pour-toi'
   const items = feedItems(current)
-  const { matchTitle, reviewTitle, waiting } = homeData()
+  const { matches, waiting } = homeData()
   return (
     <Page
       title='Accueil'
       class='grid items-start gap-8 pt-5 min-[1100px]:grid-cols-[minmax(0,1fr)_330px]'
     >
       <div class='flex w-full max-w-[720px] min-w-0 flex-col gap-5'>
+        {/* Short labels: the rail says the long ones on wide screens */}
         <div class='flex flex-wrap gap-3 pb-1 min-[1100px]:hidden'>
           <Button href='aide'>
             <LifeBuoy />
-            {matchTitle}
+            {counted(matches.length, 'demande pour toi', 'demandes pour toi')}
           </Button>
           <Button
             variant='secondary'
             href={waiting[0] ? `projet/${waiting[0].project}/prs` : 'projets'}
           >
-            {reviewTitle}
+            {counted(waiting.length, 'PR à relire', 'PRs à relire')}
           </Button>
         </div>
         <Composer />

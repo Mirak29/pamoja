@@ -12,6 +12,7 @@ import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
 import { ago } from '/web/lib/time.ts'
 import { type Status, StatusBadge, statusLabel } from '/web/ui/badge.tsx'
 import { githubUrl } from '/web/lib/links.ts'
+import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -114,7 +115,8 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
     <section class='slab mr-2 overflow-hidden'>
       <div class='flex px-5 pt-[18px] pb-4'>
         <Eyebrow>
-          {open.length} PRs ouvertes · {waiting} en attente de review
+          {counted(open.length, 'PR ouverte', 'PRs ouvertes')} · {waiting}{' '}
+          en attente de review
         </Eyebrow>
       </div>
       {prs.map((pr) => (

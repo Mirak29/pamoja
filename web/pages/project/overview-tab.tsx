@@ -50,11 +50,12 @@ const Gallery = ({ project }: { project: Project }) => {
           Pas encore de captures ni de vidéo de démo.
         </span>
       )}
-      <div class='grid grid-cols-3 gap-3.5'>
+      <div class='grid grid-cols-2 gap-3.5 sm:grid-cols-3'>
         {project.gallery.map((caption) => (
           <div
             key={caption}
-            class='flex aspect-[4/3] items-end rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
+            title={caption}
+            class='flex aspect-[4/3] min-w-0 items-end overflow-hidden rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
           >
             <Label>{caption}</Label>
           </div>

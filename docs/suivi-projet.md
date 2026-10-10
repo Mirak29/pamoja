@@ -469,6 +469,13 @@ Le dialogue « Nouveau post » (menu Créer) a la même audience par défaut que
 - **Livrable** : `web/ui/new-post-dialog.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-122 · Socle, retours QA 2
+
+Les toasts passent dans la couche supérieure (popover manuel ré-affiché à chaque toast) : ils restent visibles au-dessus d'un dialogue ouvert. La recherche de l'en-tête garde 42 px et son icône à 320 px, et la page n'y déborde plus : raccourcis courts sur l'Accueil, sélecteur de communauté, adresse GitHub tronquée dans un post, galerie du projet sur deux colonnes. Connexion, onboarding et 404 n'ont plus qu'un `h1`, et la liste des PRs accorde « 1 PR ouverte ». Un `.gitattributes` impose LF, ce que `deno fmt` attend.
+
+- **Livrable** : `web/ui/toast.tsx`, `web/ui/header.tsx`, `web/pages/public/`, `web/pages/project/pull-requests-tab.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/home/home-page.tsx`, `web/ui/post.tsx`, `.gitattributes`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

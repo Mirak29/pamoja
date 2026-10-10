@@ -8,6 +8,7 @@ import { Plates } from '/web/ui/plates.tsx'
 export const NotFoundPage = () => (
   <Page
     title='Page introuvable'
+    heading={false}
     class='flex min-h-screen flex-col items-center justify-center gap-[18px] px-6 py-12 text-center'
   >
     <A

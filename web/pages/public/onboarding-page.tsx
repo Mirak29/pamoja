@@ -350,7 +350,7 @@ export const OnboardingPage = () => {
   }
   const Content = stepContents[step]
   return (
-    <Page title='Bienvenue' class='flex min-h-screen flex-col'>
+    <Page title='Bienvenue' heading={false} class='flex min-h-screen flex-col'>
       <header class='flex flex-wrap items-center gap-4 px-7 py-[18px]'>
         <LogoMark size={30} />
         <span class='font-display text-[21px] leading-none font-bold'>
@@ -394,7 +394,8 @@ export const OnboardingPage = () => {
             )}
             <Button
               size={42}
-              onClick={() => last ? finish(true) : setStep(step + 1)}
+              onClick={() =>
+                last ? finish(true) : setStep(step + 1)}
             >
               {!last ? 'Continuer' : repo ? 'Importer et terminer' : 'Terminer'}
             </Button>

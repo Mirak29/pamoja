@@ -78,9 +78,9 @@ export const Header = () => {
         type='button'
         onClick={() => paletteOpen.value = true}
         aria-label='Rechercher'
-        class='well flex h-[42px] w-full min-w-0 cursor-text items-center gap-2.5 px-3 text-[14px] leading-none text-ink-muted'
+        class='well flex h-[42px] w-full min-w-[42px] cursor-text items-center gap-2.5 px-3 text-[14px] leading-none text-ink-muted'
       >
-        <Search />
+        <Search class='flex-none' />
         <span class='flex-1 truncate text-left'>
           Rechercher un dev, un projet, un skill
         </span>

@@ -38,6 +38,7 @@ export const ConnexionPage = () => {
   return (
     <Page
       title='Connexion'
+      heading={false}
       class='flex min-h-screen items-center justify-center px-5 py-8'
     >
       <div class='slab mr-2 flex w-full max-w-[460px] flex-col gap-5 p-7'>
