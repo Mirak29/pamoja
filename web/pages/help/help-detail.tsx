@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import {
   ChevronDown,
@@ -23,7 +23,7 @@ import {
   type HelpStatus,
 } from '/web/fixtures/help.ts'
 import { match, type Matched, waves } from '/web/fixtures/matching.ts'
-import { isMe, me, people } from '/web/fixtures/people.ts'
+import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import { BranchLine } from '/web/pages/help/new-help.tsx'
@@ -172,7 +172,23 @@ type Action = {
   href?: string
   hint?: string
   disabled?: boolean
+  /** Asked before the action is played */
+  confirm?: { question: string; label: string; cancel: string }
 }
+
+// Where the helper and the requester talk once the request is accepted
+const contactOf = (request: HelpRequest, other: Login): Action =>
+  request.project
+    ? {
+      label: 'Écrire dans #aide',
+      variant: 'secondary',
+      href: `projet/${request.project}/canaux/aide`,
+    }
+    : {
+      label: `Voir le profil de ${firstName(other)}`,
+      variant: 'secondary',
+      href: `@${other}`,
+    }
 
 // What the viewer can do depends on their role and on the state (§7.2)
 const promptOf = (
@@ -204,6 +220,7 @@ const promptOf = (
             : 'Tu seras notifié quand l’aide sera livrée.'
         }`,
         [
+          contactOf(request, request.helper!),
           {
             label: 'Libérer la demande',
             variant: 'secondary',
@@ -256,7 +273,19 @@ const promptOf = (
               variant: 'primary',
               action: 'deliver',
             },
-          { label: 'Se désister', variant: 'danger', action: 'withdraw' },
+          contactOf(request, request.author),
+          {
+            label: 'Se désister',
+            variant: 'danger',
+            action: 'withdraw',
+            confirm: {
+              question: `Te désister ? La demande repasse en Ouverte et ${
+                firstName(request.author)
+              } est prévenu. Tu ne la recevras plus.`,
+              label: 'Me désister',
+              cancel: 'Garder la demande',
+            },
+          },
         ],
       ]
     }
@@ -280,6 +309,12 @@ const promptOf = (
         }],
       ]
     }
+  }
+  if (status === 'open' && request.withdrawn?.some(isMe)) {
+    return [
+      'Tu t’es désisté de cette demande. Elle est proposée à d’autres développeurs.',
+      [],
+    ]
   }
   if (status === 'open') {
     const inWave = notified.some((m) => isMe(m.login))
@@ -308,8 +343,41 @@ const promptOf = (
 const Prompt = (
   { request, notified }: { request: HelpRequest; notified: Matched[] },
 ) => {
+  const [confirming, setConfirming] = useState<Action | null>(null)
+  // The question takes the place of the buttons: focus its safe answer
+  useEffect(() => {
+    confirming && document.getElementById('help-confirm-cancel')?.focus()
+  }, [confirming])
   const [prompt, actions] = promptOf(request, notified)
   if (!prompt) return null
+  if (confirming?.confirm) {
+    const { question, label, cancel } = confirming.confirm
+    return (
+      <section class='slab-selected flex flex-col gap-3.5 p-[22px]'>
+        <span class='font-display text-[18px] leading-[25px] font-semibold'>
+          {question}
+        </span>
+        <div class='flex flex-wrap items-center gap-3.5 pb-1'>
+          <Button
+            variant='danger'
+            onClick={() => {
+              setConfirming(null)
+              play(request, confirming.action!)
+            }}
+          >
+            {label}
+          </Button>
+          <Button
+            variant='secondary'
+            id='help-confirm-cancel'
+            onClick={() => setConfirming(null)}
+          >
+            {cancel}
+          </Button>
+        </div>
+      </section>
+    )
+  }
   return (
     <section class='slab-selected flex flex-col gap-3.5 p-[22px]'>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
@@ -317,15 +385,19 @@ const Prompt = (
       </span>
       {actions.length > 0 && (
         <div class='flex flex-wrap items-center gap-3.5 pb-1'>
-          {actions.map(({ label, variant, action, href, disabled }) => (
+          {actions.map((item) => (
             <Button
-              key={label}
-              variant={variant}
-              disabled={disabled}
-              href={href}
-              onClick={action && (() => play(request, action))}
+              key={item.label}
+              variant={item.variant}
+              disabled={item.disabled}
+              href={item.href}
+              onClick={item.action &&
+                (() =>
+                  item.confirm
+                    ? setConfirming(item)
+                    : play(request, item.action!))}
             >
-              {label}
+              {item.label}
             </Button>
           ))}
         </div>

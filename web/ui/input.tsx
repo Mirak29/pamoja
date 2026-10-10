@@ -1,4 +1,5 @@
 import type { ComponentChildren, JSX } from 'preact'
+import { CircleAlert } from '/web/assets/icons.tsx'
 
 const field = 'well w-full font-normal text-ink'
 const sizes = {
@@ -52,15 +53,44 @@ export const Select = (
   />
 )
 
-/** A labelled field, label above the control */
+/**
+ * The message under a field in error. Give the control
+ * `aria-describedby` with the same id, and `aria-invalid`.
+ */
+export const FieldError = (
+  { id, children }: { id?: string; children: ComponentChildren },
+) => (
+  <span
+    id={id}
+    class='flex items-center gap-1.5 text-[13px] font-normal text-danger'
+  >
+    <CircleAlert class='size-3.5 flex-none' />
+    {children}
+  </span>
+)
+
+/**
+ * A labelled field, label above the control, and its error below. The
+ * wrapper stays the same with or without error, so the control keeps focus.
+ *
+ * @example
+ * <Field label='Titre' error={error} errorId='title-error'>
+ *   <Input aria-invalid={!!error} aria-describedby='title-error' />
+ * </Field>
+ */
 export const Field = (
-  { label, children }: {
+  { label, children, error, errorId }: {
     label: ComponentChildren
     children: ComponentChildren
+    error?: string
+    errorId?: string
   },
 ) => (
-  <label class='flex flex-col gap-2 text-[13px] font-semibold'>
-    {label}
-    {children}
-  </label>
+  <div class='flex flex-col gap-1.5'>
+    <label class='flex flex-col gap-2 text-[13px] font-semibold'>
+      {label}
+      {children}
+    </label>
+    {error && <FieldError id={errorId}>{error}</FieldError>}
+  </div>
 )

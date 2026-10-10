@@ -1,12 +1,12 @@
 import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
-import { CircleAlert, GitPullRequest, Send, X } from '/web/assets/icons.tsx'
+import { GitPullRequest, Send, X } from '/web/assets/icons.tsx'
 import { type HelpDraft, helpTypes, publishHelp } from '/web/fixtures/help.ts'
 import { waves } from '/web/fixtures/matching.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
-import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -20,6 +20,20 @@ const durations = ['~20 min', '~30 min', '~1 h', '~2 h']
 const MAX_CAPTURES = 4
 
 type Form = HelpDraft & { origin: string }
+
+/** What a PR brings to a review request (§7.1) */
+const fromPullRequest = (pr: PullRequest) => ({
+  title: `Review de la PR #${pr.number} : ${pr.title}`,
+  description: pr.number === 81
+    ? 'Je cherche un regard extérieur sur la gestion des transactions : verrouillage SQLite, rollback quand le callback échoue, et comportement sous accès concurrents.'
+    : 'Je cherche une review sur cette PR avant de la merger.',
+  project: pr.project,
+  pullRequest: pr.number,
+  skills: pr.number === 81
+    ? ['Go', 'SQLite', 'Backend']
+    : projects[pr.project].stack.slice(0, 2),
+  branch: pr.branch,
+})
 
 // Request Review from a PR (?pr=) or help from a failing CI alert (?ci=)
 // pre-fills the form (§7.1)
@@ -39,18 +53,9 @@ const initialForm = (): Form => {
   const pr = pullRequests.find((p) => p.number === number)
   if (pr && url.params.pr) {
     Object.assign(form, {
-      title: `Review de la PR #${pr.number} : ${pr.title}`,
-      description: pr.number === 81
-        ? 'Je cherche un regard extérieur sur la gestion des transactions : verrouillage SQLite, rollback quand le callback échoue, et comportement sous accès concurrents.'
-        : 'Je cherche une review sur cette PR avant de la merger.',
-      project: pr.project,
-      pullRequest: pr.number,
-      skills: pr.number === 81
-        ? ['Go', 'SQLite', 'Backend']
-        : projects[pr.project].stack.slice(0, 2),
+      ...fromPullRequest(pr),
       level: 'Intermédiaire+',
       duration: '~20 min',
-      branch: pr.branch,
       origin: `Pré-rempli depuis la PR #${pr.number}`,
     })
   }
@@ -204,10 +209,30 @@ const Preview = ({ form }: { form: Form }) => {
 /** /aide/nouvelle, pre-filled from a PR or a CI alert */
 export const NewHelp = () => {
   const [form, setForm] = useState(initialForm)
-  const [error, setError] = useState('')
+  const [errors, setErrors] = useState<{ title?: string; skills?: string }>(
+    {},
+  )
   const update = (patch: Partial<Form>) => {
-    setError('')
+    const fixed = { ...errors }
+    'title' in patch && delete fixed.title
+    'skills' in patch && delete fixed.skills
+    setErrors(fixed)
     setForm({ ...form, ...patch })
+  }
+  // Choosing a PR fills what is still empty, as « Request Review » does
+  const choosePullRequest = (number: number) => {
+    const pr = pullRequests.find((p) => p.number === number)
+    if (!pr) return update({ pullRequest: undefined, branch: undefined })
+    const filled = fromPullRequest(pr)
+    update({
+      pullRequest: pr.number,
+      branch: pr.branch,
+      type: form.title.trim() ? form.type : 'Review de code',
+      title: form.title.trim() || filled.title,
+      description: form.description.trim() || filled.description,
+      skills: form.skills.length ? form.skills : filled.skills,
+      origin: `Pré-rempli depuis la PR #${pr.number}`,
+    })
   }
   const myProjects = Object.values(projects).filter((p) =>
     isMe(p.owner) || p.members.some((m) => isMe(m.login))
@@ -217,11 +242,17 @@ export const NewHelp = () => {
   )
 
   const publish = () => {
-    if (!form.title.trim()) return setError('Donne un titre à ta demande.')
-    if (!form.skills.length) {
-      return setError(
-        'Ajoute au moins un skill pour que le matching trouve les bons développeurs.',
-      )
+    const found = {
+      title: form.title.trim() ? undefined : 'Donne un titre à ta demande.',
+      skills: form.skills.length
+        ? undefined
+        : 'Ajoute au moins un skill pour que le matching trouve les bons développeurs.',
+    }
+    if (found.title || found.skills) {
+      setErrors(found)
+      document.getElementById(found.title ? 'help-title' : 'help-skills')
+        ?.focus()
+      return
     }
     const { origin: _, ...draft } = form
     const request = publishHelp({
@@ -259,8 +290,11 @@ export const NewHelp = () => {
               </OptionButton>
             ))}
           </Choices>
-          <Field label='Titre'>
+          <Field label='Titre' error={errors.title} errorId='help-title-error'>
             <Input
+              id='help-title'
+              aria-invalid={errors.title ? true : undefined}
+              aria-describedby={errors.title ? 'help-title-error' : undefined}
               value={form.title}
               onInput={(event) => update({ title: event.currentTarget.value })}
               placeholder='Ce dont tu as besoin, en une phrase'
@@ -285,6 +319,7 @@ export const NewHelp = () => {
                       | ProjectSlug
                       | undefined,
                     pullRequest: undefined,
+                    branch: undefined,
                   })}
               >
                 <option value=''>Aucun projet</option>
@@ -298,10 +333,7 @@ export const NewHelp = () => {
                 <Select
                   value={String(form.pullRequest ?? '')}
                   onChange={(event) =>
-                    update({
-                      pullRequest: Number(event.currentTarget.value) ||
-                        undefined,
-                    })}
+                    choosePullRequest(Number(event.currentTarget.value))}
                 >
                   <option value=''>Aucune PR</option>
                   {openPullRequests.map((pr) => (
@@ -321,6 +353,8 @@ export const NewHelp = () => {
             note='Vocabulaire contrôlé : Pamoja propose le nom exact du skill.'
             skills={form.skills}
             onChange={(skills) => update({ skills })}
+            id='help-skills'
+            error={errors.skills}
           />
           <div class='grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-[18px]'>
             <Choices label='Niveau attendu'>
@@ -357,15 +391,6 @@ export const NewHelp = () => {
               placeholder='Lien YouTube ou Loom'
             />
           </Field>
-          {error && (
-            <div
-              role='alert'
-              class='flex items-center gap-2 text-[14px] text-danger'
-            >
-              <CircleAlert />
-              {error}
-            </div>
-          )}
           <div class='flex flex-wrap gap-3.5 border-t border-line pt-5'>
             <Button size={40} onClick={publish}>Publier la demande</Button>
             <Button

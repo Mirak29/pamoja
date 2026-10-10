@@ -352,6 +352,14 @@ export const actOnHelp = (
         })
         if (action === 'withdraw') {
           log(request, `${firstName(helper!)} s’est désisté`)
+          pushNotification({
+            to: request.author,
+            category: 'for-you',
+            kind: 'help',
+            title: `${firstName(helper!)} s’est désisté`,
+            body: `« ${request.title} » repasse en Ouverte.`,
+            href: `aide/${request.id}`,
+          })
           return {
             title: 'Tu t’es désisté',
             body: 'La demande repasse en Ouverte.',

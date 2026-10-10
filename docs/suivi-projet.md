@@ -350,6 +350,13 @@ Le score suit la formule du §7.3 : les points de skills ne comptent que les ski
 - **Livrable** : `web/fixtures/matching.ts`, `web/fixtures/projects.ts`, `web/pages/help/help-detail.tsx`, `web/pages/help/new-help.tsx`, `web/pages/explore/explore-page.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-220 · Demande d'aide : formulaire et cycle de vie
+
+Le formulaire affiche toutes ses erreurs d'un coup, sous chaque champ, reliées au champ (`aria-invalid`, `aria-describedby`), et pose le focus sur le premier en erreur. Choisir une PR remplit ce qui est encore vide, comme le lien « Request Review ». « Se désister » pose la question avant d'agir, prévient le demandeur, puis n'affiche plus « Accepter ». Une demande acceptée propose d'écrire dans `#aide` du projet (ou le profil de l'autre, sans projet). `Field` et `SkillPicker` gagnent un emplacement d'erreur réutilisable (`FieldError`).
+
+- **Livrable** : `web/pages/help/new-help.tsx`, `web/pages/help/help-detail.tsx`, `web/fixtures/help.ts`, `web/ui/input.tsx`, `web/ui/chips.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
