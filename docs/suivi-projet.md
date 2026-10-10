@@ -462,6 +462,13 @@ L'événement de synchro de l'Accueil garde son projet. Un projet créé ou impo
 - **Livrable** : `web/fixtures/pulse.ts`, `web/fixtures/channels.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/lib/links.ts`, `web/pages/project/`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/public/onboarding-page.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-521 · Nouveau post, retour QA 2
+
+Le dialogue « Nouveau post » (menu Créer) a la même audience par défaut que l'Accueil : « Sans communauté », le post reste sur le profil. La communauté n'est préremplie que si le dialogue s'ouvre depuis sa page.
+
+- **Livrable** : `web/ui/new-post-dialog.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

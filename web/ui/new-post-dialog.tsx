@@ -37,9 +37,9 @@ const NewPost = (
   const [type, setType] = useState<PostType | typeof HELP>(
     initialType ?? 'Discussion',
   )
-  const [community, setCommunity] = useState(
-    initial ?? me.communities[0] ?? communities[0].slug,
-  )
+  // Same audience as the Accueil composer: the profile, unless the dialog
+  // opens from a community page
+  const [community, setCommunity] = useState(initial ?? '')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [images, setImages] = useState(0)
@@ -55,7 +55,7 @@ const NewPost = (
       body: !body.trim() && 'Écris le contenu du post.',
     })
     if (!valid) return
-    const joined = me.communities.includes(community)
+    const joined = !community || me.communities.includes(community)
     const post = publishPost({
       community,
       type,
@@ -68,7 +68,9 @@ const NewPost = (
     navigate({ href: `post/${post.id}` })
     notify({
       title: 'Post publié',
-      body: `Dans ${name}${joined ? '.' : ', que tu rejoins au passage.'}`,
+      body: name
+        ? `Dans ${name}${joined ? '.' : ', que tu rejoins au passage.'}`
+        : 'Sur ton profil. Tes abonnés le voient dans leur fil.',
       icon: Send,
       tone: 'verified',
     })
@@ -109,6 +111,7 @@ const NewPost = (
                 value={community}
                 onChange={(event) => setCommunity(event.currentTarget.value)}
               >
+                <option value=''>Sans communauté</option>
                 {communities.map((c) => (
                   <option key={c.slug} value={c.slug}>
                     {c.name}
