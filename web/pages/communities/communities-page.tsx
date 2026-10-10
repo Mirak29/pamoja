@@ -1,16 +1,17 @@
 import { A } from '@01edu/signal-router'
-import { Check, Plus } from '/web/assets/icons.tsx'
+import { Plus } from '/web/assets/icons.tsx'
 import {
   communities,
   communitiesChanged,
   type Community,
-  toggleMembership,
 } from '/web/fixtures/communities.ts'
 import { me } from '/web/fixtures/people.ts'
 import { posts, postsChanged } from '/web/fixtures/posts.ts'
+import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
+import { Membership } from '/web/pages/communities/membership.tsx'
 import { NewCommunityDialog } from '/web/pages/communities/new-community-dialog.tsx'
 
 const groups: [Community['type'], string][] = [
@@ -30,10 +31,7 @@ export const countsOf = (community: Community) => {
     posts.filter((p) =>
       p.community === community.slug && !p.hidden && !p.parent
     ).length
-  const members = community.members
-  return `${members} membre${members > 1 ? 's' : ''} · ${count} post${
-    count > 1 ? 's' : ''
-  }`
+  return `${counted(community.members, 'membre')} · ${counted(count, 'post')}`
 }
 
 const CommunityCard = ({ community }: { community: Community }) => {
@@ -60,32 +58,7 @@ const CommunityCard = ({ community }: { community: Community }) => {
         {community.description}
       </span>
       <div class='mt-auto flex items-center gap-2.5 pb-[3px]'>
-        {joined
-          ? (
-            <>
-              <span class='inline-flex items-center gap-1.5 text-[13px] font-semibold text-verified'>
-                <Check class='size-3.5' />
-                Membre
-              </span>
-              <button
-                type='button'
-                aria-label={`Quitter ${community.name}`}
-                onClick={() => toggleMembership(community, me)}
-                class='ml-auto cursor-pointer px-1.5 text-[13px] leading-none font-medium text-ink-muted hover:text-danger'
-              >
-                Quitter
-              </button>
-            </>
-          )
-          : (
-            <Button
-              size={34}
-              aria-label={`Rejoindre ${community.name}`}
-              onClick={() => toggleMembership(community, me)}
-            >
-              Rejoindre
-            </Button>
-          )}
+        <Membership community={community} joined={joined} size={34} />
       </div>
     </div>
   )

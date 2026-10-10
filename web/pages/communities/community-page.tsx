@@ -1,11 +1,10 @@
 import { A, url } from '@01edu/signal-router'
-import { Check, Plus } from '/web/assets/icons.tsx'
+import { Plus } from '/web/assets/icons.tsx'
 import {
   communities,
   communitiesChanged,
   type Community,
   defaultRules,
-  toggleMembership,
 } from '/web/fixtures/communities.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
 import { match } from '/web/fixtures/matching.ts'
@@ -17,6 +16,7 @@ import {
   postsChanged,
 } from '/web/fixtures/posts.ts'
 import { type Project, projects } from '/web/fixtures/projects.ts'
+import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import {
@@ -34,6 +34,7 @@ import { ProjectCard } from '/web/ui/project-card.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { countsOf, emblemOf } from '/web/pages/communities/communities-page.tsx'
+import { Membership } from '/web/pages/communities/membership.tsx'
 
 const tabs = [
   ['', 'Fil'],
@@ -265,21 +266,7 @@ export const CommunityPage = () => {
           </span>
         </div>
         <div class='flex flex-wrap gap-3 pb-1'>
-          {joined
-            ? (
-              <Button
-                variant='secondary'
-                onClick={() => toggleMembership(community, me)}
-              >
-                <Check class='size-3.5' />
-                Membre
-              </Button>
-            )
-            : (
-              <Button onClick={() => toggleMembership(community, me)}>
-                Rejoindre
-              </Button>
-            )}
+          <Membership community={community} joined={joined} />
           <Button variant='secondary' params={{ dialog: 'new-post' }}>
             <Plus />
             Nouveau post
@@ -315,6 +302,13 @@ export const CommunityPage = () => {
             </EmptyState>
           )}
         </section>
+      )}
+      {current === 'membres' && (
+        <span class='-mb-2 text-[13px] text-ink-muted'>
+          {counted(members.length, 'membre affiché', 'membres affichés')} sur
+          {' '}
+          {community.members}, les plus actifs d’abord.
+        </span>
       )}
       {current === 'membres' && (
         <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>

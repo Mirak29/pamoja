@@ -399,6 +399,13 @@ Tous les compteurs passent par `plural` et `counted` (`web/lib/plural.ts`) ; les
 - **Livrable** : `web/lib/plural.ts` et ses usages, `web/pages/profile/`, `web/pages/explore/explore-page.tsx`, `web/pages/project/`, `web/ui/post.tsx`, `web/pages/public/landing-page.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-517 · Communautés
+
+Quitter une communauté demande maintenant confirmation, dans la liste comme sur la page (le bouton « Membre » ne fait plus quitter en un clic) : un seul composant `Membership`. Une communauté au nom déjà pris n'est plus créée : le formulaire le dit sous le champ et propose d'ouvrir l'existante. L'onglet Membres précise combien de membres il affiche sur le total.
+
+- **Livrable** : `web/pages/communities/membership.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/communities/new-community-dialog.tsx`, `web/fixtures/communities.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

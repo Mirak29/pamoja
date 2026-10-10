@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks'
-import { navigate } from '@01edu/signal-router'
+import { A, navigate } from '@01edu/signal-router'
 import { Users } from '/web/assets/icons.tsx'
 import {
+  communityNamed,
   type CommunityType,
   createCommunity,
 } from '/web/fixtures/communities.ts'
@@ -20,10 +21,14 @@ const NewCommunity = () => {
   const { check, clear, control, field } = useFieldErrors<'name'>(
     'community',
   )
+  const existing = name.trim() ? communityNamed(name) : undefined
   const create = () => {
-    if (!check({ name: !name.trim() && 'Donne un nom à la communauté.' })) {
-      return
-    }
+    const valid = check({
+      name: !name.trim()
+        ? 'Donne un nom à la communauté.'
+        : existing && `La communauté ${existing.name} existe déjà.`,
+    })
+    if (!valid) return
     const community = createCommunity({
       name: name.trim(),
       type,
@@ -51,6 +56,18 @@ const NewCommunity = () => {
           }}
         />
       </Field>
+      {existing && (
+        <span class='-mt-2.5 flex flex-wrap items-center gap-2 text-[13px] text-ink-muted'>
+          Une communauté porte déjà ce nom.
+          <A
+            href={`communaute/${existing.slug}`}
+            params={{ dialog: null }}
+            class='font-semibold'
+          >
+            Ouvrir {existing.name}
+          </A>
+        </span>
+      )}
       <div class='flex flex-col gap-2 text-[13px] font-semibold'>
         <span>Type</span>
         <div class='flex flex-wrap gap-2 pb-1'>
