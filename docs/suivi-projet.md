@@ -448,6 +448,13 @@ audit ; les tâches de validation en production restent ouvertes.
 - **Livrable** : `docs/qa/2026-10-10/rapport-qa-front.md` et captures associées
 - **Par** : Codex, à la demande d'Abdou
 
+### 2026-10-10 · PAM-222 · Boucle d'aide, retours QA 2
+
+Le demandeur et l'aidant accepté échangent dans le fil de la demande, sur sa page, visible d'eux deux seulement : « Écrire à … » y mène au lieu d'un canal `#aide` fermé à l'aidant, et chaque message prévient l'autre. Dans la simulation, l'aidant y écrit après avoir accepté. Une review détectée met à jour la PR (review reçue, reviewer), le Pulse (3 → 2 PRs en attente), `#suivi` et l'activité du projet. Une demande dont on s'est désisté sort des recommandations.
+
+- **Livrable** : `web/fixtures/help.ts`, `web/pages/help/help-detail.tsx`, `docs/cahier-des-charges.md` §7.2 et §14.4
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

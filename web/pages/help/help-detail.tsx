@@ -18,9 +18,11 @@ import {
   actOnHelp,
   type HelpAction,
   helpChanged,
+  type HelpMessage,
   type HelpRequest,
   helpRequests,
   type HelpStatus,
+  sendHelpMessage,
 } from '/web/fixtures/help.ts'
 import { match, type Matched, waves } from '/web/fixtures/matching.ts'
 import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
@@ -37,7 +39,9 @@ import {
 } from '/web/ui/badge.tsx'
 import { Button, type ButtonVariant } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
+import { RichText } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -174,21 +178,16 @@ type Action = {
   disabled?: boolean
   /** Asked before the action is played */
   confirm?: { question: string; label: string; cancel: string }
+  /** Id of the field this button focuses */
+  focus?: string
 }
 
-// Where the helper and the requester talk once the request is accepted
-const contactOf = (request: HelpRequest, other: Login): Action =>
-  request.project
-    ? {
-      label: 'Écrire dans #aide',
-      variant: 'secondary',
-      href: `projet/${request.project}/canaux/aide`,
-    }
-    : {
-      label: `Voir le profil de ${firstName(other)}`,
-      variant: 'secondary',
-      href: `@${other}`,
-    }
+// The requester and the helper talk in the thread of the request (§7.2)
+const contactOf = (other: Login): Action => ({
+  label: `Écrire à ${firstName(other)}`,
+  variant: 'secondary',
+  focus: 'help-thread-input',
+})
 
 // What the viewer can do depends on their role and on the state (§7.2)
 const promptOf = (
@@ -220,7 +219,7 @@ const promptOf = (
             : 'Tu seras notifié quand l’aide sera livrée.'
         }`,
         [
-          contactOf(request, request.helper!),
+          contactOf(request.helper!),
           {
             label: 'Libérer la demande',
             variant: 'secondary',
@@ -273,7 +272,7 @@ const promptOf = (
               variant: 'primary',
               action: 'deliver',
             },
-          contactOf(request, request.author),
+          contactOf(request.author),
           {
             label: 'Se désister',
             variant: 'danger',
@@ -391,11 +390,13 @@ const Prompt = (
               variant={item.variant}
               disabled={item.disabled}
               href={item.href}
-              onClick={item.action &&
-                (() =>
-                  item.confirm
-                    ? setConfirming(item)
-                    : play(request, item.action!))}
+              onClick={item.focus
+                ? () => document.getElementById(item.focus!)?.focus()
+                : item.action &&
+                  (() =>
+                    item.confirm
+                      ? setConfirming(item)
+                      : play(request, item.action!))}
             >
               {item.label}
             </Button>
@@ -405,6 +406,98 @@ const Prompt = (
       {actions.filter((a) => a.hint).map(({ hint }) => (
         <span key={hint} class='text-[12px] text-ink-muted'>{hint}</span>
       ))}
+    </section>
+  )
+}
+
+const closed: HelpStatus[] = [
+  'completed',
+  'closed_unhelpful',
+  'closed_unconfirmed',
+  'cancelled',
+  'expired',
+]
+
+/**
+ * Thread of the request: only the requester and the accepted helper see it
+ * and write in it; it stays readable once the request is closed (§7.2)
+ */
+const HelpThread = (
+  { request, messages, other, open }: {
+    request: HelpRequest
+    messages: HelpMessage[]
+    other: Login
+    open: boolean
+  },
+) => {
+  const [draft, setDraft] = useState('')
+  const send = () => {
+    if (!draft.trim()) return
+    sendHelpMessage(request, me.login, draft.trim())
+    setDraft('')
+  }
+  return (
+    <section class='slab flex flex-col gap-3.5 p-[22px]'>
+      <div class='flex flex-wrap items-baseline justify-between gap-2'>
+        <Eyebrow>Fil avec {people[other].name}</Eyebrow>
+        <span class='text-[12px] text-ink-muted'>
+          Visible par vous deux seulement
+        </span>
+      </div>
+      {messages.map((message) => (
+        <div
+          key={`${message.at}${message.author}`}
+          class='flex animate-enter-fast gap-3'
+        >
+          <Avatar name={people[message.author].name} size={30} />
+          <div class='flex min-w-0 flex-1 flex-col gap-0.5'>
+            <span class='flex flex-wrap items-baseline gap-2'>
+              <span class='font-display text-[14px] leading-5 font-semibold'>
+                {isMe(message.author) ? 'Toi' : people[message.author].name}
+              </span>
+              <span class='text-[12px] text-ink-muted'>{ago(message.at)}</span>
+            </span>
+            <div class='text-[15px] leading-6 text-pretty'>
+              <RichText text={message.text} />
+            </div>
+          </div>
+        </div>
+      ))}
+      {!messages.length && (
+        <span class='text-[14px] text-ink-muted'>
+          Pas encore de message. Le contexte, un lien, une question : tout se
+          dit ici.
+        </span>
+      )}
+      {open
+        ? (
+          <div class='flex flex-col gap-2'>
+            <Textarea
+              id='help-thread-input'
+              rows={2}
+              value={draft}
+              aria-label={`Message pour ${people[other].name}`}
+              placeholder={`Écrire à ${firstName(other)}`}
+              onInput={(event) => setDraft(event.currentTarget.value)}
+              onKeyDown={(event) =>
+                event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
+                send()}
+            />
+            <div class='flex items-center justify-between gap-3'>
+              <span class='text-[12px] text-ink-muted'>
+                Ctrl + Entrée pour envoyer
+              </span>
+              <Button size={36} disabled={!draft.trim()} onClick={send}>
+                Envoyer
+              </Button>
+            </div>
+          </div>
+        )
+        : (
+          <span class='text-[13px] text-ink-muted'>
+            La demande est close : le fil reste lisible.
+          </span>
+        )}
     </section>
   )
 }
@@ -670,6 +763,15 @@ export const HelpDetail = ({ id }: { id: string }) => {
         </div>
         <Lifecycle request={request} />
         <Prompt request={request} notified={notified} />
+        {request.helper &&
+          (isMe(request.author) || isMe(request.helper)) && (
+          <HelpThread
+            request={request}
+            messages={[...(request.messages ?? [])]}
+            other={isMe(request.author) ? request.helper : request.author}
+            open={!closed.includes(request.status)}
+          />
+        )}
         <Section title='Description'>
           <p class='whitespace-pre-wrap text-pretty'>
             {request.description || 'Pas de description détaillée.'}

@@ -1,9 +1,12 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
+import { logActivity } from '/web/fixtures/activity.ts'
+import { postAlert } from '/web/fixtures/channels.ts'
 import { match, waves } from '/web/fixtures/matching.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
-import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
+import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -63,8 +66,12 @@ export type HelpRequest = {
   /** Withdrawn by a moderator */
   hidden?: boolean
   log?: { text: string; at: number; verified?: boolean }[]
+  /** The thread between the requester and the helper (§7.2) */
+  messages?: HelpMessage[]
   demo: boolean
 }
+
+export type HelpMessage = { author: Login; text: string; at: number }
 
 export const helpRequests: HelpRequest[] = [
   {
@@ -157,7 +164,10 @@ export const helpChanged = signal(0)
  */
 export const matchingRequests = (person: Person, min = settings.minScore) =>
   helpRequests
-    .filter((h) => h.status === 'open' && h.author !== person.login)
+    .filter((h) =>
+      h.status === 'open' && h.author !== person.login &&
+      !h.withdrawn?.includes(person.login as Login)
+    )
     .map((h) => ({ request: h, score: match(person, h).total }))
     .filter((h) => h.score >= min)
     .sort((a, b) => b.score - a.score)
@@ -217,8 +227,60 @@ export const publishHelp = (draft: HelpDraft) => {
   return request
 }
 
+/** POST/api/help/message: the other side of the thread is notified */
+export const sendHelpMessage = (
+  request: HelpRequest,
+  author: Login,
+  text: string,
+) => {
+  request.messages = [
+    ...(request.messages ?? []),
+    { author, text, at: Date.now() },
+  ]
+  const to = author === request.author ? request.helper : request.author
+  if (to) {
+    pushNotification({
+      to,
+      category: 'for-you',
+      kind: 'help',
+      title: `${firstName(author)} t’a écrit`,
+      body: text.length > 90 ? `${text.slice(0, 88)}…` : text,
+      href: `aide/${request.id}`,
+    })
+  }
+  helpChanged.value++
+}
+
+/**
+ * A review detected on GitHub (§7.5): the request, and the whole project
+ * with it, the PR, its Pulse, #suivi and the journal
+ */
+const reviewDetected = (request: HelpRequest, helper: Login) => {
+  const name = firstName(helper)
+  const number = request.pullRequest!
+  request.status = 'review_submitted'
+  log(request, `Review de ${name} détectée sur la PR #${number}`)
+  const pr = pullRequests.find((p) =>
+    p.project === request.project && p.number === number
+  )
+  if (pr) {
+    pr.review = 'received'
+    pr.reviewers = [...(pr.reviewers ?? []), helper]
+  }
+  if (request.project) {
+    logActivity(request.project, `Review de ${name} reçue sur la PR #${number}`)
+    postAlert(
+      request.project,
+      'review',
+      `Review de ${name} sur la PR #${number}${pr ? ` « ${pr.title} »` : ''}.`,
+    )
+    projectsChanged.value++
+  }
+}
+
 // Delays of the simulated answer, short enough to rehearse the demo
 const ACCEPT_DELAY = 4000
+const MESSAGE_DELAY = 1500
 const REVIEW_DELAY = 7000
 
 /**
@@ -249,16 +311,27 @@ const answer = (request: HelpRequest) => {
         : `« ${request.title} »`,
       href: `aide/${request.id}`,
     })
+    // The helper says hello in the thread of the request
+    setTimeout(() => {
+      if (request.helper !== helper) return
+      sendHelpMessage(
+        request,
+        helper,
+        request.pullRequest
+          ? `Je prends la PR #${request.pullRequest}. Je commence par les tests, puis ${
+            request.skills.slice(0, 2).join(' et ')
+          }. Je te laisse mes remarques sur GitHub.`
+          : 'Je regarde ça aujourd’hui. Si tu as un exemple qui reproduit le problème, mets-le ici.',
+      )
+    }, MESSAGE_DELAY)
     setTimeout(() => {
       if (request.status !== 'accepted' || request.helper !== helper) return
       const review = !!request.pullRequest
-      request.status = review ? 'review_submitted' : 'delivered'
-      log(
-        request,
-        review
-          ? `Review de ${name} détectée sur la PR #${request.pullRequest}`
-          : `${name} a marqué l’aide comme livrée`,
-      )
+      if (review) reviewDetected(request, helper)
+      else {
+        request.status = 'delivered'
+        log(request, `${name} a marqué l’aide comme livrée`)
+      }
       helpChanged.value++
       pushNotification({
         to: request.author,
