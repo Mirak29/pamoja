@@ -1,8 +1,9 @@
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
-import { Download } from '/web/assets/icons.tsx'
+import { Copy, Download } from '/web/assets/icons.tsx'
 import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
-import { badgesOf, proofsOf } from '/web/fixtures/reputation.ts'
+import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'
+import { plural } from '/web/lib/plural.ts'
 import { Avatar, initials } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
@@ -37,15 +38,23 @@ const shareLinks = (login: Login) => {
  */
 const Card = ({ login }: { login: Login }) => {
   const person = people[login]
-  const mine = proofsOf(login)
+  const figures = profileStats(login)
   const top = badgesOf(login)
     .filter((badge) => badge.level >= 0)
     .sort((a, b) => b.level - a.level)[0]
-  const stats = [
-    [mine.filter((p) => p.dimension === 'review').length, 'reviews'],
-    [mine.filter((p) => p.verified).length, 'preuves vérifiées'],
-    [new Set(mine.map((p) => p.by).filter(Boolean)).size, 'collaborations'],
-  ] as const
+  // What someone did, never a zero
+  const stats = ([
+    [figures.reviews, plural(figures.reviews, 'review', 'reviews')],
+    [
+      figures.verified,
+      plural(figures.verified, 'preuve vérifiée', 'preuves vérifiées'),
+    ],
+    [
+      figures.helped,
+      plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
+    ],
+    [figures.collaborations, plural(figures.collaborations, 'collaboration')],
+  ] as const).filter(([count]) => count > 0).slice(0, 3)
   return (
     <div class='@container grid aspect-[1200/630] w-full grid-cols-[1.5fr_1fr] overflow-hidden rounded-lg border border-figure-edge bg-surface-100 shadow-slab'>
       <div class='flex flex-col justify-center gap-[1.6cqw] px-[4cqw] py-[5cqw]'>
@@ -226,6 +235,22 @@ export const ShareDialog = ({ login }: { login: Login }) => (
             {network}
           </a>
         ))}
+        <Button
+          variant='secondary'
+          size={36}
+          onClick={() =>
+            navigator.clipboard.writeText(profileUrl(login)).then(() =>
+              notify({
+                title: 'Lien copié',
+                body: profileUrl(login),
+                icon: Copy,
+                tone: 'verified',
+              })
+            )}
+        >
+          <Copy />
+          Copier le lien
+        </Button>
         <span class='flex-1' />
         <Button
           size={36}

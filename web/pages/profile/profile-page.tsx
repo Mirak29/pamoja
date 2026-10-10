@@ -27,8 +27,19 @@ import {
   type ProfileSection,
   settingsOf,
 } from '/web/fixtures/profile-settings.ts'
-import { type ProjectSlug, projectsOf } from '/web/fixtures/projects.ts'
-import { type Dimension, proofsOf } from '/web/fixtures/reputation.ts'
+import {
+  projects,
+  type ProjectSlug,
+  projectsOf,
+} from '/web/fixtures/projects.ts'
+import {
+  type Dimension,
+  profileStats,
+  type Proof,
+  proofsOf,
+} from '/web/fixtures/reputation.ts'
+import { githubUrl } from '/web/lib/links.ts'
+import { plural } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import {
@@ -119,7 +130,9 @@ const Hero = ({ login }: { login: Login }) => {
           <span class='flex size-24 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[32px] leading-none font-bold shadow-slab'>
             {initials(person.name)}
           </span>
-          <Actions login={login} />
+          <div class='hidden sm:block'>
+            <Actions login={login} />
+          </div>
         </div>
         <div class='flex flex-col gap-1 pt-2'>
           <h1 class='font-display text-[34px] leading-10 font-bold tracking-[-.015em] text-pretty'>
@@ -131,6 +144,9 @@ const Hero = ({ login }: { login: Login }) => {
             <span>{person.city}, {person.country}</span>
             <CountryCode code={person.countryCode} />
           </span>
+        </div>
+        <div class='sm:hidden'>
+          <Actions login={login} />
         </div>
         <p class='max-w-[680px] text-[18px] leading-[27px] text-pretty'>
           {person.headline}
@@ -176,23 +192,20 @@ const Hero = ({ login }: { login: Login }) => {
 }
 
 const Stats = ({ login }: { login: Login }) => {
-  const mine = proofsOf(login)
-  const count = (dimension: Dimension) =>
-    mine.filter((p) => p.dimension === dimension).length
+  const figures = profileStats(login)
+  // What was done for others first, then one's own projects
   const stats = [
-    [projectsOf(login).length, 'projets'],
-    [count('review'), 'reviews confirmées'],
-    [count('oss') + count('build'), 'contributions'],
     [
-      new Set(
-        mine.filter((p) => p.by && p.dimension !== 'build').map((p) => p.by),
-      ).size,
-      'développeurs aidés',
+      figures.reviews,
+      plural(figures.reviews, 'review confirmée', 'reviews confirmées'),
     ],
+    [figures.contributions, plural(figures.contributions, 'contribution')],
     [
-      new Set(mine.map((p) => p.project).filter(Boolean)).size,
-      'collaborations',
+      figures.helped,
+      plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
     ],
+    [figures.collaborations, plural(figures.collaborations, 'collaboration')],
+    [figures.projects, plural(figures.projects, 'projet')],
   ] as const
   return (
     <div class='mr-2 grid grid-cols-[repeat(auto-fit,minmax(118px,1fr))] gap-5'>
@@ -262,6 +275,17 @@ const SectionHeader = (
   </div>
 )
 
+// A proof leads to what proves it: the PR on GitHub, the accepted answer,
+// the help request, or the project
+const proofHref = (proof: Proof) =>
+  proof.pullRequest && proof.project
+    ? githubUrl(projects[proof.project], 'pull', proof.pullRequest)
+    : proof.post
+    ? `post/${proof.post}`
+    : proof.help
+    ? `aide/${proof.help}`
+    : `projet/${proof.project}`
+
 const Contributions = ({ login }: { login: Login }) => {
   const mine = proofsOf(login)
   return (
@@ -276,11 +300,7 @@ const Contributions = ({ login }: { login: Login }) => {
         return (
           <A
             key={proof.id}
-            href={proof.help
-              ? `aide/${proof.help}`
-              : proof.post
-              ? `post/${proof.post}`
-              : `projet/${proof.project}`}
+            href={proofHref(proof)}
             class='flex flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-ink no-underline hover:bg-surface-000 hover:no-underline'
           >
             <span class='tile flex size-[34px] flex-none items-center justify-center text-ink-muted'>

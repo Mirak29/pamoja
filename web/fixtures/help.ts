@@ -287,7 +287,6 @@ type Feedback = {
 /** REVIEW_HELP_CONFIRMED: the helper gets a proof and a confirmed help (§8.3) */
 const confirmProof = (request: HelpRequest) => {
   const helper = request.helper!
-  people[helper].confirmedHelps++
   proofs.push({
     id: `p${proofs.length + 1}`,
     who: helper,

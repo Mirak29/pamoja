@@ -1,5 +1,7 @@
 import { communities } from '/web/fixtures/communities.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 
 // Deterministic matching of a help request (cahier des charges §7.3):
 // skills 45, help type 15, confirmed helps 15, semantic proximity 10,
@@ -48,12 +50,17 @@ export const match = (person: Person, request: Request) => {
       points: 15,
     })
   }
-  const confirmed = Math.min(15, Math.round(person.confirmedHelps / 14 * 15))
+  const review = request.type === 'Review de code'
+  const helps = confirmedHelpsOf(
+    person.login as Login,
+    review ? 'review' : undefined,
+  )
+  const confirmed = Math.min(15, Math.round(helps / 14 * 15))
   if (confirmed) {
-    const unit = request.type === 'Review de code' ? 'review' : 'aide'
-    const plural = person.confirmedHelps > 1 ? 's' : ''
     criteria.push({
-      label: `${person.confirmedHelps} ${unit}${plural} confirmée${plural}`,
+      label: review
+        ? counted(helps, 'review confirmée', 'reviews confirmées')
+        : counted(helps, 'aide confirmée', 'aides confirmées'),
       points: confirmed,
     })
   }
@@ -107,7 +114,9 @@ export const waves = (request: Request): [Matched[], Matched[]] => {
     .map((person) => ({ person, ...match(person, request) }))
     .filter((m) => m.total >= MIN_SCORE)
     .sort((a, b) => b.total - a.total)
-  const promising = ranked.find((m) => m.person.confirmedHelps < 3)
+  const promising = ranked.find((m) =>
+    confirmedHelpsOf(m.person.login as Login) < 3
+  )
   const rest = ranked.filter((m) => m !== promising)
   const size = promising ? 4 : 5
   const toMatched = (m: typeof ranked[number], isPromising = false) => ({

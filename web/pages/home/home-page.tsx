@@ -41,6 +41,7 @@ import {
   projectsChanged,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge, SkillChip, VerifiedBadge } from '/web/ui/badge.tsx'
@@ -432,7 +433,8 @@ const Rail = () => {
     .filter(({ hits }) => hits.length)
     .sort((a, b) =>
       b.hits.length - a.hits.length ||
-      b.person.confirmedHelps - a.person.confirmedHelps
+      confirmedHelpsOf(b.person.login as Login) -
+        confirmedHelpsOf(a.person.login as Login)
     )
     .slice(0, 3)
   const seeking = Object.values(projects as Record<string, Project>)

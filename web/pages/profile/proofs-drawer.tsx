@@ -2,6 +2,7 @@ import { A, url } from '@01edu/signal-router'
 import { type Login, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { dimensions, type Proof, proofsOf } from '/web/fixtures/reputation.ts'
+import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
 import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
@@ -31,10 +32,13 @@ const Row = ({ proof }: { proof: Proof }) => (
     </div>
     <span class='text-[13px] text-ink-muted'>{proofMeta(proof)}</span>
     <div class='flex flex-wrap gap-3.5 text-[13px]'>
-      {proof.pullRequest && (
-        <A href={`projet/${proof.project}/prs`} class='font-mono'>
-          PR #{proof.pullRequest}
-        </A>
+      {proof.pullRequest && proof.project && (
+        <a
+          href={githubUrl(projects[proof.project], 'pull', proof.pullRequest)}
+          class='font-mono'
+        >
+          PR #{proof.pullRequest} sur GitHub
+        </a>
       )}
       {proof.project && (
         <A href={`projet/${proof.project}`}>{projects[proof.project].name}</A>

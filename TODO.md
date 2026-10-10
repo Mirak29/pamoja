@@ -144,7 +144,7 @@ Responsable : _à répartir_
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 - [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
 - [x] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2) — @niangoos
-- [ ] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
+- [x] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
 

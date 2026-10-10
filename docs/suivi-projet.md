@@ -378,6 +378,13 @@ Chaque ligne du journal d'un projet (Aperçu, Pulse, Activité) mène à son obj
 - **Livrable** : `web/lib/links.ts`, `web/pages/project/event-list.tsx`, `web/pages/project/activity-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/explore/explore-page.tsx`, `web/fixtures/board.ts`, `web/fixtures/posts.ts`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-315 · Profil, passeport et partage
+
+Les chiffres viennent d'une seule source, les preuves : « aides confirmées » (cartes, matching, équipe) compte les reviews et l'entraide confirmées par quelqu'un d'autre, et le profil, le passeport et la carte de partage partagent `profileStats`. Le passeport et la carte n'affichent plus de chiffre à zéro, le profil met ses propres projets en dernier. Chaque preuve d'une PR ouvre la PR sur GitHub. Le partage gagne « Copier le lien », une proposition de collaboration exige un message (et la PR pour une review), et sur mobile le nom passe avant les actions.
+
+- **Livrable** : `web/fixtures/reputation.ts`, `web/fixtures/people.ts`, `web/fixtures/matching.ts`, `web/pages/profile/`, `web/ui/developer-card.tsx`, `web/pages/project/team-tab.tsx`, `web/assets/icons.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

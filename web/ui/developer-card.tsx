@@ -1,5 +1,7 @@
 import { A } from '@01edu/signal-router'
-import { isMe, me, type Person } from '/web/fixtures/people.ts'
+import { isMe, type Login, me, type Person } from '/web/fixtures/people.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { SkillChip } from '/web/ui/badge.tsx'
 
@@ -42,8 +44,11 @@ export const DeveloperCard = ({ person }: { person: Person }) => {
       <div class='mt-auto flex flex-col gap-0.5 border-t border-line pt-2.5 text-[12px] leading-[18px] text-ink-muted'>
         <span class='flex justify-between gap-2'>
           <span class='font-mono'>
-            {person.confirmedHelps}{' '}
-            {person.confirmedHelps > 1 ? 'aides confirmées' : 'aide confirmée'}
+            {counted(
+              confirmedHelpsOf(person.login as Login),
+              'aide confirmée',
+              'aides confirmées',
+            )}
           </span>
           <span class='inline-flex items-center gap-1.5 whitespace-nowrap'>
             <span

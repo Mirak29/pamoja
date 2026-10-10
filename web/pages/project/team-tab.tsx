@@ -9,6 +9,8 @@ import {
 } from '/web/fixtures/applications.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import {
   needSkills,
   type Project,
@@ -184,7 +186,8 @@ const Helpers = (
           .filter((c) => c.hits.length)
           .sort((a, b) =>
             b.hits.length - a.hits.length ||
-            b.person.confirmedHelps - a.person.confirmedHelps
+            confirmedHelpsOf(b.person.login as Login) -
+              confirmedHelpsOf(a.person.login as Login)
           )
           .slice(0, 3)
         return (
@@ -204,9 +207,13 @@ const Helpers = (
                   <PersonLink
                     login={login}
                     size={30}
-                    detail={`${
-                      hits.join(', ')
-                    } · ${person.confirmedHelps} aides confirmées · ${person.city}`}
+                    detail={`${hits.join(', ')} · ${
+                      counted(
+                        confirmedHelpsOf(person.login as Login),
+                        'aide confirmée',
+                        'aides confirmées',
+                      )
+                    } · ${person.city}`}
                   />
                   {canManage && !done && (
                     <Button
