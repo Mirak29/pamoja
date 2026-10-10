@@ -176,7 +176,7 @@ Responsable : _à répartir_
 - [x] **PAM-418** · Onglets Board et Roadmap sur données fictives (§6.7) — @niangoos
 - [x] **PAM-419** · Réglages du projet sur données fictives (§6.3) — @niangoos
 - [x] **PAM-420** · Écran Projets sur données fictives : mes projets et projets suivis, nouveau projet (import ou création), activation de la synchro live (§5.4, §6.3) — @niangoos
-- [ ] **PAM-421** · Page projet vue du propriétaire (QA du 10 oct.) : « Demander de l'aide » à la place de « Suivre » et « Proposer mon aide » ; pas de milestone inventée à l'import ; chiffres du projet créé identiques à l'aperçu d'import ; accepter un membre ne change pas les contributeurs GitHub ; « + 0 contributeurs » masqué ; métriques en grille sur mobile (§6.3, §6.6) `[démo]` — @Mirak29
+- [x] **PAM-421** · Page projet vue du propriétaire (QA du 10 oct.) : « Demander de l'aide » à la place de « Suivre » et « Proposer mon aide » ; pas de milestone inventée à l'import ; chiffres du projet créé identiques à l'aperçu d'import ; accepter un membre ne change pas les contributeurs GitHub ; « + 0 contributeurs » masqué ; métriques en grille sur mobile (§6.3, §6.6) `[démo]` — @Mirak29
 - [ ] **PAM-422** · Liens vers l'objet exact et données cohérentes (QA du 10 oct.) : issues, journal d'activité et besoins de « Sur quoi travailler » mènent à l'élément ; la colonne Review du board montre les PRs en attente ; état CI des PRs identique entre l'onglet et le fil (§6.3, §6.7) — @Mirak29
 - [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 

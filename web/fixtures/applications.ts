@@ -88,8 +88,8 @@ export const decideApplication = (
   if (notification) notification.read = true
   if (accept) {
     if (!project.members.some((m) => m.login === application.login)) {
+      // Joining on Pamoja is not a GitHub contribution: the count stays
       project.members.push({ login: application.login, role: 'Contributeur' })
-      project.contributors++
     }
     logActivity(
       application.project,

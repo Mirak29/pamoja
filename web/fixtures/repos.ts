@@ -1,6 +1,7 @@
 import { logActivity } from '/web/fixtures/activity.ts'
 import { boards } from '/web/fixtures/board.ts'
 import { postAlert } from '/web/fixtures/channels.ts'
+import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { me } from '/web/fixtures/people.ts'
@@ -35,6 +36,8 @@ export type Repo = {
   extraSkills?: string[]
   needs?: string[]
   issueList?: [string, string[]][]
+  /** Open PRs: title and branch */
+  pullList?: [string, string][]
 }
 
 export const repos: Repo[] = [
@@ -57,7 +60,7 @@ export const repos: Repo[] = [
     stars: 41,
     updated: 'il y a 3 j',
     contributors: 3,
-    issues: 4,
+    issues: 2,
     pullRequests: 1,
     release: 'v0.2.1',
     releasedAt: daysAgo(3),
@@ -66,6 +69,7 @@ export const repos: Repo[] = [
     skills: ['Go', 'Backend'],
     extraSkills: ['Security'],
     needs: ['Tests', 'Documentation'],
+    pullList: [['Remboursements partiels', 'feat/partial-refund']],
     issueList: [
       ['Paginer la liste des transactions', ['enhancement']],
       [
@@ -84,7 +88,7 @@ export const repos: Repo[] = [
     stars: 18,
     updated: 'il y a 2 sem.',
     contributors: 1,
-    issues: 2,
+    issues: 1,
     pullRequests: 0,
     release: 'v1.0.0',
     releasedAt: daysAgo(9),
@@ -113,7 +117,8 @@ export type ProjectDraft = {
 
 /**
  * POST/api/project/import or POST/api/project/create: the project starts
- * with the developer as owner, an empty board and a first milestone.
+ * with the developer as owner, the repo's issues and PRs, an empty board and
+ * no milestone until the owner plans one.
  */
 export const createProject = (draft: ProjectDraft): ProjectSlug => {
   const all = projects as Record<string, Project>
@@ -139,14 +144,7 @@ export const createProject = (draft: ProjectDraft): ProjectSlug => {
     blockers: [],
     stage: 'Idée',
     activity: 'Calme',
-    milestones: [{
-      title: 'Première version',
-      description: 'Premières tâches du board',
-      done: 0,
-      total: 5,
-      state: 'active',
-      date: 'à planifier',
-    }],
+    milestones: [],
     gallery: [],
     events: [],
     demo: false,
@@ -164,6 +162,20 @@ export const createProject = (draft: ProjectDraft): ProjectSlug => {
         author: me.login,
         comments: 0,
         state: 'open',
+        at: daysAgo(i + 1),
+        demo: false,
+      })
+    )
+    repo.pullList?.forEach(([title, branch], i) =>
+      pullRequests.push({
+        number: (repo.issueList?.length ?? 0) + i + 1,
+        project: key,
+        title,
+        author: me.login,
+        branch,
+        state: 'open',
+        review: 'waiting',
+        ci: 'ok',
         at: daysAgo(i + 1),
         demo: false,
       })

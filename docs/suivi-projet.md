@@ -364,6 +364,13 @@ Sur données fictives, la PR #79 d'OpenPay Africa a sa CI en échec : l'alerte a
 - **Livrable** : `web/fixtures/channels.ts`, `web/fixtures/pull-requests.ts`, `web/fixtures/projects.ts`, `web/pages/project/channels-tab.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-421 · Page projet vue du propriétaire
+
+Le propriétaire et les membres voient « Demander de l'aide » (pré-rempli avec le projet) au lieu de « Suivre » et « Proposer mon aide ». Un projet importé reprend exactement les issues et PRs de l'aperçu et ne reçoit plus de milestone inventée ; accepter un membre ne change plus les contributeurs GitHub, et « + 0 contributeurs » disparaît. Les chiffres de l'en-tête s'accordent au singulier et passent en grille de deux sur mobile, où ils ne restent que sur l'Aperçu. Ajout de `web/lib/plural.ts` (`plural`, `counted`).
+
+- **Livrable** : `web/pages/project/project-page.tsx`, `web/pages/project/overview-tab.tsx`, `web/fixtures/repos.ts`, `web/fixtures/applications.ts`, `web/lib/plural.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

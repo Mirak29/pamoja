@@ -4,6 +4,7 @@ import { A } from '@01edu/signal-router'
 import { Play } from '/web/assets/icons.tsx'
 import { people } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
+import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -165,9 +166,11 @@ const Team = ({ project }: { project: Project }) => {
           </span>
         </A>
       ))}
-      <span class='text-[13px] text-ink-muted'>
-        + {more} contributeurs sur GitHub
-      </span>
+      {more > 0 && (
+        <span class='text-[13px] text-ink-muted'>
+          + {counted(more, 'contributeur')} sur GitHub
+        </span>
+      )}
     </Card>
   )
 }
