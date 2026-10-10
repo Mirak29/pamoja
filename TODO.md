@@ -209,7 +209,7 @@ Responsable : _à répartir_
 - [x] **PAM-516** · Écrans Réglages et Modération sur données fictives, dialogue Signaler (§7.4, §10.5) — @niangoos
 - [x] **PAM-517** · Communautés (QA du 10 oct.) : quitter demande confirmation (le bouton « Membre » ne fait plus quitter en un clic) ; une communauté au nom déjà pris n'est pas créée et renvoie vers l'existante ; le nombre de membres affichés est expliqué (§10.2) — @Mirak29
 - [x] **PAM-518** · Accueil et posts (QA du 10 oct.) : rédaction sans communauté par défaut, focus rendu après publication ; « Commenter » pose le focus dans la réponse ; une réponse à une réponse indique à qui elle répond ; page des posts enregistrés (§6.2, §10.1) — @Mirak29
-- [ ] **PAM-519** · Palette de recherche (QA du 10 oct.) : aucune frappe perdue à l'ouverture, navigation aux flèches avec résultat actif, Entrée ouvre le résultat actif (§10.4) — @Mirak29
+- [x] **PAM-519** · Palette de recherche (QA du 10 oct.) : aucune frappe perdue à l'ouverture, navigation aux flèches avec résultat actif, Entrée ouvre le résultat actif (§10.4) — @Mirak29
 - [ ] **PAM-520** · Réglages (QA du 10 oct.) : l'export télécharge vraiment le fichier JSON, « Réinitialiser la démo » demande confirmation (§7.4) — @Mirak29
 
 **Critères d'acceptation (§4)**

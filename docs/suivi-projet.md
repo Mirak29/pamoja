@@ -413,6 +413,13 @@ La rédaction de l'Accueil ne choisit plus la communauté à ta place : par déf
 - **Livrable** : `web/pages/saved-page.tsx`, `web/app.tsx`, `web/ui/header.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/home/home-page.tsx`, `web/fixtures/posts.ts`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-519 · Palette de recherche
+
+Les lettres tapées juste après ⌘K ou Ctrl K ne se perdent plus avant l'affichage du champ. Les flèches choisissent un résultat, mis en avant, et Entrée ouvre celui-là. La palette suit le modèle combobox (`role`, `aria-activedescendant`, liste de résultats `listbox`), et un post sans communauté n'affiche plus « undefined ».
+
+- **Livrable** : `web/ui/command-palette.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

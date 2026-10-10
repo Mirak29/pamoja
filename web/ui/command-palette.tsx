@@ -22,13 +22,27 @@ import { initials } from '/web/ui/avatar.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 
 export const paletteOpen = signal(false)
+const query = signal('')
+const active = signal(0)
 
 addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) {
+  if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault()
+    paletteOpen.value = !paletteOpen.peek()
     return
   }
-  event.preventDefault()
-  paletteOpen.value = !paletteOpen.peek()
+  // Letters typed right after ⌘K, before the field is drawn, are kept
+  const field = document.getElementById('palette-input')
+  if (
+    paletteOpen.peek() && document.activeElement !== field &&
+    event.key.length === 1 && !event.metaKey && !event.ctrlKey &&
+    !event.altKey
+  ) {
+    event.preventDefault()
+    query.value += event.key
+    active.value = 0
+    field?.focus()
+  }
 })
 
 type Result = {
@@ -92,9 +106,11 @@ export const search = (query: string, limit: number) => {
         .map((p) => ({
           title: p.title ||
             (p.body.length > 80 ? `${p.body.slice(0, 78)}…` : p.body),
-          sub: `${p.type} · ${people[p.author].name} · ${
-            communities.find((c) => c.slug === p.community)?.name
-          }`,
+          sub: [
+            p.type,
+            people[p.author].name,
+            communities.find((c) => c.slug === p.community)?.name,
+          ].filter(Boolean).join(' · '),
           href: `post/${p.id}`,
           lead: <MessageSquare class='size-3.5' />,
         })),
@@ -133,8 +149,11 @@ export const search = (query: string, limit: number) => {
     )
 }
 
-const query = signal('')
-const close = () => paletteOpen.value = false
+const close = () => {
+  paletteOpen.value = false
+  query.value = ''
+  active.value = 0
+}
 
 /** Global search, ⌘K or Ctrl K from anywhere */
 export const CommandPalette = () => {
@@ -144,15 +163,26 @@ export const CommandPalette = () => {
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      query.value = ''
       element.showModal()
+      document.getElementById('palette-input')?.focus()
     }
     if (!open && element.open) element.close()
   }, [open])
 
   const q = query.value
   const results = open ? search(q, q.trim() ? 4 : 3) : []
-  const first = results[0]?.items[0]
+  // One list for the arrows: the active result is the one Enter opens
+  const flat = results.flatMap((group) => group.items)
+  const current = Math.min(active.value, Math.max(0, flat.length - 1))
+  const chosen = flat[current]
+  const optionId = (i: number) => `palette-option-${i}`
+  const move = (step: number) => {
+    if (!flat.length) return
+    active.value = (current + step + flat.length) % flat.length
+    document.getElementById(optionId(active.value))?.scrollIntoView({
+      block: 'nearest',
+    })
+  }
 
   return (
     <dialog
@@ -168,12 +198,25 @@ export const CommandPalette = () => {
             <div class='well flex h-12 items-center gap-2.5 px-3 text-ink-muted'>
               <Search />
               <input
+                id='palette-input'
                 autofocus
                 value={q}
-                onInput={(event) => query.value = event.currentTarget.value}
+                role='combobox'
+                aria-expanded={flat.length > 0}
+                aria-controls='palette-results'
+                aria-activedescendant={chosen ? optionId(current) : undefined}
+                aria-autocomplete='list'
+                onInput={(event) => {
+                  query.value = event.currentTarget.value
+                  active.value = 0
+                }}
                 onKeyDown={(event) => {
-                  if (event.key !== 'Enter' || !first) return
-                  navigate({ href: first.href })
+                  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    return move(event.key === 'ArrowDown' ? 1 : -1)
+                  }
+                  if (event.key !== 'Enter' || !chosen) return
+                  navigate({ href: chosen.href })
                   close()
                 }}
                 aria-label='Rechercher'
@@ -185,18 +228,30 @@ export const CommandPalette = () => {
               </kbd>
             </div>
           </div>
-          <div class='max-h-[56vh] overflow-auto px-2.5 pb-2.5'>
+          <div
+            id='palette-results'
+            role='listbox'
+            aria-label='Résultats'
+            class='max-h-[56vh] overflow-auto px-2.5 pb-2.5'
+          >
             {results.map((group) => (
-              <div key={group.label}>
-                <div class='px-2 pt-2.5 pb-1.5'>
+              <div key={group.label} role='group' aria-label={group.label}>
+                <div aria-hidden='true' class='px-2 pt-2.5 pb-1.5'>
                   <Eyebrow>{group.label}</Eyebrow>
                 </div>
                 {group.items.map((result) => (
                   <A
                     key={result.href}
+                    id={optionId(flat.indexOf(result))}
+                    role='option'
+                    aria-selected={result === chosen}
+                    tabIndex={-1}
                     href={result.href}
                     onClick={close}
-                    class='flex items-center gap-3 rounded-md p-2 text-ink no-underline hover:bg-surface-200 hover:no-underline'
+                    onPointerEnter={() => active.value = flat.indexOf(result)}
+                    class={`flex items-center gap-3 rounded-md p-2 text-ink no-underline hover:no-underline ${
+                      result === chosen ? 'bg-surface-200' : ''
+                    }`}
                   >
                     <span
                       class={`flex size-[30px] flex-none items-center justify-center font-display text-[11px] leading-none font-semibold text-ink ${
@@ -226,7 +281,7 @@ export const CommandPalette = () => {
             )}
           </div>
           <div class='flex flex-wrap gap-4 border-t border-line bg-surface-000 px-4 py-2.5 text-[12px] text-ink-muted'>
-            <span>Entrée : ouvrir le premier résultat</span>
+            <span>↑ ↓ : choisir · Entrée : ouvrir</span>
             <span>Tolère les fautes : essaie « postgress »</span>
             {q.trim() && (
               <A
