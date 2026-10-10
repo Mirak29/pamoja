@@ -14,6 +14,7 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { importableRepos, linkRepo } from '/web/fixtures/repos.ts'
 import { MemberRows } from '/web/pages/project/team-tab.tsx'
 
 type Draft = Pick<Project, 'name' | 'description' | 'needs'> & {
@@ -138,17 +139,61 @@ const Information = ({ project }: { project: Project }) => {
 const syncModes = [
   [
     'live',
-    'Live',
+    'Synchro live',
     'Temps réel via la GitHub App : PRs, reviews, CI et releases arrivent dans #suivi en quelques secondes.',
     Zap,
   ],
   [
     'poll',
-    'Toutes les 15 min',
+    'Synchro toutes les 15 min',
     'Lecture périodique de l’API GitHub, sans installation.',
     Clock,
   ],
 ] as const
+
+// A project created without a repo gets one here, as the creation form
+// promised: its issues, PRs and languages come with it (§5.4)
+const LinkRepo = ({ project }: { project: Project }) => {
+  const list = importableRepos()
+  return (
+    <div class='flex flex-col gap-2.5'>
+      <span class='text-[14px] text-ink-muted'>
+        Ce projet n’est pas encore lié à un repo GitHub. {list.length
+          ? 'Choisis un de tes repos publics :'
+          : 'Tous tes repos publics sont déjà sur Pamoja.'}
+      </span>
+      {list.map((repo) => (
+        <div
+          key={repo.name}
+          class='flex flex-wrap items-center gap-3 border-t border-line pt-2.5'
+        >
+          <span class='flex min-w-0 flex-1 flex-col'>
+            <span class='font-mono text-[14px] font-medium'>
+              {repo.owner}/{repo.name}
+            </span>
+            <span class='text-[12px] text-ink-muted'>{repo.description}</span>
+          </span>
+          <Button
+            size={34}
+            aria-label={`Lier ${repo.owner}/${repo.name}`}
+            onClick={() => {
+              linkRepo(project, repo)
+              notify({
+                title: 'Repo lié',
+                body:
+                  `${repo.owner}/${repo.name} : issues et PRs importées, synchro toutes les 15 min.`,
+                icon: Check,
+                tone: 'verified',
+              })
+            }}
+          >
+            Lier
+          </Button>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const SyncMode = ({ project }: { project: Project }) => {
   const pick = (mode: Project['sync']) => {
@@ -168,11 +213,7 @@ const SyncMode = ({ project }: { project: Project }) => {
   return (
     <section class='slab flex flex-col gap-3 p-[22px]'>
       <Eyebrow>Mode de synchro</Eyebrow>
-      {project.sync === 'none' && (
-        <span class='text-[14px] text-ink-muted'>
-          Ce projet n’est pas encore lié à un repo GitHub.
-        </span>
-      )}
+      {project.sync === 'none' && <LinkRepo project={project} />}
       {project.sync !== 'none' &&
         syncModes.map(([mode, label, description, Icon]) => {
           const active = project.sync === mode

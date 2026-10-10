@@ -28,12 +28,17 @@ export const ConnexionPage = () => {
     setLoading(true)
     setTimeout(() => {
       signIn()
-      if (url.relativePath === '/connexion') navigate({ href: 'onboarding' })
+      if (url.relativePath !== '/connexion') return
+      // A path of this site only, never another one (//host)
+      const back = url.params.retour ?? ''
+      const safe = back.startsWith('/') && !back.startsWith('//')
+      navigate({ href: safe ? back.slice(1) : 'onboarding' })
     }, 900)
   }
   return (
     <Page
       title='Connexion'
+      heading={false}
       class='flex min-h-screen items-center justify-center px-5 py-8'
     >
       <div class='slab mr-2 flex w-full max-w-[460px] flex-col gap-5 p-7'>

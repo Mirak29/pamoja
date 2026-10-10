@@ -105,6 +105,7 @@ const Row = ({ notification }: { notification: Notification }) => {
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'
+              aria-label={`Accepter : ${notification.title}`}
               onClick={() => decideApplication(application, true)}
               class='key key-primary h-[34px] rounded-md px-3.5 text-[13px]'
             >
@@ -112,6 +113,7 @@ const Row = ({ notification }: { notification: Notification }) => {
             </button>
             <button
               type='button'
+              aria-label={`Refuser : ${notification.title}`}
               onClick={() => decideApplication(application, false)}
               class='key key-secondary h-[34px] rounded-md px-3.5 text-[13px]'
             >
@@ -143,6 +145,7 @@ export const NotificationsPage = () => {
   notificationsChanged.value
   applicationsChanged.value
   const mine = notifications.filter((n) => n.to === me.login)
+    .sort((a, b) => b.at - a.at)
   const current = categories.find(([key]) => key === url.params.categorie) ??
     categories[0]
   const list = mine.filter((n) => !current[1] || n.category === current[1])

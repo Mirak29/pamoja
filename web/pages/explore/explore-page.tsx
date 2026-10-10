@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { A, navigate, url } from '@01edu/signal-router'
 import { CircleDot, FolderGit2, LifeBuoy } from '/web/assets/icons.tsx'
@@ -15,6 +16,7 @@ import { needSkills, type Project, projects } from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
 import { OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
+import { githubUrl } from '/web/lib/links.ts'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { beginnerIssues, ProjectCard } from '/web/ui/project-card.tsx'
@@ -41,7 +43,13 @@ const setParam = (key: string, value: string | boolean) =>
   })
 
 const FilterSelect = (
-  { name, label, options }: { name: string; label: string; options: string[] },
+  { name, label, options, feminine }: {
+    name: string
+    label: string
+    options: string[]
+    /** « toutes » instead of « tous » */
+    feminine?: boolean
+  },
 ) => (
   <select
     aria-label={label}
@@ -49,7 +57,7 @@ const FilterSelect = (
     onChange={(event) => setParam(name, event.currentTarget.value)}
     class='well h-9 max-w-full px-2.5 text-[14px] leading-none text-ink'
   >
-    <option value=''>{label} : tous</option>
+    <option value=''>{label} : {feminine ? 'toutes' : 'tous'}</option>
     {options.map((option) => (
       <option key={option} value={option}>{option}</option>
     ))}
@@ -92,9 +100,6 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
-const plural = (count: number, word: string) =>
-  `${count} ${word}${count > 1 ? 's' : ''}`
-
 const Developers = () => {
   const all = allPeople()
   const community = communities.find((c) => c.name === param('communaute'))
@@ -123,6 +128,7 @@ const Developers = () => {
             <FilterSelect
               name='communaute'
               label='Communauté'
+              feminine
               options={communities.map((c) => c.name)}
             />
           </>
@@ -150,7 +156,7 @@ const Developers = () => {
         </OptionButton>
       </Filters>
       <Count
-        label={plural(list.length, 'développeur')}
+        label={counted(list.length, 'développeur')}
         keys={['skill', 'pays', 'communaute', 'intention', 'disponible']}
       />
       <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
@@ -185,6 +191,7 @@ const Projects = () => {
             <FilterSelect
               name='techno'
               label='Techno'
+              feminine
               options={sorted(all.flatMap((p) => p.stack))}
             />
             <FilterSelect name='stade' label='Stade' options={stages} />
@@ -196,6 +203,7 @@ const Projects = () => {
             <FilterSelect
               name='activite'
               label='Activité'
+              feminine
               options={activities}
             />
           </>
@@ -215,7 +223,7 @@ const Projects = () => {
         </OptionButton>
       </Filters>
       <Count
-        label={plural(list.length, 'projet')}
+        label={counted(list.length, 'projet')}
         keys={[
           'techno',
           'stade',
@@ -251,7 +259,7 @@ type Work = {
 const workGroups = (): [string, Work[]][] => {
   const isMember = (p: Project) =>
     p.owner === me.login || p.members.some((m) => isMe(m.login))
-  const help = matchingRequests(me, 40).map(({ request, score }) => ({
+  const help = matchingRequests(me).map(({ request, score }) => ({
     key: request.id,
     icon: LifeBuoy,
     color: 'text-indigo',
@@ -264,22 +272,26 @@ const workGroups = (): [string, Work[]][] => {
     href: `aide/${request.id}`,
     cta: 'Voir la demande',
   }))
+  // good first issues have their own group below
   const needs = allProjects().filter((p) => !isMember(p)).flatMap((p) =>
-    p.needs.map((need) => ({
+    p.needs.filter((need) => need !== 'good first issue').map((need) => ({
       project: p,
       need,
+      stack: !needSkills[need],
       hits: (needSkills[need] ?? p.stack).filter((s) => me.skills.includes(s)),
     }))
-  ).filter(({ hits }) => hits.length).map(({ project, need, hits }) => ({
+  ).filter(({ hits }) => hits.length).map(({ project, need, stack, hits }) => ({
     key: `${project.slug}-${need}`,
     icon: FolderGit2,
     color: 'text-ink',
     kind: 'Besoin de projet',
     where: project.name,
     title: need,
-    reason: `Tu as ${hits.join(', ')}`,
+    reason: stack
+      ? `Le projet est en ${hits.join(', ')}, que tu connais`
+      : `Tu as ${hits.join(', ')}`,
     href: `projet/${project.slug}/equipe`,
-    cta: 'Voir le projet',
+    cta: 'Voir l’équipe',
   }))
   const shared = (p: Project) =>
     p.stack.filter((s) => me.skills.includes(s)).length
@@ -299,8 +311,8 @@ const workGroups = (): [string, Work[]][] => {
         where: project.name,
         title: `#${issue.number} ${issue.title}`,
         reason: project.stack.join(', '),
-        href: `projet/${project.slug}/issues`,
-        cta: 'Voir l’issue',
+        href: githubUrl(project, 'issues', issue.number),
+        cta: 'Voir l’issue sur GitHub',
       }
     })
   return [

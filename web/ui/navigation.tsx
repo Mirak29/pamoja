@@ -1,3 +1,4 @@
+import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { A, url } from '@01edu/signal-router'
 import {
@@ -145,7 +146,7 @@ export const CreateMenu = () => (
 
 const CountBadge = ({ count }: { count: number }) => (
   <span
-    aria-label={`${count} non lues`}
+    aria-label={counted(count, 'non lue', 'non lues')}
     class='h-5 min-w-[22px] rounded-sm bg-indigo px-1.5 text-center font-mono text-[12px] leading-5 font-medium text-on-indigo'
   >
     {count > 9 ? '9+' : count}

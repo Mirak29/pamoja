@@ -4,6 +4,7 @@ import { A } from '@01edu/signal-router'
 import { Play } from '/web/assets/icons.tsx'
 import { people } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
+import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -49,11 +50,12 @@ const Gallery = ({ project }: { project: Project }) => {
           Pas encore de captures ni de vidéo de démo.
         </span>
       )}
-      <div class='grid grid-cols-3 gap-3.5'>
+      <div class='grid grid-cols-2 gap-3.5 sm:grid-cols-3'>
         {project.gallery.map((caption) => (
           <div
             key={caption}
-            class='flex aspect-[4/3] items-end rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
+            title={caption}
+            class='flex aspect-[4/3] min-w-0 items-end overflow-hidden rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
           >
             <Label>{caption}</Label>
           </div>
@@ -165,9 +167,11 @@ const Team = ({ project }: { project: Project }) => {
           </span>
         </A>
       ))}
-      <span class='text-[13px] text-ink-muted'>
-        + {more} contributeurs sur GitHub
-      </span>
+      {more > 0 && (
+        <span class='text-[13px] text-ink-muted'>
+          + {counted(more, 'contributeur')} sur GitHub
+        </span>
+      )}
     </Card>
   )
 }

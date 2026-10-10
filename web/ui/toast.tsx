@@ -1,4 +1,5 @@
 import { signal } from '@preact/signals'
+import { useEffect, useRef } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { A } from '@01edu/signal-router'
 import { Bell, ShieldCheck, X } from '/web/assets/icons.tsx'
@@ -49,10 +50,7 @@ export const notify = (
 const ToastCard = ({ toast }: { toast: Toast }) => {
   const { icon: Icon = Bell, tone = 'indigo' } = toast
   return (
-    <div
-      role='status'
-      class='slab-pop pointer-events-auto flex animate-enter gap-2.5 py-3 pr-3 pl-3.5'
-    >
+    <div class='slab-pop pointer-events-auto flex animate-enter gap-2.5 py-3 pr-3 pl-3.5'>
       <span class={`pt-0.5 ${tones[tone]}`}>
         <Icon class='size-[18px]' />
       </span>
@@ -115,11 +113,27 @@ const ToastCard = ({ toast }: { toast: Toast }) => {
   )
 }
 
-export const Toasts = () => (
-  <div
-    aria-live='polite'
-    class='pointer-events-none fixed right-4 bottom-20 z-60 flex w-[min(360px,calc(100vw-32px))] flex-col gap-2 md:bottom-4'
-  >
-    {toasts.value.map((toast) => <ToastCard key={toast.id} toast={toast} />)}
-  </div>
-)
+/**
+ * The toasts live in the top layer, as a manual popover: an open dialog is
+ * there too, so each new toast shows the popover again to come above it.
+ */
+export const Toasts = () => {
+  const ref = useRef<HTMLDivElement>(null)
+  const list = toasts.value
+  useEffect(() => {
+    const element = ref.current
+    if (!element?.showPopover) return
+    element.matches(':popover-open') && element.hidePopover()
+    element.showPopover()
+  }, [list.length && list[list.length - 1].id])
+  return (
+    <div
+      ref={ref}
+      popover='manual'
+      aria-live='polite'
+      class='pointer-events-none fixed top-auto right-4 bottom-20 left-auto m-0 flex w-[min(360px,calc(100vw-32px))] flex-col gap-2 overflow-visible border-0 bg-transparent p-0 md:bottom-4'
+    >
+      {list.map((toast) => <ToastCard key={toast.id} toast={toast} />)}
+    </div>
+  )
+}

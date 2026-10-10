@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals'
 import type { JSX } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { A, url } from '@01edu/signal-router'
 import {
   Bell,
@@ -23,7 +23,9 @@ import {
   type AlertKind,
   type Channel,
   channels,
+  markChannelRead,
   type Message,
+  unreadIn,
 } from '/web/fixtures/channels.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
@@ -368,9 +370,10 @@ const NotifySelect = ({ tracking }: { tracking: boolean }) => {
         onChange={(event) => setValue(event.currentTarget.value)}
         class='well h-8 px-2 text-[13px] leading-none text-ink'
       >
-        {notifyOptions.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
+        {notifyOptions
+          .filter((option) => tracking || option !== 'Seulement mes PRs')
+          .map((option) => <option key={option} value={option}>{option}
+          </option>)}
       </select>
     </label>
   )
@@ -387,6 +390,12 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
     ...(sentMessages.value[`${project.slug}:${path}`] ?? []),
   ]
   const messages = messagesOf(key, path)
+  // The channel on screen is read, new messages included
+  useEffect(() => markChannelRead(project.slug as ProjectSlug, key), [
+    project.slug,
+    key,
+    messages.length,
+  ])
 
   const isOwner = project.owner === me.login
   const isMember = isOwner || project.members.some((m) => m.login === me.login)
@@ -418,8 +427,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
           </span>
           {channelList.map(([p, channel, label]) => {
             const active = p === path
-            // Every message is unread until ChannelState exists (PAM-412)
-            const unread = active ? 0 : messagesOf(channel, p).length
+            const unread = active
+              ? 0
+              : unreadIn(project.slug as ProjectSlug, channel)
             return (
               <A
                 key={p}

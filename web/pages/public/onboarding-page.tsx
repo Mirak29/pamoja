@@ -1,6 +1,6 @@
 import type { ComponentChildren, JSX } from 'preact'
 import { useState } from 'preact/hooks'
-import { navigate } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
 import {
   BellOff,
   FolderGit2,
@@ -16,7 +16,7 @@ import {
   onboardingDraft,
 } from '/web/fixtures/onboarding.ts'
 import { countries, me } from '/web/fixtures/people.ts'
-import { createProject, repos } from '/web/fixtures/repos.ts'
+import { createProject, importableRepos } from '/web/fixtures/repos.ts'
 import { domains, intents } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -147,7 +147,7 @@ const ProfileStep = (
         <span>@{me.login}</span>
       </span>
     </div>
-    <Field label='Headline'>
+    <Field label='Accroche'>
       <Input
         value={draft.headline}
         placeholder='Ce que tu construis, en une phrase'
@@ -157,14 +157,27 @@ const ProfileStep = (
     <div class='grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5'>
       <Field label='Pays'>
         <Select
-          value={draft.country}
-          onChange={(event) => update({ country: event.currentTarget.value })}
+          value={draft.country in countries ? draft.country : OTHER}
+          onChange={(event) => {
+            const value = event.currentTarget.value
+            update({ country: value === OTHER ? '' : value })
+          }}
         >
           {Object.keys(countries).map((country) => (
             <option key={country} value={country}>{country}</option>
           ))}
+          <option value={OTHER}>Autre</option>
         </Select>
       </Field>
+      {!(draft.country in countries) && (
+        <Field label='Ton pays'>
+          <Input
+            value={draft.country}
+            placeholder='Le pays où tu vis'
+            onInput={(event) => update({ country: event.currentTarget.value })}
+          />
+        </Field>
+      )}
       <Field label='Ville'>
         <Input
           value={draft.city}
@@ -260,9 +273,7 @@ const MatchingStep = (
   </>
 )
 
-// Public repos of the developer that are not on Pamoja yet (§5.4)
-const importable = () =>
-  repos.filter((repo) => repo.owner === me.login && !repo.existing)
+const importable = importableRepos
 
 const ProjectStep = (
   { repo, pick }: { repo: string | null; pick: (name: string) => void },
@@ -301,12 +312,19 @@ const ProjectStep = (
 
 const stepContents = [ProfileStep, SkillsStep, IntentsStep, MatchingStep]
 
+const OTHER = 'autre'
+
 /**
  * /onboarding, after the first GitHub login: profile, skills, intents,
  * matching and an optional first project, in less than 2 minutes (§6.1)
  */
 export const OnboardingPage = () => {
-  const [step, setStep] = useState(0)
+  const step = Math.min(
+    steps.length - 1,
+    Math.max(0, (Number(url.params.etape) || 1) - 1),
+  )
+  const setStep = (next: number) =>
+    navigate({ params: { etape: next ? next + 1 : null } })
   const [draft, setDraft] = useState(onboardingDraft)
   const [repo, setRepo] = useState<string | null>(null)
   const update: Update = (patch) => setDraft({ ...draft, ...patch })
@@ -332,7 +350,7 @@ export const OnboardingPage = () => {
   }
   const Content = stepContents[step]
   return (
-    <Page title='Bienvenue' class='flex min-h-screen flex-col'>
+    <Page title='Bienvenue' heading={false} class='flex min-h-screen flex-col'>
       <header class='flex flex-wrap items-center gap-4 px-7 py-[18px]'>
         <LogoMark size={30} />
         <span class='font-display text-[21px] leading-none font-bold'>
@@ -376,7 +394,8 @@ export const OnboardingPage = () => {
             )}
             <Button
               size={42}
-              onClick={() => last ? finish(true) : setStep(step + 1)}
+              onClick={() =>
+                last ? finish(true) : setStep(step + 1)}
             >
               {!last ? 'Continuer' : repo ? 'Importer et terminer' : 'Terminer'}
             </Button>

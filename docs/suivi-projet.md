@@ -22,42 +22,42 @@ Une tâche abandonnée ou fusionnée va dans la section « Fermé sans réalisat
 Vérification de la stack annoncée par rapport au code de Tournament et correction des écarts : build esbuild au lieu de Vite, routes de `@01edu/api` sans paramètre de chemin, réglages SQLite à appliquer soi-même, permissions GitHub.
 
 - **Livrable** : retour technique transmis à l'équipe.
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Cahier des charges de référence
 
 Rédaction du cahier des charges en 20 sections : produit, règles métier, architecture, modèle de données, routes, sécurité, démo. Les faits techniques sont vérifiés dans le code source de `@01edu`.
 
 - **Livrable** : `docs/cahier-des-charges.md`
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Conception de l'intégration GitHub
 
 GitHub App en lecture seule, repos publics uniquement, aucun token utilisateur stocké, import en deux niveaux (vitrine sans installation, synchro live avec installation), webhooks dans une file qui survit aux redémarrages.
 
 - **Livrable** : `docs/cahier-des-charges.md` §5
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Intégration d'une relecture externe
 
 Corrections issues d'une relecture : trois contrôles de droits à l'installation de l'app, cycle de vie complet d'une demande d'aide, réputation fondée sur des preuves figées et des règles anti-abus, modération, critères d'acceptation par bloc.
 
 - **Livrable** : `docs/cahier-des-charges.md` §4, §5, §7, §8, §10.5
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Choix d'infrastructure
 
 Hébergement chez Systalink (imposé), Caddy comme reverse proxy, Meilisearch pour la recherche, images uploadées et vidéos intégrées par lien.
 
 - **Livrable** : `docs/cahier-des-charges.md` §10.4, §17
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Organisation des projets en canaux
 
 Quatre canaux imposés par projet, façon Discord : `#général`, `#suivi`, `#aide`, `#annonces`. Les alertes GitHub et CI/CD de `#suivi` mènent à la boucle d'aide (« Demander de l'aide », « Demander une review »).
 
 - **Livrable** : `docs/cahier-des-charges.md` §6.8
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Nom et inscription au concours
 
@@ -71,14 +71,14 @@ Choix du nom Pamoja (« ensemble » en swahili) et rédaction des textes du form
 Création du repo, de la todo (identifiants `PAM-xxx`, planning, critères d'acceptation, règles de mise à jour, journal des décisions) et du `CLAUDE.md` partagé avec niangoos.
 
 - **Livrable** : `TODO.md`, `CLAUDE.md`
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-07 · Brief du prototype
 
 Brief autonome pour Claude Design : 47 écrans, 11 parcours jouables, données fictives cohérentes, règles métier visibles, panneau de démo.
 
 - **Livrable** : `docs/brief-prototype-claude-design.md`
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ## Réalisé
 
@@ -94,7 +94,7 @@ Projet sur 10 jours, du mercredi 7 au vendredi 16 octobre 2026, avec un planning
 Design system Pamoja (couleurs clair et sombre, typographie, logo, composants), complété par le système isométrique issu du prototype : dalles, touches, puits, formes par type d'objet.
 
 - **Livrable** : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb), `docs/identite/`
-- **Par** : Abdou, avec Claude Code
+- **Par** : Abdou
 
 ### 2026-10-08 · PAM-008 · Produire le prototype complet
 
@@ -335,6 +335,146 @@ Le sélecteur de skills et ses puces passent dans `web/ui/chips.tsx` (nouvelle d
 
 - **Livrable** : `web/pages/public/onboarding-page.tsx`, `web/fixtures/onboarding.ts`, `web/ui/chips.tsx`, vocabulaires de `web/fixtures/skills.ts`
 - **Par** : @niangoos
+
+### 2026-10-10 · PAM-218 · Boucle de démo jouable de bout en bout
+
+Sur données fictives, une demande publiée par Abdou reçoit maintenant sa réponse : le meilleur développeur notifié accepte, puis sa review est détectée sur la PR, chaque étape arrive en notification et en toast. La confirmation ajoute la preuve et l'aide confirmée au profil de l'aidant. « Pour toi » reçoit les demandes qui correspondent, les notifications sont triées par date et ouvrent l'objet exact (panneau de la PR), et le rail « PRs à relire » n'affiche plus ses propres PRs.
+
+- **Livrable** : `web/fixtures/help.ts`, `web/fixtures/notifications.ts`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-detail.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-219 · Matching fictif crédible
+
+Le score suit la formule du §7.3 : les points de skills ne comptent que les skills possédés, la proximité ne relie que des skills qui se recoupent vraiment (SQLite et PostgreSQL, Go et Backend), sans le faux « React ≈ TypeScript ». Un développeur sous le score minimum n'est plus notifié, la liste des notifiés est triée par score et seul le demandeur la voit : un développeur notifié voit seulement pourquoi la demande lui arrive. « Sur quoi travailler » applique le seuil des réglages, et ses besoins de projets ne s'appuient plus sur des skills sans rapport.
+
+- **Livrable** : `web/fixtures/matching.ts`, `web/fixtures/projects.ts`, `web/pages/help/help-detail.tsx`, `web/pages/help/new-help.tsx`, `web/pages/explore/explore-page.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-220 · Demande d'aide : formulaire et cycle de vie
+
+Le formulaire affiche toutes ses erreurs d'un coup, sous chaque champ, reliées au champ (`aria-invalid`, `aria-describedby`), et pose le focus sur le premier en erreur. Choisir une PR remplit ce qui est encore vide, comme le lien « Request Review ». « Se désister » pose la question avant d'agir, prévient le demandeur, puis n'affiche plus « Accepter ». Une demande acceptée propose d'écrire dans `#aide` du projet (ou le profil de l'autre, sans projet). `Field` et `SkillPicker` gagnent un emplacement d'erreur réutilisable (`FieldError`).
+
+- **Livrable** : `web/pages/help/new-help.tsx`, `web/pages/help/help-detail.tsx`, `web/fixtures/help.ts`, `web/ui/input.tsx`, `web/ui/chips.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-423 · Alerte « CI en échec » dans #suivi
+
+Sur données fictives, la PR #79 d'OpenPay Africa a sa CI en échec : l'alerte arrive dans `#suivi` (et dans le fil et l'activité du projet), et « Demander de l'aide » ouvre une demande Debug pré-remplie depuis l'alerte (`?ci=79`). L'option « Seulement mes PRs » n'est plus proposée que dans `#suivi`.
+
+- **Livrable** : `web/fixtures/channels.ts`, `web/fixtures/pull-requests.ts`, `web/fixtures/projects.ts`, `web/pages/project/channels-tab.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-421 · Page projet vue du propriétaire
+
+Le propriétaire et les membres voient « Demander de l'aide » (pré-rempli avec le projet) au lieu de « Suivre » et « Proposer mon aide ». Un projet importé reprend exactement les issues et PRs de l'aperçu et ne reçoit plus de milestone inventée ; accepter un membre ne change plus les contributeurs GitHub, et « + 0 contributeurs » disparaît. Les chiffres de l'en-tête s'accordent au singulier et passent en grille de deux sur mobile, où ils ne restent que sur l'Aperçu. Ajout de `web/lib/plural.ts` (`plural`, `counted`).
+
+- **Livrable** : `web/pages/project/project-page.tsx`, `web/pages/project/overview-tab.tsx`, `web/fixtures/repos.ts`, `web/fixtures/applications.ts`, `web/lib/plural.ts`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-422 · Liens vers l'objet exact et données cohérentes
+
+Chaque ligne du journal d'un projet (Aperçu, Pulse, Activité) mène à son objet : le panneau d'une PR ouverte, GitHub pour une PR mergée, une issue ou une release, `#aide` pour une demande, le board pour une carte. Les issues s'ouvrent sur GitHub, comme les good first issues de « Sur quoi travailler », dont les besoins mènent à « Voir l'équipe ». La colonne Review du board montre aussi les PRs #81 et #80 en attente, et le post de Fatou ne contredit plus la CI verte de la PR #84. Ajout de `web/lib/links.ts`.
+
+- **Livrable** : `web/lib/links.ts`, `web/pages/project/event-list.tsx`, `web/pages/project/activity-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/explore/explore-page.tsx`, `web/fixtures/board.ts`, `web/fixtures/posts.ts`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-315 · Profil, passeport et partage
+
+Les chiffres viennent d'une seule source, les preuves : « aides confirmées » (cartes, matching, équipe) compte les reviews et l'entraide confirmées par quelqu'un d'autre, et le profil, le passeport et la carte de partage partagent `profileStats`. Le passeport et la carte n'affichent plus de chiffre à zéro, le profil met ses propres projets en dernier. Chaque preuve d'une PR ouvre la PR sur GitHub. Le partage gagne « Copier le lien », une proposition de collaboration exige un message (et la PR pour une review), et sur mobile le nom passe avant les actions.
+
+- **Livrable** : `web/fixtures/reputation.ts`, `web/fixtures/people.ts`, `web/fixtures/matching.ts`, `web/pages/profile/`, `web/ui/developer-card.tsx`, `web/pages/project/team-tab.tsx`, `web/assets/icons.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-120 · Accessibilité du socle
+
+Un dialogue rend le focus à ce qui l'a ouvert. Quand une action remplace le bouton qui avait le focus (Rejoindre, Accepter), le focus va à ce qui le remplace ou au contrôle le plus proche ; une carte déplacée sur le board garde le focus et le déplacement est annoncé. Lien « Aller au contenu » sans `#` dans l'URL, un `h1` par page (masqué quand la page n'en montre pas), erreurs de formulaire reliées à leur champ avec `useFieldErrors` (nouvelle communauté, candidature, nouveau projet, nouveau post), boutons répétés nommés avec leur objet, et toasts annoncés une seule fois.
+
+- **Livrable** : `web/ui/layout.tsx`, `web/ui/dialog.tsx`, `web/ui/input.tsx`, `web/ui/toast.tsx`, `web/ui/chips.tsx`, formulaires et listes concernés
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-121 · Textes et cohérence
+
+Tous les compteurs passent par `plural` et `counted` (`web/lib/plural.ts`) ; les copies locales disparaissent et les milestones s'accordent au féminin. « Accroche » remplace « Headline », les filtres disent « toutes » pour un nom féminin, les posts ont partout les mêmes réactions (J'aime, Utile, Merci), et les modes de synchro ont un seul nom (« Synchro live », « Synchro toutes les 15 min »). Le pays est écrit en entier, sans code « CI » ou « SN » à côté, et la landing garde sa signature en anglais (« Your work is your profile. »).
+
+- **Livrable** : `web/lib/plural.ts` et ses usages, `web/pages/profile/`, `web/pages/explore/explore-page.tsx`, `web/pages/project/`, `web/ui/post.tsx`, `web/pages/public/landing-page.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-517 · Communautés
+
+Quitter une communauté demande maintenant confirmation, dans la liste comme sur la page (le bouton « Membre » ne fait plus quitter en un clic) : un seul composant `Membership`. Une communauté au nom déjà pris n'est plus créée : le formulaire le dit sous le champ et propose d'ouvrir l'existante. L'onglet Membres précise combien de membres il affiche sur le total.
+
+- **Livrable** : `web/pages/communities/membership.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/communities/new-community-dialog.tsx`, `web/fixtures/communities.ts`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-518 · Accueil et posts
+
+La rédaction de l'Accueil ne choisit plus la communauté à ta place : par défaut le post reste sur ton profil (« Sans communauté »), et le focus revient dans le champ après publication. « Commenter » et « Répondre à … » posent le focus dans le champ de réponse. « Enregistrer » confirme par un toast qui mène à la nouvelle page `/enregistres`, aussi dans le menu du compte.
+
+- **Livrable** : `web/pages/saved-page.tsx`, `web/app.tsx`, `web/ui/header.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/home/home-page.tsx`, `web/fixtures/posts.ts`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-519 · Palette de recherche
+
+Les lettres tapées juste après ⌘K ou Ctrl K ne se perdent plus avant l'affichage du champ. Les flèches choisissent un résultat, mis en avant, et Entrée ouvre celui-là. La palette suit le modèle combobox (`role`, `aria-activedescendant`, liste de résultats `listbox`), et un post sans communauté n'affiche plus « undefined ».
+
+- **Livrable** : `web/ui/command-palette.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-520 · Réglages
+
+L'export télécharge le fichier JSON de façon fiable : le lien est posé dans la page et son adresse n'est libérée qu'après le début du téléchargement. « Réinitialiser la démo » demande confirmation avant d'effacer la session.
+
+- **Livrable** : `web/pages/settings-page.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-221 · Onboarding
+
+L'onboarding propose les 54 pays d'Afrique, plus « Autre » qui ouvre un champ libre. L'étape courante est dans l'URL (`?etape=2`) : le bouton retour et le rechargement la gardent. La connexion ramène à la page d'origine passée en `?retour=` (un chemin du site uniquement) : depuis le passeport, « Collaborer avec Moussa » rouvre son profil avec le dialogue de collaboration ; sans retour, l'onboarding suit.
+
+- **Livrable** : `web/fixtures/people.ts`, `web/fixtures/onboarding.ts`, `web/pages/public/onboarding-page.tsx`, `web/pages/public/connexion-page.tsx`, `web/pages/profile/passport.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · Audit QA front — seconde passe de validation
+
+Application lancée et parcours testés dans le navigateur sur données fictives :
+onboarding, aide, import et création de projet, synchro simulée, canaux, board,
+profil, recherche, communautés, notifications, réglages et vues mobiles. Le
+[rapport QA](qa/2026-10-10/rapport-qa-front.md) documente la couverture, les limites
+et 14 défauts reproduits, dont deux prioritaires : communication inaccessible à
+l'aidant accepté et review non répercutée sur le projet. **Le front n'est pas
+encore validé pour gel avant le back.** Aucun correctif applicatif livré par cet
+audit ; les tâches de validation en production restent ouvertes.
+
+- **Livrable** : `docs/qa/2026-10-10/rapport-qa-front.md` et captures associées
+- **Par** : Codex, à la demande d'Abdou
+
+### 2026-10-10 · PAM-222 · Boucle d'aide, retours QA 2
+
+Le demandeur et l'aidant accepté échangent dans le fil de la demande, sur sa page, visible d'eux deux seulement : « Écrire à … » y mène au lieu d'un canal `#aide` fermé à l'aidant, et chaque message prévient l'autre. Dans la simulation, l'aidant y écrit après avoir accepté. Une review détectée met à jour la PR (review reçue, reviewer), le Pulse (3 → 2 PRs en attente), `#suivi` et l'activité du projet. Une demande dont on s'est désisté sort des recommandations.
+
+- **Livrable** : `web/fixtures/help.ts`, `web/pages/help/help-detail.tsx`, `docs/cahier-des-charges.md` §7.2 et §14.4
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-424 · Projet sans données et provenance, retours QA 2
+
+L'événement de synchro de l'Accueil garde son projet. Un projet créé ou importé n'a plus d'historique inventé : semaine à zéro, Health « Pas encore mesuré », good first issues comptées pour de vrai, langages lus sur le repo (plus de skills présentés comme langages), et un résumé automatique déterministe au lieu d'un chargement sans fin. Sans repo, plus de faux lien GitHub, et les réglages proposent de lier un de ses repos publics (issues, PRs et langages suivent). Les non-lus des canaux restent lus et ne comptent plus ses propres messages. Tout ce que fait la simulation est marqué Démo, jamais « Vérifié par GitHub ».
+
+- **Livrable** : `web/fixtures/pulse.ts`, `web/fixtures/channels.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/lib/links.ts`, `web/pages/project/`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/public/onboarding-page.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-521 · Nouveau post, retour QA 2
+
+Le dialogue « Nouveau post » (menu Créer) a la même audience par défaut que l'Accueil : « Sans communauté », le post reste sur le profil. La communauté n'est préremplie que si le dialogue s'ouvre depuis sa page.
+
+- **Livrable** : `web/ui/new-post-dialog.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-10 · PAM-122 · Socle, retours QA 2
+
+Les toasts passent dans la couche supérieure (popover manuel ré-affiché à chaque toast) : ils restent visibles au-dessus d'un dialogue ouvert. La recherche de l'en-tête garde 42 px et son icône à 320 px, et la page n'y déborde plus : raccourcis courts sur l'Accueil, sélecteur de communauté, adresse GitHub tronquée dans un post, galerie du projet sur deux colonnes. Connexion, onboarding et 404 n'ont plus qu'un `h1`, et la liste des PRs accorde « 1 PR ouverte ». Un `.gitattributes` impose LF, ce que `deno fmt` attend.
+
+- **Livrable** : `web/ui/toast.tsx`, `web/ui/header.tsx`, `web/pages/public/`, `web/pages/project/pull-requests-tab.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/home/home-page.tsx`, `web/ui/post.tsx`, `.gitattributes`
+- **Par** : @Mirak29
 
 ## Fermé sans réalisation
 

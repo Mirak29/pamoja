@@ -317,6 +317,7 @@ Règles des transitions :
 - **Acceptation atomique** : `UPDATE HelpRequest SET status = 'accepted', acceptedBy = ? WHERE id = ? AND status = 'open'`, puis vérification qu'une seule ligne a été modifiée. Sinon, le second aidant reçoit « Déjà prise ».
 - **Désistement et libération** : l'aidant sorti passe en `withdrawn` ou `released` dans `HelpMatch` et est exclu des vagues suivantes de cette demande. Le matching reprend à la vague suivante ; le demandeur n'a rien à recréer.
 - **Inactivité** : sans review ni message de l'aidant, relance à 24 h ; à 72 h, le bouton « Libérer la demande » apparaît pour le demandeur.
+- **Fil de la demande** : dès l'acceptation, le demandeur et l'aidant échangent dans un fil attaché à la demande, sur sa page. Lui seul leur est ouvert : l'aidant n'a pas à rejoindre le projet ni ses canaux, et le fil marche pour une demande sans projet. Chaque message prévient l'autre (notification) et compte comme activité de l'aidant pour l'inactivité. Le fil reste lisible par eux deux après la clôture, sans nouveau message.
 - **Réouverture** : remet la demande en `open` et relance le matching en excluant les aidants déjà sortis.
 - Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`.
 
@@ -738,6 +739,7 @@ Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 | --- | --- | --- |
 | `HelpRequest` | id, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, createdAt, updatedAt | Index (status), (authorId) |
 | `HelpMatch` | id, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
+| `HelpMessage` | id, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
 | `Notification` | id, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
 | `BadgeProgress` | id, userId, badge, level, count, updatedAt | UNIQUE(userId, badge) |
 | `Embedding` | id, targetType (user / help\_request), targetId, model, vector (BLOB), inputHash, createdAt | UNIQUE(targetType, targetId, model) |

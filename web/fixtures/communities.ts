@@ -108,6 +108,10 @@ const slugify = (name: string) =>
   name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'communaute'
 
+/** The community already called so, accents and case aside */
+export const communityNamed = (name: string) =>
+  communities.find((c) => slugify(c.name) === slugify(name))
+
 /** POST/api/community/create: its creator joins and moderates it */
 export const createCommunity = (
   draft: Pick<Community, 'name' | 'type' | 'description'>,

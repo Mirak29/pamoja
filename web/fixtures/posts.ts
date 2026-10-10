@@ -4,6 +4,7 @@ import { communities } from '/web/fixtures/communities.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 export type PostType =
@@ -236,7 +237,7 @@ export const posts: Post[] = [
     type: 'Discussion',
     title: '',
     body:
-      'Le job de réconciliation du ledger passe enfin en local. Prochaine étape : faire passer la CI sur la PR #84.',
+      'Le job de réconciliation du ledger passe enfin, en local comme en CI. La PR #84 est approuvée, merci pour les reviews rapides.',
     hoursAgo: 5,
     reactions: { like: ['abdou'] },
     link: 'openpay-africa',
@@ -381,7 +382,8 @@ export const publishPost = (draft: PostDraft, author: Person) => {
     demo: false,
   }
   posts.unshift(post)
-  if (!author.communities.includes(draft.community)) {
+  // Without a community, the post lives on the profile and in the feed
+  if (draft.community && !author.communities.includes(draft.community)) {
     author.communities.push(draft.community)
     const community = communities.find((c) => c.slug === draft.community)
     if (community) community.members++
@@ -416,7 +418,7 @@ export const acceptAnswer = (question: Post, answer: Post) => {
     category: 'communities',
     kind: 'reply',
     title: 'Ta réponse a été acceptée',
-    body: `« ${title} ». Entraide : ${count} preuves.`,
+    body: `« ${title} ». Entraide : ${counted(count, 'preuve')}.`,
     href: `post/${question.id}`,
   })
   changed()

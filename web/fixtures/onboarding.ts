@@ -42,7 +42,7 @@ export const completeOnboarding = (draft: OnboardingDraft) => {
   Object.assign(person, {
     headline: draft.headline.trim() || person.headline,
     country: draft.country,
-    countryCode: countries[draft.country] ?? person.countryCode,
+    countryCode: countries[draft.country] ?? '',
     city: draft.city.trim() || person.city,
     website: draft.website.trim() || undefined,
     domains: draft.domains,

@@ -4,6 +4,7 @@ import {
   CircleSlash,
   Clock,
   Github,
+  LifeBuoy,
   Plus,
   Zap,
 } from '/web/assets/icons.tsx'
@@ -11,7 +12,7 @@ import {
   applications,
   applicationsChanged,
 } from '/web/fixtures/applications.ts'
-import { channels } from '/web/fixtures/channels.ts'
+import { unreadIn } from '/web/fixtures/channels.ts'
 import { helpRequests, type HelpStatus } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { isMe, me } from '/web/fixtures/people.ts'
@@ -23,6 +24,8 @@ import {
   toggleFollow,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { repoPath } from '/web/lib/links.ts'
+import { plural } from '/web/lib/plural.ts'
 import { JoinDialog } from '/web/pages/project/join-dialog.tsx'
 import { ActivityTab } from '/web/pages/project/activity-tab.tsx'
 import { BoardTab } from '/web/pages/project/board-tab.tsx'
@@ -102,12 +105,16 @@ const SyncBadge = ({ sync }: { sync: Project['sync'] }) => {
   )
 }
 
-const Stat = ({ value, label }: { value: number; label: string }) => (
+const Stat = (
+  { value, one, many }: { value: number; one: string; many?: string },
+) => (
   <div class='tile flex flex-col gap-0.5 px-3 py-2.5'>
     <span class='font-mono text-[22px] leading-[26px] font-medium tabular-nums'>
       {value}
     </span>
-    <span class='text-[12px] leading-4 text-ink-muted'>{label}</span>
+    <span class='text-[12px] leading-4 text-ink-muted'>
+      {plural(value, one, many)}
+    </span>
   </div>
 )
 
@@ -119,6 +126,23 @@ const Actions = ({ project }: { project: Project }) => {
     a.project === project.slug && a.login === me.login &&
     a.status === 'pending'
   )
+  // The team asks for help; the others follow, offer help or join
+  if (isOwner || isMember) {
+    return (
+      <div class='flex flex-wrap gap-3 pb-1'>
+        <Button href='aide/nouvelle' params={{ project: project.slug }}>
+          <LifeBuoy />
+          Demander de l’aide
+        </Button>
+        {isOwner && project.sync === 'poll' && (
+          <Button variant='secondary' params={{ dialog: 'sync' }}>
+            <Zap />
+            Activer la synchro live
+          </Button>
+        )}
+      </div>
+    )
+  }
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
       <Button
@@ -131,16 +155,8 @@ const Actions = ({ project }: { project: Project }) => {
       <Button variant='secondary' href={`projet/${project.slug}/canaux/aide`}>
         Proposer mon aide
       </Button>
-      {isOwner && project.sync === 'poll' && (
-        <Button params={{ dialog: 'sync' }}>
-          <Zap />
-          Activer la synchro live
-        </Button>
-      )}
-      {!isMember && !applied && (
-        <Button params={{ dialog: 'join' }}>Rejoindre</Button>
-      )}
-      {!isMember && applied && (
+      {!applied && <Button params={{ dialog: 'join' }}>Rejoindre</Button>}
+      {applied && (
         <span class='inline-flex h-[38px] items-center gap-1.5 rounded-md border border-dashed border-indigo px-3.5 text-[14px] leading-none font-semibold text-indigo'>
           <Clock class='size-3.5' />
           Candidature envoyée
@@ -150,7 +166,9 @@ const Actions = ({ project }: { project: Project }) => {
   )
 }
 
-const Header = ({ project }: { project: Project }) => {
+const Header = (
+  { project, overview }: { project: Project; overview: boolean },
+) => {
   const openPullRequests = pullRequests.filter((pr) =>
     pr.project === project.slug && pr.state === 'open'
   )
@@ -185,20 +203,42 @@ const Header = ({ project }: { project: Project }) => {
             <SkillChip key={skill}>{skill}</SkillChip>
           ))}
         </div>
-        <a
-          href={`https://github.com/${project.owner}/${project.slug}`}
-          class='inline-flex items-center gap-1.5 font-mono text-[13px] leading-5 text-ink-muted'
-        >
-          <Github class='size-3.5' />
-          github.com/{project.owner}/{project.slug}
-        </a>
+        {project.sync !== 'none' && (
+          <a
+            href={`https://${repoPath(project)}`}
+            class='inline-flex items-center gap-1.5 font-mono text-[13px] leading-5 text-ink-muted'
+          >
+            <Github class='size-3.5' />
+            {repoPath(project)}
+          </a>
+        )}
       </div>
       <div class='flex flex-col gap-5 border-t border-line pt-[18px]'>
-        <div class='grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 pr-1'>
-          <Stat value={project.contributors} label='contributeurs' />
-          <Stat value={openIssues.length} label='issues ouvertes' />
-          <Stat value={openPullRequests.length} label='PRs ouvertes' />
-          <Stat value={openHelp.length} label='demandes d’aide ouvertes' />
+        {
+          /* On a phone, the figures stay on the overview, so that a tab's
+            content is within reach */
+        }
+        <div
+          class={`grid-cols-2 gap-3 pr-1 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:gap-4 ${
+            overview ? 'grid' : 'hidden'
+          }`}
+        >
+          <Stat value={project.contributors} one='contributeur' />
+          <Stat
+            value={openIssues.length}
+            one='issue ouverte'
+            many='issues ouvertes'
+          />
+          <Stat
+            value={openPullRequests.length}
+            one='PR ouverte'
+            many='PRs ouvertes'
+          />
+          <Stat
+            value={openHelp.length}
+            one='demande d’aide ouverte'
+            many='demandes d’aide ouvertes'
+          />
         </div>
         <Actions project={project} />
       </div>
@@ -206,12 +246,15 @@ const Header = ({ project }: { project: Project }) => {
   )
 }
 
-// Every message is unread until ChannelState exists (PAM-412), except in
-// the channel being read
+// Messages of others not read yet, the channel on screen aside
 const unreadMessages = (project: Project, reading?: string) =>
-  Object.entries(channels[project.slug as ProjectSlug] ?? {})
-    .filter(([channel]) => channel !== reading)
-    .reduce((total, [, messages]) => total + messages.length, 0)
+  (['general', 'tracking', 'help', 'announcements'] as const)
+    .filter((channel) => channel !== reading)
+    .reduce(
+      (total, channel) =>
+        total + unreadIn(project.slug as ProjectSlug, channel),
+      0,
+    )
 
 // Path segment of a channel to its data key
 const channelKeys: Record<string, string> = {
@@ -269,8 +312,8 @@ export const ProjectPage = () => {
   const current = (tabs.some(([key]) => key === tab) ? tab : '') as TabKey
   const Content = tabContents[current]
   return (
-    <Page title={project.name} class='flex flex-col gap-7 pt-5'>
-      <Header project={project} />
+    <Page title={project.name} heading={false} class='flex flex-col gap-7 pt-5'>
+      <Header project={project} overview={current === ''} />
       <ProjectTabs project={project} current={current} />
       <Content project={project} />
       <JoinDialog project={project} />

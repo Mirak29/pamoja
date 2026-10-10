@@ -19,6 +19,10 @@ export type Project = {
   sync: 'live' | 'poll' | 'none'
   /** The GitHub App is installed: live sync comes back without a dialog */
   appInstalled?: boolean
+  /** Name of the GitHub repo when it differs from the slug */
+  repo?: string
+  /** Languages read from GitHub, percent of the code (§6.5) */
+  languages?: [string, number][]
   description: string
   contributors: number
   openIssues: number
@@ -129,6 +133,10 @@ export const projects = {
       {
         text: 'Fatou ouvre la PR #84 sur la réconciliation du ledger',
         at: hoursAgo(6),
+      },
+      {
+        text: 'CI en échec sur la PR #79 : job test (go 1.22)',
+        at: hoursAgo(1),
       },
       {
         text: 'Issue #44 marquée blocked : verrou SQLite sous charge',
@@ -293,17 +301,15 @@ export const updateProject = (
   projectsChanged.value++
 }
 
-// Skills that answer each project need, until AI extraction (PAM-310)
+// Skills that answer each project need, until AI extraction (PAM-310).
+// A need absent from this list (tests, documentation) asks for the stack.
 export const needSkills: Record<string, string[]> = {
   'Review de code Go': ['Go', 'Code review'],
-  'Tests': ['Go', 'CI', 'TypeScript'],
-  'Frontend React': ['React', 'TypeScript', 'UI'],
-  'good first issue': ['TypeScript', 'React', 'Python'],
+  'Frontend React': ['React'],
   'Backend': ['Backend', 'Go', 'PostgreSQL', 'SQL'],
-  'Documentation': ['TypeScript', 'Go', 'Flutter'],
   'DevOps': ['Docker', 'Kubernetes', 'CI'],
-  'Review de code': ['Code review', 'Go'],
-  'Frontend': ['React', 'TypeScript', 'UI'],
+  'Review de code': ['Code review'],
+  'Frontend': ['React', 'UI'],
   'Design': ['UI'],
 }
 

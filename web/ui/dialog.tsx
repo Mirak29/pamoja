@@ -29,15 +29,28 @@ const close = (clear: string[] = []) =>
     },
   })
 
-// The URL carries the open dialog (?dialog=id), like in Tournament
+// The URL carries the open dialog (?dialog=id), like in Tournament. On
+// close, the focus goes back to what opened the dialog.
 const useModal = (id: string) => {
   const ref = useRef<HTMLDialogElement>(null)
+  const opener = useRef<HTMLElement | null>(null)
   const isOpen = url.params.dialog === id
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
-    if (isOpen && !dialog.open) dialog.showModal()
-    if (!isOpen && dialog.open) dialog.close()
+    if (isOpen && !dialog.open) {
+      const active = document.activeElement
+      opener.current = active instanceof HTMLElement && active !== document.body
+        ? active
+        : null
+      dialog.showModal()
+    }
+    if (!isOpen) {
+      dialog.open && dialog.close()
+      const previous = opener.current
+      opener.current = null
+      previous?.isConnected && previous.focus()
+    }
   }, [isOpen])
   return { ref, isOpen }
 }

@@ -73,13 +73,16 @@ Responsable : _à répartir_
 - [ ] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
 - [x] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
 - [ ] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
-- [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` (§17.4)
+- [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4)
 - [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
 - [ ] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [ ] **PAM-117** · CI : fmt, lint, tests sur chaque PR
 - [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
 - [x] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7) — @niangoos
+- [x] **PAM-120** · Accessibilité du socle (QA du 10 oct.) : un dialogue garde le focus et le rend à son déclencheur à la fermeture ; une action en ligne qui remplace son bouton (accepter, rejoindre, publier, déplacer une carte) pose le focus sur ce qui le remplace et l'annonce ; lien « Aller au contenu » ; un `h1` par page ; erreurs de formulaire reliées au champ (`aria-invalid`, `aria-describedby`) et focus sur le premier champ en erreur ; boutons répétés nommés avec leur objet (« Rejoindre React », « Inviter Moussa », « Monter la section Badges ») (§12.7) — @Mirak29
+- [x] **PAM-122** · Socle, retours QA 2 : toasts visibles au-dessus d'un dialogue ouvert (QA-09), recherche identifiable à 320 px (QA-12), un seul `h1` sur connexion, onboarding et 404 (QA-13), pluriel de la liste des PRs (QA-14), fins de ligne LF imposées par `.gitattributes` (§12.7) — @Mirak29
+- [x] **PAM-121** · Textes et cohérence (QA du 10 oct.) : fonction `plural()` partagée pour tous les compteurs ; libellés en français (« Accroche » au lieu de « Headline », « toutes » pour les filtres féminins) ; mêmes réactions partout ; un seul nom pour les modes de synchro (« Synchro live », « Synchro toutes les 15 min ») ; pays écrit en entier, sans code « CI » ou « SN » ; slogans de marque en anglais sur la landing (§2, §12.7) — @Mirak29
 
 **Critères d'acceptation (§4)**
 
@@ -111,6 +114,11 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
 - [x] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]` — @niangoos
 - [x] **PAM-217** · Écran Notifications sur données fictives : centre par catégories, actions directes, toast « Ce projet a besoin de toi » (§7.4) `[démo]` — @niangoos
+- [x] **PAM-218** · Boucle de démo jouable de bout en bout (QA du 10 oct.) : la demande d'Abdou passe en « Review soumise » et le demandeur peut confirmer l'aide depuis la page ; « Pour toi » reçoit les demandes qui correspondent ; notifications triées par date et menant à l'objet exact (PR, demande) ; le rail « PRs à relire » exclut ses propres PRs et ouvre la PR (§7.2, §7.4, §8.3, §18) `[démo]` — @Mirak29
+- [x] **PAM-219** · Matching fictif crédible (QA du 10 oct.) : scores calculés avec la formule du §7.3 et des raisons qui l'expliquent, sans proximité inventée entre skills ; liste des notifiés triée par score ; un développeur notifié ne voit pas les scores des autres ; « Sur quoi travailler » applique le seuil des réglages (§7.3, §10.3) `[démo]` — @Mirak29
+- [x] **PAM-220** · Demande d'aide : formulaire et cycle de vie (QA du 10 oct.) : toutes les erreurs affichées en une fois ; choisir une PR pré-remplit la demande comme `?pr=81` ; « Se désister » demande confirmation et retire « Accepter » ; après acceptation, un lien mène vers le demandeur et le canal `#aide` du projet (§7.1, §7.2) — @Mirak29
+- [x] **PAM-222** · Boucle d'aide, retours QA 2 (`docs/qa/2026-10-10`) : fil de la demande entre demandeur et aidant à la place du lien vers `#aide` (QA-01) ; une review détectée met aussi à jour la PR, le Pulse, `#suivi` et l'activité (QA-02) ; une demande dont on s'est désisté sort des recommandations (QA-08) (§7.2, §18) `[démo]` — @Mirak29
+- [x] **PAM-221** · Onboarding (QA du 10 oct.) : liste complète des pays africains avec « Autre », étape courante dans l'URL, après connexion retour à la page d'origine si l'utilisateur n'est pas nouveau (§6.1) — @Mirak29
 
 **Critères d'acceptation (§4)**
 
@@ -138,6 +146,7 @@ Responsable : _à répartir_
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 - [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
 - [x] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2) — @niangoos
+- [x] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
 
@@ -169,6 +178,10 @@ Responsable : _à répartir_
 - [x] **PAM-418** · Onglets Board et Roadmap sur données fictives (§6.7) — @niangoos
 - [x] **PAM-419** · Réglages du projet sur données fictives (§6.3) — @niangoos
 - [x] **PAM-420** · Écran Projets sur données fictives : mes projets et projets suivis, nouveau projet (import ou création), activation de la synchro live (§5.4, §6.3) — @niangoos
+- [x] **PAM-421** · Page projet vue du propriétaire (QA du 10 oct.) : « Demander de l'aide » à la place de « Suivre » et « Proposer mon aide » ; pas de milestone inventée à l'import ; chiffres du projet créé identiques à l'aperçu d'import ; accepter un membre ne change pas les contributeurs GitHub ; « + 0 contributeurs » masqué ; métriques en grille sur mobile (§6.3, §6.6) `[démo]` — @Mirak29
+- [x] **PAM-422** · Liens vers l'objet exact et données cohérentes (QA du 10 oct.) : issues, journal d'activité et besoins de « Sur quoi travailler » mènent à l'élément ; la colonne Review du board montre les PRs en attente ; état CI des PRs identique entre l'onglet et le fil (§6.3, §6.7) — @Mirak29
+- [x] **PAM-424** · Projet sans données et provenance, retours QA 2 : l'événement de synchro de l'Accueil garde son projet (QA-03) ; Pulse sans historique inventé, langages réels du repo, résumé indisponible au lieu d'un chargement sans fin (QA-04, QA-05) ; pas de faux lien GitHub sans repo et une action pour le lier (QA-06) ; non-lus des canaux mémorisés et sans ses propres messages (QA-07) ; les actions simulées sont marquées Démo, jamais « Vérifié par GitHub » (QA-10) (§6.3, §6.4, §6.8, §12.7) — @Mirak29
+- [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
 
@@ -197,6 +210,11 @@ Responsable : _à répartir_
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos
 - [x] **PAM-516** · Écrans Réglages et Modération sur données fictives, dialogue Signaler (§7.4, §10.5) — @niangoos
+- [x] **PAM-521** · Nouveau post, retour QA 2 : même audience par défaut que l'Accueil (« Sans communauté »), communauté préremplie seulement depuis sa page (QA-11) (§10.1) — @Mirak29
+- [x] **PAM-517** · Communautés (QA du 10 oct.) : quitter demande confirmation (le bouton « Membre » ne fait plus quitter en un clic) ; une communauté au nom déjà pris n'est pas créée et renvoie vers l'existante ; le nombre de membres affichés est expliqué (§10.2) — @Mirak29
+- [x] **PAM-518** · Accueil et posts (QA du 10 oct.) : rédaction sans communauté par défaut, focus rendu après publication ; « Commenter » pose le focus dans la réponse ; une réponse à une réponse indique à qui elle répond ; page des posts enregistrés (§6.2, §10.1) — @Mirak29
+- [x] **PAM-519** · Palette de recherche (QA du 10 oct.) : aucune frappe perdue à l'ouverture, navigation aux flèches avec résultat actif, Entrée ouvre le résultat actif (§10.4) — @Mirak29
+- [x] **PAM-520** · Réglages (QA du 10 oct.) : l'export télécharge vraiment le fichier JSON, « Réinitialiser la démo » demande confirmation (§7.4) — @Mirak29
 
 **Critères d'acceptation (§4)**
 
@@ -246,3 +264,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-08 · Thèmes et accents de profil définis dans `docs/identite/tokens.json` ; la couverture « Plaques » reste, seule illustration, parce que le développeur la choisit · §9.2, §12.3, §12.7
 - 2026-10-09 · Plaques et figures de la boucle gardées sur les pages publiques (landing, 404), qui présentent le produit ; sans session, `/` est la landing · §6.2, §12.7
 - 2026-10-09 · Onboarding : les 11 domaines du §6.1, pas les 7 du prototype ; une seule liste d'intentions, celle du §6.1, affichée sur les cartes et filtrée dans Explore · §6.1
+- 2026-10-10 · QA complète du frontend sur données fictives : corrections découpées en PAM-120, PAM-121, PAM-218 à PAM-221, PAM-315, PAM-421 à PAM-423, PAM-517 à PAM-520 ; la boucle de démo passe en premier · §4, §18
+- 2026-10-10 · Fil de la demande d'aide entre demandeur et aidant accepté, à la place de `#aide` : l'aidant n'entre pas dans le projet (`HelpMessage`) ; retours de la QA 2 découpés en PAM-122, PAM-222, PAM-424, PAM-521 · §7.2, §14.4

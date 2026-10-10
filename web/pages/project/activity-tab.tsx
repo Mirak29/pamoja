@@ -20,7 +20,8 @@ import {
 } from '/web/fixtures/activity.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
-import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
+import { EventText } from '/web/pages/project/event-list.tsx'
+import { DemoBadge } from '/web/ui/badge.tsx'
 import { OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { EmptyState } from '/web/ui/states.tsx'
@@ -114,14 +115,9 @@ export const ActivityTab = ({ project }: { project: Project }) => {
                 >
                   <Icon />
                 </span>
-                <span class='min-w-[200px] flex-1 text-[14px] leading-[22px] text-pretty'>
-                  {entry.text}
-                </span>
+                <EventText project={project} text={entry.text} />
                 <span class='text-[12px] text-ink-muted'>{ago(entry.at)}</span>
-                {entry.session && activityKind(entry.text) === 'github' && (
-                  <VerifiedBadge />
-                )}
-                {!entry.session && project.demo && <DemoBadge />}
+                {(entry.session || project.demo) && <DemoBadge />}
               </div>
             )
           })}

@@ -1,12 +1,18 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
-import { CircleAlert, Send, X } from '/web/assets/icons.tsx'
+import { Send, X } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import { me } from '/web/fixtures/people.ts'
 import { type PostType, publishPost } from '/web/fixtures/posts.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
-import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
+import {
+  Field,
+  Input,
+  Select,
+  Textarea,
+  useFieldErrors,
+} from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
 const HELP = 'Demande d’aide'
@@ -31,20 +37,25 @@ const NewPost = (
   const [type, setType] = useState<PostType | typeof HELP>(
     initialType ?? 'Discussion',
   )
-  const [community, setCommunity] = useState(
-    initial ?? me.communities[0] ?? communities[0].slug,
-  )
+  // Same audience as the Accueil composer: the profile, unless the dialog
+  // opens from a community page
+  const [community, setCommunity] = useState(initial ?? '')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [images, setImages] = useState(0)
   const [video, setVideo] = useState('')
-  const [error, setError] = useState('')
+  const { check, clear, control, field } = useFieldErrors<'title' | 'body'>(
+    'post',
+  )
 
   const publish = () => {
     if (type === HELP) return
-    if (!title.trim()) return setError('Donne un titre à ton post.')
-    if (!body.trim()) return setError('Écris le contenu du post.')
-    const joined = me.communities.includes(community)
+    const valid = check({
+      title: !title.trim() && 'Donne un titre à ton post.',
+      body: !body.trim() && 'Écris le contenu du post.',
+    })
+    if (!valid) return
+    const joined = !community || me.communities.includes(community)
     const post = publishPost({
       community,
       type,
@@ -57,7 +68,9 @@ const NewPost = (
     navigate({ href: `post/${post.id}` })
     notify({
       title: 'Post publié',
-      body: `Dans ${name}${joined ? '.' : ', que tu rejoins au passage.'}`,
+      body: name
+        ? `Dans ${name}${joined ? '.' : ', que tu rejoins au passage.'}`
+        : 'Sur ton profil. Tes abonnés le voient dans leur fil.',
       icon: Send,
       tone: 'verified',
     })
@@ -72,10 +85,7 @@ const NewPost = (
             <OptionButton
               key={value}
               pressed={type === value}
-              onClick={() => {
-                setType(value)
-                setError('')
-              }}
+              onClick={() => setType(value)}
             >
               {value}
             </OptionButton>
@@ -101,6 +111,7 @@ const NewPost = (
                 value={community}
                 onChange={(event) => setCommunity(event.currentTarget.value)}
               >
+                <option value=''>Sans communauté</option>
                 {communities.map((c) => (
                   <option key={c.slug} value={c.slug}>
                     {c.name}
@@ -111,19 +122,27 @@ const NewPost = (
                 ))}
               </Select>
             </Field>
-            <Field label='Titre'>
+            <Field label='Titre' {...field('title')}>
               <Input
+                {...control('title')}
                 value={title}
                 placeholder='Une phrase claire'
-                onInput={(event) => setTitle(event.currentTarget.value)}
+                onInput={(event) => {
+                  setTitle(event.currentTarget.value)
+                  clear('title')
+                }}
               />
             </Field>
-            <Field label='Contenu'>
+            <Field label='Contenu' {...field('body')}>
               <Textarea
+                {...control('body')}
                 rows={6}
                 value={body}
                 placeholder='Markdown accepté. Code entre accents graves, blocs entre trois accents graves.'
-                onInput={(event) => setBody(event.currentTarget.value)}
+                onInput={(event) => {
+                  setBody(event.currentTarget.value)
+                  clear('body')
+                }}
                 compact
               />
             </Field>
@@ -170,15 +189,6 @@ const NewPost = (
                 onInput={(event) => setVideo(event.currentTarget.value)}
               />
             </Field>
-            {error && (
-              <div
-                role='alert'
-                class='flex items-center gap-2 text-[14px] text-danger'
-              >
-                <CircleAlert />
-                {error}
-              </div>
-            )}
             <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
               <Button size={40} onClick={publish}>Publier</Button>
               <Button variant='secondary' size={40} params={{ dialog: null }}>

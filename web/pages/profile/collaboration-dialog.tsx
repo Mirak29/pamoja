@@ -38,11 +38,33 @@ const CollaborationForm = ({ login }: { login: Login }) => {
   const [project, setProject] = useState('')
   const [pullRequest, setPullRequest] = useState('')
   const [message, setMessage] = useState('')
+  const [errors, setErrors] = useState<
+    { pullRequest?: string; message?: string }
+  >({})
   const openPullRequests = pullRequests.filter((pr) =>
     pr.project === project && pr.state === 'open'
   )
+  const review = kind === kinds[0]
 
   const send = () => {
+    // A proposal says what it is about: the PR to review, and a few words
+    const found = {
+      pullRequest: review && !pullRequest
+        ? 'Choisis la PR à relire.'
+        : undefined,
+      message: message.trim()
+        ? undefined
+        : `Écris quelques mots à ${first} : le contexte et ce que tu attends.`,
+    }
+    if (found.pullRequest || found.message) {
+      setErrors(found)
+      document.getElementById(
+        found.pullRequest
+          ? (project ? 'collab-pr' : 'collab-project')
+          : 'collab-message',
+      )?.focus()
+      return
+    }
     const name = project && projects[project as ProjectSlug].name
     pushNotification({
       to: login,
@@ -80,9 +102,18 @@ const CollaborationForm = ({ login }: { login: Login }) => {
         </div>
       </div>
       {withProject.includes(kind) && (
-        <Field label='Projet'>
+        <Field
+          label='Projet'
+          error={!project ? errors.pullRequest : undefined}
+          errorId='collab-project-error'
+        >
           <Select
+            id='collab-project'
             value={project}
+            aria-invalid={!project && errors.pullRequest ? true : undefined}
+            aria-describedby={!project && errors.pullRequest
+              ? 'collab-project-error'
+              : undefined}
             onChange={(event) => {
               setProject(event.currentTarget.value)
               setPullRequest('')
@@ -95,11 +126,23 @@ const CollaborationForm = ({ login }: { login: Login }) => {
           </Select>
         </Field>
       )}
-      {kind === kinds[0] && openPullRequests.length > 0 && (
-        <Field label='PR'>
+      {review && project && (
+        <Field
+          label='PR'
+          error={errors.pullRequest}
+          errorId='collab-pr-error'
+        >
           <Select
+            id='collab-pr'
             value={pullRequest}
-            onChange={(event) => setPullRequest(event.currentTarget.value)}
+            aria-invalid={errors.pullRequest ? true : undefined}
+            aria-describedby={errors.pullRequest
+              ? 'collab-pr-error'
+              : undefined}
+            onChange={(event) => {
+              setPullRequest(event.currentTarget.value)
+              setErrors({ ...errors, pullRequest: undefined })
+            }}
           >
             <option value=''>Choisir une PR</option>
             {openPullRequests.map((pr) => (
@@ -110,11 +153,21 @@ const CollaborationForm = ({ login }: { login: Login }) => {
           </Select>
         </Field>
       )}
-      <Field label={<span>Message pour {first}</span>}>
+      <Field
+        label={<span>Message pour {first}</span>}
+        error={errors.message}
+        errorId='collab-message-error'
+      >
         <Textarea
+          id='collab-message'
           rows={3}
           value={message}
-          onInput={(event) => setMessage(event.currentTarget.value)}
+          aria-invalid={errors.message ? true : undefined}
+          aria-describedby={errors.message ? 'collab-message-error' : undefined}
+          onInput={(event) => {
+            setMessage(event.currentTarget.value)
+            setErrors({ ...errors, message: undefined })
+          }}
           placeholder='Le contexte, ce que tu attends, le temps que ça prendrait'
         />
       </Field>

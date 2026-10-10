@@ -190,7 +190,9 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </span>
             <button
               type='button'
-              aria-label='Monter'
+              aria-label={`Monter la section ${
+                profileSections.find(([k]) => k === key)?.[1]
+              }`}
               disabled={i === 0}
               onClick={() => move(i, i - 1)}
               class={orderKey}
@@ -199,7 +201,9 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </button>
             <button
               type='button'
-              aria-label='Descendre'
+              aria-label={`Descendre la section ${
+                profileSections.find(([k]) => k === key)?.[1]
+              }`}
               disabled={i === last}
               onClick={() => move(i, i + 1)}
               class={orderKey}
@@ -295,7 +299,7 @@ export const ProfileEditPage = () => {
     >
       <div class='flex min-w-0 flex-col gap-7'>
         <Section title='Identité'>
-          <Field label='Headline'>
+          <Field label='Accroche'>
             <Input
               value={draft.headline}
               onInput={(event) =>
@@ -309,7 +313,7 @@ export const ProfileEditPage = () => {
               onInput={(event) => update({ bio: event.currentTarget.value })}
             />
           </Field>
-          <Field label='Site'>
+          <Field label='Site web'>
             <Input
               value={draft.website}
               placeholder='ton-site.dev'

@@ -75,6 +75,7 @@ const BoardCard = (
         setTimeout(() => onDrag(card.id))
       }}
       onDragEnd={() => onDrag(null)}
+      data-card={card.id}
       class={`mr-1 flex flex-col gap-2.5 rounded-[8px] border border-figure-edge bg-surface-100 p-3 shadow-tile transition-[translate,box-shadow,opacity] duration-150 ease-out hover:-translate-x-[.87px] hover:-translate-y-[.5px] hover:shadow-key-hi ${
         canMove ? 'cursor-grab' : ''
       } ${dragged ? 'opacity-40' : ''} ${moved ? 'animate-enter' : ''}`}
@@ -112,9 +113,10 @@ const BoardCard = (
           <button
             type='button'
             disabled={!previous}
+            data-move='previous'
             onClick={() => previous && onMove(card, previous[0])}
             aria-label={previous
-              ? `Déplacer vers ${previous[1]}`
+              ? `Déplacer « ${card.title} » vers ${previous[1]}`
               : 'Première colonne'}
             title={previous
               ? `Déplacer vers ${previous[1]}`
@@ -126,8 +128,11 @@ const BoardCard = (
           <button
             type='button'
             disabled={!next}
+            data-move='next'
             onClick={() => next && onMove(card, next[0])}
-            aria-label={next ? `Déplacer vers ${next[1]}` : 'Dernière colonne'}
+            aria-label={next
+              ? `Déplacer « ${card.title} » vers ${next[1]}`
+              : 'Dernière colonne'}
             title={next ? `Déplacer vers ${next[1]}` : 'Dernière colonne'}
             class={moveKey}
           >
@@ -169,15 +174,30 @@ export const BoardTab = ({ project }: { project: Project }) => {
   const [dragged, setDragged] = useState<string | null>(null)
   const [over, setOver] = useState<BoardColumn | null>(null)
   const [moved, setMoved] = useState<string | null>(null)
+  const [announce, setAnnounce] = useState('')
   const cards = boards[project.slug as ProjectSlug] ?? []
   const move = (card: Card, column: BoardColumn) => {
+    const from = boardColumns.findIndex(([key]) => key === card.column)
+    const to = boardColumns.findIndex(([key]) => key === column)
     moveCard(project.slug as ProjectSlug, card, column)
     setMoved(card.id)
+    setAnnounce(`« ${card.title} » est dans ${boardColumns[to][1]}`)
+    // The card is drawn again in its new column: keep the focus on its key
+    setTimeout(() => {
+      const keys = document.querySelector(`[data-card='${card.id}']`)
+      const same = keys?.querySelector<HTMLButtonElement>(
+        `[data-move='${to > from ? 'next' : 'previous'}']:not(:disabled)`,
+      )
+      ;(same ?? keys?.querySelector<HTMLButtonElement>(
+        '[data-move]:not(:disabled)',
+      ))?.focus()
+    })
   }
   const canMove = project.owner === me.login ||
     project.members.some((m) => m.login === me.login)
   return (
     <div class='mr-2 flex flex-col gap-4'>
+      <span aria-live='polite' class='sr-only'>{announce}</span>
       <span class='text-[13px] text-ink-muted'>
         {canMove
           ? 'Glisse une carte d’une colonne à l’autre, ou utilise les flèches. Une PR mergée passe sa carte en Terminé.'

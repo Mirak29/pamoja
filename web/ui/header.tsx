@@ -1,6 +1,8 @@
+import { counted } from '/web/lib/plural.ts'
 import { A } from '@01edu/signal-router'
 import {
   Bell,
+  Bookmark,
   CircleUser,
   LogOut,
   Plus,
@@ -22,6 +24,7 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
 const accountItems = [
   { label: 'Mon profil', icon: CircleUser, href: `@${me.login}` },
+  { label: 'Enregistrés', icon: Bookmark, href: 'enregistres' },
   { label: 'Réglages', icon: Settings, href: 'reglages' },
   ...(me.moderator
     ? [{ label: 'Modération', icon: ShieldCheck, href: 'moderation' }]
@@ -75,9 +78,9 @@ export const Header = () => {
         type='button'
         onClick={() => paletteOpen.value = true}
         aria-label='Rechercher'
-        class='well flex h-[42px] w-full min-w-0 cursor-text items-center gap-2.5 px-3 text-[14px] leading-none text-ink-muted'
+        class='well flex h-[42px] w-full min-w-[42px] cursor-text items-center gap-2.5 px-3 text-[14px] leading-none text-ink-muted'
       >
-        <Search />
+        <Search class='flex-none' />
         <span class='flex-1 truncate text-left'>
           Rechercher un dev, un projet, un skill
         </span>
@@ -101,7 +104,7 @@ export const Header = () => {
           square
           href='notifications'
           aria-label={count
-            ? `Notifications, ${count} non lues`
+            ? `Notifications, ${counted(count, 'non lue', 'non lues')}`
             : 'Notifications'}
           class='relative'
         >

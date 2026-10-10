@@ -1,7 +1,11 @@
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
 import { type Login, people } from '/web/fixtures/people.ts'
-import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
+import {
+  projects,
+  type ProjectSlug,
+  projectsOf,
+} from '/web/fixtures/projects.ts'
 
 // Reputation is computed from frozen proofs only (cahier des charges §8):
 // what GET/api/user, GET/api/user/badges and the badge evaluator
@@ -170,6 +174,21 @@ export const proofs: Proof[] = [
 export const proofsOf = (login: Login) =>
   proofs.filter((p) => p.who === login).sort((a, b) => b.at - a.at)
 
+/**
+ * Reviews and help confirmed by someone else: the « aides confirmées » of
+ * the cards and of the matching, one dimension or both.
+ */
+export const confirmedHelpsOf = (
+  login: Login,
+  dimension?: 'review' | 'help',
+) =>
+  proofs.filter((p) =>
+    p.who === login && p.by &&
+    (dimension
+      ? p.dimension === dimension
+      : p.dimension === 'review' || p.dimension === 'help')
+  ).length
+
 export const levelNames = ['Bronze', 'Argent', 'Or', 'Platine']
 
 type BadgeDefinition = {
@@ -273,6 +292,23 @@ export const nextThreshold = (dimension: Dimension, count: number) => {
 }
 
 export type Link = { login: Login; count: number; verified: boolean }
+
+/** Figures of a profile, the same on the profile, passport and card */
+export const profileStats = (login: Login) => {
+  const mine = proofsOf(login)
+  const count = (dimension: Dimension) =>
+    mine.filter((p) => p.dimension === dimension).length
+  return {
+    projects: projectsOf(login).length,
+    reviews: count('review'),
+    contributions: count('oss') + count('build'),
+    helped: new Set(
+      mine.filter((p) => p.by && p.dimension !== 'build').map((p) => p.by),
+    ).size,
+    collaborations: linksOf(login).length,
+    verified: mine.filter((p) => p.verified).length,
+  }
+}
 
 /** Working links only: proofs and help, never follows (§9.3) */
 export const linksOf = (login: Login): Link[] => {

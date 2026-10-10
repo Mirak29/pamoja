@@ -1,8 +1,29 @@
-import { activityKind, recentActivityOf } from '/web/fixtures/activity.ts'
+import { recentActivityOf } from '/web/fixtures/activity.ts'
 import type { Project } from '/web/fixtures/projects.ts'
+import { A } from '@01edu/signal-router'
+import { eventLink } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
-import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
+import { DemoBadge } from '/web/ui/badge.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+
+/** A journal line, linked to its PR, issue, release or channel */
+export const EventText = (
+  { project, text }: { project: Project; text: string },
+) => {
+  const link = eventLink(project, text)
+  const style = 'min-w-[200px] flex-1 text-[14px] leading-[22px] text-pretty'
+  return link
+    ? (
+      <A
+        href={link.href}
+        params={link.params}
+        class={`${style} text-ink hover:text-indigo`}
+      >
+        {text}
+      </A>
+    )
+    : <span class={style}>{text}</span>
+}
 
 /** Latest events of a project, in Aperçu and Pulse */
 export const EventList = (
@@ -23,12 +44,9 @@ export const EventList = (
             aria-hidden='true'
             class='diamond size-[7px] border border-figure-edge'
           />
-          <span class='min-w-[200px] flex-1 text-[14px]'>{event.text}</span>
+          <EventText project={project} text={event.text} />
           <span class='text-[12px] text-ink-muted'>{ago(event.at)}</span>
-          {event.session && activityKind(event.text) === 'github' && (
-            <VerifiedBadge />
-          )}
-          {!event.session && project.demo && <DemoBadge />}
+          {(event.session || project.demo) && <DemoBadge />}
         </div>
       ))}
       {!entries.length && (

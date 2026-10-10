@@ -3,7 +3,7 @@ import { useState } from 'preact/hooks'
 import { X } from '/web/assets/icons.tsx'
 import { skills as vocabulary } from '/web/fixtures/skills.ts'
 import { fuzzyMatch } from '/web/lib/fuzzy.ts'
-import { Input } from '/web/ui/input.tsx'
+import { FieldError, Input } from '/web/ui/input.tsx'
 
 /**
  * A value already chosen, pressed down, with its remove button.
@@ -19,7 +19,9 @@ export const RemovableChip = (
     <button
       type='button'
       onClick={onRemove}
-      aria-label='Retirer'
+      aria-label={typeof children === 'string'
+        ? `Retirer ${children}`
+        : 'Retirer'}
       class='flex size-[22px] cursor-pointer items-center justify-center rounded-sm text-indigo'
     >
       <X class='size-3' />
@@ -60,18 +62,31 @@ export const SuggestionChip = (
  * />
  */
 export const SkillPicker = (
-  { label, inputLabel, placeholder, note, empty, limit = 5, skills, onChange }:
-    {
-      label: string
-      inputLabel: string
-      placeholder: string
-      note: string
-      /** Shown when nothing in the vocabulary looks like the query */
-      empty?: string
-      limit?: number
-      skills: string[]
-      onChange: (skills: string[]) => void
-    },
+  {
+    label,
+    inputLabel,
+    placeholder,
+    note,
+    empty,
+    limit = 5,
+    skills,
+    onChange,
+    id,
+    error,
+  }: {
+    label: string
+    inputLabel: string
+    placeholder: string
+    note: string
+    /** Shown when nothing in the vocabulary looks like the query */
+    empty?: string
+    limit?: number
+    skills: string[]
+    onChange: (skills: string[]) => void
+    /** Id of the input, to focus it from a form error */
+    id?: string
+    error?: string
+  },
 ) => {
   const [query, setQuery] = useState('')
   const suggestions = query.trim()
@@ -106,7 +121,11 @@ export const SkillPicker = (
         }}
         placeholder={placeholder}
         aria-label={inputLabel}
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error && id ? `${id}-error` : undefined}
       />
+      {error && <FieldError id={id && `${id}-error`}>{error}</FieldError>}
       <div class='flex flex-wrap gap-2'>
         {suggestions.map((skill) => (
           <SuggestionChip

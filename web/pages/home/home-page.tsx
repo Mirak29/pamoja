@@ -1,6 +1,7 @@
+import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
-import { useState } from 'preact/hooks'
+import { useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
   CircleCheck,
@@ -41,9 +42,10 @@ import {
   projectsChanged,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
-import { DemoBadge, SkillChip, VerifiedBadge } from '/web/ui/badge.tsx'
+import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -133,8 +135,7 @@ const GithubEvent = (
           · {ago(at)}
         </span>
       </div>
-      {session && <VerifiedBadge />}
-      {!session && project.demo && <DemoBadge />}
+      {(session || project.demo) && <DemoBadge />}
     </div>
   )
 }
@@ -232,7 +233,14 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
         .map((entry) => ({
           at: entry.at,
           key: `${project.slug}-${entry.at}-${entry.text}`,
-          node: <GithubEvent project={project} {...entry} />,
+          node: (
+            <GithubEvent
+              project={project}
+              text={entry.text}
+              at={entry.at}
+              session={entry.session}
+            />
+          ),
         }))
     )
     items = [...items, ...events].sort((a, b) => b.at - a.at)
@@ -257,9 +265,8 @@ const FENCE = '`'.repeat(3)
 
 const Composer = () => {
   const [text, setText] = useState('')
-  const [community, setCommunity] = useState(
-    me.communities[0] ?? 'open-source',
-  )
+  const [community, setCommunity] = useState('')
+  const field = useRef<HTMLTextAreaElement>(null)
   const [type, setType] = useState<PostType>('Discussion')
   const [images, setImages] = useState(0)
   const ordered = [...communities].sort((a, b) =>
@@ -275,10 +282,12 @@ const Composer = () => {
     setText('')
     setImages(0)
     navigate({ params: { fil: null } })
+    field.current?.focus()
+    const name = communities.find((c) => c.slug === community)?.name
     notify({
       title: 'Publié',
-      body: `Dans ${
-        communities.find((c) => c.slug === community)?.name
+      body: `${
+        name ? `Dans ${name}` : 'Sur ton profil'
       }. Tes abonnés le voient dans leur fil.`,
       icon: Send,
       tone: 'verified',
@@ -287,12 +296,13 @@ const Composer = () => {
   const tool =
     'flex size-8 cursor-pointer items-center justify-center rounded-md border border-transparent text-indigo hover:bg-indigo-soft'
   const select =
-    'well h-8 max-w-[180px] px-2 text-[13px] leading-none font-medium text-ink'
+    'well h-8 w-[180px] max-w-full min-w-0 px-2 text-[13px] leading-none font-medium text-ink'
   return (
     <section class='slab mr-2 flex gap-3.5 px-[18px] py-4'>
       <Avatar name={me.name} size={42} />
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
         <textarea
+          ref={field}
           rows={3}
           value={text}
           aria-label='Écrire un post'
@@ -349,6 +359,7 @@ const Composer = () => {
             onChange={(event) => setCommunity(event.currentTarget.value)}
             class={select}
           >
+            <option value=''>Sans communauté</option>
             {ordered.map((c) => (
               <option key={c.slug} value={c.slug}>{c.name}</option>
             ))}
@@ -386,15 +397,13 @@ const RailSection = (
   </section>
 )
 
-const plural = (count: number, one: string, many: string) =>
-  `${count} ${count > 1 ? many : one}`
-
 /** What deserves attention today: help, reviews, people, projects */
 const homeData = () => {
   const matches = matchingRequests(me)
   const slugs = myProjects().map((p) => p.slug)
+  // Reviews I can give: my own PRs wait for others
   const waiting = pullRequests.filter((pr) =>
-    pr.state === 'open' && pr.review === 'waiting' &&
+    pr.state === 'open' && pr.review === 'waiting' && !isMe(pr.author) &&
     slugs.includes(pr.project)
   )
   return {
@@ -402,7 +411,7 @@ const homeData = () => {
     waiting,
     matchTitle: matches.length
       ? `${
-        plural(
+        counted(
           matches.length,
           'demande d’aide correspond',
           'demandes d’aide correspondent',
@@ -410,7 +419,7 @@ const homeData = () => {
       } à tes skills`
       : 'Aucune demande ne correspond à tes skills',
     reviewTitle: waiting.length
-      ? plural(
+      ? counted(
         waiting.length,
         'PR attend une review',
         'PRs attendent une review',
@@ -431,7 +440,8 @@ const Rail = () => {
     .filter(({ hits }) => hits.length)
     .sort((a, b) =>
       b.hits.length - a.hits.length ||
-      b.person.confirmedHelps - a.person.confirmedHelps
+      confirmedHelpsOf(b.person.login as Login) -
+        confirmedHelpsOf(a.person.login as Login)
     )
     .slice(0, 3)
   const seeking = Object.values(projects as Record<string, Project>)
@@ -481,6 +491,7 @@ const Rail = () => {
           <A
             key={`${pr.project}-${pr.number}`}
             href={`projet/${pr.project}/prs`}
+            params={{ dialog: `pr-${pr.number}` }}
             class='flex flex-col border-b border-line py-2.5 text-ink no-underline hover:no-underline'
           >
             <span class='text-[14px] leading-5 font-semibold'>
@@ -562,19 +573,25 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.fil)?.[0] ??
     'pour-toi'
   const items = feedItems(current)
-  const { matchTitle, reviewTitle } = homeData()
+  const { matches, waiting } = homeData()
   return (
     <Page
       title='Accueil'
       class='grid items-start gap-8 pt-5 min-[1100px]:grid-cols-[minmax(0,1fr)_330px]'
     >
       <div class='flex w-full max-w-[720px] min-w-0 flex-col gap-5'>
+        {/* Short labels: the rail says the long ones on wide screens */}
         <div class='flex flex-wrap gap-3 pb-1 min-[1100px]:hidden'>
           <Button href='aide'>
             <LifeBuoy />
-            {matchTitle}
+            {counted(matches.length, 'demande pour toi', 'demandes pour toi')}
           </Button>
-          <Button variant='secondary' href='projets'>{reviewTitle}</Button>
+          <Button
+            variant='secondary'
+            href={waiting[0] ? `projet/${waiting[0].project}/prs` : 'projets'}
+          >
+            {counted(waiting.length, 'PR à relire', 'PRs à relire')}
+          </Button>
         </div>
         <Composer />
         <Tabs

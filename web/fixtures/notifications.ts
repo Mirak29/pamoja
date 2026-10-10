@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import type { Login } from '/web/fixtures/people.ts'
+import { type Login, me } from '/web/fixtures/people.ts'
 
 export type NotificationCategory =
   | 'for-you'
@@ -62,7 +62,33 @@ export const notifications: Notification[] = [
       '« Idempotency keys for webhooks » sur OpenPay Africa attend une review.',
     at: hoursAgo(50),
     read: true,
-    href: 'projet/openpay-africa/prs',
+    href: 'projet/openpay-africa/prs?dialog=pr-80',
+    demo: true,
+  },
+  {
+    id: 'n10',
+    to: 'abdou',
+    category: 'for-you',
+    kind: 'help',
+    title: 'AfriCommerce a besoin de toi',
+    body:
+      'Kofi demande une review de code Go : « Relire l’API Go de paiement à la livraison ». Environ 30 min.',
+    at: hoursAgo(5),
+    read: false,
+    href: 'aide/h1',
+    demo: true,
+  },
+  {
+    id: 'n11',
+    to: 'abdou',
+    category: 'for-you',
+    kind: 'help',
+    title: 'Dakar Transit a besoin de toi',
+    body:
+      'Fatou cherche un avis d’architecture Go et SQL : « Choisir l’architecture du backend des horaires ». Environ 45 min.',
+    at: hoursAgo(20),
+    read: true,
+    href: 'aide/h2',
     demo: true,
   },
   {
@@ -156,6 +182,9 @@ export const notifications: Notification[] = [
 // Session changes until the notification routes exist (PAM-210)
 export const notificationsChanged = signal(0)
 
+/** Last notification for the signed-in developer, shown as a toast (§7.4) */
+export const incoming = signal<Notification | null>(null)
+
 export const markRead = (notification: Notification) => {
   notification.read = true
   notificationsChanged.value++
@@ -170,12 +199,14 @@ export const markAllRead = (login: string) => {
 export const pushNotification = (
   notification: Omit<Notification, 'id' | 'at' | 'read' | 'demo'>,
 ) => {
-  notifications.unshift({
+  const pushed = {
     ...notification,
     id: `n${notifications.length + 1}`,
     at: Date.now(),
     read: false,
     demo: false,
-  })
+  }
+  notifications.unshift(pushed)
+  notification.to === me.login && (incoming.value = pushed)
   notificationsChanged.value++
 }

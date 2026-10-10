@@ -18,7 +18,6 @@ import {
   postsChanged,
   type Reaction,
   replyTo,
-  toggleBookmark,
   toggleReaction,
 } from '/web/fixtures/posts.ts'
 import { projects } from '/web/fixtures/projects.ts'
@@ -29,12 +28,12 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
-import { ParentChain, PostBody, Thread } from '/web/ui/post.tsx'
+import { ParentChain, PostBody, save, Thread } from '/web/ui/post.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 
 const reactions = [
-  ['like', ThumbsUp, '+1'],
+  ['like', ThumbsUp, 'J’aime'],
   ['useful', Lightbulb, 'Utile'],
   ['thanks', Heart, 'Merci'],
 ] as const
@@ -69,12 +68,14 @@ const Article = ({ post }: { post: Post }) => {
         <PostTypeBadge type={post.type} />
         {post.acceptedReply && <StatusBadge status='answered' />}
         {post.demo && <DemoBadge />}
-        <A
-          href={`communaute/${post.community}`}
-          class='text-[13px] font-semibold'
-        >
-          {community?.name}
-        </A>
+        {community && (
+          <A
+            href={`communaute/${community.slug}`}
+            class='text-[13px] font-semibold'
+          >
+            {community.name}
+          </A>
+        )}
       </div>
       {post.title && (
         <h1 class='font-display text-[28px] leading-[34px] font-bold tracking-[-.01em] text-pretty'>
@@ -152,7 +153,7 @@ const Article = ({ post }: { post: Post }) => {
         <Button
           variant='secondary'
           size={34}
-          onClick={() => toggleBookmark(post, me.login)}
+          onClick={() => save(post)}
         >
           {saved ? <BookmarkCheck /> : <Bookmark />}
           {saved ? 'Enregistré' : 'Enregistrer'}
@@ -246,7 +247,8 @@ export const PostPage = () => {
   const community = communities.find((c) => c.slug === post.community)
   return (
     <Page
-      title={post.title || 'Post'}
+      title={post.title || `Réponse de ${people[post.author].name}`}
+      heading={!post.title}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >
       <div class='flex min-w-0 flex-col gap-7'>
@@ -265,16 +267,20 @@ export const PostPage = () => {
             </span>
           </section>
         )}
-        <A
-          href={`communaute/${post.community}`}
-          class='slab slab-lift flex flex-col gap-1.5 p-5 text-ink no-underline hover:no-underline'
-        >
-          <Eyebrow>Communauté</Eyebrow>
-          <span class='font-display text-[18px] leading-6 font-semibold'>
-            {community?.name}
-          </span>
-          <span class='text-[13px] font-semibold text-indigo'>Voir le fil</span>
-        </A>
+        {community && (
+          <A
+            href={`communaute/${community.slug}`}
+            class='slab slab-lift flex flex-col gap-1.5 p-5 text-ink no-underline hover:no-underline'
+          >
+            <Eyebrow>Communauté</Eyebrow>
+            <span class='font-display text-[18px] leading-6 font-semibold'>
+              {community.name}
+            </span>
+            <span class='text-[13px] font-semibold text-indigo'>
+              Voir le fil
+            </span>
+          </A>
+        )}
       </aside>
     </Page>
   )

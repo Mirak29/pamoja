@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import {
   ChevronDown,
@@ -18,13 +18,16 @@ import {
   actOnHelp,
   type HelpAction,
   helpChanged,
+  type HelpMessage,
   type HelpRequest,
   helpRequests,
   type HelpStatus,
+  sendHelpMessage,
 } from '/web/fixtures/help.ts'
-import { type Matched, waves } from '/web/fixtures/matching.ts'
-import { isMe, me, people } from '/web/fixtures/people.ts'
+import { match, type Matched, waves } from '/web/fixtures/matching.ts'
+import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
+import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
 import { BranchLine } from '/web/pages/help/new-help.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -37,7 +40,9 @@ import {
 } from '/web/ui/badge.tsx'
 import { Button, type ButtonVariant } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
+import { RichText } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -172,7 +177,18 @@ type Action = {
   href?: string
   hint?: string
   disabled?: boolean
+  /** Asked before the action is played */
+  confirm?: { question: string; label: string; cancel: string }
+  /** Id of the field this button focuses */
+  focus?: string
 }
+
+// The requester and the helper talk in the thread of the request (§7.2)
+const contactOf = (other: Login): Action => ({
+  label: `Écrire à ${firstName(other)}`,
+  variant: 'secondary',
+  focus: 'help-thread-input',
+})
 
 // What the viewer can do depends on their role and on the state (§7.2)
 const promptOf = (
@@ -184,7 +200,11 @@ const promptOf = (
   if (isMe(request.author)) {
     if (status === 'open') {
       return [
-        `La demande a été envoyée à ${notified.length} développeurs. Tu seras notifié dès que l’un d’eux accepte.`,
+        notified.length
+          ? `La demande a été envoyée à ${notified.length} ${
+            notified.length > 1 ? 'développeurs' : 'développeur'
+          }. Tu seras notifié dès que l’un d’eux accepte.`
+          : 'Aucun développeur ne dépasse le score minimum pour l’instant. La demande reste visible dans Aide.',
         [{
           label: 'Annuler la demande',
           variant: 'danger',
@@ -200,6 +220,7 @@ const promptOf = (
             : 'Tu seras notifié quand l’aide sera livrée.'
         }`,
         [
+          contactOf(request.helper!),
           {
             label: 'Libérer la demande',
             variant: 'secondary',
@@ -243,16 +264,30 @@ const promptOf = (
             ? {
               label: `Ouvrir la PR #${request.pullRequest} sur GitHub`,
               variant: 'primary',
-              href: `https://github.com/${
-                projects[request.project].owner
-              }/${request.project}/pull/${request.pullRequest}`,
+              href: githubUrl(
+                projects[request.project],
+                'pull',
+                request.pullRequest,
+              ),
             }
             : {
               label: 'Marquer comme livrée',
               variant: 'primary',
               action: 'deliver',
             },
-          { label: 'Se désister', variant: 'danger', action: 'withdraw' },
+          contactOf(request.author),
+          {
+            label: 'Se désister',
+            variant: 'danger',
+            action: 'withdraw',
+            confirm: {
+              question: `Te désister ? La demande repasse en Ouverte et ${
+                firstName(request.author)
+              } est prévenu. Tu ne la recevras plus.`,
+              label: 'Me désister',
+              cancel: 'Garder la demande',
+            },
+          },
         ],
       ]
     }
@@ -276,6 +311,12 @@ const promptOf = (
         }],
       ]
     }
+  }
+  if (status === 'open' && request.withdrawn?.some(isMe)) {
+    return [
+      'Tu t’es désisté de cette demande. Elle est proposée à d’autres développeurs.',
+      [],
+    ]
   }
   if (status === 'open') {
     const inWave = notified.some((m) => isMe(m.login))
@@ -304,8 +345,41 @@ const promptOf = (
 const Prompt = (
   { request, notified }: { request: HelpRequest; notified: Matched[] },
 ) => {
+  const [confirming, setConfirming] = useState<Action | null>(null)
+  // The question takes the place of the buttons: focus its safe answer
+  useEffect(() => {
+    confirming && document.getElementById('help-confirm-cancel')?.focus()
+  }, [confirming])
   const [prompt, actions] = promptOf(request, notified)
   if (!prompt) return null
+  if (confirming?.confirm) {
+    const { question, label, cancel } = confirming.confirm
+    return (
+      <section class='slab-selected flex flex-col gap-3.5 p-[22px]'>
+        <span class='font-display text-[18px] leading-[25px] font-semibold'>
+          {question}
+        </span>
+        <div class='flex flex-wrap items-center gap-3.5 pb-1'>
+          <Button
+            variant='danger'
+            onClick={() => {
+              setConfirming(null)
+              play(request, confirming.action!)
+            }}
+          >
+            {label}
+          </Button>
+          <Button
+            variant='secondary'
+            id='help-confirm-cancel'
+            onClick={() => setConfirming(null)}
+          >
+            {cancel}
+          </Button>
+        </div>
+      </section>
+    )
+  }
   return (
     <section class='slab-selected flex flex-col gap-3.5 p-[22px]'>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
@@ -313,15 +387,21 @@ const Prompt = (
       </span>
       {actions.length > 0 && (
         <div class='flex flex-wrap items-center gap-3.5 pb-1'>
-          {actions.map(({ label, variant, action, href, disabled }) => (
+          {actions.map((item) => (
             <Button
-              key={label}
-              variant={variant}
-              disabled={disabled}
-              href={href}
-              onClick={action && (() => play(request, action))}
+              key={item.label}
+              variant={item.variant}
+              disabled={item.disabled}
+              href={item.href}
+              onClick={item.focus
+                ? () => document.getElementById(item.focus!)?.focus()
+                : item.action &&
+                  (() =>
+                    item.confirm
+                      ? setConfirming(item)
+                      : play(request, item.action!))}
             >
-              {label}
+              {item.label}
             </Button>
           ))}
         </div>
@@ -329,6 +409,98 @@ const Prompt = (
       {actions.filter((a) => a.hint).map(({ hint }) => (
         <span key={hint} class='text-[12px] text-ink-muted'>{hint}</span>
       ))}
+    </section>
+  )
+}
+
+const closed: HelpStatus[] = [
+  'completed',
+  'closed_unhelpful',
+  'closed_unconfirmed',
+  'cancelled',
+  'expired',
+]
+
+/**
+ * Thread of the request: only the requester and the accepted helper see it
+ * and write in it; it stays readable once the request is closed (§7.2)
+ */
+const HelpThread = (
+  { request, messages, other, open }: {
+    request: HelpRequest
+    messages: HelpMessage[]
+    other: Login
+    open: boolean
+  },
+) => {
+  const [draft, setDraft] = useState('')
+  const send = () => {
+    if (!draft.trim()) return
+    sendHelpMessage(request, me.login, draft.trim())
+    setDraft('')
+  }
+  return (
+    <section class='slab flex flex-col gap-3.5 p-[22px]'>
+      <div class='flex flex-wrap items-baseline justify-between gap-2'>
+        <Eyebrow>Fil avec {people[other].name}</Eyebrow>
+        <span class='text-[12px] text-ink-muted'>
+          Visible par vous deux seulement
+        </span>
+      </div>
+      {messages.map((message) => (
+        <div
+          key={`${message.at}${message.author}`}
+          class='flex animate-enter-fast gap-3'
+        >
+          <Avatar name={people[message.author].name} size={30} />
+          <div class='flex min-w-0 flex-1 flex-col gap-0.5'>
+            <span class='flex flex-wrap items-baseline gap-2'>
+              <span class='font-display text-[14px] leading-5 font-semibold'>
+                {isMe(message.author) ? 'Toi' : people[message.author].name}
+              </span>
+              <span class='text-[12px] text-ink-muted'>{ago(message.at)}</span>
+            </span>
+            <div class='text-[15px] leading-6 text-pretty'>
+              <RichText text={message.text} />
+            </div>
+          </div>
+        </div>
+      ))}
+      {!messages.length && (
+        <span class='text-[14px] text-ink-muted'>
+          Pas encore de message. Le contexte, un lien, une question : tout se
+          dit ici.
+        </span>
+      )}
+      {open
+        ? (
+          <div class='flex flex-col gap-2'>
+            <Textarea
+              id='help-thread-input'
+              rows={2}
+              value={draft}
+              aria-label={`Message pour ${people[other].name}`}
+              placeholder={`Écrire à ${firstName(other)}`}
+              onInput={(event) => setDraft(event.currentTarget.value)}
+              onKeyDown={(event) =>
+                event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
+                send()}
+            />
+            <div class='flex items-center justify-between gap-3'>
+              <span class='text-[12px] text-ink-muted'>
+                Ctrl + Entrée pour envoyer
+              </span>
+              <Button size={36} disabled={!draft.trim()} onClick={send}>
+                Envoyer
+              </Button>
+            </div>
+          </div>
+        )
+        : (
+          <span class='text-[13px] text-ink-muted'>
+            La demande est close : le fil reste lisible.
+          </span>
+        )}
     </section>
   )
 }
@@ -343,10 +515,11 @@ const Section = (
 )
 
 const MatchRow = (
-  { request, matched, open: initiallyOpen }: {
+  { request, matched, open: initiallyOpen, notified = true }: {
     request: HelpRequest
     matched: Matched
     open: boolean
+    notified?: boolean
   },
 ) => {
   const [open, setOpen] = useState(initiallyOpen)
@@ -355,7 +528,9 @@ const MatchRow = (
     ? 'A accepté'
     : request.withdrawn?.includes(matched.login)
     ? 'S’est désisté'
-    : 'Notifié'
+    : notified
+    ? 'Notifié'
+    : 'Pas dans cette vague'
   return (
     <div class='flex flex-col gap-2 border-t border-line py-3.5'>
       <div class='flex items-center gap-3'>
@@ -425,18 +600,62 @@ const Matching = (
   },
 ) => {
   const secondWave = (request.wave ?? 1) > 1
+  const byScore = (list: Matched[]) =>
+    [...list].sort((a, b) => b.score - a.score)
+  const formula = (
+    <span class='text-[12px] leading-[18px] text-ink-muted'>
+      Score sur 100 : skills 45, type d’aide 15, aides confirmées 15, proximité
+      10, disponibilité 10, affinité 5.
+    </span>
+  )
+  // Only the requester sees who was notified and their scores; a developer
+  // sees why the request reached them
+  if (!isMe(request.author)) {
+    const mine = match(me, request)
+    return (
+      <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
+        <Eyebrow accent>Matching</Eyebrow>
+        <span class='font-display text-[18px] leading-[25px] font-semibold'>
+          Vague 1 · {notified.length}{' '}
+          {notified.length > 1
+            ? 'développeurs notifiés'
+            : 'développeur notifié'}
+        </span>
+        {formula}
+        {mine.total > 0
+          ? (
+            <div class='flex flex-col'>
+              <MatchRow
+                request={request}
+                matched={{
+                  login: me.login,
+                  score: mine.total,
+                  criteria: mine.criteria,
+                  promising: notified.some((m) => isMe(m.login) && m.promising),
+                }}
+                notified={notified.some((m) => isMe(m.login))}
+                open
+              />
+            </div>
+          )
+          : (
+            <span class='text-[13px] text-ink-muted'>
+              Aucun de tes skills ne figure dans cette demande.
+            </span>
+          )}
+      </aside>
+    )
+  }
   return (
     <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
       <Eyebrow accent>Matching</Eyebrow>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
-        Vague 1 · {notified.length} développeurs notifiés
+        Vague 1 · {notified.length}{' '}
+        {notified.length > 1 ? 'développeurs notifiés' : 'développeur notifié'}
       </span>
-      <span class='text-[12px] leading-[18px] text-ink-muted'>
-        Score sur 100 : skills 45, type d’aide 15, aides confirmées 15,
-        proximité 10, disponibilité 10, affinité 5.
-      </span>
+      {formula}
       <div class='flex flex-col'>
-        {notified.map((m, i) => (
+        {byScore(notified).map((m, i) => (
           <MatchRow key={m.login} request={request} matched={m} open={!i} />
         ))}
       </div>
@@ -445,7 +664,7 @@ const Matching = (
       </span>
       {secondWave && next.length > 0 && (
         <div class='flex flex-col'>
-          {next.map((m) => (
+          {byScore(next).map((m) => (
             <MatchRow
               key={m.login}
               request={request}
@@ -489,6 +708,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
   return (
     <Page
       title={request.title}
+      heading={false}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >
       <div class='flex min-w-0 flex-col gap-7'>
@@ -513,6 +733,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
             {project && request.pullRequest && (
               <A
                 href={`projet/${project.slug}/prs`}
+                params={{ dialog: `pr-${request.pullRequest}` }}
                 class='font-mono text-[14px] leading-5 font-medium'
               >
                 PR #{request.pullRequest}
@@ -545,6 +766,15 @@ export const HelpDetail = ({ id }: { id: string }) => {
         </div>
         <Lifecycle request={request} />
         <Prompt request={request} notified={notified} />
+        {request.helper &&
+          (isMe(request.author) || isMe(request.helper)) && (
+          <HelpThread
+            request={request}
+            messages={[...(request.messages ?? [])]}
+            other={isMe(request.author) ? request.helper : request.author}
+            open={!closed.includes(request.status)}
+          />
+        )}
         <Section title='Description'>
           <p class='whitespace-pre-wrap text-pretty'>
             {request.description || 'Pas de description détaillée.'}

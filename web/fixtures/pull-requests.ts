@@ -50,7 +50,7 @@ export const pullRequests: PullRequest[] = [
     branch: 'fix/wave-retry',
     state: 'open',
     review: 'waiting',
-    ci: 'ok',
+    ci: 'failed',
     at: hoursAgo(75),
     demo: true,
   },

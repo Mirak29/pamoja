@@ -1,10 +1,9 @@
 import { useEffect } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Github } from '/web/assets/icons.tsx'
-import { helpRequests } from '/web/fixtures/help.ts'
 import { type Login, people } from '/web/fixtures/people.ts'
-import { projectsOf } from '/web/fixtures/projects.ts'
-import { proofsOf } from '/web/fixtures/reputation.ts'
+import { profileStats, proofsOf } from '/web/fixtures/reputation.ts'
+import { plural } from '/web/lib/plural.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import {
   DemoBadge,
@@ -15,23 +14,21 @@ import {
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
-import { CountryCode } from '/web/pages/profile/collaboration.tsx'
 import { proofMeta } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 
+// A visitor sees what someone did: a figure at zero is left out
 const stats = (login: Login) => {
-  const mine = proofsOf(login)
-  return [
-    [projectsOf(login).length, 'projets'],
-    [mine.filter((p) => p.dimension === 'review').length, 'reviews'],
+  const figures = profileStats(login)
+  return ([
+    [figures.reviews, plural(figures.reviews, 'review', 'reviews')],
     [
-      new Set(
-        helpRequests.filter((h) => h.helper === login).map((h) => h.author),
-      ).size + mine.filter((p) => p.dimension === 'help').length,
-      'développeurs aidés',
+      figures.helped,
+      plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
     ],
-    [new Set(mine.map((p) => p.by).filter(Boolean)).size, 'collaborations'],
-  ] as const
+    [figures.collaborations, plural(figures.collaborations, 'collaboration')],
+    [figures.projects, plural(figures.projects, 'projet')],
+  ] as const).filter(([count]) => count > 0)
 }
 
 /**
@@ -81,7 +78,11 @@ export const Passport = ({ login }: { login: Login }) => {
               <span class='flex size-[88px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[30px] leading-none font-bold shadow-slab'>
                 {initials(person.name)}
               </span>
-              <Button size={40} href='connexion'>
+              <Button
+                size={40}
+                href='connexion'
+                params={{ retour: `/@${login}?dialog=collaboration` }}
+              >
                 Collaborer avec {person.name}
               </Button>
             </div>
@@ -91,7 +92,6 @@ export const Passport = ({ login }: { login: Login }) => {
                 <span>{person.role}</span>
                 <span>·</span>
                 <span>{person.city}, {person.country}</span>
-                <CountryCode code={person.countryCode} />
               </span>
             </div>
             <p class='text-[18px] leading-[27px] text-pretty'>
@@ -150,7 +150,11 @@ export const Passport = ({ login }: { login: Login }) => {
             <Github />
             {location.host}/@{login}
           </span>
-          <A href='connexion' class='text-[14px] font-semibold'>
+          <A
+            href='connexion'
+            params={{ retour: `/@${login}` }}
+            class='text-[14px] font-semibold'
+          >
             Rejoindre Pamoja
           </A>
         </div>

@@ -1,0 +1,2 @@
+# Le code se partage en LF, même sous Windows (deno fmt l'exige)
+* text=auto eol=lf

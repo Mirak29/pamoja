@@ -36,6 +36,18 @@ export const boards: Partial<Record<ProjectSlug, Card[]>> = {
       pullRequest: 84,
     },
     {
+      id: 'c10',
+      title: 'Payment transaction handling',
+      column: 'review',
+      pullRequest: 81,
+    },
+    {
+      id: 'c11',
+      title: 'Idempotency keys for webhooks',
+      column: 'review',
+      pullRequest: 80,
+    },
+    {
       id: 'c3',
       title: 'Lever le verrou SQLite',
       column: 'in_progress',

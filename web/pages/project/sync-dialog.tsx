@@ -14,7 +14,7 @@ import {
   type ProjectSlug,
   updateProject,
 } from '/web/fixtures/projects.ts'
-import { VerifiedBadge } from '/web/ui/badge.tsx'
+import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -206,11 +206,11 @@ const Checks = ({ project }: { project: Project }) => {
       </div>
       {done >= 3 && (
         <div class='flex animate-enter flex-wrap items-center gap-3 border-t border-line pt-[18px]'>
-          <VerifiedBadge />
+          <DemoBadge />
           <span class='flex-1' />
           <Button size={40} onClick={finish}>
             <Zap />
-            Passer en mode Live
+            Activer la synchro live
           </Button>
         </div>
       )}

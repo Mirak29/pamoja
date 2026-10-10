@@ -9,6 +9,8 @@ import {
 } from '/web/fixtures/applications.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
+import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { counted } from '/web/lib/plural.ts'
 import {
   needSkills,
   type Project,
@@ -91,7 +93,7 @@ export const MemberRows = (
           {isOwner && member.role !== 'Propriétaire'
             ? (
               <select
-                aria-label='Rôle'
+                aria-label={`Rôle de ${person.name}`}
                 value={member.role}
                 onChange={(event) => {
                   member.role = event.currentTarget.value as ProjectRole
@@ -126,9 +128,9 @@ const Members = (
     <section class='slab overflow-hidden'>
       <SectionHeader
         label='Membres'
-        title={`${count} ${
-          count > 1 ? 'membres' : 'membre'
-        } sur Pamoja · ${project.contributors} contributeurs sur GitHub`}
+        title={`${count} ${count > 1 ? 'membres' : 'membre'} sur Pamoja · ${
+          counted(project.contributors, 'contributeur')
+        } sur GitHub`}
       />
       <MemberRows project={project} isOwner={isOwner} />
     </section>
@@ -184,7 +186,8 @@ const Helpers = (
           .filter((c) => c.hits.length)
           .sort((a, b) =>
             b.hits.length - a.hits.length ||
-            b.person.confirmedHelps - a.person.confirmedHelps
+            confirmedHelpsOf(b.person.login as Login) -
+              confirmedHelpsOf(a.person.login as Login)
           )
           .slice(0, 3)
         return (
@@ -204,14 +207,19 @@ const Helpers = (
                   <PersonLink
                     login={login}
                     size={30}
-                    detail={`${
-                      hits.join(', ')
-                    } · ${person.confirmedHelps} aides confirmées · ${person.city}`}
+                    detail={`${hits.join(', ')} · ${
+                      counted(
+                        confirmedHelpsOf(person.login as Login),
+                        'aide confirmée',
+                        'aides confirmées',
+                      )
+                    } · ${person.city}`}
                   />
                   {canManage && !done && (
                     <Button
                       variant='secondary'
                       size={32}
+                      aria-label={`Inviter ${person.name} pour ${need}`}
                       onClick={() => invite(project, login, need)}
                     >
                       Inviter
@@ -275,6 +283,9 @@ const Applications = ({ project }: { project: Project }) => {
           <div class='flex flex-wrap gap-3 pb-1'>
             <Button
               size={36}
+              aria-label={`Accepter la candidature de ${
+                people[application.login].name
+              }`}
               onClick={() => decideApplication(application, true)}
             >
               Accepter
@@ -282,6 +293,9 @@ const Applications = ({ project }: { project: Project }) => {
             <Button
               variant='secondary'
               size={36}
+              aria-label={`Refuser la candidature de ${
+                people[application.login].name
+              }`}
               onClick={() => decideApplication(application, false)}
             >
               Refuser
