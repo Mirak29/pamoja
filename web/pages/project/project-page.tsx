@@ -12,7 +12,7 @@ import {
   applications,
   applicationsChanged,
 } from '/web/fixtures/applications.ts'
-import { channels } from '/web/fixtures/channels.ts'
+import { unreadIn } from '/web/fixtures/channels.ts'
 import { helpRequests, type HelpStatus } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { isMe, me } from '/web/fixtures/people.ts'
@@ -24,6 +24,7 @@ import {
   toggleFollow,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { repoPath } from '/web/lib/links.ts'
 import { plural } from '/web/lib/plural.ts'
 import { JoinDialog } from '/web/pages/project/join-dialog.tsx'
 import { ActivityTab } from '/web/pages/project/activity-tab.tsx'
@@ -202,13 +203,15 @@ const Header = (
             <SkillChip key={skill}>{skill}</SkillChip>
           ))}
         </div>
-        <a
-          href={`https://github.com/${project.owner}/${project.slug}`}
-          class='inline-flex items-center gap-1.5 font-mono text-[13px] leading-5 text-ink-muted'
-        >
-          <Github class='size-3.5' />
-          github.com/{project.owner}/{project.slug}
-        </a>
+        {project.sync !== 'none' && (
+          <a
+            href={`https://${repoPath(project)}`}
+            class='inline-flex items-center gap-1.5 font-mono text-[13px] leading-5 text-ink-muted'
+          >
+            <Github class='size-3.5' />
+            {repoPath(project)}
+          </a>
+        )}
       </div>
       <div class='flex flex-col gap-5 border-t border-line pt-[18px]'>
         {
@@ -243,12 +246,15 @@ const Header = (
   )
 }
 
-// Every message is unread until ChannelState exists (PAM-412), except in
-// the channel being read
+// Messages of others not read yet, the channel on screen aside
 const unreadMessages = (project: Project, reading?: string) =>
-  Object.entries(channels[project.slug as ProjectSlug] ?? {})
-    .filter(([channel]) => channel !== reading)
-    .reduce((total, [, messages]) => total + messages.length, 0)
+  (['general', 'tracking', 'help', 'announcements'] as const)
+    .filter((channel) => channel !== reading)
+    .reduce(
+      (total, channel) =>
+        total + unreadIn(project.slug as ProjectSlug, channel),
+      0,
+    )
 
 // Path segment of a channel to its data key
 const channelKeys: Record<string, string> = {

@@ -135,6 +135,8 @@ export const createProject = (draft: ProjectDraft): ProjectSlug => {
     sync: repo ? 'poll' : 'none',
     description: draft.description,
     vision: draft.vision,
+    repo: repo?.name,
+    languages: repo?.languages,
     contributors: repo?.contributors ?? 1,
     openIssues: repo?.issues ?? 0,
     release: repo?.release ?? '—',
@@ -152,49 +154,78 @@ export const createProject = (draft: ProjectDraft): ProjectSlug => {
   }
   const key = slug as ProjectSlug
   boards[key] = []
-  if (repo) {
-    repo.existing = key
-    repo.issueList?.forEach(([title, labels], i) =>
-      issues.push({
-        number: i + 1,
-        project: key,
-        title,
-        labels,
-        author: me.login,
-        comments: 0,
-        state: 'open',
-        at: daysAgo(i + 1),
-        demo: false,
-      })
-    )
-    repo.pullList?.forEach(([title, branch], i) =>
-      pullRequests.push({
-        number: (repo.issueList?.length ?? 0) + i + 1,
-        project: key,
-        title,
-        author: me.login,
-        branch,
-        state: 'open',
-        review: 'waiting',
-        ci: 'ok',
-        at: daysAgo(i + 1),
-        demo: false,
-      })
-    )
-    postAlert(
-      key,
-      'import',
-      `Projet importé depuis GitHub : ${repo.owner}/${repo.name} · ${
-        counted(repo.issues ?? 0, 'issue')
-      } · ${
-        counted(repo.pullRequests ?? 0, 'PR', 'PRs')
-      }. Synchro toutes les 15 min.`,
-    )
-  }
+  if (repo) bringRepo(key, repo)
   logActivity(
     key,
     repo ? 'Projet importé depuis GitHub' : 'Projet créé sur Pamoja',
   )
   projectsChanged.value++
   return key
+}
+
+/** Public repos of the developer that are not on Pamoja yet (§5.4) */
+export const importableRepos = () =>
+  repos.filter((repo) => repo.owner === me.login && !repo.existing)
+
+/**
+ * Link a repo to a project created without one: it gets the repo's issues,
+ * PRs and languages, and the sync every 15 min (§5.4)
+ */
+export const linkRepo = (project: Project, repo: Repo) => {
+  Object.assign(project, {
+    sync: 'poll',
+    repo: repo.name,
+    languages: repo.languages,
+    contributors: repo.contributors ?? project.contributors,
+    openIssues: repo.issues ?? 0,
+    release: repo.release ?? project.release,
+    releasedAt: repo.releasedAt ?? project.releasedAt,
+  })
+  bringRepo(project.slug as ProjectSlug, repo)
+  logActivity(
+    project.slug as ProjectSlug,
+    `Repo lié : ${repo.owner}/${repo.name}`,
+  )
+  projectsChanged.value++
+}
+
+// The issues, PRs and import alert of a repo, for an import or a link
+const bringRepo = (key: ProjectSlug, repo: Repo) => {
+  repo.existing = key
+  repo.issueList?.forEach(([title, labels], i) =>
+    issues.push({
+      number: i + 1,
+      project: key,
+      title,
+      labels,
+      author: me.login,
+      comments: 0,
+      state: 'open',
+      at: daysAgo(i + 1),
+      demo: false,
+    })
+  )
+  repo.pullList?.forEach(([title, branch], i) =>
+    pullRequests.push({
+      number: (repo.issueList?.length ?? 0) + i + 1,
+      project: key,
+      title,
+      author: me.login,
+      branch,
+      state: 'open',
+      review: 'waiting',
+      ci: 'ok',
+      at: daysAgo(i + 1),
+      demo: false,
+    })
+  )
+  postAlert(
+    key,
+    'import',
+    `Projet importé depuis GitHub : ${repo.owner}/${repo.name} · ${
+      counted(repo.issues ?? 0, 'issue')
+    } · ${
+      counted(repo.pullRequests ?? 0, 'PR', 'PRs')
+    }. Synchro toutes les 15 min.`,
+  )
 }

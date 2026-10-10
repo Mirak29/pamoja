@@ -27,6 +27,7 @@ import {
 import { match, type Matched, waves } from '/web/fixtures/matching.ts'
 import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
+import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
 import { BranchLine } from '/web/pages/help/new-help.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -263,9 +264,11 @@ const promptOf = (
             ? {
               label: `Ouvrir la PR #${request.pullRequest} sur GitHub`,
               variant: 'primary',
-              href: `https://github.com/${
-                projects[request.project].owner
-              }/${request.project}/pull/${request.pullRequest}`,
+              href: githubUrl(
+                projects[request.project],
+                'pull',
+                request.pullRequest,
+              ),
             }
             : {
               label: 'Marquer comme livrée',

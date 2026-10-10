@@ -1,6 +1,11 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { CircleAlert, CircleCheck, TriangleAlert } from '/web/assets/icons.tsx'
+import {
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  TriangleAlert,
+} from '/web/assets/icons.tsx'
 import { type HealthIndicator, projectPulse } from '/web/fixtures/pulse.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
@@ -13,7 +18,7 @@ import { prism } from '/web/ui/shapes.tsx'
 // through SSE (PAM-307)
 const SUMMARY_DELAY = 2600
 
-const Summary = ({ text }: { text?: string }) => {
+const Summary = ({ text, fallback }: { text?: string; fallback: string }) => {
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => setReady(true), SUMMARY_DELAY)
@@ -27,7 +32,19 @@ const Summary = ({ text }: { text?: string }) => {
           7 derniers jours, à partir de l’activité GitHub
         </span>
       </div>
-      {ready && text
+      {!text
+        ? (
+          // No AI summary for this project: the deterministic one (§11)
+          <div class='flex flex-col gap-1.5'>
+            <p class='max-w-[820px] text-[17px] leading-[27px] text-pretty'>
+              {fallback}
+            </p>
+            <span class='text-[12px] text-ink-muted'>
+              Résumé automatique : l’IA n’a pas encore analysé ce projet.
+            </span>
+          </div>
+        )
+        : ready
         ? (
           <p class='max-w-[820px] animate-[enter_250ms_ease-out] text-[17px] leading-[27px] text-pretty'>
             {text}
@@ -105,6 +122,7 @@ const healthTones = {
   ok: ['text-verified', CircleCheck],
   warning: ['text-warning', TriangleAlert],
   danger: ['text-danger', CircleAlert],
+  unknown: ['text-ink-muted', Clock],
 } as const
 
 const Health = ({ indicators }: { indicators: HealthIndicator[] }) => (
@@ -184,6 +202,13 @@ const Dna = (
 ) => (
   <section class='slab flex flex-col gap-3.5 p-[22px]'>
     <Eyebrow>DNA</Eyebrow>
+    {!pulse.languages.length && (
+      <span class='text-[14px] text-ink-muted'>
+        {project.sync === 'none'
+          ? 'Pas de repo lié : les langages viendront de GitHub.'
+          : 'Langages pas encore lus sur GitHub.'}
+      </span>
+    )}
     {pulse.languages.map(([language, share]) => (
       <div key={language} class='flex items-center gap-3'>
         <span class='w-[84px] text-[13px]'>{language}</span>
@@ -195,12 +220,16 @@ const Dna = (
         </span>
       </div>
     ))}
-    <SubTitle>Domaines</SubTitle>
-    <div class='flex flex-wrap gap-1.5'>
-      {pulse.domains.map((domain) => (
-        <SkillChip key={domain}>{domain}</SkillChip>
-      ))}
-    </div>
+    {pulse.domains.length > 0 && (
+      <>
+        <SubTitle>Domaines</SubTitle>
+        <div class='flex flex-wrap gap-1.5'>
+          {pulse.domains.map((domain) => (
+            <SkillChip key={domain}>{domain}</SkillChip>
+          ))}
+        </div>
+      </>
+    )}
     <SubTitle>Besoins</SubTitle>
     <div class='flex flex-wrap gap-1.5'>
       {project.needs.map((need) => (
@@ -256,7 +285,11 @@ export const PulseTab = ({ project }: { project: Project }) => {
   const highest = Math.max(1, ...pulse.metrics.map((m) => m.value))
   return (
     <div class='mr-2 flex flex-col gap-8'>
-      <Summary key={project.slug} text={pulse.summary} />
+      <Summary
+        key={project.slug}
+        text={pulse.summary}
+        fallback={pulse.fallback}
+      />
       <div class='grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-6'>
         {pulse.metrics.map((metric) => (
           <Metric

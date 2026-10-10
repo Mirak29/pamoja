@@ -1,5 +1,6 @@
+import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import type { Login } from '/web/fixtures/people.ts'
+import { type Login, me } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 /** The four imposed channels of a project (cahier des charges §6.8) */
@@ -134,6 +135,28 @@ export const channels: Partial<
   },
 }
 
+// Messages read per channel during the session, until ChannelState
+// (PAM-412): a count of the messages of others already seen
+const read = signal<Record<string, number>>({})
+
+const fromOthers = (project: ProjectSlug, channel: Channel) =>
+  (channels[project]?.[channel] ?? []).filter((m) => m.author !== me.login)
+    .length
+
+/** Messages of others not read yet in a channel */
+export const unreadIn = (project: ProjectSlug, channel: Channel) =>
+  Math.max(
+    0,
+    fromOthers(project, channel) - (read.value[`${project}:${channel}`] ?? 0),
+  )
+
+/** The channel on screen is read up to its last message */
+export const markChannelRead = (project: ProjectSlug, channel: Channel) => {
+  const key = `${project}:${channel}`
+  const count = fromOthers(project, channel)
+  if (read.peek()[key] !== count) read.value = { ...read.peek(), [key]: count }
+}
+
 /** An alert the platform writes in #suivi, like the webhook handler will */
 export const postAlert = (
   project: ProjectSlug,
@@ -152,6 +175,6 @@ export const postAlert = (
     kind,
     text,
     at: Date.now(),
-    demo: false,
+    demo: true,
   })
 }

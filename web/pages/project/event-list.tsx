@@ -1,9 +1,9 @@
-import { activityKind, recentActivityOf } from '/web/fixtures/activity.ts'
+import { recentActivityOf } from '/web/fixtures/activity.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { A } from '@01edu/signal-router'
 import { eventLink } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
-import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
+import { DemoBadge } from '/web/ui/badge.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 
 /** A journal line, linked to its PR, issue, release or channel */
@@ -46,10 +46,7 @@ export const EventList = (
           />
           <EventText project={project} text={event.text} />
           <span class='text-[12px] text-ink-muted'>{ago(event.at)}</span>
-          {event.session && activityKind(event.text) === 'github' && (
-            <VerifiedBadge />
-          )}
-          {!event.session && project.demo && <DemoBadge />}
+          {(event.session || project.demo) && <DemoBadge />}
         </div>
       ))}
       {!entries.length && (

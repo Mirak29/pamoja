@@ -1,6 +1,7 @@
 import { issues } from '/web/fixtures/issues.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { counted } from '/web/lib/plural.ts'
 
 // What GET/api/project/pulse, health and story will return (PAM-306 to
 // PAM-308), computed here from the fixtures
@@ -23,11 +24,21 @@ const weekly: Partial<Record<string, Weekly>> = {
   },
 }
 
+// The seeded projects have a quiet week; a project created or imported in
+// the session has no history yet
 const quietWeek: Weekly = {
   merged: 2,
   issuesClosed: 1,
   newContributors: 0,
   reviewsAsked: 1,
+  releases: 0,
+}
+
+const emptyWeek: Weekly = {
+  merged: 0,
+  issuesClosed: 0,
+  newContributors: 0,
+  reviewsAsked: 0,
   releases: 0,
 }
 
@@ -67,7 +78,7 @@ const summaries: Partial<Record<string, string>> = {
     'Semaine calme : 2 PRs mergées et aucune PR en attente de review. Le projet a surtout besoin de documentation.',
 }
 
-export type Tone = 'ok' | 'warning' | 'danger'
+export type Tone = 'ok' | 'warning' | 'danger' | 'unknown'
 
 export type HealthIndicator = {
   label: string
@@ -87,32 +98,58 @@ export const projectPulse = (project: Project) => {
     issue.project === project.slug && issue.state === 'open' &&
     issue.labels.includes('blocked')
   )
-  const week = weekly[project.slug] ?? quietWeek
+  const week = weekly[project.slug] ?? (project.demo ? quietWeek : emptyWeek)
+  const beginners =
+    issues.filter((issue) =>
+      issue.project === project.slug && issue.state === 'open' &&
+      issue.labels.includes('good first issue')
+    ).length
+  // Without history, what is measured over days is not known yet
+  const unknown = (label: string, rule: string): HealthIndicator => ({
+    label,
+    value: '—',
+    state: 'Pas encore mesuré',
+    rule,
+    tone: 'unknown',
+  })
+  const history = project.demo
 
   const health: HealthIndicator[] = [
-    {
+    ...(history ? [] : [
+      unknown(
+        'Délai de première review',
+        'Moyenne sur 7 jours entre l’ouverture d’une PR et sa première review. Attention au-delà de 24 h.',
+      ),
+      unknown(
+        'CI sur 7 jours',
+        'Part des runs CI réussis sur 7 jours. Bon au-dessus de 90 %.',
+      ),
+      unknown(
+        'Bus factor',
+        'Nombre de personnes qui ont mergé 80 % des PRs sur 90 jours. Fragile en dessous de 3.',
+      ),
+    ]),
+    ...(!history ? [] : [{
       label: 'Délai de première review',
       value: waiting ? '31 h' : '9 h',
       state: waiting ? 'Attention' : 'Bon',
       rule:
         'Moyenne sur 7 jours entre l’ouverture d’une PR et sa première review. Attention au-delà de 24 h.',
       tone: waiting ? 'warning' : 'ok',
-    },
-    {
+    }, {
       label: 'CI sur 7 jours',
       value: ciFailed ? '86 %' : '94 %',
       state: ciFailed ? 'Attention' : 'Bon',
       rule: 'Part des runs CI réussis sur 7 jours. Bon au-dessus de 90 %.',
       tone: ciFailed ? 'warning' : 'ok',
-    },
-    {
+    }, {
       label: 'Bus factor',
       value: '2',
       state: 'Fragile',
       rule:
         'Nombre de personnes qui ont mergé 80 % des PRs sur 90 jours. Fragile en dessous de 3.',
       tone: 'warning',
-    },
+    }] satisfies HealthIndicator[]),
     {
       label: 'Bloqueurs ouverts',
       value: String(blockers.length),
@@ -122,16 +159,28 @@ export const projectPulse = (project: Project) => {
     },
     {
       label: 'Accueil des nouveaux',
-      value: '3 good first issue',
-      state: 'Bon',
+      value: counted(beginners, 'good first issue', 'good first issues'),
+      state: beginners >= 2 ? 'Bon' : 'À préparer',
       rule: 'Bon si au moins 2 issues good first issue sont ouvertes.',
-      tone: 'ok',
+      tone: beginners >= 2 ? 'ok' : 'warning',
     },
   ]
 
   return {
-    // AI summary, absent while it is computed (PULSE_READY, PAM-307)
+    // AI summary, absent while it is computed (PULSE_READY, PAM-307); the
+    // deterministic fallback of §11 when there is none
     summary: summaries[project.slug],
+    fallback: project.sync === 'none'
+      ? 'Ce projet n’est pas encore lié à un repo GitHub : le résumé suivra son activité.'
+      : `Cette semaine : ${counted(week.merged, 'PR mergée', 'PRs mergées')}, ${
+        counted(waiting, 'PR en attente de review', 'PRs en attente de review')
+      }${
+        blockers.length
+          ? `, ${
+            counted(blockers.length, 'bloqueur ouvert', 'bloqueurs ouverts')
+          }`
+          : ''
+      }.`,
     metrics: [
       { label: 'PRs mergées', value: week.merged },
       { label: 'Issues fermées', value: week.issuesClosed },
@@ -142,9 +191,9 @@ export const projectPulse = (project: Project) => {
     ],
     blockers,
     health,
-    languages: languages[project.slug] ??
-      project.stack.map((skill, i): [string, number] => [skill, i ? 30 : 70]),
-    domains: domains[project.slug] ?? ['Backend'],
+    // Read from GitHub only: skills are not languages
+    languages: languages[project.slug] ?? project.languages ?? [],
+    domains: domains[project.slug] ?? [],
     story: stories[project.slug] ?? [],
   }
 }

@@ -19,6 +19,10 @@ export type Project = {
   sync: 'live' | 'poll' | 'none'
   /** The GitHub App is installed: live sync comes back without a dialog */
   appInstalled?: boolean
+  /** Name of the GitHub repo when it differs from the slug */
+  repo?: string
+  /** Languages read from GitHub, percent of the code (§6.5) */
+  languages?: [string, number][]
   description: string
   contributors: number
   openIssues: number

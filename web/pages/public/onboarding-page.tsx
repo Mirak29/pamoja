@@ -16,7 +16,7 @@ import {
   onboardingDraft,
 } from '/web/fixtures/onboarding.ts'
 import { countries, me } from '/web/fixtures/people.ts'
-import { createProject, repos } from '/web/fixtures/repos.ts'
+import { createProject, importableRepos } from '/web/fixtures/repos.ts'
 import { domains, intents } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -273,9 +273,7 @@ const MatchingStep = (
   </>
 )
 
-// Public repos of the developer that are not on Pamoja yet (§5.4)
-const importable = () =>
-  repos.filter((repo) => repo.owner === me.login && !repo.existing)
+const importable = importableRepos
 
 const ProjectStep = (
   { repo, pick }: { repo: string | null; pick: (name: string) => void },

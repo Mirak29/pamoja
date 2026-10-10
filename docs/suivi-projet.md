@@ -455,6 +455,13 @@ Le demandeur et l'aidant accepté échangent dans le fil de la demande, sur sa p
 - **Livrable** : `web/fixtures/help.ts`, `web/pages/help/help-detail.tsx`, `docs/cahier-des-charges.md` §7.2 et §14.4
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-424 · Projet sans données et provenance, retours QA 2
+
+L'événement de synchro de l'Accueil garde son projet. Un projet créé ou importé n'a plus d'historique inventé : semaine à zéro, Health « Pas encore mesuré », good first issues comptées pour de vrai, langages lus sur le repo (plus de skills présentés comme langages), et un résumé automatique déterministe au lieu d'un chargement sans fin. Sans repo, plus de faux lien GitHub, et les réglages proposent de lier un de ses repos publics (issues, PRs et langages suivent). Les non-lus des canaux restent lus et ne comptent plus ses propres messages. Tout ce que fait la simulation est marqué Démo, jamais « Vérifié par GitHub ».
+
+- **Livrable** : `web/fixtures/pulse.ts`, `web/fixtures/channels.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/lib/links.ts`, `web/pages/project/`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/public/onboarding-page.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

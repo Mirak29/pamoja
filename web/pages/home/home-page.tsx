@@ -45,7 +45,7 @@ import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
-import { DemoBadge, SkillChip, VerifiedBadge } from '/web/ui/badge.tsx'
+import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -135,8 +135,7 @@ const GithubEvent = (
           · {ago(at)}
         </span>
       </div>
-      {session && <VerifiedBadge />}
-      {!session && project.demo && <DemoBadge />}
+      {(session || project.demo) && <DemoBadge />}
     </div>
   )
 }
@@ -234,7 +233,14 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
         .map((entry) => ({
           at: entry.at,
           key: `${project.slug}-${entry.at}-${entry.text}`,
-          node: <GithubEvent project={project} {...entry} />,
+          node: (
+            <GithubEvent
+              project={project}
+              text={entry.text}
+              at={entry.at}
+              session={entry.session}
+            />
+          ),
         }))
     )
     items = [...items, ...events].sort((a, b) => b.at - a.at)

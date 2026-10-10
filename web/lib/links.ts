@@ -1,17 +1,18 @@
 import type { Project } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 
-type Repo = Pick<Project, 'owner' | 'slug'>
+type Repo = Pick<Project, 'owner' | 'slug' | 'repo'>
+
+/** The repo of a project on GitHub, without the protocol */
+export const repoPath = (project: Repo) =>
+  `github.com/${project.owner}/${project.repo ?? project.slug}`
 
 /** The page of an issue or a PR on GitHub */
 export const githubUrl = (
   project: Repo,
   kind: 'issues' | 'pull' | 'releases',
   number?: number,
-) =>
-  `https://github.com/${project.owner}/${project.slug}/${kind}${
-    number ? `/${number}` : ''
-  }`
+) => `https://${repoPath(project)}/${kind}${number ? `/${number}` : ''}`
 
 export type Link = { href: string; params?: Record<string, string> }
 
