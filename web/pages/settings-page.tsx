@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks'
 import { Download, Github, Info } from '/web/assets/icons.tsx'
 import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
 import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
@@ -64,6 +65,32 @@ const toggle = (list: string[], value: string) =>
   list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
 
 /** Profile, proofs, posts and settings of the developer, as a JSON file */
+// Session data only lives in this page until the API exists: reloading
+// brings the demo back to its start, after asking
+const ResetDemo = () => {
+  const [asking, setAsking] = useState(false)
+  if (!asking) {
+    return (
+      <Button variant='secondary' onClick={() => setAsking(true)}>
+        Réinitialiser la démo
+      </Button>
+    )
+  }
+  return (
+    <span class='flex flex-wrap items-center gap-2.5'>
+      <span class='text-[14px] font-semibold'>
+        Tout ce que tu as fait pendant la démo sera effacé.
+      </span>
+      <Button variant='danger' size={34} onClick={() => location.reload()}>
+        Réinitialiser
+      </Button>
+      <Button variant='secondary' size={34} onClick={() => setAsking(false)}>
+        Annuler
+      </Button>
+    </span>
+  )
+}
+
 const exportData = () => {
   const data = {
     profile: me,
@@ -71,15 +98,20 @@ const exportData = () => {
     posts: posts.filter((p) => p.author === me.login),
     settings,
   }
+  // In the page and revoked later: some browsers drop a detached link, or a
+  // file whose address is revoked before the download starts
   const link = document.createElement('a')
   link.href = URL.createObjectURL(
     new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
   )
   link.download = `pamoja-${me.login}.json`
+  link.hidden = true
+  document.body.append(link)
   link.click()
-  URL.revokeObjectURL(link.href)
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(link.href), 10_000)
   notify({
-    title: 'Export prêt',
+    title: 'Export téléchargé',
     body: `pamoja-${me.login}.json : profil, preuves, posts et réglages.`,
     icon: Download,
     tone: 'verified',
@@ -256,10 +288,7 @@ export const SettingsPage = () => {
           <Button variant='secondary' onClick={exportData}>
             Exporter mes données
           </Button>
-          {/* Session data only lives in this page until the API exists */}
-          <Button variant='secondary' onClick={() => location.reload()}>
-            Réinitialiser la démo
-          </Button>
+          <ResetDemo />
           <Button
             variant='danger'
             onClick={() =>

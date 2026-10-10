@@ -420,6 +420,13 @@ Les lettres tapées juste après ⌘K ou Ctrl K ne se perdent plus avant l'affic
 - **Livrable** : `web/ui/command-palette.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-520 · Réglages
+
+L'export télécharge le fichier JSON de façon fiable : le lien est posé dans la page et son adresse n'est libérée qu'après le début du téléchargement. « Réinitialiser la démo » demande confirmation avant d'effacer la session.
+
+- **Livrable** : `web/pages/settings-page.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
