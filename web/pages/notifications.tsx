@@ -143,6 +143,7 @@ export const NotificationsPage = () => {
   notificationsChanged.value
   applicationsChanged.value
   const mine = notifications.filter((n) => n.to === me.login)
+    .sort((a, b) => b.at - a.at)
   const current = categories.find(([key]) => key === url.params.categorie) ??
     categories[0]
   const list = mine.filter((n) => !current[1] || n.category === current[1])

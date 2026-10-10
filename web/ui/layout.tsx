@@ -1,10 +1,31 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect } from 'preact/hooks'
+import { url } from '@01edu/signal-router'
+import { incoming } from '/web/fixtures/notifications.ts'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { CreateMenu, MobileNav, Sidebar } from '/web/ui/navigation.tsx'
 import { ReportDialog } from '/web/ui/report-dialog.tsx'
-import { Toasts } from '/web/ui/toast.tsx'
+import { notify, Toasts } from '/web/ui/toast.tsx'
+
+// A notification that arrives for the signed-in developer pops up as a
+// toast, as the SSE entry will do (§7.4, §13)
+const LiveNotifications = () => {
+  useEffect(() => {
+    // subscribe() calls back at once with the last value: skip it
+    let first = true
+    return incoming.subscribe((notification) => {
+      if (first || !notification) return void (first = false)
+      const here = url.peek().pathname === `/${notification.href}`
+      notify({
+        title: notification.title,
+        body: notification.body,
+        href: here ? undefined : notification.href,
+      })
+    })
+  }, [])
+  return null
+}
 
 /** Shell of the signed-in app: sidebar, header, page, mobile tab bar */
 export const AppLayout = ({ children }: { children: ComponentChildren }) => (
@@ -21,6 +42,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <CommandPalette />
     <ReportDialog />
     <Toasts />
+    <LiveNotifications />
   </div>
 )
 

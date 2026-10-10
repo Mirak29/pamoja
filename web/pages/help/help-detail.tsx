@@ -513,6 +513,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
             {project && request.pullRequest && (
               <A
                 href={`projet/${project.slug}/prs`}
+                params={{ dialog: `pr-${request.pullRequest}` }}
                 class='font-mono text-[14px] leading-5 font-medium'
               >
                 PR #{request.pullRequest}

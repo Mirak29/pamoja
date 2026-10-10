@@ -336,6 +336,13 @@ Le sélecteur de skills et ses puces passent dans `web/ui/chips.tsx` (nouvelle d
 - **Livrable** : `web/pages/public/onboarding-page.tsx`, `web/fixtures/onboarding.ts`, `web/ui/chips.tsx`, vocabulaires de `web/fixtures/skills.ts`
 - **Par** : @niangoos
 
+### 2026-10-10 · PAM-218 · Boucle de démo jouable de bout en bout
+
+Sur données fictives, une demande publiée par Abdou reçoit maintenant sa réponse : le meilleur développeur notifié accepte, puis sa review est détectée sur la PR, chaque étape arrive en notification et en toast. La confirmation ajoute la preuve et l'aide confirmée au profil de l'aidant. « Pour toi » reçoit les demandes qui correspondent, les notifications sont triées par date et ouvrent l'objet exact (panneau de la PR), et le rail « PRs à relire » n'affiche plus ses propres PRs.
+
+- **Livrable** : `web/fixtures/help.ts`, `web/fixtures/notifications.ts`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-detail.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

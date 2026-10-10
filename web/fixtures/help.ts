@@ -1,8 +1,10 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { match, waves } from '/web/fixtures/matching.ts'
+import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { proofs } from '/web/fixtures/reputation.ts'
 import { settings } from '/web/fixtures/settings.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
@@ -204,7 +206,65 @@ export const publishHelp = (draft: HelpDraft) => {
   ]
   helpRequests.unshift(request)
   helpChanged.value++
+  answer(request)
   return request
+}
+
+// Delays of the simulated answer, short enough to rehearse the demo
+const ACCEPT_DELAY = 4000
+const REVIEW_DELAY = 7000
+
+/**
+ * What the other side does until the API exists: the best notified developer
+ * accepts, then their review is detected on GitHub, or they deliver the help
+ * (§7.2, §7.5). Each step reaches the requester as a notification.
+ */
+const answer = (request: HelpRequest) => {
+  const helper = waves(request)[0][0]?.login
+  if (!helper) return
+  const name = firstName(helper)
+  setTimeout(() => {
+    if (request.status !== 'open') return
+    Object.assign(request, {
+      status: 'accepted',
+      helper,
+      acceptedAt: Date.now(),
+    })
+    log(request, `${name} a accepté la demande`)
+    helpChanged.value++
+    pushNotification({
+      to: request.author,
+      category: 'for-you',
+      kind: 'help',
+      title: `${name} a accepté ta demande`,
+      body: request.pullRequest
+        ? `Sa review de la PR #${request.pullRequest} sera détectée sur GitHub.`
+        : `« ${request.title} »`,
+      href: `aide/${request.id}`,
+    })
+    setTimeout(() => {
+      if (request.status !== 'accepted' || request.helper !== helper) return
+      const review = !!request.pullRequest
+      request.status = review ? 'review_submitted' : 'delivered'
+      log(
+        request,
+        review
+          ? `Review de ${name} détectée sur la PR #${request.pullRequest}`
+          : `${name} a marqué l’aide comme livrée`,
+      )
+      helpChanged.value++
+      pushNotification({
+        to: request.author,
+        category: 'for-you',
+        kind: 'help',
+        title: review
+          ? `${name} a relu la PR #${request.pullRequest}`
+          : `${name} a livré son aide`,
+        body: 'Confirme si elle t’a aidé : la preuve rejoint son profil.',
+        href: `aide/${request.id}`,
+      })
+    }, REVIEW_DELAY)
+  }, ACCEPT_DELAY)
 }
 
 export type HelpAction =
@@ -222,6 +282,27 @@ type Feedback = {
   title: string
   body?: string
   tone: 'verified' | 'warning' | 'muted'
+}
+
+/** REVIEW_HELP_CONFIRMED: the helper gets a proof and a confirmed help (§8.3) */
+const confirmProof = (request: HelpRequest) => {
+  const helper = request.helper!
+  people[helper].confirmedHelps++
+  proofs.push({
+    id: `p${proofs.length + 1}`,
+    who: helper,
+    dimension: request.pullRequest ? 'review' : 'help',
+    title: request.pullRequest
+      ? `Review de la PR #${request.pullRequest}`
+      : request.title,
+    project: request.project,
+    by: request.author,
+    at: Date.now(),
+    verified: false,
+    pullRequest: request.pullRequest,
+    help: request.id,
+    demo: true,
+  })
 }
 
 /** The lifecycle transitions of §7.2, played by the signed-in developer */
@@ -323,6 +404,7 @@ export const actOnHelp = (
       case 'confirm':
         request.status = 'completed'
         log(request, `${firstName(me.login)} a confirmé que l’aide était utile`)
+        confirmProof(request)
         return {
           title: 'Merci pour la confirmation',
           body: `${firstName(helper!)} reçoit une preuve sur son profil.`,

@@ -393,8 +393,9 @@ const plural = (count: number, one: string, many: string) =>
 const homeData = () => {
   const matches = matchingRequests(me)
   const slugs = myProjects().map((p) => p.slug)
+  // Reviews I can give: my own PRs wait for others
   const waiting = pullRequests.filter((pr) =>
-    pr.state === 'open' && pr.review === 'waiting' &&
+    pr.state === 'open' && pr.review === 'waiting' && !isMe(pr.author) &&
     slugs.includes(pr.project)
   )
   return {
@@ -481,6 +482,7 @@ const Rail = () => {
           <A
             key={`${pr.project}-${pr.number}`}
             href={`projet/${pr.project}/prs`}
+            params={{ dialog: `pr-${pr.number}` }}
             class='flex flex-col border-b border-line py-2.5 text-ink no-underline hover:no-underline'
           >
             <span class='text-[14px] leading-5 font-semibold'>
@@ -562,7 +564,7 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.fil)?.[0] ??
     'pour-toi'
   const items = feedItems(current)
-  const { matchTitle, reviewTitle } = homeData()
+  const { matchTitle, reviewTitle, waiting } = homeData()
   return (
     <Page
       title='Accueil'
@@ -574,7 +576,12 @@ export const HomePage = () => {
             <LifeBuoy />
             {matchTitle}
           </Button>
-          <Button variant='secondary' href='projets'>{reviewTitle}</Button>
+          <Button
+            variant='secondary'
+            href={waiting[0] ? `projet/${waiting[0].project}/prs` : 'projets'}
+          >
+            {reviewTitle}
+          </Button>
         </div>
         <Composer />
         <Tabs
