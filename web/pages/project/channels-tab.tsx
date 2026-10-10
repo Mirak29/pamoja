@@ -368,9 +368,10 @@ const NotifySelect = ({ tracking }: { tracking: boolean }) => {
         onChange={(event) => setValue(event.currentTarget.value)}
         class='well h-8 px-2 text-[13px] leading-none text-ink'
       >
-        {notifyOptions.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
+        {notifyOptions
+          .filter((option) => tracking || option !== 'Seulement mes PRs')
+          .map((option) => <option key={option} value={option}>{option}
+          </option>)}
       </select>
     </label>
   )

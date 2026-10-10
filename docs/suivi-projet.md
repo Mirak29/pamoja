@@ -357,6 +357,13 @@ Le formulaire affiche toutes ses erreurs d'un coup, sous chaque champ, reliées 
 - **Livrable** : `web/pages/help/new-help.tsx`, `web/pages/help/help-detail.tsx`, `web/fixtures/help.ts`, `web/ui/input.tsx`, `web/ui/chips.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-10 · PAM-423 · Alerte « CI en échec » dans #suivi
+
+Sur données fictives, la PR #79 d'OpenPay Africa a sa CI en échec : l'alerte arrive dans `#suivi` (et dans le fil et l'activité du projet), et « Demander de l'aide » ouvre une demande Debug pré-remplie depuis l'alerte (`?ci=79`). L'option « Seulement mes PRs » n'est plus proposée que dans `#suivi`.
+
+- **Livrable** : `web/fixtures/channels.ts`, `web/fixtures/pull-requests.ts`, `web/fixtures/projects.ts`, `web/pages/project/channels-tab.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -99,6 +99,16 @@ export const channels: Partial<
         at: hoursAgo(2),
         demo: true,
       },
+      {
+        id: 'm8',
+        author: 'platform',
+        kind: 'ci-failed',
+        text:
+          'CI en échec sur la PR #79 « Retry policy for Wave callbacks » : le job test (go 1.22) échoue sur fix/wave-retry.',
+        pullRequest: 79,
+        at: hoursAgo(1),
+        demo: true,
+      },
     ],
     help: [
       {

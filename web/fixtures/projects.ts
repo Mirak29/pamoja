@@ -131,6 +131,10 @@ export const projects = {
         at: hoursAgo(6),
       },
       {
+        text: 'CI en échec sur la PR #79 : job test (go 1.22)',
+        at: hoursAgo(1),
+      },
+      {
         text: 'Issue #44 marquée blocked : verrou SQLite sous charge',
         at: daysAgo(3),
       },
