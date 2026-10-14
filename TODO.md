@@ -65,7 +65,7 @@ Responsable : _à répartir_
 - [x] **PAM-102** · Build esbuild + `task-dev.ts` (route `/api` vers l'API) + `prod-server.ts` (§12.2) — @niangoos
 - [x] **PAM-103** · **Prototype à risque** : Tailwind CLI v4 sans twind ni daisyUI, en watch en dev et dans le build (§12.3) — à finir fin J1 — @niangoos
 - [ ] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — à finir fin J1
-- [ ] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
+- [x] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
 - [ ] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
 - [ ] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
@@ -266,3 +266,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-09 · Onboarding : les 11 domaines du §6.1, pas les 7 du prototype ; une seule liste d'intentions, celle du §6.1, affichée sur les cartes et filtrée dans Explore · §6.1
 - 2026-10-10 · QA complète du frontend sur données fictives : corrections découpées en PAM-120, PAM-121, PAM-218 à PAM-221, PAM-315, PAM-421 à PAM-423, PAM-517 à PAM-520 ; la boucle de démo passe en premier · §4, §18
 - 2026-10-10 · Fil de la demande d'aide entre demandeur et aidant accepté, à la place de `#aide` : l'aidant n'entre pas dans le projet (`HelpMessage`) ; retours de la QA 2 découpés en PAM-122, PAM-222, PAM-424, PAM-521 · §7.2, §14.4
+- 2026-10-14 · Clés primaires nommées d'après la table (`userId`), comme Tournament ; schéma initial dans `api/schema.ts`, les migrations ne font évoluer qu'une base existante ; `source` sur les lignes racines pour la démo ; `Task.boardColumn` car `column` est un mot réservé SQL · §12.5, §14

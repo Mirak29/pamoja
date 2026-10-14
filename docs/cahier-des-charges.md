@@ -574,9 +574,11 @@ Lus dans `router.ts` (0.2.10) :
 
 - **PRAGMA appliqués par la librairie** : `temp_store = memory`, `synchronous = NORMAL`, `encoding = UTF-8`, et `journal_mode = WAL` **seulement si `APP_ENV === 'prod'`**.
 - **Non appliqués** : `busy_timeout` (présent en commentaire seulement) et `foreign_keys`. À exécuter nous-mêmes au démarrage : `PRAGMA foreign_keys = ON` et `PRAGMA busy_timeout = 5000`. Sans `foreign_keys = ON`, les clés étrangères déclarées avec `join` ne sont pas appliquées par SQLite.
-- **Clé primaire** : une seule colonne, de type `INTEGER`, créée en `PRIMARY KEY AUTOINCREMENT`. Pas de clé composite : on utilise un `id` technique + `CREATE UNIQUE INDEX` via `sql`.
+- **Clé primaire** : une seule colonne, de type `INTEGER`, créée en `PRIMARY KEY AUTOINCREMENT`. Pas de clé composite : on utilise une clé technique + `CREATE UNIQUE INDEX` via `sql`. Son nom est libre : comme Tournament, on la nomme d'après la table (`userId`, `helpRequestId`), du même nom que la relation d'entries, pour qu'aucune jointure ne mélange plusieurs colonnes `id`.
+- **Clé étrangère** : `join` référence une table déjà créée. Une table ne peut donc pas pointer vers elle-même : ces colonnes (`Post.parentId`, `ProjectMessage.parentMessageId`…) restent des `INTEGER` sans contrainte, vérifiés par le code. Les cibles polymorphes (`targetType` + `targetId`) n'ont pas de contrainte non plus.
+- **Mise à jour** : `update` écrit `COALESCE(:col, col)` ; il ne remet jamais une colonne à `NULL`. Pour vider une colonne, passer par `sql`.
 - **Types de colonnes** : `TEXT`, `JSON`, `BLOB`, `INTEGER`, `REAL`.
-- **Migrations** : `runMigrations` suit la version avec `PRAGMA user_version`. Elles s'exécutent avant `createTable`, qui vérifie que la table existante correspond au schéma déclaré (voir le commentaire en tête de `api/schema.ts` dans Tournament).
+- **Migrations** : `runMigrations` suit la version avec `PRAGMA user_version`. Elles s'exécutent avant `createTable`, qui vérifie que la table existante correspond au schéma déclaré (voir le commentaire en tête de `api/schema.ts` dans Tournament). Sur une base neuve, aucune migration ne s'exécute : `runMigrations` note la dernière version et ce sont les `createTable` qui créent les tables. Le schéma initial vit donc dans `api/schema.ts` ; une migration ne sert qu'à faire évoluer une base existante, dans une transaction (`BEGIN IMMEDIATE`).
 
 ### 12.6 Arborescence
 
@@ -686,32 +688,32 @@ La présence est éphémère et n'utilise pas les entries (elles sont persistée
 
 ## 14. Modèle de données
 
-Conventions : clé primaire `id INTEGER` partout (seul cas supporté par `@01edu/db`), unicité par `CREATE UNIQUE INDEX`, dates en `REAL` (timestamp en millisecondes, comme Tournament), données structurées en colonne `JSON` validée à l'écriture, clés étrangères déclarées avec `join` (appliquées grâce à `PRAGMA foreign_keys = ON`). Il n'y a **pas de table Activity** : l'activité est une requête sur les entries.
+Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `helpRequestId`, §12.5), unicité par `CREATE UNIQUE INDEX`, dates en `REAL` (timestamp en millisecondes, comme Tournament), données structurées en colonne `JSON` validée à l'écriture, clés étrangères déclarées avec `join` (appliquées grâce à `PRAGMA foreign_keys = ON`). Il n'y a **pas de table Activity** : l'activité est une requête sur les entries.
 
-**Données de démonstration.** Toute ligne et toute entry créées par le seed portent `source = demo`. L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
+**Données de démonstration.** Toute entry et toute ligne racine créées par le seed portent `source = demo`. Les lignes racines sont `User`, `Project`, `Repository`, `PullRequest`, `Issue`, `Review`, `ProjectMessage`, `HelpRequest`, `Community`, `Post` et `Media` ; leur colonne `source` vaut `demo`, `github` (synchronisée) ou `platform` (écrite sur Pamoja). Une ligne qui en dépend (profil, membre, tâche, match…) suit la source de son parent. `UserSkill.source` et `CiRun.source` gardent leur sens propre, décrit dans leur ligne. L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
 
 ### 14.1 Identité et profil
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `User` | id, githubId, githubUsername, avatarUrl, email?, suspendedUntil?, source, createdAt, updatedAt | UNIQUE(githubId). On identifie par `githubId`, jamais par le username, qui peut changer |
-| `Profile` | id, userId, displayName, headline, bio, country, city, website, coverUrl, theme, accent, availability, sectionOrder (JSON), featured (JSON), matchingMode (instant / digest / off), matchingFilters (JSON), createdAt, updatedAt | UNIQUE(userId) |
-| `Skill` | id, slug, name, category | UNIQUE(slug) |
-| `SkillAlias` | id, alias, skillId | UNIQUE(alias) ; ex. `postgres` → `postgresql` |
-| `UserSkill` | id, userId, skillId, source (declared / github / platform\_activity), createdAt | UNIQUE(userId, skillId, source) |
-| `UserIntent` | id, userId, intent | UNIQUE(userId, intent) |
-| `Follow` | id, followerId, targetType (user / project / community), targetId, createdAt | UNIQUE(followerId, targetType, targetId) |
+| `User` | userId, githubId, githubUsername, avatarUrl, email?, suspendedUntil?, source, createdAt, updatedAt | UNIQUE(githubId). On identifie par `githubId`, jamais par le username, qui peut changer |
+| `Profile` | profileId, userId, displayName, headline?, bio?, country?, city?, website?, coverUrl?, theme, accent, availability, sectionOrder? (JSON), featured? (JSON), matchingMode (instant / digest / off), matchingFilters? (JSON), createdAt, updatedAt | UNIQUE(userId) |
+| `Skill` | skillId, slug, name, category | UNIQUE(slug) |
+| `SkillAlias` | skillAliasId, alias, skillId | UNIQUE(alias) ; ex. `postgres` → `postgresql` |
+| `UserSkill` | userSkillId, userId, skillId, source (declared / github / platform\_activity), createdAt | UNIQUE(userId, skillId, source) |
+| `UserIntent` | userIntentId, userId, intent | UNIQUE(userId, intent) |
+| `Follow` | followId, followerId, targetType (user / project / community), targetId, createdAt | UNIQUE(followerId, targetType, targetId) |
 
 ### 14.2 GitHub
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `GithubInstallation` | id, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId, createdAt, updatedAt | UNIQUE(githubInstallationId) |
-| `Repository` | id, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag (JSON), lastSyncedAt | UNIQUE(githubId) |
-| `PullRequest` | id, repositoryId, githubId, number, title, state, authorGithubId, additions, deletions, mergedAt?, createdAt, updatedAt | UNIQUE(repositoryId, number) |
-| `Issue` | id, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, createdAt, updatedAt | UNIQUE(repositoryId, number) |
-| `Review` | id, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId? | UNIQUE(githubReviewId) |
-| `WebhookDelivery` | id, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
+| `GithubInstallation` | installationId, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId?, createdAt, updatedAt | UNIQUE(githubInstallationId) |
+| `Repository` | repositoryId, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag? (JSON), lastSyncedAt?, source | UNIQUE(githubId) |
+| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state, authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt | UNIQUE(repositoryId, number) |
+| `Issue` | issueId, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, source, createdAt, updatedAt | UNIQUE(repositoryId, number) |
+| `Review` | reviewId, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId?, source | UNIQUE(githubReviewId) |
+| `WebhookDelivery` | deliveryId, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
 
 Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 
@@ -719,17 +721,17 @@ Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `Project` | id, ownerId, name, slug, description, vision, visibility (public / unlisted), status, createdAt, updatedAt | UNIQUE(slug) |
-| `ProjectMember` | id, projectId, userId, role (owner / maintainer / contributor / reviewer / observer), joinedAt | UNIQUE(projectId, userId) |
-| `JoinRequest` | id, projectId, userId, areas (JSON), availability, message, status, createdAt | Index (projectId, status) |
-| `ProjectNeed` | id, projectId, type, title, description, skills (JSON d'ids), status, createdAt, updatedAt | Index (projectId, status) |
-| `Milestone` | id, projectId, title, description, status (planned / active / done), position, createdAt | — |
-| `Task` | id, projectId, milestoneId?, column (backlog / ready / in\_progress / review / done), title, description, priority, assigneeId?, issueId?, pullRequestId?, rank (TEXT), createdAt, updatedAt | Index (projectId, column, rank) |
-| `ProjectMessage` | id, projectId, channel (general / help / announcements), authorId, body, parentMessageId?, parentEntryId? (fil sous une alerte de `#suivi`), hiddenAt?, createdAt | Index (projectId, channel, createdAt) |
-| `ChannelState` | id, userId, projectId, channel (general / tracking / help / announcements), lastReadAt, notify (all / mentions / mine / none) | UNIQUE(userId, projectId, channel) |
-| `CiRun` | id, repositoryId, githubId, source (actions / checks / status), name, headSha, branch, pullRequestId?, conclusion, url, completedAt | UNIQUE(repositoryId, source, githubId) ; sert à détecter « CI réparée » |
-| `MessageReaction` | id, messageId, userId, emoji | UNIQUE(messageId, userId, emoji) |
-| `ProjectSummary` | id, projectId, period, content, inputHash, createdAt | Résumés IA du Pulse |
+| `Project` | projectId, ownerId, name, slug, description, vision?, visibility (public / unlisted), status, source, createdAt, updatedAt | UNIQUE(slug) |
+| `ProjectMember` | projectMemberId, projectId, userId, role (owner / maintainer / contributor / reviewer / observer), joinedAt | UNIQUE(projectId, userId) |
+| `JoinRequest` | joinRequestId, projectId, userId, areas (JSON), availability, message, status, createdAt | Index (projectId, status) |
+| `ProjectNeed` | projectNeedId, projectId, type, title, description?, skills (JSON d'ids), status, createdAt, updatedAt | Index (projectId, status) |
+| `Milestone` | milestoneId, projectId, title, description?, status (planned / active / done), position, createdAt | — |
+| `Task` | taskId, projectId, milestoneId?, boardColumn (backlog / ready / in\_progress / review / done), title, description?, priority?, assigneeId?, issueId?, pullRequestId?, rank (TEXT), createdAt, updatedAt | Index (projectId, boardColumn, rank). `boardColumn` et non `column`, mot réservé SQL que `createTable` n'échappe pas |
+| `ProjectMessage` | messageId, projectId, channel (general / help / announcements), authorId, body, parentMessageId?, parentEntryId? (fil sous une alerte de `#suivi`), hiddenAt?, source, createdAt | Index (projectId, channel, createdAt) |
+| `ChannelState` | channelStateId, userId, projectId, channel (general / tracking / help / announcements), lastReadAt?, notify (all / mentions / mine / none) | UNIQUE(userId, projectId, channel) |
+| `CiRun` | ciRunId, repositoryId, githubId, source (actions / checks / status), name, headSha, branch, pullRequestId?, conclusion?, url, completedAt? | UNIQUE(repositoryId, source, githubId) ; sert à détecter « CI réparée » |
+| `MessageReaction` | messageReactionId, messageId, userId, emoji | UNIQUE(messageId, userId, emoji) |
+| `ProjectSummary` | projectSummaryId, projectId, period, content, inputHash, createdAt | Résumés IA du Pulse |
 
 `Task.rank` est un rang fractionnaire en texte : insérer une carte entre deux autres ne renumérote pas la colonne.
 
@@ -737,12 +739,12 @@ Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `HelpRequest` | id, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, createdAt, updatedAt | Index (status), (authorId) |
-| `HelpMatch` | id, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
-| `HelpMessage` | id, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
-| `Notification` | id, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
-| `BadgeProgress` | id, userId, badge, level, count, updatedAt | UNIQUE(userId, badge) |
-| `Embedding` | id, targetType (user / help\_request), targetId, model, vector (BLOB), inputHash, createdAt | UNIQUE(targetType, targetId, model) |
+| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt | Index (status), (authorId) |
+| `HelpMatch` | helpMatchId, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
+| `HelpMessage` | helpMessageId, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
+| `Notification` | notificationId, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
+| `BadgeProgress` | badgeProgressId, userId, badge, level, count, updatedAt | UNIQUE(userId, badge) |
+| `Embedding` | embeddingId, targetType (user / help\_request), targetId, model, vector (BLOB), inputHash, createdAt | UNIQUE(targetType, targetId, model) |
 
 Les badges sont définis dans le code (constantes, §8.2), pas en base.
 
@@ -750,14 +752,14 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `Community` | id, slug, name, type (technology / country / domain), description, countryCode?, createdAt | UNIQUE(slug) |
-| `CommunityMember` | id, communityId, userId, role (member / moderator), joinedAt | UNIQUE(communityId, userId) |
-| `Post` | id, authorId, communityId?, projectId?, type, title?, body, attachments (JSON), parentId? (réponse à un post), rootId? (premier post du fil), repostOfId? (republication), acceptedReplyId?, hiddenAt?, createdAt, updatedAt | Index (communityId, createdAt), (parentId, createdAt), (rootId) |
-| `Reaction` | id, userId, targetType, targetId, kind (like / useful) | UNIQUE(userId, targetType, targetId, kind) |
-| `Bookmark` | id, userId, postId, createdAt | UNIQUE(userId, postId) |
-| Report | id, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
-| ModerationAction | id, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
-| Media | id, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
+| `Community` | communityId, slug, name, type (technology / country / domain), description, countryCode?, source, createdAt | UNIQUE(slug) |
+| `CommunityMember` | communityMemberId, communityId, userId, role (member / moderator), joinedAt | UNIQUE(communityId, userId) |
+| `Post` | postId, authorId, communityId?, projectId?, type, title?, body, attachments? (JSON), parentId? (réponse à un post), rootId? (premier post du fil), repostOfId? (republication), acceptedReplyId?, hiddenAt?, source, createdAt, updatedAt | Index (communityId, createdAt), (parentId, createdAt), (rootId) |
+| `Reaction` | reactionId, userId, targetType, targetId, kind (like / useful) | UNIQUE(userId, targetType, targetId, kind) |
+| `Bookmark` | bookmarkId, userId, postId, createdAt | UNIQUE(userId, postId) |
+| Report | reportId, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
+| ModerationAction | moderationActionId, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
+| Media | mediaId, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
 
 ### 14.6 Entries
 

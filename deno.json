@@ -40,6 +40,7 @@
     "./": "./",
     "/": "./",
     "@01edu/api": "jsr:@01edu/api@^0.2.11",
+    "@01edu/db": "jsr:@01edu/db@^0.2.6",
     "@01edu/signal-router": "jsr:@01edu/signal-router@^0.2.3",
     "@preact/signals": "npm:@preact/signals@^2.9.1",
     "@tailwindcss/cli": "npm:@tailwindcss/cli@^4.3.1",
