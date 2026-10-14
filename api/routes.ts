@@ -6,6 +6,7 @@ import {
   githubUserFromCode,
   isSimulated,
 } from '/api/github-oauth.ts'
+import { openEvents } from '/api/events.ts'
 import { log } from '/api/lib/log.ts'
 import {
   createSession,
@@ -105,6 +106,22 @@ const defs = {
     fn: (ctx) => getCurrentUser(ctx.session.userId) ?? respond.Unauthorized(),
     output: OBJ(currentUser, 'The signed in developer'),
     description: 'The signed in developer and their profile',
+  }),
+
+  /*
+   * Realtime (§13.2)
+   */
+  'GET/api/events': route({
+    authorize: withSession,
+    fn: (ctx) => {
+      if (!ctx.req.headers.get('accept')?.includes('text/event-stream')) {
+        throw new respond.BadRequestError({
+          message: 'Must accept text/event-stream',
+        })
+      }
+      return openEvents(ctx.session.userId)
+    },
+    description: 'Entries as they happen, and an ack every 15 seconds',
   }),
 
   /*
