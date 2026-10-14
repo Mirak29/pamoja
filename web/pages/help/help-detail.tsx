@@ -452,7 +452,11 @@ const HelpThread = (
           key={`${message.at}${message.author}`}
           class='flex animate-enter-fast gap-3'
         >
-          <Avatar name={people[message.author].name} size={30} />
+          <Avatar
+            name={people[message.author].name}
+            src={people[message.author].avatarUrl}
+            size={30}
+          />
           <div class='flex min-w-0 flex-1 flex-col gap-0.5'>
             <span class='flex flex-wrap items-baseline gap-2'>
               <span class='font-display text-[14px] leading-5 font-semibold'>
@@ -538,7 +542,7 @@ const MatchRow = (
           href={`@${matched.login}`}
           class='flex min-w-0 flex-1 items-center gap-3 text-ink no-underline hover:no-underline'
         >
-          <Avatar name={person.name} size={34} />
+          <Avatar name={person.name} src={person.avatarUrl} size={34} />
           <span class='flex min-w-0 flex-col'>
             <span class='font-display text-[14px] leading-5 font-semibold'>
               {person.name}
@@ -745,7 +749,11 @@ export const HelpDetail = ({ id }: { id: string }) => {
               href={`@${request.author}`}
               class='flex items-center gap-2 font-semibold text-ink no-underline hover:no-underline'
             >
-              <Avatar name={people[request.author].name} size={26} />
+              <Avatar
+                name={people[request.author].name}
+                src={people[request.author].avatarUrl}
+                size={26}
+              />
               {people[request.author].name}
             </A>
             <span>

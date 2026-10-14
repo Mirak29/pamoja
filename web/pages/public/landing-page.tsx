@@ -1,7 +1,7 @@
 import { A } from '@01edu/signal-router'
 import { Github } from '/web/assets/icons.tsx'
-import { type Login, people } from '/web/fixtures/people.ts'
-import { initials } from '/web/ui/avatar.tsx'
+import { type Login, people, placeOf } from '/web/fixtures/people.ts'
+import { Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -277,15 +277,18 @@ const ProfilePreview = ({ login }: { login: Login }) => {
         </svg>
       </div>
       <div class='flex flex-col gap-3 px-[22px] pb-[22px]'>
-        <span class='relative -mt-9 flex size-[72px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[24px] leading-none font-bold shadow-slab'>
-          {initials(person.name)}
-        </span>
+        <Portrait
+          name={person.name}
+          src={person.avatarUrl}
+          px={72}
+          class='relative -mt-9 flex size-[72px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[24px] leading-none font-bold shadow-slab'
+        />
         <div class='flex flex-col gap-0.5'>
           <span class='font-display text-[24px] leading-[30px] font-bold'>
             {person.name}
           </span>
           <span class='text-[13px] text-ink-muted'>
-            {person.city}, {person.country}
+            {placeOf(person)}
           </span>
         </div>
         <span class='text-[15px] leading-[23px] text-pretty'>

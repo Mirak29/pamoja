@@ -127,7 +127,13 @@ const authorName = (message: Message) =>
 
 const Author = ({ message }: { message: Message }) => {
   if (message.author !== 'platform') {
-    return <Avatar name={people[message.author].name} size={34} />
+    return (
+      <Avatar
+        name={people[message.author].name}
+        src={people[message.author].avatarUrl}
+        size={34}
+      />
+    )
   }
   const [Icon, color] = alertIcons[message.kind ?? 'pr']
   return (
@@ -293,7 +299,11 @@ const Thread = (
     <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
       {repliesOf(message).map((reply) => (
         <div key={reply.id} class='flex gap-2.5'>
-          <Avatar name={people[reply.author].name} size={26} />
+          <Avatar
+            name={people[reply.author].name}
+            src={people[reply.author].avatarUrl}
+            size={26}
+          />
           <div class='flex min-w-0 flex-col gap-0.5'>
             <span class='font-display text-[13px] leading-[18px] font-semibold'>
               {people[reply.author].name}{' '}
@@ -331,8 +341,8 @@ const Thread = (
 
 const Presence = ({ channelName }: { channelName: string }) => {
   // Presence lives in memory on the server (§13.6), here a fixed snapshot
-  const present: [string, string][] = [
-    [me.name, `regarde #${channelName}`],
+  const present: [name: string, what: string, photo?: string][] = [
+    [me.name, `regarde #${channelName}`, me.avatarUrl],
     [people.fatou.name, 'travaille sur la PR #84'],
     [people.moussa.name, 'regarde la PR #81'],
   ]
@@ -342,9 +352,9 @@ const Presence = ({ channelName }: { channelName: string }) => {
         <span aria-hidden='true' class='diamond size-2 bg-verified' />
         3 développeurs actifs
       </span>
-      {present.map(([name, what]) => (
+      {present.map(([name, what, photo]) => (
         <div key={name} class='flex items-center gap-2.5'>
-          <Avatar name={name} size={26} />
+          <Avatar name={name} src={photo} size={26} />
           <span class='flex min-w-0 flex-col'>
             <span class='text-[13px] leading-[18px] font-semibold'>
               {name.split(' ')[0]}

@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { saveMe } from '/web/lib/session.ts'
 
 // Personalization of a profile (§9.2), what POST/api/user/profile/update
 // will store. Theme and accent ids are those of docs/identite/tokens.json.
@@ -82,4 +83,9 @@ export const saveProfile = (login: Login, draft: ProfileDraft) => {
   if (skills.length) person.skills = skills
   saved[login] = settings
   profileChanged.value++
+  // Theme, accent, cover and order stay in the page until PAM-302
+  saveMe({
+    profile: { headline, bio, website: website ?? '' },
+    skills: { skills, domains: person.domains ?? [] },
+  })
 }

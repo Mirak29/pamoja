@@ -8,7 +8,13 @@ import {
   decideApplication,
 } from '/web/fixtures/applications.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
+import {
+  type Login,
+  me,
+  people,
+  type Person,
+  placeOf,
+} from '/web/fixtures/people.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import {
@@ -59,7 +65,11 @@ const PersonLink = (
     href={`@${login}`}
     class='flex min-w-[200px] flex-1 items-center gap-3 text-ink no-underline hover:no-underline'
   >
-    <Avatar name={people[login].name} size={size} />
+    <Avatar
+      name={people[login].name}
+      src={people[login].avatarUrl}
+      size={size}
+    />
     <span class='flex min-w-0 flex-col'>
       <span
         class={size === 30
@@ -88,7 +98,7 @@ export const MemberRows = (
           <PersonLink
             login={member.login}
             size={38}
-            detail={`@${member.login} · ${person.city}, ${person.country}`}
+            detail={`@${member.login} · ${placeOf(person)}`}
           />
           {isOwner && member.role !== 'Propriétaire'
             ? (

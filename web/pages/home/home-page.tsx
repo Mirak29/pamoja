@@ -299,7 +299,7 @@ const Composer = () => {
     'well h-8 w-[180px] max-w-full min-w-0 px-2 text-[13px] leading-none font-medium text-ink'
   return (
     <section class='slab mr-2 flex gap-3.5 px-[18px] py-4'>
-      <Avatar name={me.name} size={42} />
+      <Avatar name={me.name} src={me.avatarUrl} size={42} />
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
         <textarea
           ref={field}
@@ -521,7 +521,7 @@ const Rail = () => {
               href={`@${person.login}`}
               class='flex min-w-0 flex-1 items-center gap-2.5 text-ink no-underline hover:no-underline'
             >
-              <Avatar name={person.name} size={34} />
+              <Avatar name={person.name} src={person.avatarUrl} size={34} />
               <span class='flex min-w-0 flex-col'>
                 <span class='font-display text-[14px] leading-[18px] font-semibold'>
                   {person.name}

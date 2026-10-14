@@ -84,7 +84,11 @@ const PostRow = ({ post, community }: { post: Post; community: Community }) => (
     href={`post/${post.id}`}
     class='flex items-start gap-3.5 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline'
   >
-    <Avatar name={people[post.author].name} size={36} />
+    <Avatar
+      name={people[post.author].name}
+      src={people[post.author].avatarUrl}
+      size={36}
+    />
     <div class='flex min-w-0 flex-1 flex-col gap-1.5'>
       <div class='flex flex-wrap items-center gap-2'>
         <PostTypeBadge type={post.type} />
@@ -196,7 +200,11 @@ const About = ({ community }: { community: Community }) => {
             href={`@${login}`}
             class='flex items-center gap-2.5 text-ink no-underline hover:no-underline'
           >
-            <Avatar name={people[login].name} size={32} />
+            <Avatar
+              name={people[login].name}
+              src={people[login].avatarUrl}
+              size={32}
+            />
             <span class='font-display text-[14px] leading-5 font-semibold'>
               {people[login].name}
             </span>

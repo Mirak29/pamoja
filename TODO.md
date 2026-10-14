@@ -97,7 +97,7 @@ Responsable : _à répartir_
 
 Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de retard.
 
-- [ ] **PAM-201** · Onboarding et profil de base : skills en vocabulaire contrôlé, `SkillAlias`, intentions (§6.1) `[démo]`
+- [x] **PAM-201** · Onboarding et profil de base : skills en vocabulaire contrôlé, `SkillAlias`, intentions (§6.1) `[démo]`
 - [ ] **PAM-202** · Import niveau 1 : liste des repos via le token bot, import des métadonnées, README, issues, PRs ; rafraîchissement toutes les 15 min avec ETag (§5.4) `[démo]`
 - [ ] **PAM-203** · Import niveau 2 : `POST/api/github/installation/confirm` avec les trois contrôles, passage automatique en live (§5.4)
 - [ ] **PAM-204** · Webhooks : HMAC sur le corps brut, `WebhookDelivery` comme file persistante, worker, reprise au démarrage, nouveaux essais (§5.5)
@@ -269,3 +269,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-14 · Clés primaires nommées d'après la table (`userId`), comme Tournament ; schéma initial dans `api/schema.ts`, les migrations ne font évoluer qu'une base existante ; `source` sur les lignes racines pour la démo ; `Task.boardColumn` car `column` est un mot réservé SQL · §12.5, §14
 - 2026-10-14 · Dates en secondes (`now()` de `@01edu/time`), l'unité réelle de Tournament et des entries, et non en millisecondes ; listener SSE avec membres et abonnés séparés ; `source` et champs figés des preuves en `fields` d'entry ; `userId` d'une entry = le développeur dont elle parle · §8.3, §13.2, §13.3, §14, §14.6
 - 2026-10-14 · Session : entry `USER_LOGIN` signée avec `SESSION_SECRET` (pas de mot de passe à saler), 30 jours vérifiés côté serveur ; page de retour `/connexion/github` ; connexion simulée en dev sans GitHub App, jamais en prod · §5.2, §5.3
+- 2026-10-14 · Profil pré-rempli depuis GitHub (photo, nom, bio, site, localisation, e-mail principal, langages des repos publics) ; vocabulaire partagé dans `api/vocabulary.ts` ; le développeur connecté devient le `me` des pages, les autres restent fictifs jusqu'à leurs écrans · §5.3, §6.1

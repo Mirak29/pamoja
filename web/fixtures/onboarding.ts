@@ -5,6 +5,8 @@ import {
   type Person,
 } from '/web/fixtures/people.ts'
 import { profileChanged } from '/web/fixtures/profile-settings.ts'
+import { matchingModeOf } from '/api/vocabulary.ts'
+import { saveMe } from '/web/lib/session.ts'
 import {
   type matchingModes,
   settings,
@@ -52,4 +54,16 @@ export const completeOnboarding = (draft: OnboardingDraft) => {
   updateSettings((settings) => settings.matching = draft.matching)
   peopleChanged.value++
   profileChanged.value++
+  saveMe({
+    profile: {
+      headline: draft.headline,
+      // An African country by its code, another one as written
+      country: countries[draft.country] ?? draft.country,
+      city: draft.city,
+      website: draft.website,
+      matchingMode: matchingModeOf(draft.matching),
+    },
+    skills: { skills: draft.skills, domains: draft.domains },
+    intents: draft.intents,
+  })
 }

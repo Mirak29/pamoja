@@ -497,6 +497,13 @@ Routes `GET/api/auth/github`, `POST/api/auth/github/callback`, `POST/api/auth/lo
 - **Livrable** : `api/routes.ts`, `api/session.ts`, `api/github-oauth.ts`, `api/user.ts`, `api/lib/env.ts`, `api/auth_test.ts` (7 tests), `web/lib/api.ts`, `web/lib/session.ts`, `web/pages/public/connexion-page.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-201 · Profil pré-rempli depuis GitHub et onboarding enregistré
+
+Au premier login, le profil reprend tout ce que GitHub donne : photo, nom, bio, site, ville et pays lus dans la localisation, e-mail principal, langages des repos publics en skills de source `github`. Les logins suivants complètent les champs vides tant que le profil n'a jamais été enregistré. Le vocabulaire (technologies et alias, domaines, intentions, pays) est partagé dans `api/vocabulary.ts` et chargé en base au démarrage. Routes `POST/api/user/profile/update`, `skills/update`, `intents/update` (§15) : l'onboarding, l'édition du profil et le mode de matching des réglages enregistrent sur le serveur. Côté web, le développeur connecté devient le `me` des pages et sa photo GitHub s'affiche partout (`Avatar`, `Portrait`, initiales en repli). Vérifié dans le navigateur avec la connexion simulée : onboarding pré-rempli puis enregistré, photo dans le profil, la barre latérale et l'en-tête.
+
+- **Livrable** : `api/vocabulary.ts`, `api/skills.ts`, `api/user.ts`, `api/github-oauth.ts`, `api/routes.ts`, `api/profile_test.ts` (7 tests), `web/lib/session.ts`, `web/fixtures/people.ts`, `web/ui/avatar.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

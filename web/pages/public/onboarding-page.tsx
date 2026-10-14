@@ -133,7 +133,7 @@ const ProfileStep = (
       Avatar, nom et bio viennent de GitHub. Complète le reste.
     </Title>
     <div class='flex flex-wrap items-center gap-3.5 rounded-lg border border-line-strong bg-surface-000 p-3.5 inset-shadow-well'>
-      <Avatar name={me.name} size={52} />
+      <Avatar name={me.name} src={me.avatarUrl} size={52} />
       <div class='flex min-w-[180px] flex-1 flex-col gap-0.5'>
         <span class='font-display text-[18px] leading-6 font-semibold'>
           {me.name}

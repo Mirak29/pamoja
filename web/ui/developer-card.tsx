@@ -1,5 +1,11 @@
 import { A } from '@01edu/signal-router'
-import { isMe, type Login, me, type Person } from '/web/fixtures/people.ts'
+import {
+  isMe,
+  type Login,
+  me,
+  type Person,
+  placeOf,
+} from '/web/fixtures/people.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -21,13 +27,13 @@ export const DeveloperCard = ({ person }: { person: Person }) => {
       class='slab slab-lift mb-2 flex flex-col gap-3 p-[18px] text-ink no-underline hover:no-underline'
     >
       <div class='flex items-center gap-3'>
-        <Avatar name={person.name} size={46} />
+        <Avatar name={person.name} src={person.avatarUrl} size={46} />
         <div class='flex min-w-0 flex-1 flex-col'>
           <span class='font-display text-[17px] leading-[22px] font-semibold'>
             {person.name}
           </span>
           <span class='text-[13px] leading-[18px] text-ink-muted'>
-            {person.role} · {person.city}, {person.country}
+            {person.role} · {placeOf(person)}
           </span>
         </div>
       </div>

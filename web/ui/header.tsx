@@ -22,7 +22,8 @@ import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
-const accountItems = [
+// A function: `me` is known once the session is (PAM-110)
+const accountItems = () => [
   { label: 'Mon profil', icon: CircleUser, href: `@${me.login}` },
   { label: 'Enregistrés', icon: Bookmark, href: 'enregistres' },
   { label: 'Réglages', icon: Settings, href: 'reglages' },
@@ -35,7 +36,7 @@ const accountItems = [
 const AccountMenu = () => (
   <Menu id='account-menu' label='Compte' class='top-[68px] right-6 w-[252px]'>
     <div class='mb-1.5 flex items-center gap-2.5 border-b border-line px-2.5 pt-2 pb-3'>
-      <Avatar name={me.name} size={34} />
+      <Avatar name={me.name} src={me.avatarUrl} size={34} />
       <span class='flex flex-col'>
         <span class='font-display text-[15px] leading-5 font-semibold'>
           {me.name}
@@ -45,7 +46,7 @@ const AccountMenu = () => (
         </span>
       </span>
     </div>
-    {accountItems.map(({ label, icon: Icon, href, onClick }) => (
+    {accountItems().map(({ label, icon: Icon, href, onClick }) => (
       <A
         key={label}
         role='menuitem'
@@ -122,7 +123,7 @@ export const Header = () => {
           aria-label='Menu du compte'
           class='flex size-11 flex-none cursor-pointer items-center justify-center rounded-full'
         >
-          <Avatar name={me.name} size={38} />
+          <Avatar name={me.name} src={me.avatarUrl} size={38} />
         </button>
         <AccountMenu />
       </div>

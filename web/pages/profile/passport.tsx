@@ -1,10 +1,10 @@
 import { useEffect } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Github } from '/web/assets/icons.tsx'
-import { type Login, people } from '/web/fixtures/people.ts'
+import { type Login, people, placeOf } from '/web/fixtures/people.ts'
 import { profileStats, proofsOf } from '/web/fixtures/reputation.ts'
 import { plural } from '/web/lib/plural.ts'
-import { initials } from '/web/ui/avatar.tsx'
+import { Portrait } from '/web/ui/avatar.tsx'
 import {
   DemoBadge,
   NoticeBadge,
@@ -75,9 +75,12 @@ export const Passport = ({ login }: { login: Login }) => {
           </div>
           <div class='flex flex-col gap-3.5 px-[26px] pb-[26px]'>
             <div class='relative -mt-11 flex flex-wrap items-end justify-between gap-4'>
-              <span class='flex size-[88px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[30px] leading-none font-bold shadow-slab'>
-                {initials(person.name)}
-              </span>
+              <Portrait
+                name={person.name}
+                src={person.avatarUrl}
+                px={88}
+                class='flex size-[88px] items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[30px] leading-none font-bold shadow-slab'
+              />
               <Button
                 size={40}
                 href='connexion'
@@ -91,7 +94,7 @@ export const Passport = ({ login }: { login: Login }) => {
               <span class='flex items-center gap-2 text-[14px] text-ink-muted'>
                 <span>{person.role}</span>
                 <span>·</span>
-                <span>{person.city}, {person.country}</span>
+                <span>{placeOf(person)}</span>
               </span>
             </div>
             <p class='text-[18px] leading-[27px] text-pretty'>

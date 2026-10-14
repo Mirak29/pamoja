@@ -7,8 +7,9 @@ import {
 } from '/api/lib/env.ts'
 import { log } from '/api/lib/log.ts'
 
-// Login with the GitHub App (§5.3). The user token only reads GET /user, then
-// it is dropped: no user token is ever stored (§5.2).
+// Login with the GitHub App (§5.3). The user token reads the profile, the
+// primary email and the languages of the public repos to prefill the
+// profile (§6.1), then it is dropped: no user token is ever stored (§5.2).
 
 export type GithubUser = {
   id: number
@@ -18,6 +19,9 @@ export type GithubUser = {
   email: string | null
   bio: string | null
   blog: string | null
+  location: string | null
+  /** Languages of the public repos, the most used first */
+  languages: string[]
 }
 
 // Without a GitHub App in dev, the login is simulated: the demo account of
@@ -32,6 +36,8 @@ const demoUser: GithubUser = {
   email: null,
   bio: 'Ingénieur backend à Dakar.',
   blog: null,
+  location: 'Dakar, Senegal',
+  languages: ['Go', 'TypeScript'],
 }
 
 // One-time states against CSRF, like the StateManager of Tournament
@@ -103,17 +109,66 @@ export const githubUserFromCode = async (
     throw refuse('Failed to exchange the GitHub code')
   }
 
-  const userRes = await fetch('https://api.github.com/user', {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token.access_token}`,
-      'User-Agent': 'Pamoja',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  })
+  const read = (path: string) =>
+    fetch(`https://api.github.com${path}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token.access_token}`,
+        'User-Agent': 'Pamoja',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    })
+
+  const userRes = await read('/user')
   if (!userRes.ok) {
     log.error('github-user-error', { status: userRes.status })
     throw refuse('Failed to read the GitHub user')
   }
-  return await userRes.json() as GithubUser
+  const user = await userRes.json() as Omit<GithubUser, 'languages'>
+  const [email, languages] = await Promise.all([
+    user.email ?? primaryEmail(read),
+    repoLanguages(read, user.login),
+  ])
+  return { ...user, email, languages }
+}
+
+type Read = (path: string) => Promise<Response>
+
+// Needs the optional Email addresses permission: without it, only the
+// public email is known, and the email is never required (§5.1)
+const primaryEmail = async (read: Read) => {
+  try {
+    const res = await read('/user/emails')
+    if (!res.ok) return null
+    const emails = await res.json() as {
+      email: string
+      primary: boolean
+      verified: boolean
+    }[]
+    return emails.find((e) => e.primary && e.verified)?.email ?? null
+  } catch {
+    return null
+  }
+}
+
+// Public repos only, forks excluded: they hold someone else's code
+const repoLanguages = async (read: Read, login: string) => {
+  try {
+    const res = await read(
+      `/users/${encodeURIComponent(login)}/repos?per_page=100&sort=pushed`,
+    )
+    if (!res.ok) return []
+    const repos = await res.json() as {
+      fork: boolean
+      language: string | null
+    }[]
+    const counts = new Map<string, number>()
+    for (const { fork, language } of repos) {
+      if (fork || !language) continue
+      counts.set(language, (counts.get(language) ?? 0) + 1)
+    }
+    return [...counts].sort((a, b) => b[1] - a[1]).map(([language]) => language)
+  } catch {
+    return []
+  }
 }

@@ -178,7 +178,11 @@ const Preview = ({ form }: { form: Form }) => {
           key={m.login}
           class='flex items-center gap-3 border-t border-line py-3'
         >
-          <Avatar name={people[m.login].name} size={30} />
+          <Avatar
+            name={people[m.login].name}
+            src={people[m.login].avatarUrl}
+            size={30}
+          />
           <span class='flex min-w-0 flex-1 flex-col'>
             <span class='font-display text-[14px] leading-5 font-semibold'>
               {people[m.login].name}

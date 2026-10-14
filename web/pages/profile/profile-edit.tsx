@@ -19,7 +19,7 @@ import {
 } from '/web/fixtures/profile-settings.ts'
 import { type ProjectSlug, projectsOf } from '/web/fixtures/projects.ts'
 import { skills } from '/web/fixtures/skills.ts'
-import { initials } from '/web/ui/avatar.tsx'
+import { Portrait } from '/web/ui/avatar.tsx'
 import { SkillChip } from '/web/ui/badge.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -229,9 +229,12 @@ const Preview = ({ draft }: { draft: Draft }) => (
       <div class='overflow-hidden rounded-lg border border-figure-edge bg-surface-100 shadow-tile'>
         <Cover cover={draft.cover} small />
         <div class='flex flex-col gap-2 px-3.5 pb-3.5'>
-          <span class='relative -mt-6 flex size-12 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[16px] leading-none font-bold shadow-tile'>
-            {initials(me.name)}
-          </span>
+          <Portrait
+            name={me.name}
+            src={me.avatarUrl}
+            px={48}
+            class='relative -mt-6 flex size-12 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[16px] leading-none font-bold shadow-tile'
+          />
           <span class='font-display text-[17px] leading-[22px] font-bold'>
             {me.name}
           </span>

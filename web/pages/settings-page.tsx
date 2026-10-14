@@ -4,7 +4,8 @@ import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
 import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
-import { signOut } from '/web/lib/session.ts'
+import { matchingModeOf } from '/api/vocabulary.ts'
+import { saveMe, signOut } from '/web/lib/session.ts'
 import {
   matchingModes,
   notificationRows,
@@ -137,7 +138,7 @@ export const SettingsPage = () => {
   return (
     <Page title='Réglages' class='flex max-w-[880px] flex-col gap-7 pt-5'>
       <section class='slab mr-2 flex flex-wrap items-center gap-4 p-[22px]'>
-        <Avatar name={me.name} size={48} />
+        <Avatar name={me.name} src={me.avatarUrl} size={48} />
         <div class='flex min-w-[200px] flex-1 flex-col gap-1'>
           <span class='font-display text-[18px] leading-6 font-semibold'>
             {me.name}
@@ -205,7 +206,10 @@ export const SettingsPage = () => {
             <OptionButton
               key={mode}
               pressed={settings.matching === mode}
-              onClick={() => updateSettings((s) => s.matching = mode)}
+              onClick={() => {
+                updateSettings((s) => s.matching = mode)
+                saveMe({ profile: { matchingMode: matchingModeOf(mode) } })
+              }}
             >
               {mode}
             </OptionButton>

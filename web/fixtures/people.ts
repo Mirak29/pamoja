@@ -1,4 +1,9 @@
 import { signal } from '@preact/signals'
+import {
+  countries as vocabularyCountries,
+  countryName,
+} from '/api/vocabulary.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
 export type Person = {
   login: string
   name: string
@@ -25,9 +30,11 @@ export type Person = {
   domains?: string[]
   intents: string[]
   follows?: string[]
+  /** GitHub photo; without it, the initials (§17.3) */
+  avatarUrl?: string
 }
 
-export const people = {
+const fixturePeople = {
   abdou: {
     login: 'abdou',
     name: 'Abdou Sow',
@@ -163,71 +170,64 @@ export const people = {
   },
 } satisfies Record<string, Person>
 
-export type Login = keyof typeof people
+export type Login = keyof typeof fixturePeople
+export const people: Record<Login, Person> = fixturePeople
 
-// The signed-in developer until the session exists (PAM-110): the same
-// record as in `people`, so a change shows everywhere
-const myLogin: Login = 'abdou'
-export const me = people[myLogin] as Person & { login: Login }
+// The signed-in developer: `abdou` of the fixtures until the session is
+// known, then the real developer, with the profile prefilled from GitHub.
+// The same record as in `people`, so a change shows everywhere; the other
+// developers stay those of the fixtures until their screens use the API.
+export let me = people.abdou as Person & { login: Login }
+
+/** Makes the signed-in developer `me`, from GET/api/user/me */
+export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
+  const known = (people as Record<string, Person>)[user.login]
+  const person: Person = Object.assign(
+    known ?? {
+      helpTypes: [],
+      available: true,
+      communities: [],
+      follows: [],
+    },
+    {
+      login: user.login,
+      name: user.displayName,
+      country: countryName(user.country),
+      countryCode: vocabularyCountries.some(([code]) => code === user.country)
+        ? user.country
+        : '',
+      city: user.city,
+      role: user.domains[0] ?? 'Développeur',
+      skills: user.skills.map((skill) => skill.name),
+      headline: user.headline,
+      bio: user.bio,
+      website: user.website || undefined,
+      domains: user.domains,
+      intents: user.intents,
+      avatarUrl: user.avatarUrl,
+    },
+  )
+  ;(people as Record<string, Person>)[user.login] = person
+  me = person as Person & { login: Login }
+  peopleChanged.value++
+}
+
+/** « Dakar, Sénégal », or what is known of it */
+export const placeOf = (person: Person) =>
+  [person.city, person.country].filter(Boolean).join(', ')
+
+/** A website as written on a profile, with or without its protocol */
+export const websiteHref = (website: string) =>
+  /^https?:\/\//.test(website) ? website : `https://${website}`
+
+export const websiteLabel = (website: string) =>
+  website.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
 // The 54 countries of Africa offered at onboarding, with their ISO code.
 // « Autre » lets anyone else write their own.
-export const countries: Record<string, string> = {
-  'Afrique du Sud': 'ZA',
-  'Algérie': 'DZ',
-  'Angola': 'AO',
-  'Bénin': 'BJ',
-  'Botswana': 'BW',
-  'Burkina Faso': 'BF',
-  'Burundi': 'BI',
-  'Cameroun': 'CM',
-  'Cap-Vert': 'CV',
-  'Centrafrique': 'CF',
-  'Comores': 'KM',
-  'Congo': 'CG',
-  'Côte d’Ivoire': 'CI',
-  'Djibouti': 'DJ',
-  'Égypte': 'EG',
-  'Érythrée': 'ER',
-  'Eswatini': 'SZ',
-  'Éthiopie': 'ET',
-  'Gabon': 'GA',
-  'Gambie': 'GM',
-  'Ghana': 'GH',
-  'Guinée': 'GN',
-  'Guinée équatoriale': 'GQ',
-  'Guinée-Bissau': 'GW',
-  'Kenya': 'KE',
-  'Lesotho': 'LS',
-  'Libéria': 'LR',
-  'Libye': 'LY',
-  'Madagascar': 'MG',
-  'Malawi': 'MW',
-  'Mali': 'ML',
-  'Maroc': 'MA',
-  'Maurice': 'MU',
-  'Mauritanie': 'MR',
-  'Mozambique': 'MZ',
-  'Namibie': 'NA',
-  'Niger': 'NE',
-  'Nigeria': 'NG',
-  'Ouganda': 'UG',
-  'RD Congo': 'CD',
-  'Rwanda': 'RW',
-  'Sao Tomé-et-Principe': 'ST',
-  'Sénégal': 'SN',
-  'Seychelles': 'SC',
-  'Sierra Leone': 'SL',
-  'Somalie': 'SO',
-  'Soudan': 'SD',
-  'Soudan du Sud': 'SS',
-  'Tanzanie': 'TZ',
-  'Tchad': 'TD',
-  'Togo': 'TG',
-  'Tunisie': 'TN',
-  'Zambie': 'ZM',
-  'Zimbabwe': 'ZW',
-}
+export const countries: Record<string, string> = Object.fromEntries(
+  vocabularyCountries.map(([code, name]) => [name, code]),
+)
 
 export const isMe = (login: string) => login === me.login
 

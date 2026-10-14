@@ -1,10 +1,10 @@
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Copy, Download } from '/web/assets/icons.tsx'
-import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
+import { isMe, type Login, me, people, placeOf } from '/web/fixtures/people.ts'
 import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'
 import { plural } from '/web/lib/plural.ts'
-import { Avatar, initials } from '/web/ui/avatar.tsx'
+import { Avatar, Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -59,15 +59,18 @@ const Card = ({ login }: { login: Login }) => {
     <div class='@container grid aspect-[1200/630] w-full grid-cols-[1.5fr_1fr] overflow-hidden rounded-lg border border-figure-edge bg-surface-100 shadow-slab'>
       <div class='flex flex-col justify-center gap-[1.6cqw] px-[4cqw] py-[5cqw]'>
         <div class='flex items-center gap-[2cqw]'>
-          <span class='flex size-[9cqw] flex-none items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[3.2cqw] leading-none font-bold shadow-tile'>
-            {initials(person.name)}
-          </span>
+          <Portrait
+            name={person.name}
+            src={person.avatarUrl}
+            px={108}
+            class='flex size-[9cqw] flex-none items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[3.2cqw] leading-none font-bold shadow-tile'
+          />
           <span class='flex flex-col'>
             <span class='font-display text-[4cqw] leading-[1.1] font-bold'>
               {person.name}
             </span>
             <span class='text-[1.9cqw] text-ink-muted'>
-              {person.city}, {person.country}
+              {placeOf(person)}
             </span>
           </span>
         </div>
@@ -175,7 +178,7 @@ const LinkPreview = ({ login }: { login: Login }) => {
           <div class='rounded-lg border border-line-strong bg-surface-000 p-4 inset-shadow-well'>
             <div class='flex flex-col gap-2.5 rounded-[8px] border border-figure-edge bg-surface-100 p-3.5 shadow-tile'>
               <div class='flex items-center gap-2.5'>
-                <Avatar name={me.name} size={34} />
+                <Avatar name={me.name} src={me.avatarUrl} size={34} />
                 <span class='flex flex-col'>
                   <span class='text-[14px] leading-6 font-semibold'>
                     {me.name}

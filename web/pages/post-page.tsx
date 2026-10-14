@@ -86,7 +86,7 @@ const Article = ({ post }: { post: Post }) => {
         href={`@${post.author}`}
         class='flex items-center gap-2.5 text-ink no-underline hover:no-underline'
       >
-        <Avatar name={author.name} size={32} />
+        <Avatar name={author.name} src={author.avatarUrl} size={32} />
         <span class='flex flex-col'>
           <span class='font-display text-[14px] leading-[18px] font-semibold'>
             {author.name}

@@ -20,7 +20,10 @@ import {
   people,
   peopleChanged,
   type Person,
+  placeOf,
   toggleFollowing,
+  websiteHref,
+  websiteLabel,
 } from '/web/fixtures/people.ts'
 import {
   profileChanged,
@@ -41,7 +44,7 @@ import {
 import { githubUrl } from '/web/lib/links.ts'
 import { plural } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
-import { initials } from '/web/ui/avatar.tsx'
+import { Portrait } from '/web/ui/avatar.tsx'
 import {
   DemoBadge,
   SkillChip,
@@ -126,9 +129,12 @@ const Hero = ({ login }: { login: Login }) => {
       <Cover cover={settingsOf(login).cover} />
       <div class='flex flex-col gap-3 px-6 pb-6'>
         <div class='relative -mt-12 flex flex-wrap items-end justify-between gap-4'>
-          <span class='flex size-24 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[32px] leading-none font-bold shadow-slab'>
-            {initials(person.name)}
-          </span>
+          <Portrait
+            name={person.name}
+            src={person.avatarUrl}
+            px={96}
+            class='flex size-24 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[32px] leading-none font-bold shadow-slab'
+          />
           <div class='hidden sm:block'>
             <Actions login={login} />
           </div>
@@ -140,7 +146,7 @@ const Hero = ({ login }: { login: Login }) => {
           <span class='flex flex-wrap items-center gap-2 text-[14px] text-ink-muted'>
             <span>{person.role}</span>
             <span>·</span>
-            <span>{person.city}, {person.country}</span>
+            <span>{placeOf(person)}</span>
           </span>
         </div>
         <div class='sm:hidden'>
@@ -165,11 +171,11 @@ const Hero = ({ login }: { login: Login }) => {
           </a>
           {person.website && (
             <a
-              href={`https://${person.website}`}
+              href={websiteHref(person.website)}
               class='inline-flex items-center gap-1.5 font-mono text-ink-muted'
             >
               <Link class='size-3.5' />
-              {person.website}
+              {websiteLabel(person.website)}
             </a>
           )}
           {person.openTo && (

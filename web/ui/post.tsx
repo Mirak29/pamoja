@@ -295,7 +295,13 @@ const ReplyInput = (
         size === 'feed' ? 'gap-2.5' : 'animate-enter-fast gap-2 pt-0.5'
       }`}
     >
-      {size === 'feed' && <Avatar name={me.name} size={28} />}
+      {size === 'feed' && (
+        <Avatar
+          name={me.name}
+          src={me.avatarUrl}
+          size={28}
+        />
+      )}
       <input
         ref={input}
         value={draft}
@@ -464,7 +470,11 @@ const ReplyRow = (
         aria-label={name}
         class='relative z-[1] flex h-8 flex-none'
       >
-        <Avatar name={name} size={32} />
+        <Avatar
+          name={name}
+          src={people[post.author].avatarUrl}
+          size={32}
+        />
       </A>
       <div class='flex min-w-0 flex-1 flex-col gap-[5px]'>
         <div class='flex min-h-[22px] flex-wrap items-baseline gap-1.5 pt-0.5 leading-[18px]'>
@@ -717,7 +727,7 @@ export const PostCard = (
           aria-label={author.name}
           class='flex h-[42px] flex-none'
         >
-          <Avatar name={author.name} size={42} />
+          <Avatar name={author.name} src={author.avatarUrl} size={42} />
         </A>
         <div class='flex min-w-0 flex-1 flex-col gap-2'>
           <div class='flex flex-wrap items-baseline gap-1.5 leading-5'>

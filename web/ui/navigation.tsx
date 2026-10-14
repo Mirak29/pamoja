@@ -30,13 +30,14 @@ export const unread = () => {
 }
 
 // key: first path segment, short: label of the mobile tab bar
-const navItems: {
+// A function: `me` is known once the session is (PAM-110)
+const navItems = (): {
   key: string
   href: string
   label: string
   short: string
   icon: IconComponent
-}[] = [
+}[] => [
   { key: '', href: '.', label: 'Accueil', short: 'Accueil', icon: House },
   {
     key: 'explorer',
@@ -182,7 +183,7 @@ export const Sidebar = () => {
           aria-label='Navigation principale'
           class='flex flex-none flex-col gap-1'
         >
-          {navItems.map(({ key, href, label, icon: Icon }) => {
+          {navItems().map(({ key, href, label, icon: Icon }) => {
             const active = key === section
             return (
               <A
@@ -210,7 +211,7 @@ export const Sidebar = () => {
             href={`@${me.login}`}
             class='flex items-center gap-2.5 rounded-md px-2 py-1.5 text-ink no-underline hover:bg-surface-200 hover:no-underline'
           >
-            <Avatar name={me.name} size={34} />
+            <Avatar name={me.name} src={me.avatarUrl} size={34} />
             <span class='flex min-w-0 flex-col'>
               <span class='font-display text-[14px] leading-[18px] font-semibold'>
                 {me.name}
@@ -235,7 +236,7 @@ export const MobileNav = () => {
       aria-label='Navigation principale'
       class='fixed inset-x-0 bottom-0 z-30 grid h-[68px] grid-cols-7 gap-0.5 border-t border-figure-edge bg-surface-100 px-1.5 pt-1.5 pb-2 md:hidden'
     >
-      {navItems.map(({ key, href, label, short, icon: Icon }) => {
+      {navItems().map(({ key, href, label, short, icon: Icon }) => {
         const active = key === section
         return (
           <A

@@ -158,7 +158,11 @@ const Team = ({ project }: { project: Project }) => {
           href={`@${login}`}
           class='flex items-center gap-3 text-ink no-underline hover:no-underline'
         >
-          <Avatar name={people[login].name} size={34} />
+          <Avatar
+            name={people[login].name}
+            src={people[login].avatarUrl}
+            size={34}
+          />
           <span class='flex flex-col'>
             <span class='font-display text-[14px] leading-5 font-semibold'>
               {people[login].name}
