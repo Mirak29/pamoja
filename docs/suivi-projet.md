@@ -476,6 +476,13 @@ Les toasts passent dans la couche supérieure (popover manuel ré-affiché à ch
 - **Livrable** : `web/ui/toast.tsx`, `web/ui/header.tsx`, `web/pages/public/`, `web/pages/project/pull-requests-tab.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/home/home-page.tsx`, `web/ui/post.tsx`, `.gitattributes`
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-105 · Schéma initial et migrations
+
+Les 38 tables du §14 sont déclarées dans `api/schema.ts` avec `createTable`, leurs clés étrangères (`join`) et 40 index, dont les contraintes d'unicité. Au démarrage, le serveur active `PRAGMA foreign_keys = ON` et `busy_timeout = 5000`, puis lance les migrations avant de créer les tables. Les clés primaires portent le nom de leur table (`userId`), comme dans Tournament. Le cahier (§12.5, §14) a été aligné sur le code : champs optionnels, colonne `source` des lignes racines, `Task.boardColumn`.
+
+- **Livrable** : `api/schema.ts`, `api/schema_test.ts` (8 tests : pragmas, 38 tables, clés étrangères, unicité, champs optionnels), `migrations/001-initial.js`, `DATABASE_PATH` dans `.env-dev`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
