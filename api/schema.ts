@@ -1,4 +1,4 @@
-import { createTable, db } from '@01edu/db'
+import { createTable, db, sql } from '@01edu/db'
 import { runMigrations } from '@01edu/db/migration'
 import { fromFileUrl } from 'jsr:@std/path@^1.0.8'
 
@@ -6,7 +6,8 @@ import { fromFileUrl } from 'jsr:@std/path@^1.0.8'
 // - the primary key is named after its table (`userId`), like Tournament and
 //   like the entries relations, so joins never mix several `id` columns;
 // - uniqueness and lookups are indexes declared after each table;
-// - dates are REAL timestamps in milliseconds, structured data is JSON;
+// - dates are REAL timestamps in seconds, from `now()` of @01edu/time, like
+//   Tournament and the `createdAt` of the entries; structured data is JSON;
 // - a table cannot `join` itself, and polymorphic targets (`targetType` +
 //   `targetId`) have no constraint: the code checks them;
 // - `source` says where a row comes from: `demo` (seed), `github` (synced),
@@ -22,12 +23,12 @@ db.exec('PRAGMA busy_timeout = 5000')
 // migration runs: the tables below are the initial schema.
 await runMigrations(fromFileUrl(import.meta.resolve('../migrations')))
 
-// `sql` binds its values as parameters, which DDL does not accept: the names
-// below are constants of this file, never user input
+// `sql` writes its values into the query text (String.raw), like the indexes
+// of @01edu/db/entries: only constants of this file go in, never user input
 const index = (name: string, table: string, columns: string) =>
-  db.exec(`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`)
+  sql`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`.run()
 const unique = (name: string, table: string, columns: string) =>
-  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`)
+  sql`CREATE UNIQUE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`.run()
 
 /*
  * Identity and profile (§14.1)

@@ -408,7 +408,7 @@ Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit
 - résultat (état de la review, réponse du demandeur) ;
 - `eligible` et, sinon, `exclusionReason` ;
 - `rulesVersion` : version des règles appliquées ;
-- `source` : `github` ou `demo`.
+- `source` : `github`, `platform` ou `demo` ; seule `github` porte « vérifié par GitHub ».
 
 Une modification de profil ou la suppression d'une demande ne change donc aucun résultat passé.
 
@@ -642,8 +642,8 @@ Le client écrit en HTTP ; le serveur prévient en SSE qu'un état a changé, et
 `GET/api/events`, sur le modèle de Tournament (`api/routes.ts`) :
 
 1. Exige une session et l'en-tête `Accept: text/event-stream`.
-2. Calcule côté serveur ce que l'utilisateur peut recevoir : `userId`, ensemble des projets dont il est membre ou qu'il suit, ensemble de ses communautés. **Le client ne choisit jamais ses abonnements.**
-3. Ajoute le listener (`{ userId, projectIds, communityIds, connectionId, controller }`) à `insertListeners`.
+2. Calcule côté serveur ce que l'utilisateur peut recevoir : `userId`, projets dont il est membre, projets qu'il suit, communautés dont il est membre, communautés qu'il modère, développeurs qu'il suit. Membres et abonnés restent séparés : `TASK_UPDATED` ne va qu'aux membres. **Le client ne choisit jamais ses abonnements.**
+3. Ajoute le listener (`{ userId, projectIds, followedProjectIds, communityIds, moderatedCommunityIds, followedUserIds, connectionId, controller }`, type `EntryListener` de `api/entries.ts`) à `insertListeners`.
 4. Envoie un événement `ack` toutes les 15 secondes (heartbeat).
 5. Retire le listener à la fermeture ou dès qu'un envoi échoue.
 
@@ -669,6 +669,8 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
 | CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
 
+`userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
+
 ### 13.4 Client
 
 `web/lib/realtime.ts`, écrit à partir de `web/lib/session.ts` de Tournament :
@@ -688,7 +690,7 @@ La présence est éphémère et n'utilise pas les entries (elles sont persistée
 
 ## 14. Modèle de données
 
-Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `helpRequestId`, §12.5), unicité par `CREATE UNIQUE INDEX`, dates en `REAL` (timestamp en millisecondes, comme Tournament), données structurées en colonne `JSON` validée à l'écriture, clés étrangères déclarées avec `join` (appliquées grâce à `PRAGMA foreign_keys = ON`). Il n'y a **pas de table Activity** : l'activité est une requête sur les entries.
+Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `helpRequestId`, §12.5), unicité par `CREATE UNIQUE INDEX`, dates en `REAL` (timestamp en secondes, avec décimales, donné par `now()` de `@01edu/time` : c'est l'unité de Tournament et de `createdAt` des entries), données structurées en colonne `JSON` validée à l'écriture, clés étrangères déclarées avec `join` (appliquées grâce à `PRAGMA foreign_keys = ON`). Il n'y a **pas de table Activity** : l'activité est une requête sur les entries.
 
 **Données de démonstration.** Toute entry et toute ligne racine créées par le seed portent `source = demo`. Les lignes racines sont `User`, `Project`, `Repository`, `PullRequest`, `Issue`, `Review`, `ProjectMessage`, `HelpRequest`, `Community`, `Post` et `Media` ; leur colonne `source` vaut `demo`, `github` (synchronisée) ou `platform` (écrite sur Pamoja). Une ligne qui en dépend (profil, membre, tâche, match…) suit la source de son parent. `UserSkill.source` et `CiRun.source` gardent leur sens propre, décrit dans leur ligne. L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
 
@@ -764,6 +766,12 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 ### 14.6 Entries
 
 Relations déclarées dans `initEntries` dès le départ : `userId`, `projectId`, `helpRequestId`, `pullRequestId`, `issueId`, `taskId`, `messageId`, `postId`, `communityId`, `notificationId`. Les types et leurs destinataires sont listés au §13.3. Liste complète des types à maintenir dans `api/entries.ts`, en ajoutant toujours à la fin.
+
+- **Numéros continus** : au démarrage, la librairie insère les types manquants dans la table `type` et vérifie que l'id obtenu est le numéro déclaré. Les numéros vont donc de 1 à N sans trou.
+- **`source` sur chaque entry** : `demo`, `github` ou `platform`, en champ (`fields`) pour pouvoir le filtrer en SQL.
+- **Champs figés des preuves** (§8.3) : `REVIEW_HELP_CONFIRMED` et `HELP_CONFIRMED` gardent `requesterId`, `skills` (ids, slugs et noms au moment de l'aide), `helpCategory` ; `REVIEW_HELP_CONFIRMED` y ajoute `repository`, `prNumber`, `githubReviewId`, `reviewState`, `url`. `PR_MERGED` garde `repository`, `prNumber`, `url`, `authorGithubId`, `authorIsOwner` ; `ANSWER_ACCEPTED` garde `askerId` ; `RELEASE_PUBLISHED` garde `repository`, `tag`, `url`. Toutes y ajoutent `eligible`, `exclusionReason` et `rulesVersion`.
+- **Pas de champ vide** : chaque champ est une table `entry<Champ>` dont la valeur est `NOT NULL`. Un champ sans objet n'est pas déclaré sur ce type ; `exclusionReason` vaut `''` quand la preuve est éligible.
+- **Pas de suppression** : une ligne citée par une relation d'entry ne peut plus être supprimée (clé étrangère). On change son statut ou on la masque ; l'historique reste intact.
 
 ## 15. Routes API
 

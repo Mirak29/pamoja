@@ -1,5 +1,6 @@
-// Opens the database, runs the migrations and creates the tables (§14)
-import '/api/schema.ts'
+// Opens the database, runs the migrations, creates the tables (§14) and the
+// entries (§13)
+import '/api/entries.ts'
 import { server } from '@01edu/api/server'
 import { log } from '/api/lib/log.ts'
 import { routeHandler } from '/api/routes.ts'
