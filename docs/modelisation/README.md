@@ -60,7 +60,7 @@ flowchart LR
 
 ## 2. Entité-relation
 
-Conventions (§14) : clé primaire `id INTEGER` partout, unicité par index, dates en `REAL` (millisecondes), JSON validé à l'écriture, clés étrangères appliquées (`PRAGMA foreign_keys = ON`). Il n'y a pas de table d'activité : l'activité est une requête sur les entries. Les liens « polymorphes » (`targetType` + `targetId`) sont notés en commentaire, sans flèche.
+Conventions (§12.5, §14) : clé primaire `INTEGER` nommée d'après la table (`userId`, `helpRequestId`), comme dans Tournament, unicité par index, dates en `REAL` (millisecondes), JSON validé à l'écriture, clés étrangères appliquées (`PRAGMA foreign_keys = ON`). Il n'y a pas de table d'activité : l'activité est une requête sur les entries. Les liens « polymorphes » (`targetType` + `targetId`) sont notés en commentaire, sans flèche. Les références vers la même table (`Post.parentId`, `ProjectMessage.parentMessageId`…) sont dessinées comme des FK mais n'ont pas de contrainte SQLite (§12.5).
 
 Un diagramme par domaine ; `User` revient dans chacun comme point d'ancrage.
 
@@ -76,54 +76,65 @@ erDiagram
   User ||--o{ Follow : "suit"
 
   User {
-    int id PK
+    int userId PK
     int githubId UK
     text githubUsername
     text avatarUrl
     text email "facultatif"
     real suspendedUntil "facultatif"
-    text source "github ou demo"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   Profile {
-    int id PK
-    int userId FK
-    text headline
-    text country
-    text city
+    int profileId PK
+    int userId FK, UK
+    text displayName
+    text headline "facultatif"
+    text bio "facultatif"
+    text country "facultatif"
+    text city "facultatif"
+    text website "facultatif"
+    text coverUrl "facultatif"
     text theme
     text accent
     text availability
-    json sectionOrder
+    json sectionOrder "facultatif"
+    json featured "facultatif"
     text matchingMode "instant, digest, off"
-    json matchingFilters
+    json matchingFilters "facultatif"
+    real createdAt
+    real updatedAt
   }
   Skill {
-    int id PK
+    int skillId PK
     text slug UK
     text name
     text category
   }
   SkillAlias {
-    int id PK
+    int skillAliasId PK
     text alias UK
     int skillId FK
   }
   UserSkill {
-    int id PK
+    int userSkillId PK
     int userId FK
     int skillId FK
     text source "declared, github, platform_activity"
+    real createdAt
   }
   UserIntent {
-    int id PK
+    int userIntentId PK
     int userId FK
     text intent
   }
   Follow {
-    int id PK
+    int followId PK
     int followerId FK
     text targetType "user, project, community"
     int targetId
+    real createdAt
   }
 ```
 
@@ -144,43 +155,58 @@ erDiagram
   Repository |o--o{ WebhookDelivery : "reçoit"
 
   GithubInstallation {
-    int id PK
+    int installationId PK
     int githubInstallationId UK
     text accountLogin
     text accountType "User ou Organization"
-    int installedByUserId FK
+    int installedByUserId FK "facultatif"
+    real createdAt
+    real updatedAt
   }
   Repository {
-    int id PK
+    int repositoryId PK
     int projectId FK
     int githubId UK
     int installationId FK "facultatif"
+    text owner
+    text name
     text fullName
     text defaultBranch
     text syncMode "poll ou live"
-    json etag
-    real lastSyncedAt
+    json etag "facultatif"
+    real lastSyncedAt "facultatif"
+    text source "demo, github, platform"
   }
   PullRequest {
-    int id PK
+    int pullRequestId PK
     int repositoryId FK
     int githubId
     int number "UNIQUE avec repositoryId"
     text title
     text state
     int authorGithubId
+    int additions
+    int deletions
     real mergedAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   Issue {
-    int id PK
+    int issueId PK
     int repositoryId FK
+    int githubId
     int number "UNIQUE avec repositoryId"
     text title
     text state
     json labels
+    int authorGithubId
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   Review {
-    int id PK
+    int reviewId PK
     int pullRequestId FK
     int githubReviewId UK
     int reviewerGithubId
@@ -189,18 +215,23 @@ erDiagram
     int commentCount
     real submittedAt
     int helpRequestId FK "facultatif"
+    text source "demo, github, platform"
   }
   CiRun {
-    int id PK
+    int ciRunId PK
     int repositoryId FK
     int githubId
     text source "actions, checks, status"
+    text name
+    text headSha
     text branch
     int pullRequestId FK "facultatif"
-    text conclusion
+    text conclusion "facultatif"
+    text url
+    real completedAt "facultatif"
   }
   WebhookDelivery {
-    int id PK
+    int deliveryId PK
     text githubDeliveryId UK
     text event
     int repositoryId FK "facultatif"
@@ -208,6 +239,9 @@ erDiagram
     text status "received, processing, done, failed"
     int attempts
     text lastError "facultatif"
+    real receivedAt
+    real processingStartedAt "facultatif"
+    real processedAt "facultatif"
   }
 ```
 
@@ -235,79 +269,103 @@ erDiagram
   Project ||--o{ ProjectSummary : "est résumé"
 
   Project {
-    int id PK
+    int projectId PK
     int ownerId FK
-    text slug UK
     text name
+    text slug UK
     text description
+    text vision "facultatif"
     text visibility "public ou unlisted"
     text status
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   ProjectMember {
-    int id PK
+    int projectMemberId PK
     int projectId FK
     int userId FK
     text role "owner, maintainer, contributor, reviewer, observer"
+    real joinedAt
   }
   JoinRequest {
-    int id PK
+    int joinRequestId PK
     int projectId FK
     int userId FK
     json areas
     text availability
+    text message
     text status
+    real createdAt
   }
   ProjectNeed {
-    int id PK
+    int projectNeedId PK
     int projectId FK
     text type
+    text title
+    text description "facultatif"
     json skills
     text status
+    real createdAt
+    real updatedAt
   }
   Milestone {
-    int id PK
+    int milestoneId PK
     int projectId FK
+    text title
+    text description "facultatif"
     text status "planned, active, done"
     int position
+    real createdAt
   }
   Task {
-    int id PK
+    int taskId PK
     int projectId FK
     int milestoneId FK "facultatif"
-    text column "backlog, ready, in_progress, review, done"
-    text rank "rang fractionnaire"
+    text boardColumn "backlog, ready, in_progress, review, done"
+    text title
+    text description "facultatif"
+    text priority "facultatif"
     int assigneeId FK "facultatif"
     int issueId FK "facultatif"
     int pullRequestId FK "facultatif"
+    text rank "rang fractionnaire"
+    real createdAt
+    real updatedAt
   }
   ProjectMessage {
-    int id PK
+    int messageId PK
     int projectId FK
     text channel "general, help, announcements"
     int authorId FK
-    int parentMessageId FK "facultatif"
-    int parentEntryId "alerte de suivi"
+    text body
+    int parentMessageId FK "facultatif, même table, sans contrainte"
+    int parentEntryId "facultatif, alerte de suivi"
+    real hiddenAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
   }
   ChannelState {
-    int id PK
+    int channelStateId PK
     int userId FK
     int projectId FK
-    text channel
-    real lastReadAt
+    text channel "general, tracking, help, announcements"
+    real lastReadAt "facultatif"
     text notify "all, mentions, mine, none"
   }
   MessageReaction {
-    int id PK
+    int messageReactionId PK
     int messageId FK
     int userId FK
     text emoji
   }
   ProjectSummary {
-    int id PK
+    int projectSummaryId PK
     int projectId FK
     text period
     text content
     text inputHash
+    real createdAt
   }
 ```
 
@@ -329,57 +387,72 @@ erDiagram
   User ||--o{ BadgeProgress : "progresse"
 
   HelpRequest {
-    int id PK
+    int helpRequestId PK
     int authorId FK
-    int targetUserId FK "collaboration request"
+    int targetUserId FK "facultatif, collaboration request"
     int projectId FK "facultatif"
     int pullRequestId FK "facultatif"
     text category
+    text title
+    text description
     json skills
+    text expectedLevel "facultatif"
+    int estimatedMinutes "facultatif"
     text status "voir le diagramme d'état"
     int acceptedBy FK "facultatif"
-    real acceptedAt
-    real confirmedAt
+    real acceptedAt "facultatif"
+    real deliveredAt "facultatif"
+    real confirmedAt "facultatif"
     real expiresAt
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   HelpMatch {
-    int id PK
+    int helpMatchId PK
     int helpRequestId FK
     int userId FK
     int score
     json reasons
     int wave
     bool newcomerSlot
+    real notifiedAt "facultatif"
     text status "notified, accepted, declined, withdrawn, released"
   }
   HelpMessage {
-    int id PK
+    int helpMessageId PK
     int helpRequestId FK
     int authorId FK
     text body
+    real createdAt
   }
   Notification {
-    int id PK
+    int notificationId PK
     int userId FK
     text type
-    text category
+    text category "for-you, projects, communities, social, system"
     int entryId "facultatif"
+    int actorId FK "facultatif"
     json payload
     real readAt "facultatif"
+    real createdAt
   }
   BadgeProgress {
-    int id PK
+    int badgeProgressId PK
     int userId FK
     text badge
     int level
     int count
+    real updatedAt
   }
   Embedding {
-    int id PK
+    int embeddingId PK
     text targetType "user ou help_request"
     int targetId
     text model
     blob vector
+    text inputHash
+    real createdAt
   }
 ```
 
@@ -404,63 +477,89 @@ erDiagram
   User ||--o{ Media : "téléverse"
 
   Community {
-    int id PK
+    int communityId PK
     text slug UK
+    text name
     text type "technology, country, domain"
+    text description
     text countryCode "facultatif"
+    text source "demo, github, platform"
+    real createdAt
   }
   CommunityMember {
-    int id PK
+    int communityMemberId PK
     int communityId FK
     int userId FK
     text role "member ou moderator"
+    real joinedAt
   }
   Post {
-    int id PK
+    int postId PK
     int authorId FK
     int communityId FK "facultatif"
     int projectId FK "facultatif"
     text type
-    int parentId FK "facultatif"
-    int rootId FK "facultatif"
-    int repostOfId FK "facultatif"
-    int acceptedReplyId FK "facultatif"
+    text title "facultatif"
+    text body
+    json attachments "facultatif"
+    int parentId FK "facultatif, même table, sans contrainte"
+    int rootId FK "facultatif, même table, sans contrainte"
+    int repostOfId FK "facultatif, même table, sans contrainte"
+    int acceptedReplyId FK "facultatif, même table, sans contrainte"
     real hiddenAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
   }
   Reaction {
-    int id PK
+    int reactionId PK
     int userId FK
     text targetType
     int targetId
     text kind "like ou useful"
   }
   Bookmark {
-    int id PK
+    int bookmarkId PK
     int userId FK
     int postId FK
+    real createdAt
   }
   Report {
-    int id PK
+    int reportId PK
     int reporterId FK
     text targetType
     int targetId
     text reason
+    text comment "facultatif"
     text status "open, resolved, dismissed"
+    real createdAt
+    real resolvedAt "facultatif"
   }
   ModerationAction {
-    int id PK
+    int moderationActionId PK
     int moderatorId FK
     int reportId FK "facultatif"
+    text targetType
+    int targetId
     text action "dismiss, hide, warn, suspend, revoke_evidence"
+    text reason
     real until "facultatif"
+    real createdAt
   }
   Media {
-    int id PK
+    int mediaId PK
     int ownerId FK
     text storageKey
     text mime
-    text targetType "profile_cover, project_gallery, post, help_request, message"
+    int width
+    int height
+    int bytes
+    text targetType "facultatif, profile_cover, project_gallery, post, help_request, message"
     int targetId "facultatif"
+    int position
+    real hiddenAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
   }
 ```
 
