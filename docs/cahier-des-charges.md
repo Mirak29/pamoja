@@ -44,7 +44,7 @@ Ces choix ne sont plus en discussion. Toute la suite du document en découle.
 | Base de données | SQLite via `@01edu/db`, une seule instance | Suffisant pour CADEV, migration PostgreSQL seulement si nécessaire |
 | Temps réel | Entries `@01edu/db/entries` + SSE, écritures en HTTP | Mécanisme déjà en production dans Tournament |
 | Réputation | Calculée uniquement depuis le journal d'entries, jamais depuis une déclaration | Badges vérifiables |
-| Langue de l'interface | Français, au tutoiement ; les deux signatures de marque (*Your work is your profile*, *Where developers don't just connect. They build together.*) restent en anglais | Choix de l'équipe. Les libellés cités en anglais dans ce document (scénario du §18, exemples) sont traduits dans l'interface ; les canaux s'appellent , , ,  |
+| Langue de l'interface | Français, au tutoiement ; les deux signatures de marque (*Your work is your profile*, *Where developers don't just connect. They build together.*) restent en anglais | Choix de l'équipe. Les libellés cités en anglais dans ce document (scénario du §18, exemples) sont traduits dans l'interface ; les canaux s'appellent `#général`, `#suivi`, `#aide`, `#annonces` |
 | Identité visuelle | Design system Pamoja + prototype Pamoja v2 : le fil indigo, une interface entièrement isométrique (dalles, touches, puits, formes par type d'objet) | Un style reconnaissable, où formes et volumes encodent les objets et leurs valeurs |
 | Référence d'interface | Prototype Pamoja v2 (`docs/prototype/`) | Écrans et parcours validés ; ses écarts avec ce document sont tranchés ici |
 | Routage | Vrais chemins (`/@moussa`, `/projet/openpay-africa`), jamais de `#` | Le serveur doit voir l'adresse pour servir l'aperçu de partage (§17.1) |
@@ -899,7 +899,7 @@ La démo raconte une seule histoire continue, en conditions réelles : vrai logi
 2. **Profil** — ABDOU SOW, Backend Engineer, Dakar, Go · TypeScript · Deno.
 3. **Import** — « + Create » → « Import from GitHub » → OpenPay Africa. Trois clics. Le repo étant déjà couvert par l'installation, il passe directement en synchro live.
 4. **Pulse** — 3 PRs en attente de review, 1 bloqueur, 2 contributeurs actifs. Le résumé IA s'affiche quelques secondes après, sans rafraîchir.
-5. **Demande** — Abdou ouvre la PR #81 et clique « Request Review ». Skills pré-remplis : Go, SQLite, Concurrency.
+5. **Demande** — Abdou ouvre la PR #81 et clique « Request Review ». Skills pré-remplis : Go, SQLite, Backend.
 6. **Matching** — la plateforme affiche les développeurs trouvés et, pour Moussa, « Why this match? » : Go, SQLite, Backend, 14 reviews confirmées.
 7. **Temps réel** — sur l'écran de Moussa apparaît, sans rafraîchir : « THIS PROJECT NEEDS YOU — OpenPay Africa — PR #81 — Go · SQLite », avec le score.
 8. **Acceptation** — Moussa accepte ; l'écran d'Abdou se met à jour.
