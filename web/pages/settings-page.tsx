@@ -4,7 +4,7 @@ import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
 import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
-import { signOut } from '/web/fixtures/session.ts'
+import { signOut } from '/web/lib/session.ts'
 import {
   matchingModes,
   notificationRows,

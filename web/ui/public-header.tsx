@@ -1,5 +1,5 @@
 import { A } from '@01edu/signal-router'
-import { signedIn } from '/web/fixtures/session.ts'
+import { signedIn } from '/web/lib/session.ts'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 

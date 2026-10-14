@@ -40,6 +40,7 @@
     "./": "./",
     "/": "./",
     "@01edu/api": "jsr:@01edu/api@^0.2.11",
+    "@01edu/api-client": "jsr:@01edu/api-client@^0.2.6",
     "@01edu/db": "jsr:@01edu/db@^0.2.6",
     "@01edu/time": "jsr:@01edu/time@^0.1.0",
     "@01edu/signal-router": "jsr:@01edu/signal-router@^0.2.3",

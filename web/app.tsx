@@ -20,7 +20,7 @@ import { SavedPage } from '/web/pages/saved-page.tsx'
 import { SearchPage } from '/web/pages/search-page.tsx'
 import { SettingsPage } from '/web/pages/settings-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
-import { signedIn } from '/web/fixtures/session.ts'
+import { currentUser, signedIn } from '/web/lib/session.ts'
 import { AppLayout } from '/web/ui/layout.tsx'
 
 Object.assign(globalThis, { h, Fragment })
@@ -56,6 +56,8 @@ const App = () => {
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
   const Route = routeOf(section) ?? routeOf(path)
   if (section === 'connexion') return <ConnexionPage />
+  // Until the server says who is signed in, neither the landing nor the app
+  if (currentUser.value === undefined) return null
   if (!signedIn.value) {
     // Without a session: the landing, the passports, and the login before
     // any page of the app
