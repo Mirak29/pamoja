@@ -136,7 +136,7 @@ Aucun token utilisateur n'est stocké. Les appels serveur utilisent des tokens s
 | Synchro niveau 2 | Token d'installation généré à la demande depuis la clé privée de l'app, valable 1 h, gardé en mémoire | Non |
 | Webhooks | Signature HMAC SHA-256 vérifiée avec le secret webhook | Non |
 
-Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`, et `SESSION_SECRET`, qui signe les cookies de session (§5.3). Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
+Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`, et `SESSION_SECRET`, qui signe les cookies de session (§5.3). En dev, ils vont dans `.env-local`, ignoré par git et lu par `deno task dev` après `.env-dev`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
 
 ### 5.3 Connexion
 
