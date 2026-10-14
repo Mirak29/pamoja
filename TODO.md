@@ -66,7 +66,7 @@ Responsable : _à répartir_
 - [x] **PAM-103** · **Prototype à risque** : Tailwind CLI v4 sans twind ni daisyUI, en watch en dev et dans le build (§12.3) — à finir fin J1 — @niangoos
 - [ ] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — à finir fin J1
 - [x] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
-- [ ] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
+- [x] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
 - [ ] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
@@ -267,3 +267,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-10 · QA complète du frontend sur données fictives : corrections découpées en PAM-120, PAM-121, PAM-218 à PAM-221, PAM-315, PAM-421 à PAM-423, PAM-517 à PAM-520 ; la boucle de démo passe en premier · §4, §18
 - 2026-10-10 · Fil de la demande d'aide entre demandeur et aidant accepté, à la place de `#aide` : l'aidant n'entre pas dans le projet (`HelpMessage`) ; retours de la QA 2 découpés en PAM-122, PAM-222, PAM-424, PAM-521 · §7.2, §14.4
 - 2026-10-14 · Clés primaires nommées d'après la table (`userId`), comme Tournament ; schéma initial dans `api/schema.ts`, les migrations ne font évoluer qu'une base existante ; `source` sur les lignes racines pour la démo ; `Task.boardColumn` car `column` est un mot réservé SQL · §12.5, §14
+- 2026-10-14 · Dates en secondes (`now()` de `@01edu/time`), l'unité réelle de Tournament et des entries, et non en millisecondes ; listener SSE avec membres et abonnés séparés ; `source` et champs figés des preuves en `fields` d'entry ; `userId` d'une entry = le développeur dont elle parle · §8.3, §13.2, §13.3, §14, §14.6

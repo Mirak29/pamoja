@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
+import { now as clock } from '@01edu/time'
 import {
   Bookmark,
   HelpRequest,
@@ -12,7 +13,7 @@ import {
 } from '/api/schema.ts'
 
 const restore = makeRestorePoint()
-const now = Date.now()
+const now = clock()
 
 const addUser = (githubId: number) =>
   User.insert({
@@ -113,7 +114,7 @@ Deno.test('schema: optional columns accept null, others do not', () => {
     description: 'Une requête lente',
     skills: [],
     status: 'open',
-    expiresAt: now + 86_400_000,
+    expiresAt: now + 86_400,
     source: 'platform',
     createdAt: now,
     updatedAt: now,

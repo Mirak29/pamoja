@@ -483,6 +483,13 @@ Les 38 tables du §14 sont déclarées dans `api/schema.ts` avec `createTable`, 
 - **Livrable** : `api/schema.ts`, `api/schema_test.ts` (8 tests : pragmas, 38 tables, clés étrangères, unicité, champs optionnels), `migrations/001-initial.js`, `DATABASE_PATH` dans `.env-dev`
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-106 · Entries et relations
+
+`api/entries.ts` déclare les 38 types d'entries du §13.3, numérotés de 1 à 38, et les 10 relations du §14.6. Chaque entry porte sa `source` ; les preuves de réputation figent leurs champs (demandeur, skills, PR, review, éligibilité, version des règles). Chaque type diffusé a son `trigger` : membres, abonnés, communautés et modérateurs viennent du listener, le demandeur et les développeurs matchés d'une vérification SQL. Le cahier passe les dates en secondes, l'unité réelle de Tournament et des entries. Le commentaire faux de `api/schema.ts` sur `sql` est corrigé.
+
+- **Livrable** : `api/entries.ts` (types, relations, champs, triggers, type `EntryListener`, `maybe`), `api/entries_test.ts` (10 tests : numérotation, table `type`, champs figés, relation absente, archivage, diffusion par type)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
