@@ -136,15 +136,19 @@ Aucun token utilisateur n'est stocké. Les appels serveur utilisent des tokens s
 | Synchro niveau 2 | Token d'installation généré à la demande depuis la clé privée de l'app, valable 1 h, gardé en mémoire | Non |
 | Webhooks | Signature HMAC SHA-256 vérifiée avec le secret webhook | Non |
 
-Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
+Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`, et `SESSION_SECRET`, qui signe les cookies de session (§5.3). En dev, ils vont dans `.env-local`, ignoré par git et lu par `deno task dev` après `.env-dev`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
 
 ### 5.3 Connexion
 
 1. Le frontend appelle `GET/api/auth/github`, qui génère un `state` (à la manière du `StateManager` de `api/gitea-oauth.ts`) et renvoie l'URL d'autorisation GitHub.
-2. GitHub redirige vers la page frontend de callback avec `code` et `state`.
+2. GitHub redirige vers la page frontend de callback, `/connexion/github`, avec `code` et `state`. La page demandée avant la connexion est gardée dans `sessionStorage` pendant l'aller-retour.
 3. Le frontend envoie `POST/api/auth/github/callback` avec `code` et `state`.
-4. Le serveur vérifie le `state`, échange le `code`, lit `GET /user`, crée ou retrouve l'utilisateur par `githubId`, jette le token.
+4. Le serveur vérifie le `state`, échange le `code`, lit `GET /user`, crée ou retrouve l'utilisateur par `githubId`, jette le token. Au premier login, il crée `User` (`source = github`) et `Profile` (nom affiché : le nom GitHub, sinon le login ; bio et site repris de GitHub) ; l'onboarding suit. Aux suivants, il met à jour le login et l'avatar, qui peuvent changer sur GitHub.
 5. Le serveur pose le cookie `session` : `httpOnly`, `secure`, `SameSite=Lax`, comme `createSessionResponse` dans Tournament.
+
+**Session.** Comme dans Tournament, une session est une entry `USER_LOGIN` ; le cookie contient son id, signé en HMAC SHA-256. Tournament signe avec le sel du mot de passe ; Pamoja n'a pas de mot de passe et signe avec `SESSION_SECRET`. Une session vaut 30 jours, vérifiés côté serveur avec `createdAt` de l'entry et pas seulement par l'expiration du cookie. `POST/api/auth/logout` archive l'entry : le cookie ne vaut plus rien, même copié.
+
+**En dev, sans GitHub App.** Si `GITHUB_CLIENT_ID` est absent hors production, `GET/api/auth/github` renvoie directement vers `/connexion/github` avec un code de démonstration, et le serveur connecte le compte `abdou` (`source = demo`) sans appeler GitHub. Chacun peut ainsi travailler sans les secrets de l'app. En production, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `SESSION_SECRET` sont obligatoires : le serveur refuse de démarrer sans eux.
 
 L'utilisateur peut utiliser toute la plateforme sans jamais installer l'app.
 

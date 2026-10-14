@@ -70,7 +70,7 @@ Responsable : _à répartir_
 - [ ] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
-- [ ] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
+- [x] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
 - [x] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
 - [ ] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
 - [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4)
@@ -268,3 +268,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-10 · Fil de la demande d'aide entre demandeur et aidant accepté, à la place de `#aide` : l'aidant n'entre pas dans le projet (`HelpMessage`) ; retours de la QA 2 découpés en PAM-122, PAM-222, PAM-424, PAM-521 · §7.2, §14.4
 - 2026-10-14 · Clés primaires nommées d'après la table (`userId`), comme Tournament ; schéma initial dans `api/schema.ts`, les migrations ne font évoluer qu'une base existante ; `source` sur les lignes racines pour la démo ; `Task.boardColumn` car `column` est un mot réservé SQL · §12.5, §14
 - 2026-10-14 · Dates en secondes (`now()` de `@01edu/time`), l'unité réelle de Tournament et des entries, et non en millisecondes ; listener SSE avec membres et abonnés séparés ; `source` et champs figés des preuves en `fields` d'entry ; `userId` d'une entry = le développeur dont elle parle · §8.3, §13.2, §13.3, §14, §14.6
+- 2026-10-14 · Session : entry `USER_LOGIN` signée avec `SESSION_SECRET` (pas de mot de passe à saler), 30 jours vérifiés côté serveur ; page de retour `/connexion/github` ; connexion simulée en dev sans GitHub App, jamais en prod · §5.2, §5.3

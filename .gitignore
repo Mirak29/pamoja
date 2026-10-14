@@ -11,6 +11,7 @@ node_modules/
 
 # local env and editor
 .env
+.env-local
 .vscode
 .DS_Store
 

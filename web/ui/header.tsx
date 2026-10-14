@@ -11,7 +11,7 @@ import {
   ShieldCheck,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
-import { signOut } from '/web/fixtures/session.ts'
+import { signOut } from '/web/lib/session.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { paletteOpen } from '/web/ui/command-palette.tsx'

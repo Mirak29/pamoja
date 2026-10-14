@@ -40,6 +40,7 @@
     "./": "./",
     "/": "./",
     "@01edu/api": "jsr:@01edu/api@^0.2.11",
+    "@01edu/api-client": "jsr:@01edu/api-client@^0.2.6",
     "@01edu/db": "jsr:@01edu/db@^0.2.6",
     "@01edu/time": "jsr:@01edu/time@^0.1.0",
     "@01edu/signal-router": "jsr:@01edu/signal-router@^0.2.3",
@@ -51,7 +52,7 @@
   "tasks": {
     "icon": "deno run -A task-generate-icons.js",
     "theme": "deno run -A task-generate-theme.ts",
-    "dev": "deno serve --env-file=.env-dev -A --port=8800 --watch --watch-exclude='{*_,*.,}test.{js,mjs,ts,mts,jsx,tsx}' task-dev.ts & deno task test --watch api web --reporter=dot & deno task fmt --watch api web *.ts & deno task lint --watch api web *.ts",
+    "dev": "deno serve --env-file=.env-dev --env-file=.env-local -A --port=8800 --watch --watch-exclude='{*_,*.,}test.{js,mjs,ts,mts,jsx,tsx}' task-dev.ts & deno task test --watch api web --reporter=dot & deno task fmt --watch api web *.ts & deno task lint --watch api web *.ts",
     "prod:build": "deno run -A task-prod.ts",
     "prod:serve": "deno run --env-file -A prod-server.ts",
     "prod": {

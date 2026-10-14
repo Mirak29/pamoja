@@ -490,6 +490,13 @@ Les 38 tables du §14 sont déclarées dans `api/schema.ts` avec `createTable`, 
 - **Livrable** : `api/entries.ts` (types, relations, champs, triggers, type `EntryListener`, `maybe`), `api/entries_test.ts` (10 tests : numérotation, table `type`, champs figés, relation absente, archivage, diffusion par type)
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-110 · Login GitHub et session
+
+Routes `GET/api/auth/github`, `POST/api/auth/github/callback`, `POST/api/auth/logout` et `GET/api/user/me` (§15). Le premier login crée `User` et `Profile` depuis GitHub, les suivants mettent à jour le login et l'avatar. La session est une entry `USER_LOGIN` signée en HMAC avec `SESSION_SECRET`, valable 30 jours ; la déconnexion l'archive, si bien qu'un cookie copié ne vaut plus rien. Côté web, `web/lib/session.ts` remplace la session fictive : la page demandée est gardée pendant l'aller-retour, le premier login mène à l'onboarding. Sans GitHub App en dev, la connexion est simulée. Parcours vérifié dans le navigateur en mode simulé ; l'échange réel avec GitHub sera testé dès que la GitHub App (PAM-109) existera.
+
+- **Livrable** : `api/routes.ts`, `api/session.ts`, `api/github-oauth.ts`, `api/user.ts`, `api/lib/env.ts`, `api/auth_test.ts` (7 tests), `web/lib/api.ts`, `web/lib/session.ts`, `web/pages/public/connexion-page.tsx`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
