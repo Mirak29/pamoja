@@ -39,8 +39,12 @@ export const ConnexionPage = () => {
     }
     finishLogin(code, state).then(
       (created) =>
-        // Replace: the code must not stay in the history
-        navigate({ href: created ? 'onboarding' : takeBack(), replace: true }),
+        // Replace: the code must not stay in the history. Without a page to
+        // go back to, the home page: an empty href would stay right here.
+        navigate({
+          href: created ? 'onboarding' : takeBack() || '.',
+          replace: true,
+        }),
       () => {
         setLoading(false)
         setError(failed)
