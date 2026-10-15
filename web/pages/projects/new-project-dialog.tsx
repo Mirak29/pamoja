@@ -4,7 +4,7 @@ import { A, navigate } from '@01edu/signal-router'
 import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
 import { createProject, readmeSummary } from '/web/fixtures/repos.ts'
-import { api, type ApiOutput } from '/web/lib/api.ts'
+import { api, type ApiOutput, isQuotaError } from '/web/lib/api.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { ago } from '/web/lib/time.ts'
 import { skills } from '/web/fixtures/skills.ts'
@@ -120,14 +120,22 @@ const SourceCard = (
 type RepoItem = ApiOutput['GET/api/github/repositories'][number]
 type RepoPreviewData = ApiOutput['GET/api/github/repository']
 
-// The read of GitHub failed: say it, and offer to try again
-const ReadError = ({ retry }: { retry: () => void }) => (
+type Failure = false | 'quota' | 'error'
+const failureOf = (err: unknown): Failure =>
+  isQuotaError(err) ? 'quota' : 'error'
+
+// The read of GitHub failed: say why, and offer to try again
+const ReadError = (
+  { failure, retry }: { failure: Failure; retry: () => void },
+) => (
   <div
     role='alert'
     class='flex flex-wrap items-center gap-3 p-4 text-[14px] text-danger'
   >
     <span class='flex-1'>
-      Pamoja n’a pas pu lire GitHub. Réessaie dans un instant.
+      {failure === 'quota'
+        ? 'GitHub limite le nombre de lectures par heure et la limite est atteinte. Réessaie dans quelques minutes.'
+        : 'Pamoja n’a pas pu lire GitHub. Réessaie dans un instant.'}
     </span>
     <Button variant='secondary' size={34} onClick={retry}>Réessayer</Button>
   </div>
@@ -152,13 +160,13 @@ const RepoList = (
   { pick, back }: { pick: (repo: RepoItem) => void; back: () => void },
 ) => {
   const [list, setList] = useState<RepoItem[]>()
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<Failure>(false)
   const load = () => {
     setFailed(false)
     setList(undefined)
     api['GET/api/github/repositories'].fetch().then(
       setList,
-      () => setFailed(true),
+      (err) => setFailed(failureOf(err)),
     )
   }
   useEffect(load, [])
@@ -166,7 +174,7 @@ const RepoList = (
     <>
       <h2 class='font-display text-heading'>Tes repos publics</h2>
       <div class='flex flex-col gap-2.5 rounded-[8px] border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
-        {failed && <ReadError retry={load} />}
+        {failed && <ReadError failure={failed} retry={load} />}
         {!failed && !list && <Skeleton label='Lecture de tes repos GitHub…' />}
         {list?.map((repo) => (
           <div
@@ -237,7 +245,7 @@ const RepoList = (
  */
 const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
   const [preview, setPreview] = useState<RepoPreviewData>()
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<Failure>(false)
   const [picked, setPicked] = useState<string[]>([])
   const [needs, setNeeds] = useState<string[]>([])
   const [creating, setCreating] = useState(false)
@@ -248,7 +256,7 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
         setPreview(data)
         setPicked(data.skills)
       },
-      () => setFailed(true),
+      (err) => setFailed(failureOf(err)),
     )
   }
   useEffect(load, [])
@@ -267,12 +275,13 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
       })
       await loadProjects()
       created(slug, true)
-    } catch {
+    } catch (err) {
       setCreating(false)
       notify({
         title: 'Import impossible',
-        body:
-          'Pamoja n’a pas pu créer le projet. Vérifie que le repo est bien à toi, puis réessaie.',
+        body: isQuotaError(err)
+          ? 'GitHub limite le nombre de lectures par heure et la limite est atteinte. Réessaie dans quelques minutes.'
+          : 'Pamoja n’a pas pu créer le projet. Vérifie que le repo est bien à toi, puis réessaie.',
         icon: FolderGit2,
         tone: 'danger',
       })
@@ -307,7 +316,7 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
           </span>
         </div>
       </div>
-      {failed && <ReadError retry={load} />}
+      {failed && <ReadError failure={failed} retry={load} />}
       {!failed && !preview && (
         <Skeleton label='Lecture du README, des langages et des issues…' />
       )}
