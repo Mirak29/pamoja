@@ -4,6 +4,7 @@ import { url } from '@01edu/signal-router'
 import { incoming } from '/web/fixtures/notifications.ts'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
+import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
 import { CreateMenu, MobileNav, Sidebar } from '/web/ui/navigation.tsx'
 import { ReportDialog } from '/web/ui/report-dialog.tsx'
 import { notify, Toasts } from '/web/ui/toast.tsx'
@@ -122,6 +123,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <ReportDialog />
     <Toasts />
     <LiveNotifications />
+    <ConnectionBanner />
     <FocusKeeper />
   </div>
 )

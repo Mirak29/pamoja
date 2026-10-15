@@ -511,6 +511,13 @@ Au premier login, le profil reprend tout ce que GitHub donne : photo, nom, bio, 
 - **Livrable** : `api/events.ts`, route dans `api/routes.ts`, `api/events_test.ts` (4 tests : session et type exigés, ack puis entries de ses projets seulement, adhésion prise en compte sans reconnexion, aucun listener après fermeture)
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-108 · Client temps réel web/lib/realtime.ts
+
+Le navigateur ouvre `api/events` dès que la session est connue et le ferme à la déconnexion. `onEvent(types, handler)` et `useEvent` abonnent un écran à des types d'entries ; `onReconnect` relit les données critiques après une reconnexion. Sans `ack` pendant 20 s, `sourceDisconnectedAt` passe à l'heure de la coupure et un bandeau discret l'indique. Une connexion refusée est relancée toutes les 5 s. Les numéros de types sont sortis dans `api/entry-types.ts`, importable par le web. Vérifié dans le navigateur avec le bundle de production : bandeau 20 s après l'arrêt du serveur, disparition à son redémarrage, sans recharger la page. La réception d'une entry dans un autre navigateur sera visible dès qu'une route en produira une pour l'utilisateur (notifications, PAM-210) ; la diffusion côté serveur est testée par PAM-107.
+
+- **Livrable** : `web/lib/realtime.ts`, `web/ui/connection-banner.tsx`, `api/entry-types.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

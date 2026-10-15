@@ -682,7 +682,8 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 - Ouvre un `EventSource` sur `api/events` une fois la session connue.
 - `onEvent(types, handler)` abonne un composant à des types d'entries ; le handler appelle le `.fetch()` du signal concerné (`notifications.fetch()`, `project.fetch()`, `board.fetch()`, `profile.fetch()`).
 - Si aucun `ack` n'arrive pendant 20 secondes, la connexion est considérée perdue (signal `sourceDisconnectedAt`) et un bandeau discret l'indique.
-- À la reconnexion, les signals critiques sont relus (notifications, page courante).
+- À la reconnexion, les signals critiques sont relus (notifications, page courante) : chaque écran s'inscrit avec `onReconnect`. Le navigateur reconnecte seul après une coupure réseau ; une connexion refusée (serveur qui redémarre, réponse d'erreur) est fermée pour de bon par le navigateur, `realtime.ts` la relance donc toutes les 5 s.
+- Les numéros de types viennent de `api/entry-types.ts`, module sans base de données que le web peut importer ; `api/entries.ts` déclare les entries elles-mêmes.
 
 ### 13.5 Plusieurs onglets
 
