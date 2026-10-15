@@ -424,8 +424,11 @@ export const OnboardingPage = () => {
             {last && (
               <button
                 type='button'
+                // While the first project imports, finishing twice would
+                // import it twice
+                disabled={importing}
                 onClick={() => finish(false)}
-                class='cursor-pointer px-2 text-[14px] leading-none font-semibold text-ink-muted'
+                class='cursor-pointer px-2 text-[14px] leading-none font-semibold text-ink-muted disabled:cursor-default disabled:opacity-45'
               >
                 Passer
               </button>

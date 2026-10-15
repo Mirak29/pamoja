@@ -47,13 +47,7 @@ const Intro = (
       </span>
     )}
     <Footer>
-      <Button
-        size={40}
-        onClick={next}
-        aria-busy={leaving}
-        aria-disabled={leaving}
-        class={leaving ? 'pointer-events-none' : ''}
-      >
+      <Button size={40} onClick={next} aria-busy={leaving}>
         {leaving ? 'Ouverture de GitHub…' : 'Continuer vers GitHub'}
         <ExternalLink />
       </Button>
