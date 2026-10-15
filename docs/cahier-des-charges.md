@@ -162,6 +162,8 @@ L'utilisateur peut utiliser toute la plateforme sans jamais installer l'app.
 4. L'IA propose skills et besoins (§11) ; l'utilisateur valide. Le projet est en ligne.
 5. Synchro par rafraîchissement toutes les 15 minutes avec requêtes conditionnelles (`syncMode = poll`).
 
+En pratique (`api/import.ts`) : la liste exclut les forks et les repos privés ; l'aperçu (`GET/api/github/repository`) lit le repo, ses langages, son README, sa dernière release, le nombre de contributeurs et de PRs ouvertes ; tant que l'IA n'est pas branchée (PAM-310), les skills proposés sont ceux des langages et des topics, ramenés au vocabulaire par `SkillAlias`. L'import relit tout côté serveur, sans croire la page, puis crée `Project`, le membre owner, `Repository` (README et chiffres compris), les issues et PRs ouvertes, et l'entry `PROJECT_CREATED`. Le rafraîchissement (`api/sync.ts`) relit toutes les 15 minutes, en requêtes conditionnelles, le repo, ses issues et ses PRs triées par mise à jour ; une réponse 304 ne change rien, une nouveauté produit `PROJECT_UPDATED` pour que les pages ouvertes se mettent à jour.
+
 Seul le propriétaire d'un repo personnel peut l'importer au niveau 1. Un repo d'organisation s'importe par le niveau 2 : l'installation, réservée aux owners de l'organisation et aux admins du repo, prouve le droit de l'importer.
 
 **Niveau 2 — synchro live, avec installation**
@@ -194,7 +196,7 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 ### 5.6 Fiabilité et quota
 
 - **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.
-- **Quota** : 5 000 requêtes par heure et par token. Cache local, `lastSyncedAt`, ETag et requêtes conditionnelles : une réponse 304 ne compte pas dans le quota. GraphQL pour les imports. Jamais d'appel GitHub pendant l'affichage d'une page.
+- **Quota** : 5 000 requêtes par heure et par token. Cache local, `lastSyncedAt`, ETag et requêtes conditionnelles : une réponse 304 ne compte pas dans le quota. L'import passe par l'API REST : une dizaine de requêtes par repo, et les mêmes chemins se relisent ensuite en conditionnel, ce que GraphQL ne permet pas. Jamais d'appel GitHub pendant l'affichage d'une page.
 - **Board** : synchro en sens unique, GitHub → plateforme. L'app étant en lecture seule, la plateforme n'écrit jamais sur GitHub.
 - **Dev local** : tunnel HTTPS (`cloudflared` ou smee.io) pour recevoir les webhooks.
 
@@ -582,7 +584,7 @@ Lus dans `router.ts` (0.2.10) :
 - **Clé étrangère** : `join` référence une table déjà créée. Une table ne peut donc pas pointer vers elle-même : ces colonnes (`Post.parentId`, `ProjectMessage.parentMessageId`…) restent des `INTEGER` sans contrainte, vérifiés par le code. Les cibles polymorphes (`targetType` + `targetId`) n'ont pas de contrainte non plus.
 - **Mise à jour** : `update` écrit `COALESCE(:col, col)` ; il ne remet jamais une colonne à `NULL`. Pour vider une colonne, passer par `sql`.
 - **Types de colonnes** : `TEXT`, `JSON`, `BLOB`, `INTEGER`, `REAL`.
-- **Migrations** : `runMigrations` suit la version avec `PRAGMA user_version`. Elles s'exécutent avant `createTable`, qui vérifie que la table existante correspond au schéma déclaré (voir le commentaire en tête de `api/schema.ts` dans Tournament). Sur une base neuve, aucune migration ne s'exécute : `runMigrations` note la dernière version et ce sont les `createTable` qui créent les tables. Le schéma initial vit donc dans `api/schema.ts` ; une migration ne sert qu'à faire évoluer une base existante, dans une transaction (`BEGIN IMMEDIATE`).
+- **Migrations** : `api/migrate.ts` reprend `runMigrations` de `@01edu/db`, qui importe `file://` suivi du chemin et casse donc sous Windows (`C:\…`) : toute migration d'une base existante y faisait planter le serveur. Mêmes règles sinon : la version suit `PRAGMA user_version`. Elles s'exécutent avant `createTable`, qui vérifie que la table existante correspond au schéma déclaré (voir le commentaire en tête de `api/schema.ts` dans Tournament). Sur une base neuve, aucune migration ne s'exécute : `runMigrations` note la dernière version et ce sont les `createTable` qui créent les tables. Le schéma initial vit donc dans `api/schema.ts` ; une migration ne sert qu'à faire évoluer une base existante, dans une transaction (`BEGIN IMMEDIATE`).
 
 ### 12.6 Arborescence
 
@@ -718,9 +720,9 @@ Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `help
 | Table | Champs | Contraintes |
 | --- | --- | --- |
 | `GithubInstallation` | installationId, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId?, createdAt, updatedAt | UNIQUE(githubInstallationId) |
-| `Repository` | repositoryId, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag? (JSON), lastSyncedAt?, source | UNIQUE(githubId) |
-| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state, authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt | UNIQUE(repositoryId, number) |
-| `Issue` | issueId, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, source, createdAt, updatedAt | UNIQUE(repositoryId, number) |
+| `Repository` | repositoryId, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag? (JSON), lastSyncedAt?, source, readme?, stats? (JSON : étoiles, forks, topics, langages, contributeurs, issues et PRs ouvertes, release) | UNIQUE(githubId) |
+| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state (open / merged / closed), authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt, authorLogin?, branch? | UNIQUE(repositoryId, number) |
+| `Issue` | issueId, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, source, createdAt, updatedAt, authorLogin?, comments? | UNIQUE(repositoryId, number) |
 | `Review` | reviewId, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId?, source | UNIQUE(githubReviewId) |
 | `WebhookDelivery` | deliveryId, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
 
@@ -730,7 +732,7 @@ Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `Project` | projectId, ownerId, name, slug, description, vision?, visibility (public / unlisted), status, source, createdAt, updatedAt | UNIQUE(slug) |
+| `Project` | projectId, ownerId, name, slug, description, vision?, visibility (public / unlisted), status, source, createdAt, updatedAt, skills? (JSON d'ids : la stack) | UNIQUE(slug) |
 | `ProjectMember` | projectMemberId, projectId, userId, role (owner / maintainer / contributor / reviewer / observer), joinedAt | UNIQUE(projectId, userId) |
 | `JoinRequest` | joinRequestId, projectId, userId, areas (JSON), availability, message, status, createdAt | Index (projectId, status) |
 | `ProjectNeed` | projectNeedId, projectId, type, title, description?, skills (JSON d'ids), status, createdAt, updatedAt | Index (projectId, status) |
@@ -741,6 +743,8 @@ Aucune table de tokens : aucun token utilisateur n'est stocké (§5.2).
 | `CiRun` | ciRunId, repositoryId, githubId, source (actions / checks / status), name, headSha, branch, pullRequestId?, conclusion?, url, completedAt? | UNIQUE(repositoryId, source, githubId) ; sert à détecter « CI réparée » |
 | `MessageReaction` | messageReactionId, messageId, userId, emoji | UNIQUE(messageId, userId, emoji) |
 | `ProjectSummary` | projectSummaryId, projectId, period, content, inputHash, createdAt | Résumés IA du Pulse |
+
+Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `authorLogin`, `branch`, `comments`) viennent de `migrations/002-import-fields.js` ; SQLite n'ajoutant une colonne obligatoire qu'avec une valeur par défaut, elles sont facultatives.
 
 `Task.rank` est un rang fractionnaire en texte : insérer une carte entre deux autres ne renumérote pas la colonne.
 
@@ -788,8 +792,8 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | --- | --- |
 | Auth | `GET/api/auth/github` · `POST/api/auth/github/callback` · `POST/api/auth/logout` · `GET/api/user/me` |
 | Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/card` (username) |
-| GitHub | `GET/api/github/repositories` · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
-| Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
+| GitHub | `GET/api/github/repositories` · `GET/api/github/repository` (name : l'aperçu de l'import) · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
+| Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres ; sans filtre, les projets dont on est membre) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
 | Équipe | `POST/api/project/join` · `GET/api/project/join-requests` · `POST/api/project/join-request/decide` · `POST/api/project/member/role` · `POST/api/project/member/remove` |
 | Besoins | `GET/api/project/needs` · `POST/api/project/need/create` · `POST/api/project/need/update` · `GET/api/project/recommended-contributors` |
 | Board, Roadmap | `GET/api/project/board` · `POST/api/task/create` · `POST/api/task/update` · `POST/api/task/move` · `POST/api/task/delete` · `GET/api/project/roadmap` · `POST/api/milestone/create` · `POST/api/milestone/update` |

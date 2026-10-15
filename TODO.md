@@ -98,7 +98,7 @@ Responsable : _à répartir_
 Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de retard.
 
 - [x] **PAM-201** · Onboarding et profil de base : skills en vocabulaire contrôlé, `SkillAlias`, intentions (§6.1) `[démo]`
-- [ ] **PAM-202** · Import niveau 1 : liste des repos via le token bot, import des métadonnées, README, issues, PRs ; rafraîchissement toutes les 15 min avec ETag (§5.4) `[démo]`
+- [x] **PAM-202** · Import niveau 1 : liste des repos via le token bot, import des métadonnées, README, issues, PRs ; rafraîchissement toutes les 15 min avec ETag (§5.4) `[démo]`
 - [ ] **PAM-203** · Import niveau 2 : `POST/api/github/installation/confirm` avec les trois contrôles, passage automatique en live (§5.4)
 - [ ] **PAM-204** · Webhooks : HMAC sur le corps brut, `WebhookDelivery` comme file persistante, worker, reprise au démarrage, nouveaux essais (§5.5)
 - [ ] **PAM-205** · Traitement des événements `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `installation*`, `workflow_run`, `check_run`, `status` → tables (dont `CiRun`) + entries (§5.5, §6.8, §14.2)
@@ -271,3 +271,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-14 · Session : entry `USER_LOGIN` signée avec `SESSION_SECRET` (pas de mot de passe à saler), 30 jours vérifiés côté serveur ; page de retour `/connexion/github` ; connexion simulée en dev sans GitHub App, jamais en prod · §5.2, §5.3
 - 2026-10-14 · Profil pré-rempli depuis GitHub (photo, nom, bio, site, localisation, e-mail principal, langages des repos publics) ; vocabulaire partagé dans `api/vocabulary.ts` ; le développeur connecté devient le `me` des pages, les autres restent fictifs jusqu'à leurs écrans · §5.3, §6.1
 - 2026-10-15 · Seed : recrée la base de zéro (rejouable), données des fixtures du web, `githubId` négatifs pour les comptes fictifs, `SEED_GITHUB_IDS` pour relier Abdou et Moussa à leurs vrais comptes · §14, §18.1
+- 2026-10-15 · Import niveau 1 en REST conditionnel (pas GraphQL) ; skills proposés depuis langages et topics jusqu'à l'IA (PAM-310) ; migration 002 (README, chiffres, stack, auteurs et branches) ; `api/migrate.ts` remplace `runMigrations`, cassé sous Windows · §5.4, §5.6, §12.5, §14, §15

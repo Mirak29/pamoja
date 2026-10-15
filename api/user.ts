@@ -190,3 +190,10 @@ export const updateIntents = db.transaction(
     Entry.insert.PROFILE_UPDATED({ userId, source: 'platform' })
   },
 )
+
+const getUsername = User.sql<'githubUsername', number>`
+  SELECT githubUsername FROM user WHERE userId = ?
+`.get
+
+/** The GitHub login of a developer, for the reads of their repos */
+export const getLogin = (userId: number) => getUsername(userId)!.githubUsername

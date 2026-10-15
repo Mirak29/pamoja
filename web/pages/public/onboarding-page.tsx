@@ -1,5 +1,5 @@
 import type { ComponentChildren, JSX } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import {
   BellOff,
@@ -17,7 +17,8 @@ import {
 } from '/web/fixtures/onboarding.ts'
 import { countryCodeOf, countryName } from '/api/vocabulary.ts'
 import { countries, me } from '/web/fixtures/people.ts'
-import { createProject, importableRepos } from '/web/fixtures/repos.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
+import { loadProjects } from '/web/lib/session.ts'
 import { domains, intents } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -274,37 +275,56 @@ const MatchingStep = (
   </>
 )
 
-const importable = importableRepos
+type RepoItem = ApiOutput['GET/api/github/repositories'][number]
 
+// Public repos of the developer not on Pamoja yet, read from GitHub (§5.4)
 const ProjectStep = (
   { repo, pick }: { repo: string | null; pick: (name: string) => void },
 ) => {
-  const list = importable()
+  const [list, setList] = useState<RepoItem[]>()
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    api['GET/api/github/repositories'].fetch().then(
+      (repos) => setList(repos.filter((r) => !r.existing)),
+      () => setFailed(true),
+    )
+  }, [])
   return (
     <>
       <Title title='Un premier projet ?'>
         Importe un repo pour montrer ce que tu construis. Facultatif.
       </Title>
-      {list.length
+      {!list && !failed && (
+        <span aria-busy='true' class='text-[14px] text-ink-muted'>
+          Lecture de tes repos GitHub…
+        </span>
+      )}
+      {failed && (
+        <span class='text-[14px] text-ink-muted'>
+          Pamoja n’a pas pu lire tes repos. Termine sans projet : tu pourras en
+          importer un depuis « Créer ».
+        </span>
+      )}
+      {list?.length
         ? (
           <div class='flex flex-col gap-2.5 pr-1'>
-            {list.map(({ owner, name, description, languages }) => (
+            {list.map(({ owner, name, description, language }) => (
               <OptionCard
                 key={name}
                 pressed={repo === name}
                 onClick={() => pick(name)}
                 icon={FolderGit2}
                 label={`${owner}/${name}`}
-                description={`${description} · ${
-                  languages.map(([language]) => language).join(', ')
-                }`}
+                description={[description, language].filter(Boolean)
+                  .join(' · ')}
               />
             ))}
           </div>
         )
-        : (
+        : list && (
           <span class='text-[14px] text-ink-muted'>
-            Tes repos sont déjà sur Pamoja.
+            Aucun repo public à importer : tes repos sont déjà sur Pamoja, ou ce
+            sont des forks.
           </span>
         )}
     </>
@@ -328,16 +348,33 @@ export const OnboardingPage = () => {
   const [repo, setRepo] = useState<string | null>(null)
   const update: Update = (patch) => setDraft({ ...draft, ...patch })
   const last = step === steps.length - 1
-  const finish = (withRepo: boolean) => {
+  const [importing, setImporting] = useState(false)
+  const finish = async (withRepo: boolean) => {
+    if (importing) return
     completeOnboarding(draft)
-    const picked = withRepo && importable().find((r) => r.name === repo)
-    const slug = picked && createProject({
-      name: picked.title ?? picked.name,
-      description: picked.description,
-      stack: picked.skills ?? [],
-      needs: picked.needs ?? [],
-      repo: picked,
-    })
+    let slug = ''
+    if (withRepo && repo) {
+      setImporting(true)
+      try {
+        // The stack comes from the languages read on GitHub (§5.4)
+        slug = (await api['POST/api/project/import'].fetch({
+          name: repo,
+          title: '',
+          description: '',
+          vision: '',
+          skills: [],
+          needs: [],
+        })).slug
+        await loadProjects()
+      } catch {
+        notify({
+          title: 'Import impossible',
+          body: 'Ton profil est prêt. Importe le projet depuis « Créer ».',
+          icon: FolderGit2,
+          tone: 'danger',
+        })
+      }
+    }
     navigate({ href: slug ? `projet/${slug}` : '.' })
     notify({
       title: 'Bienvenue sur Pamoja',
@@ -393,10 +430,17 @@ export const OnboardingPage = () => {
             )}
             <Button
               size={42}
+              aria-busy={importing}
               onClick={() =>
                 last ? finish(true) : setStep(step + 1)}
             >
-              {!last ? 'Continuer' : repo ? 'Importer et terminer' : 'Terminer'}
+              {importing
+                ? 'Import…'
+                : !last
+                ? 'Continuer'
+                : repo
+                ? 'Importer et terminer'
+                : 'Terminer'}
             </Button>
           </div>
         </section>

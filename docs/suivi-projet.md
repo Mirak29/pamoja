@@ -525,6 +525,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `task-db-seed.ts`, `api/seed.ts`, `api/seed_test.ts` (5 tests), tâche `seed` dans `deno.json`, `SEED_GITHUB_IDS` dans `.env-dev`
 - **Par** : @Mirak29
 
+### 2026-10-15 · PAM-202 · Import d'un projet GitHub, niveau 1
+
+« Créer » → « Importer depuis GitHub » liste les repos publics du développeur (hors forks), lus sur GitHub. L'aperçu montre le README, les chiffres, les langages et les skills lus dans les langages et topics. L'import, réservé au propriétaire d'un repo personnel, crée le projet, son repo, ses issues et PRs ouvertes ; l'onboarding propose aussi d'en importer un. Le serveur relit chaque repo toutes les 15 minutes en requêtes conditionnelles (ETag) et prévient les pages ouvertes d'un changement. La migration 002 ajoute README, chiffres, stack, auteurs et branches ; `api/migrate.ts` remplace `runMigrations`, qui plantait sous Windows dès qu'une migration devait tourner. Vérifié contre le vrai GitHub sur le compte Mirak29 : 21 repos listés, aperçu, import, puis 304 au second rafraîchissement ; et dans le navigateur jusqu'à la page du projet importé.
+
+- **Livrable** : `api/github.ts`, `api/import.ts`, `api/sync.ts`, `api/projects.ts`, `api/migrate.ts`, `migrations/002-import-fields.js`, routes dans `api/routes.ts`, `api/import_test.ts` (5 tests avec un faux GitHub), dialogue d'import et étape « Premier projet » de l'onboarding
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

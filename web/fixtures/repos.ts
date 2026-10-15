@@ -1,13 +1,15 @@
 import { logActivity } from '/web/fixtures/activity.ts'
 import { boards } from '/web/fixtures/board.ts'
 import { postAlert } from '/web/fixtures/channels.ts'
-import { pullRequests } from '/web/fixtures/pull-requests.ts'
+import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
 import { counted } from '/web/lib/plural.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { daysAgo } from '/web/fixtures/clock.ts'
-import { me } from '/web/fixtures/people.ts'
+import { type Login, me } from '/web/fixtures/people.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
 import {
   type Project,
+  type ProjectRole,
   projects,
   projectsChanged,
   type ProjectSlug,
@@ -229,3 +231,108 @@ const bringRepo = (key: ProjectSlug, repo: Repo) => {
     }. Synchro toutes les 15 min.`,
   )
 }
+
+type ApiProject = ApiOutput['GET/api/projects'][number]
+
+const roleNames: Record<string, ProjectRole> = {
+  owner: 'Propriétaire',
+  maintainer: 'Mainteneur',
+  contributor: 'Contributeur',
+  reviewer: 'Reviewer',
+  observer: 'Observateur',
+}
+
+const stageNames: Record<string, Project['stage']> = {
+  idea: 'Idée',
+  prototype: 'Prototype',
+  beta: 'Bêta',
+  production: 'Production',
+}
+
+/**
+ * Brings the projects of the developer read from GET/api/projects into the
+ * pages, with their GitHub issues and PRs. A project of the demo fixtures
+ * keeps its richer story until the project screens read the API (PAM-401).
+ */
+export const adoptProjects = (list: ApiProject[]) => {
+  const all = projects as Record<string, Project>
+  for (const project of list) {
+    if (all[project.slug]?.demo) continue
+    const repo = project.repository
+    const key = project.slug as ProjectSlug
+    all[project.slug] = {
+      slug: project.slug,
+      name: project.name,
+      owner: project.owner as Login,
+      stack: project.skills,
+      sync: repo ? repo.syncMode as Project['sync'] : 'none',
+      repo: repo?.name,
+      languages: repo?.languages.map(({ name, share }) => [name, share]),
+      description: project.description,
+      vision: project.vision || undefined,
+      about: repo?.readme ? readmeSummary(repo.readme) : undefined,
+      contributors: repo?.contributors ?? project.members.length,
+      openIssues: repo?.issues.filter((i) => i.state === 'open').length ?? 0,
+      release: repo?.release || '—',
+      releasedAt: (repo?.releasedAt || project.createdAt) * 1000,
+      members: project.members.map(({ login, role }) => ({
+        login: login as Login,
+        role: roleNames[role] ?? 'Contributeur',
+      })),
+      followers: project.followers as Login[],
+      needs: project.needs,
+      blockers: [],
+      stage: stageNames[project.status] ?? 'Idée',
+      activity: 'Calme',
+      milestones: [],
+      gallery: [],
+      events: [],
+      demo: false,
+    }
+    boards[key] ??= []
+    // The GitHub issues and PRs replace those already shown for it
+    for (const list of [issues, pullRequests] as { project: string }[][]) {
+      for (let i = list.length - 1; i >= 0; i--) {
+        list[i].project === key && list.splice(i, 1)
+      }
+    }
+    for (const issue of repo?.issues ?? []) {
+      issues.push({
+        number: issue.number,
+        project: key,
+        title: issue.title,
+        labels: issue.labels,
+        author: issue.authorLogin as Login,
+        comments: issue.comments,
+        state: issue.state === 'closed' ? 'closed' : 'open',
+        at: issue.createdAt * 1000,
+        demo: false,
+      })
+    }
+    for (const pull of repo?.pullRequests ?? []) {
+      pullRequests.push({
+        number: pull.number,
+        project: key,
+        title: pull.title,
+        author: pull.authorLogin as Login,
+        branch: pull.branch,
+        state: pull.state as PullRequest['state'],
+        review: 'waiting',
+        ci: 'ok',
+        at: pull.createdAt * 1000,
+        demo: false,
+      })
+    }
+  }
+  projectsChanged.value++
+}
+
+/** The first paragraphs of a README, without its headings, badges or code */
+export const readmeSummary = (readme: string) =>
+  readme.replace(/```[\s\S]*?```/g, '').split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter((block) =>
+      block && !block.startsWith('#') && !block.startsWith('![') &&
+      !block.startsWith('[![') && !block.startsWith('<')
+    )
+    .join('\n\n').slice(0, 600)

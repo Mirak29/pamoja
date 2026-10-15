@@ -12,3 +12,7 @@ export const SESSION_SECRET: string = PROD(
   'SESSION_SECRET',
   'pamoja-dev-session-secret',
 )
+
+// Reads public repos for the import and the 15 min refresh (§5.2). Without
+// it in dev, GitHub allows 60 requests an hour.
+export const GITHUB_BOT_TOKEN: string = PROD('GITHUB_BOT_TOKEN', '')

@@ -3,7 +3,10 @@ import { useEffect, useState } from 'preact/hooks'
 import { A, navigate } from '@01edu/signal-router'
 import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
-import { createProject, type Repo, repos } from '/web/fixtures/repos.ts'
+import { createProject, readmeSummary } from '/web/fixtures/repos.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
+import { loadProjects } from '/web/lib/session.ts'
+import { ago } from '/web/lib/time.ts'
 import { skills } from '/web/fixtures/skills.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
@@ -17,7 +20,7 @@ import {
 } from '/web/ui/input.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
-import { plural } from '/web/lib/plural.ts'
+import { counted, plural } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
 
 type Step = 'choose' | 'repos' | 'preview' | 'scratch'
@@ -114,100 +117,183 @@ const SourceCard = (
   </button>
 )
 
-const RepoList = (
-  { pick, back }: { pick: (repo: Repo) => void; back: () => void },
-) => (
+type RepoItem = ApiOutput['GET/api/github/repositories'][number]
+type RepoPreviewData = ApiOutput['GET/api/github/repository']
+
+// The read of GitHub failed: say it, and offer to try again
+const ReadError = ({ retry }: { retry: () => void }) => (
+  <div
+    role='alert'
+    class='flex flex-wrap items-center gap-3 p-4 text-[14px] text-danger'
+  >
+    <span class='flex-1'>
+      Pamoja n’a pas pu lire GitHub. Réessaie dans un instant.
+    </span>
+    <Button variant='secondary' size={34} onClick={retry}>Réessayer</Button>
+  </div>
+)
+
+const Skeleton = ({ label }: { label: string }) => (
   <>
-    <h2 class='font-display text-heading'>Tes repos publics</h2>
-    <div class='flex flex-col gap-2.5 rounded-[8px] border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
-      {repos.map((repo) => (
+    <div aria-busy='true' class='flex flex-col gap-[9px] p-3'>
+      {['w-[92%]', 'w-[74%]', 'w-[52%]'].map((width) => (
         <div
-          key={repo.name}
-          class='tile flex flex-wrap items-center gap-3 p-3'
-        >
-          <div class='flex min-w-[200px] flex-1 flex-col gap-[3px]'>
-            <span class='font-mono text-[14px] leading-5 font-semibold'>
-              {repo.owner}/{repo.name}
-            </span>
-            <span class='text-[13px] leading-5 text-ink-muted'>
-              {repo.description}
-            </span>
-            <span class='font-mono text-[12px] leading-4 text-ink-muted'>
-              {repo.languages.map(([language]) => language).join(' · ')} ·{' '}
-              {repo.stars} étoiles · {repo.updated}
-            </span>
-          </div>
-          {repo.existing
-            ? (
-              <span class='flex flex-col items-end gap-1'>
-                <span class='inline-flex h-[22px] items-center rounded-sm border border-verified bg-verified-soft px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] text-verified uppercase'>
-                  Déjà sur Pamoja
-                </span>
-                <A
-                  href={`projet/${repo.existing}`}
-                  class='text-[13px] font-semibold'
-                >
-                  Ouvrir le projet
-                </A>
-              </span>
-            )
-            : (
-              <Button
-                size={34}
-                aria-label={`Choisir ${repo.owner}/${repo.name}`}
-                onClick={() => pick(repo)}
-              >
-                Choisir
-              </Button>
-            )}
-        </div>
+          key={width}
+          class={`h-3 animate-skeleton rounded-sm bg-indigo-soft-side ${width}`}
+        />
       ))}
-      {!repos.length && (
-        <span class='p-4 text-[14px] text-ink-muted'>
-          Aucun repo public trouvé sur ton compte GitHub.
-        </span>
-      )}
     </div>
-    <Button variant='secondary' size={36} onClick={back} class='self-start'>
-      <ArrowLeft />
-      Retour
-    </Button>
+    <span class='px-3 pb-2 text-[13px] text-ink-muted'>{label}</span>
   </>
 )
 
-/** What the import will bring, with the skills and needs the AI proposes */
-const RepoPreview = ({ repo, back }: { repo: Repo; back: () => void }) => {
-  const [ready, setReady] = useState(false)
-  const [picked, setPicked] = useState(repo.skills ?? [])
-  const [needs, setNeeds] = useState(repo.needs ?? [])
-  // Stands for the AI reading the README, languages and issues (§11)
-  useEffect(() => {
-    const timer = setTimeout(() => setReady(true), 1400)
-    return () => clearTimeout(timer)
-  }, [])
-  const stats = [
-    [repo.contributors, plural(repo.contributors ?? 0, 'contributeur')],
-    [
-      repo.issues,
-      plural(repo.issues ?? 0, 'issue ouverte', 'issues ouvertes'),
-    ],
-    [
-      repo.pullRequests,
-      plural(repo.pullRequests ?? 0, 'PR ouverte', 'PRs ouvertes'),
-    ],
-    [repo.stars, plural(repo.stars, 'étoile')],
-  ] as const
-  const create = () =>
-    created(
-      createProject({
-        name: repo.title ?? repo.name,
-        description: repo.description,
-        stack: picked,
-        needs,
-        repo,
-      }),
-      true,
+/** The public repos of the developer, read from GitHub (§5.4) */
+const RepoList = (
+  { pick, back }: { pick: (repo: RepoItem) => void; back: () => void },
+) => {
+  const [list, setList] = useState<RepoItem[]>()
+  const [failed, setFailed] = useState(false)
+  const load = () => {
+    setFailed(false)
+    setList(undefined)
+    api['GET/api/github/repositories'].fetch().then(
+      setList,
+      () => setFailed(true),
     )
+  }
+  useEffect(load, [])
+  return (
+    <>
+      <h2 class='font-display text-heading'>Tes repos publics</h2>
+      <div class='flex flex-col gap-2.5 rounded-[8px] border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
+        {failed && <ReadError retry={load} />}
+        {!failed && !list && <Skeleton label='Lecture de tes repos GitHub…' />}
+        {list?.map((repo) => (
+          <div
+            key={repo.name}
+            class='tile flex flex-wrap items-center gap-3 p-3'
+          >
+            <div class='flex min-w-[200px] flex-1 flex-col gap-[3px]'>
+              <span class='font-mono text-[14px] leading-5 font-semibold'>
+                {repo.owner}/{repo.name}
+              </span>
+              {repo.description && (
+                <span class='text-[13px] leading-5 text-ink-muted'>
+                  {repo.description}
+                </span>
+              )}
+              <span class='font-mono text-[12px] leading-4 text-ink-muted'>
+                {[
+                  repo.language,
+                  counted(repo.stars, 'étoile'),
+                  repo.pushedAt ? ago(repo.pushedAt * 1000) : '',
+                ].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+            {repo.existing
+              ? (
+                <span class='flex flex-col items-end gap-1'>
+                  <span class='inline-flex h-[22px] items-center rounded-sm border border-verified bg-verified-soft px-2 font-mono text-[11px] leading-none font-medium tracking-[.06em] text-verified uppercase'>
+                    Déjà sur Pamoja
+                  </span>
+                  <A
+                    href={`projet/${repo.existing}`}
+                    class='text-[13px] font-semibold'
+                  >
+                    Ouvrir le projet
+                  </A>
+                </span>
+              )
+              : (
+                <Button
+                  size={34}
+                  aria-label={`Choisir ${repo.owner}/${repo.name}`}
+                  onClick={() => pick(repo)}
+                >
+                  Choisir
+                </Button>
+              )}
+          </div>
+        ))}
+        {list && !list.length && (
+          <span class='p-4 text-[14px] text-ink-muted'>
+            Aucun repo public à toi sur GitHub. Les forks et les repos
+            d’organisation ne s’importent pas ici.
+          </span>
+        )}
+      </div>
+      <Button variant='secondary' size={36} onClick={back} class='self-start'>
+        <ArrowLeft />
+        Retour
+      </Button>
+    </>
+  )
+}
+
+/**
+ * What the import will bring: README, figures and languages read from
+ * GitHub, with the skills read from its languages and topics, to validate
+ * before anything is created
+ */
+const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
+  const [preview, setPreview] = useState<RepoPreviewData>()
+  const [failed, setFailed] = useState(false)
+  const [picked, setPicked] = useState<string[]>([])
+  const [needs, setNeeds] = useState<string[]>([])
+  const [creating, setCreating] = useState(false)
+  const load = () => {
+    setFailed(false)
+    api['GET/api/github/repository'].fetch({ name: repo.name }).then(
+      (data) => {
+        setPreview(data)
+        setPicked(data.skills)
+      },
+      () => setFailed(true),
+    )
+  }
+  useEffect(load, [])
+
+  const create = async () => {
+    if (creating) return
+    setCreating(true)
+    try {
+      const { slug } = await api['POST/api/project/import'].fetch({
+        name: repo.name,
+        title: '',
+        description: '',
+        vision: '',
+        skills: picked,
+        needs,
+      })
+      await loadProjects()
+      created(slug, true)
+    } catch {
+      setCreating(false)
+      notify({
+        title: 'Import impossible',
+        body:
+          'Pamoja n’a pas pu créer le projet. Vérifie que le repo est bien à toi, puis réessaie.',
+        icon: FolderGit2,
+        tone: 'danger',
+      })
+    }
+  }
+
+  const stats = preview
+    ? [
+      [preview.contributors, plural(preview.contributors, 'contributeur')],
+      [
+        preview.openIssues,
+        plural(preview.openIssues, 'issue ouverte', 'issues ouvertes'),
+      ],
+      [
+        preview.openPullRequests,
+        plural(preview.openPullRequests, 'PR ouverte', 'PRs ouvertes'),
+      ],
+      [preview.stars, plural(preview.stars, 'étoile')],
+    ] as const
+    : []
+  const summary = preview?.readme ? readmeSummary(preview.readme) : ''
   return (
     <>
       <div class='flex items-center gap-3'>
@@ -221,79 +307,68 @@ const RepoPreview = ({ repo, back }: { repo: Repo; back: () => void }) => {
           </span>
         </div>
       </div>
-      <p class='rounded-md border border-line-strong bg-surface-000 px-3.5 py-3 text-[14px] leading-[22px] text-pretty inset-shadow-well'>
-        {repo.readme}
-      </p>
-      <div class='grid grid-cols-4 gap-3 pr-1'>
-        {stats.map(([count, label]) => (
-          <div key={label} class='tile flex flex-col gap-0.5 p-2.5'>
-            <span class='font-mono text-[20px] leading-6 font-medium'>
-              {count}
-            </span>
-            <span class='text-[12px] leading-4 text-ink-muted'>{label}</span>
+      {failed && <ReadError retry={load} />}
+      {!failed && !preview && (
+        <Skeleton label='Lecture du README, des langages et des issues…' />
+      )}
+      {preview && (
+        <>
+          <p class='rounded-md border border-line-strong bg-surface-000 px-3.5 py-3 text-[14px] leading-[22px] text-pretty whitespace-pre-line inset-shadow-well'>
+            {summary || preview.description ||
+              'Pas de README : la description du projet se complète après l’import.'}
+          </p>
+          <div class='grid grid-cols-2 gap-3 pr-1 sm:grid-cols-4'>
+            {stats.map(([count, label]) => (
+              <div key={label} class='tile flex flex-col gap-0.5 p-2.5'>
+                <span class='font-mono text-[20px] leading-6 font-medium'>
+                  {count}
+                </span>
+                <span class='text-[12px] leading-4 text-ink-muted'>
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div class='flex flex-col gap-2'>
-        <Eyebrow>Langages</Eyebrow>
-        {repo.languages.map(([language, share]) => (
-          <div key={language} class='flex items-center gap-3'>
-            <span class='w-[90px] text-[13px]'>{language}</span>
-            <span class='flex-1'>
-              <Progress value={share} max={100} label={language} />
-            </span>
-            <span class='w-10 text-right font-mono text-[12px] leading-4 font-medium text-ink-muted'>
-              {share}%
-            </span>
-          </div>
-        ))}
-      </div>
-      <div class='slab-selected mr-2 flex flex-col gap-3 px-[18px] py-4'>
-        <Eyebrow accent>Proposé par l’IA · à valider</Eyebrow>
-        {!ready && (
-          <>
-            <div aria-busy='true' class='flex flex-col gap-[9px]'>
-              {['w-[92%]', 'w-[74%]', 'w-[52%]'].map((width) => (
-                <div
-                  key={width}
-                  class={`h-3 animate-skeleton rounded-sm bg-indigo-soft-side ${width}`}
-                />
+          {preview.languages.length > 0 && (
+            <div class='flex flex-col gap-2'>
+              <Eyebrow>Langages</Eyebrow>
+              {preview.languages.map(({ name, share }) => (
+                <div key={name} class='flex items-center gap-3'>
+                  <span class='w-[90px] text-[13px]'>{name}</span>
+                  <span class='flex-1'>
+                    <Progress value={share} max={100} label={name} />
+                  </span>
+                  <span class='w-10 text-right font-mono text-[12px] leading-4 font-medium text-ink-muted'>
+                    {share}%
+                  </span>
+                </div>
               ))}
             </div>
-            <span class='text-[13px] text-ink-muted'>
-              Lecture du README, des langages et des issues…
-            </span>
-          </>
-        )}
-        {ready && (
-          <>
+          )}
+          <div class='slab-selected mr-2 flex flex-col gap-3 px-[18px] py-4'>
+            <Eyebrow accent>Lu sur GitHub · à valider</Eyebrow>
             <span class='text-[13px] font-semibold'>Skills</span>
             <div class='flex flex-wrap gap-2 pb-1'>
-              {[
-                ...new Set([
-                  ...(repo.skills ?? []),
-                  ...(repo.extraSkills ?? []),
-                ]),
-              ]
-                .map((skill) => (
-                  <OptionButton
-                    key={skill}
-                    pressed={picked.includes(skill)}
-                    onClick={() => setPicked(toggle(picked, skill))}
-                  >
-                    {skill}
-                  </OptionButton>
-                ))}
+              {preview.skills.map((skill) => (
+                <OptionButton
+                  key={skill}
+                  pressed={picked.includes(skill)}
+                  onClick={() => setPicked(toggle(picked, skill))}
+                >
+                  {skill}
+                </OptionButton>
+              ))}
+              {!preview.skills.length && (
+                <span class='text-[13px] text-ink-muted'>
+                  Aucun langage reconnu : ajoute la stack après l’import.
+                </span>
+              )}
             </div>
             <span class='text-[13px] font-semibold'>Besoins</span>
             <div class='flex flex-wrap gap-2 pb-1'>
-              {[
-                ...new Set([
-                  ...(repo.needs ?? []),
-                  'Review de code',
-                  'good first issue',
-                ]),
-              ].map((need) => (
+              {[...new Set([...needSuggestions, 'good first issue'])].map((
+                need,
+              ) => (
                 <OptionButton
                   key={need}
                   pressed={needs.includes(need)}
@@ -307,12 +382,17 @@ const RepoPreview = ({ repo, back }: { repo: Repo; back: () => void }) => {
               Clique pour retirer ou ajouter. Rien n’est publié avant « Créer le
               projet ».
             </span>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
       <Footer>
-        <Button size={40} disabled={!ready || !picked.length} onClick={create}>
-          Créer le projet
+        <Button
+          size={40}
+          disabled={!preview}
+          aria-busy={creating}
+          onClick={create}
+        >
+          {creating ? 'Import…' : 'Créer le projet'}
         </Button>
         <Button variant='secondary' size={40} onClick={back}>Retour</Button>
       </Footer>
@@ -434,7 +514,7 @@ const FromScratch = ({ back }: { back: () => void }) => {
 
 const NewProject = () => {
   const [step, setStep] = useState<Step>('choose')
-  const [repo, setRepo] = useState<Repo>()
+  const [repo, setRepo] = useState<RepoItem>()
   const steps = step === 'scratch'
     ? ['choose', 'scratch']
     : ['choose', 'repos', 'preview']

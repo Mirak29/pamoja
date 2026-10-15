@@ -7,7 +7,7 @@ import {
   boards,
 } from '/web/fixtures/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
@@ -109,8 +109,9 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                 ))}
               </div>
               <span class='text-[13px] leading-5 text-ink-muted'>
-                {people[issue.author].name.split(' ')[0]} · ouverte{' '}
-                {ago(issue.at)} · {issue.comments}{' '}
+                {nameOf(issue.author).split(' ')[0]} · ouverte {ago(issue.at)} ·
+                {' '}
+                {issue.comments}{' '}
                 {issue.comments > 1 ? 'commentaires' : 'commentaire'}
               </span>
             </div>

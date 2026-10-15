@@ -1,6 +1,7 @@
 import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { adoptUser } from '/web/fixtures/people.ts'
+import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
 import { matchingModes } from '/api/vocabulary.ts'
 import { notify } from '/web/ui/toast.tsx'
@@ -16,11 +17,17 @@ export const signedIn = computed(() => !!currentUser.value)
 
 // `me` of the pages becomes this developer before anything renders
 const setUser = (user: User) => {
+  const first = currentUser.peek()?.userId !== user.userId
   adoptUser(user)
   settings.matching = matchingModes[user.matchingMode]
   currentUser.value = user
+  first && loadProjects()
   return user
 }
+
+/** The projects of the developer, imported ones included (§5.4) */
+export const loadProjects = () =>
+  api['GET/api/projects'].fetch().then(adoptProjects, () => {})
 
 api['GET/api/user/me'].fetch().then(
   setUser,
