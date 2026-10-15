@@ -231,6 +231,30 @@ export const countries: Record<string, string> = Object.fromEntries(
 
 export const isMe = (login: string) => login === me.login
 
+/**
+ * Name of a developer; an author read from GitHub who is not on Pamoja keeps
+ * their GitHub login
+ */
+export const nameOf = (login: string) => personOf(login).name
+
+/** A developer of the pages; one read from the API alone is known by login */
+export const personOf = (login: string): Person =>
+  (people as Record<string, Person>)[login] ?? {
+    login,
+    name: login,
+    country: '',
+    countryCode: '',
+    city: '',
+    role: 'Développeur',
+    skills: [],
+    headline: '',
+    bio: '',
+    helpTypes: [],
+    available: false,
+    communities: [],
+    intents: [],
+  }
+
 // Session changes until POST/api/follow/toggle exists (PAM-505)
 export const peopleChanged = signal(0)
 

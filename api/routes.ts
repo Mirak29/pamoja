@@ -1,12 +1,18 @@
 import { makeRouter, route } from '@01edu/api/router'
 import { respond } from '@01edu/api/response'
-import { ARR, BOOL, LIST, NUM, OBJ, STR } from '@01edu/api/validator'
+import { ARR, BOOL, LIST, NUM, OBJ, optional, STR } from '@01edu/api/validator'
 import {
   authorizationUrl,
   githubUserFromCode,
   isSimulated,
 } from '/api/github-oauth.ts'
 import { openEvents } from '/api/events.ts'
+import {
+  importRepository,
+  listRepositories,
+  previewRepository,
+} from '/api/import.ts'
+import { listMyProjects } from '/api/projects.ts'
 import { log } from '/api/lib/log.ts'
 import {
   createSession,
@@ -23,6 +29,7 @@ import {
   updateSkills,
 } from '/api/user.ts'
 import { domains, intents, skills } from '/api/vocabulary.ts'
+import { getLogin } from '/api/user.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -106,6 +113,131 @@ const defs = {
     fn: (ctx) => getCurrentUser(ctx.session.userId) ?? respond.Unauthorized(),
     output: OBJ(currentUser, 'The signed in developer'),
     description: 'The signed in developer and their profile',
+  }),
+
+  /*
+   * GitHub import, level 1 (§5.4)
+   */
+  'GET/api/github/repositories': route({
+    authorize: withSession,
+    fn: (ctx) => listRepositories(getLogin(ctx.session.userId)),
+    output: ARR(
+      OBJ({
+        owner: STR('GitHub owner'),
+        name: STR('Repository name'),
+        description: STR('Description, empty if none'),
+        language: STR('Main language, empty if none'),
+        stars: NUM('Stars'),
+        pushedAt: NUM('Last push, in seconds'),
+        existing: STR('Slug of its Pamoja project, empty if not imported'),
+      }),
+      'Public repositories owned by the developer, forks excluded',
+    ),
+    description: 'Repositories the developer can import',
+  }),
+
+  'GET/api/github/repository': route({
+    authorize: withSession,
+    fn: (ctx, { name }) =>
+      previewRepository(getLogin(ctx.session.userId), name),
+    input: OBJ({ name: STR('Repository name, owned by the developer') }),
+    output: OBJ({
+      owner: STR('GitHub owner'),
+      name: STR('Repository name'),
+      description: STR('Description'),
+      readme: STR('README in Markdown, empty if none'),
+      stars: NUM('Stars'),
+      forks: NUM('Forks'),
+      topics: ARR(STR('Topic')),
+      languages: ARR(
+        OBJ({
+          name: STR('Language'),
+          share: NUM('Share of the code, percent'),
+        }),
+      ),
+      contributors: NUM('Contributors'),
+      openIssues: NUM('Open issues'),
+      openPullRequests: NUM('Open PRs'),
+      release: STR('Last release tag, empty if none'),
+      releasedAt: NUM('Last release, in seconds, 0 if none'),
+      pushedAt: NUM('Last push, in seconds'),
+      skills: ARR(STR('Skill of the vocabulary')),
+      existing: STR('Slug of its Pamoja project, empty if not imported'),
+    }),
+    description: 'What the import shows before it is confirmed',
+  }),
+
+  'POST/api/project/import': route({
+    authorize: withSession,
+    fn: (ctx, input) => {
+      assertKnown(input.skills, skills, 'skills')
+      return importRepository(
+        { userId: ctx.session.userId, login: getLogin(ctx.session.userId) },
+        input,
+      )
+    },
+    input: OBJ({
+      name: STR('Repository name, owned by the developer'),
+      title: STR('Project name; empty keeps the repository name'),
+      description: STR('Description; empty keeps the one of GitHub'),
+      vision: STR('Vision, empty if none'),
+      skills: ARR(STR('Skill of the vocabulary'), 'The stack'),
+      needs: ARR(STR('Need'), 'What the project looks for'),
+    }),
+    output: OBJ({ slug: STR('Slug of the new project') }),
+    description: 'Import a public repository as a project',
+  }),
+
+  'GET/api/projects': route({
+    authorize: withSession,
+    fn: (ctx) => listMyProjects(ctx.session.userId),
+    output: ARR(
+      OBJ({
+        slug: STR(),
+        name: STR(),
+        description: STR(),
+        vision: STR(),
+        status: STR(),
+        skills: ARR(STR()),
+        createdAt: NUM(),
+        owner: STR('Login of the owner'),
+        members: ARR(OBJ({ login: STR(), role: STR() })),
+        followers: ARR(STR('Login')),
+        needs: ARR(STR('Open need')),
+        repository: optional(OBJ({
+          owner: STR(),
+          name: STR(),
+          syncMode: STR('poll or live'),
+          readme: STR(),
+          stars: NUM(),
+          topics: ARR(STR()),
+          languages: ARR(OBJ({ name: STR(), share: NUM() })),
+          contributors: NUM(),
+          release: STR(),
+          releasedAt: NUM(),
+          lastSyncedAt: NUM(),
+          issues: ARR(OBJ({
+            number: NUM(),
+            title: STR(),
+            state: STR(),
+            labels: ARR(STR()),
+            authorLogin: STR(),
+            comments: NUM(),
+            createdAt: NUM(),
+          })),
+          pullRequests: ARR(OBJ({
+            number: NUM(),
+            title: STR(),
+            state: STR('open, merged or closed'),
+            authorLogin: STR(),
+            branch: STR(),
+            createdAt: NUM(),
+          })),
+        })),
+      }),
+      'Projects the developer is a member of',
+    ),
+    description: 'The projects of the signed-in developer',
   }),
 
   /*

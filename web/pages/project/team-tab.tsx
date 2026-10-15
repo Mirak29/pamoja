@@ -13,6 +13,7 @@ import {
   me,
   people,
   type Person,
+  personOf,
   placeOf,
 } from '/web/fixtures/people.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
@@ -41,7 +42,7 @@ const roles: [ProjectRole, string][] = [
 // People invited to a project during the session, by project and login
 const invited = signal<Record<string, string[]>>({})
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+const firstName = (login: Login) => personOf(login).name.split(' ')[0]
 
 const SectionHeader = (
   { label, title }: { label: string; title: string },
@@ -66,8 +67,8 @@ const PersonLink = (
     class='flex min-w-[200px] flex-1 items-center gap-3 text-ink no-underline hover:no-underline'
   >
     <Avatar
-      name={people[login].name}
-      src={people[login].avatarUrl}
+      name={personOf(login).name}
+      src={personOf(login).avatarUrl}
       size={size}
     />
     <span class='flex min-w-0 flex-col'>
@@ -76,7 +77,7 @@ const PersonLink = (
           ? 'text-[14px] leading-5 font-semibold'
           : 'font-display text-[15px] leading-5 font-semibold'}
       >
-        {people[login].name}
+        {personOf(login).name}
       </span>
       <span class='text-[12px] leading-4 text-ink-muted'>{detail}</span>
     </span>
@@ -89,7 +90,7 @@ export const MemberRows = (
 ) => (
   <>
     {project.members.map((member) => {
-      const person = people[member.login]
+      const person = personOf(member.login)
       return (
         <div
           key={member.login}
@@ -162,7 +163,7 @@ const invite = (project: Project, login: Login, need: string) => {
   })
   notify({
     title: 'Invitation envoyée',
-    body: `${people[login].name} recevra une notification.`,
+    body: `${personOf(login).name} recevra une notification.`,
     icon: Send,
     tone: 'verified',
   })
@@ -294,7 +295,7 @@ const Applications = ({ project }: { project: Project }) => {
             <Button
               size={36}
               aria-label={`Accepter la candidature de ${
-                people[application.login].name
+                personOf(application.login).name
               }`}
               onClick={() => decideApplication(application, true)}
             >
@@ -304,7 +305,7 @@ const Applications = ({ project }: { project: Project }) => {
               variant='secondary'
               size={36}
               aria-label={`Refuser la candidature de ${
-                people[application.login].name
+                personOf(application.login).name
               }`}
               onClick={() => decideApplication(application, false)}
             >
@@ -320,7 +321,7 @@ const Applications = ({ project }: { project: Project }) => {
               key={application.id}
               class='flex justify-between gap-2 text-[13px]'
             >
-              <span>{people[application.login].name}</span>
+              <span>{personOf(application.login).name}</span>
               <span
                 class={`font-semibold ${
                   application.status === 'accepted'

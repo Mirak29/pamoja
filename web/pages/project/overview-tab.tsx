@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Play } from '/web/assets/icons.tsx'
-import { people } from '/web/fixtures/people.ts'
+import { personOf } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
@@ -159,13 +159,13 @@ const Team = ({ project }: { project: Project }) => {
           class='flex items-center gap-3 text-ink no-underline hover:no-underline'
         >
           <Avatar
-            name={people[login].name}
-            src={people[login].avatarUrl}
+            name={personOf(login).name}
+            src={personOf(login).avatarUrl}
             size={34}
           />
           <span class='flex flex-col'>
             <span class='font-display text-[14px] leading-5 font-semibold'>
-              {people[login].name}
+              {personOf(login).name}
             </span>
             <span class='text-[12px] leading-4 text-ink-muted'>{role}</span>
           </span>

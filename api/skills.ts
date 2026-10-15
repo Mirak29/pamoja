@@ -101,3 +101,32 @@ export const skillsOf = (userId: number) => {
     domains,
   }
 }
+
+const getSkillName = Skill.sql<'name', number>`
+  SELECT name FROM skill WHERE skillId = ?
+`.get
+
+/** Ids of technologies named as in the vocabulary; unknown names dropped */
+export const skillIdsOf = (names: string[]) => [
+  ...new Set(
+    names.map((name) => getSkillIdByName({ name })?.skillId)
+      .filter((id): id is number => id !== undefined),
+  ),
+]
+
+/** Names of skill ids, in their order */
+export const skillNamesOf = (ids: number[]) =>
+  ids.map((id) => getSkillName(id)?.name).filter((name): name is string =>
+    name !== undefined
+  )
+
+/**
+ * Skills of the vocabulary read from GitHub languages and topics: a topic
+ * `postgres` or a language `Dockerfile` points to its skill (§6.1)
+ */
+export const skillsFromGithub = (names: string[]) =>
+  skillNamesOf([
+    ...new Set(
+      names.map(skillIdOfAlias).filter((id): id is number => id !== undefined),
+    ),
+  ])

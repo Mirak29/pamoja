@@ -1,5 +1,5 @@
 import { createTable, db, sql } from '@01edu/db'
-import { runMigrations } from '@01edu/db/migration'
+import { migrate } from '/api/migrate.ts'
 import { fromFileUrl } from 'jsr:@std/path@^1.0.8'
 
 // Data model of the cahier des charges (§14). Conventions (§12.5):
@@ -21,7 +21,7 @@ db.exec('PRAGMA busy_timeout = 5000')
 // Migrations must run before createTable: createTable asserts that the
 // existing table matches the declared schema. On a fresh database no
 // migration runs: the tables below are the initial schema.
-await runMigrations(fromFileUrl(import.meta.resolve('../migrations')))
+await migrate(fromFileUrl(import.meta.resolve('../migrations')))
 
 // `sql` writes its values into the query text (String.raw), like the indexes
 // of @01edu/db/entries: only constants of this file go in, never user input
@@ -131,6 +131,8 @@ export const Project = createTable('project', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/002: skill ids of the stack
+  skills: { type: 'JSON', optional: true },
 })
 unique('project_slug', 'project', 'slug')
 
@@ -174,6 +176,11 @@ export const Repository = createTable('repository', {
   etag: { type: 'JSON', optional: true },
   lastSyncedAt: { type: 'REAL', optional: true },
   source: { type: 'TEXT' },
+  // Added by migrations/002 (§5.4): the README shown on the project, and
+  // what the import reads (stars, forks, topics, languages, contributors,
+  // release)
+  readme: { type: 'TEXT', optional: true },
+  stats: { type: 'JSON', optional: true },
 })
 unique('repository_github_id', 'repository', 'githubId')
 
@@ -191,6 +198,9 @@ export const PullRequest = createTable('pullRequest', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/002: the author is often not on Pamoja
+  authorLogin: { type: 'TEXT', optional: true },
+  branch: { type: 'TEXT', optional: true },
 })
 unique('pull_request_number', 'pullRequest', 'repositoryId, number')
 
@@ -206,6 +216,9 @@ export const Issue = createTable('issue', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/002
+  authorLogin: { type: 'TEXT', optional: true },
+  comments: { type: 'INTEGER', optional: true },
 })
 unique('issue_number', 'issue', 'repositoryId, number')
 

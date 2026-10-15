@@ -36,11 +36,19 @@ const { port } = await ctx.serve({ servedir: 'dist', host: '127.0.0.1' })
 // esbuild writes the bundle into dist: every file is read from disk, the
 // page included. Only the live reload events come from esbuild: going
 // through it for each file cost up to 2.5 s on Windows.
+// Always revalidated: without Cache-Control, the browser keeps the bundle by
+// heuristic and shows the code before the last rebuild
+const fresh = async (response: Promise<Response>) => {
+  const res = await response
+  res.headers.set('Cache-Control', 'no-cache')
+  return res
+}
+
+const fromDisk = (request: Request) =>
+  fresh(serveDir(request, { fsRoot: 'dist', quiet: true }))
+
 const index = (request: Request) =>
-  serveDir(new Request(new URL('/index.html', request.url)), {
-    fsRoot: 'dist',
-    quiet: true,
-  })
+  fromDisk(new Request(new URL('/index.html', request.url)))
 
 export default {
   fetch(request: Request) {
@@ -51,6 +59,6 @@ export default {
       return fetch(`http://127.0.0.1:${port}/esbuild`, { headers, signal })
     }
     if (!url.pathname.includes('.')) return index(request)
-    return serveDir(request, { fsRoot: 'dist', quiet: true })
+    return fromDisk(request)
   },
 }

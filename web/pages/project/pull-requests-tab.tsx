@@ -6,7 +6,7 @@ import {
   LifeBuoy,
 } from '/web/assets/icons.tsx'
 import { helpRequests } from '/web/fixtures/help.ts'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
 import { ago } from '/web/lib/time.ts'
@@ -20,8 +20,7 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 const reviewStatus = (pr: PullRequest): Status =>
   pr.state === 'merged' ? 'merged' : `review-${pr.review}`
 
-const firstName = (login: keyof typeof people) =>
-  people[login].name.split(' ')[0]
+const firstName = (login: string) => nameOf(login).split(' ')[0]
 
 const closedHelp = [
   'cancelled',
@@ -56,7 +55,7 @@ const PullRequestDetail = (
       </div>
       <dl class='grid grid-cols-[auto_1fr] gap-x-[18px] gap-y-2.5 rounded-md border border-line-strong bg-surface-000 p-3.5 text-[14px] inset-shadow-well'>
         <dt class='text-ink-muted'>Auteur</dt>
-        <dd class='font-semibold'>{people[pr.author].name}</dd>
+        <dd class='font-semibold'>{nameOf(pr.author)}</dd>
         <dt class='text-ink-muted'>Branche</dt>
         <dd>
           <code class='font-mono text-[13px] leading-5'>{pr.branch}</code>
