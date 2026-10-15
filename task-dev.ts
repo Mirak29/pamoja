@@ -1,11 +1,13 @@
 import { config } from './build-config.ts'
 import { context } from 'npm:esbuild'
+import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
 
 const ctx = await context({
   ...config,
   entryPoints: { ...config.entryPoints, index: 'web/debug-app.ts' },
-  sourcemap: 'both',
+  // A separate map: the browser loads it only when the devtools are open
+  sourcemap: 'linked',
 })
 
 await ctx.watch()
@@ -27,21 +29,28 @@ new Deno.Command('deno', {
   stdin: 'piped',
 }).spawn()
 
-const { port } = await ctx.serve({ servedir: 'dist' })
+// 127.0.0.1, not localhost: on Windows, localhost tries IPv6 first and
+// esbuild only listens on IPv4, which cost 2 s per file
+const { port } = await ctx.serve({ servedir: 'dist', host: '127.0.0.1' })
 
-const getForwaredPath = (path: string) => {
-  if (path === '/esbuild') return path // server event for live reload
-  if (path.includes('.')) return path
-  return '/'
-}
+// esbuild writes the bundle into dist: every file is read from disk, the
+// page included. Only the live reload events come from esbuild: going
+// through it for each file cost up to 2.5 s on Windows.
+const index = (request: Request) =>
+  serveDir(new Request(new URL('/index.html', request.url)), {
+    fsRoot: 'dist',
+    quiet: true,
+  })
 
 export default {
   fetch(request: Request) {
     const url = new URL(request.url)
     if (url.pathname.startsWith('/api')) return api.fetch(request)
-    const pathname = getForwaredPath(url.pathname)
-    const apiUrl = `http://localhost:${port}${pathname}${url.hash}${url.search}`
-    const { headers, method, signal, body } = request
-    return fetch(apiUrl, { headers, method, signal, body, redirect: 'manual' })
+    if (url.pathname === '/esbuild') {
+      const { headers, signal } = request
+      return fetch(`http://127.0.0.1:${port}/esbuild`, { headers, signal })
+    }
+    if (!url.pathname.includes('.')) return index(request)
+    return serveDir(request, { fsRoot: 'dist', quiet: true })
   },
 }
