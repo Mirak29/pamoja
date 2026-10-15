@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
-import { CircleAlert, Github } from '/web/assets/icons.tsx'
+import { CircleAlert, Github, RotateCw } from '/web/assets/icons.tsx'
 import { finishLogin, startLogin, takeBack } from '/web/lib/session.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -23,7 +23,9 @@ const failed = 'La connexion n’a pas abouti. Recommence : rien n’est perdu.'
  */
 export const ConnexionPage = () => {
   const callback = url.relativePath === '/connexion/github'
-  const [loading, setLoading] = useState(callback)
+  const [loading, setLoading] = useState(false)
+  // Back from GitHub, the session opening: a state of its own, without action
+  const [finishing, setFinishing] = useState(callback)
   const [error, setError] = useState('')
 
   // Once per page: a state works only once on the server
@@ -33,20 +35,33 @@ export const ConnexionPage = () => {
     done.current = true
     const { code, state } = url.params
     if (!code || !state) {
-      setLoading(false)
+      setFinishing(false)
       setError(failed)
       return
     }
     finishLogin(code, state).then(
       (created) =>
-        // Replace: the code must not stay in the history
-        navigate({ href: created ? 'onboarding' : takeBack(), replace: true }),
+        // Replace: the code must not stay in the history. Without a page to
+        // go back to, the home page: an empty href would stay right here.
+        navigate({
+          href: created ? 'onboarding' : takeBack() || '.',
+          replace: true,
+        }),
       () => {
-        setLoading(false)
+        setFinishing(false)
         setError(failed)
       },
     )
   }, [callback])
+
+  // Back from GitHub with the browser button, the page comes from the cache
+  // as it was left: on its way out, button busy
+  useEffect(() => {
+    const reset = (event: PageTransitionEvent) =>
+      event.persisted && setLoading(false)
+    addEventListener('pageshow', reset)
+    return () => removeEventListener('pageshow', reset)
+  }, [])
 
   const authorize = () => {
     if (loading) return
@@ -72,8 +87,8 @@ export const ConnexionPage = () => {
       class='flex min-h-screen items-center justify-center px-5 py-8'
     >
       <div class='slab mr-2 flex w-full max-w-[460px] flex-col gap-5 p-7'>
-        <div class='flex items-center justify-end'>
-          <A href='.' class='text-[13px]'>Annuler</A>
+        <div class='flex h-5 items-center justify-end'>
+          {!finishing && <A href='.' class='text-[13px]'>Annuler</A>}
         </div>
         <div class='flex items-center justify-center gap-2.5 py-2'>
           <LogoMark size={44} />
@@ -90,44 +105,74 @@ export const ConnexionPage = () => {
             <Github class='size-[22px]' />
           </span>
         </div>
-        <div class='flex flex-col gap-1.5 text-center'>
-          <h1 class='font-display text-[24px] leading-[30px] font-bold'>
-            Se connecter avec GitHub
-          </h1>
-          <span class='text-[14px] text-ink-muted'>
-            Ton compte Pamoja est ton compte GitHub : pas de mot de passe en
-            plus.
-          </span>
-        </div>
-        <ul class='flex flex-col gap-2.5 rounded-lg border border-line-strong bg-surface-000 px-4 py-3.5 text-[14px] inset-shadow-well'>
-          {scopes.map((scope) => (
-            <li key={scope} class='flex items-center gap-2.5'>
-              <span aria-hidden='true' class='diamond size-[7px] bg-indigo' />
-              {scope}
-            </li>
-          ))}
-        </ul>
-        <span class='text-[13px] leading-5 text-ink-muted'>
-          Pamoja n’écrit jamais dans tes repos. La synchro live s’active plus
-          tard, projet par projet.
-        </span>
-        {error && (
-          <div
-            role='alert'
-            class='flex items-center gap-2 text-[14px] text-danger'
-          >
-            <CircleAlert />
-            {error}
-          </div>
-        )}
-        <Button
-          size={46}
-          aria-busy={loading}
-          onClick={authorize}
-          class='w-[calc(100%-4px)]'
-        >
-          {loading ? 'Connexion…' : 'Continuer avec GitHub'}
-        </Button>
+        {finishing
+          ? (
+            // Back from GitHub: nothing to click while the session opens
+            <div
+              role='status'
+              class='flex flex-col items-center gap-3 pb-2 text-center'
+            >
+              <h1 class='font-display text-[24px] leading-[30px] font-bold'>
+                Connexion en cours
+              </h1>
+              <span class='flex items-center gap-2 text-[14px] text-ink-muted'>
+                <RotateCw
+                  class='size-4 motion-safe:animate-spin'
+                  aria-hidden='true'
+                />
+                GitHub a confirmé ton compte, Pamoja ouvre ta session…
+              </span>
+            </div>
+          )
+          : (
+            <>
+              <div class='flex flex-col gap-1.5 text-center'>
+                <h1 class='font-display text-[24px] leading-[30px] font-bold'>
+                  Se connecter avec GitHub
+                </h1>
+                <span class='text-[14px] text-ink-muted'>
+                  Ton compte Pamoja est ton compte GitHub : pas de mot de passe
+                  en plus.
+                </span>
+              </div>
+              <ul class='flex flex-col gap-2.5 rounded-lg border border-line-strong bg-surface-000 px-4 py-3.5 text-[14px] inset-shadow-well'>
+                {scopes.map((scope) => (
+                  <li key={scope} class='flex items-center gap-2.5'>
+                    <span
+                      aria-hidden='true'
+                      class='diamond size-[7px] bg-indigo'
+                    />
+                    {scope}
+                  </li>
+                ))}
+              </ul>
+              <span class='text-[13px] leading-5 text-ink-muted'>
+                Pamoja n’écrit jamais dans tes repos. La synchro live s’active
+                plus tard, projet par projet.
+              </span>
+              {error && (
+                <div
+                  role='alert'
+                  class='flex items-center gap-2 text-[14px] text-danger'
+                >
+                  <CircleAlert />
+                  {error}
+                </div>
+              )}
+              {/* On the way to GitHub: same look, a second click does nothing */}
+              <Button
+                size={46}
+                aria-busy={loading}
+                aria-disabled={loading}
+                onClick={authorize}
+                class={`w-[calc(100%-4px)] ${
+                  loading ? 'pointer-events-none' : ''
+                }`}
+              >
+                {loading ? 'Connexion…' : 'Continuer avec GitHub'}
+              </Button>
+            </>
+          )}
       </div>
     </Page>
   )

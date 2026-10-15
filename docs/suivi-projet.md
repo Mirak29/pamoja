@@ -518,6 +518,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `web/lib/realtime.ts`, `web/ui/connection-banner.tsx`, `api/entry-types.ts`
 - **Par** : @Mirak29
 
+### 2026-10-15 · PAM-112 · Seed rejouable
+
+`deno task seed` recrée la base de zéro puis la remplit avec les données des fixtures du web : 8 développeurs de plusieurs pays avec profil, skills, intentions et abonnements, 8 communautés et leurs membres et modérateurs, 4 projets avec rôles, besoins, jalons et abonnés, et les entries de création et d'adhésion, antidatées. Tout est en `source = demo`. Les comptes fictifs ont un `githubId` négatif ; `SEED_GITHUB_IDS` relie Abdou (et bientôt Moussa) à leur vrai compte, dont la connexion ouvre le profil seedé. Le seed refuse de tourner en production sans `--prod` et explique qu'il faut arrêter le serveur quand la base est ouverte. Vérifié : deux exécutions de suite, refus en production, refus sur une base ouverte. Les reviews confirmées de Moussa et le reste de l'histoire de la démo viennent avec PAM-901.
+
+- **Livrable** : `task-db-seed.ts`, `api/seed.ts`, `api/seed_test.ts` (5 tests), tâche `seed` dans `deno.json`, `SEED_GITHUB_IDS` dans `.env-dev`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
