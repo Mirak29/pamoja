@@ -72,7 +72,7 @@ Responsable : _à répartir_
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
 - [x] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
 - [x] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
-- [ ] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
+- [x] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
 - [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4)
 - [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
@@ -270,3 +270,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-14 · Dates en secondes (`now()` de `@01edu/time`), l'unité réelle de Tournament et des entries, et non en millisecondes ; listener SSE avec membres et abonnés séparés ; `source` et champs figés des preuves en `fields` d'entry ; `userId` d'une entry = le développeur dont elle parle · §8.3, §13.2, §13.3, §14, §14.6
 - 2026-10-14 · Session : entry `USER_LOGIN` signée avec `SESSION_SECRET` (pas de mot de passe à saler), 30 jours vérifiés côté serveur ; page de retour `/connexion/github` ; connexion simulée en dev sans GitHub App, jamais en prod · §5.2, §5.3
 - 2026-10-14 · Profil pré-rempli depuis GitHub (photo, nom, bio, site, localisation, e-mail principal, langages des repos publics) ; vocabulaire partagé dans `api/vocabulary.ts` ; le développeur connecté devient le `me` des pages, les autres restent fictifs jusqu'à leurs écrans · §5.3, §6.1
+- 2026-10-15 · Seed : recrée la base de zéro (rejouable), données des fixtures du web, `githubId` négatifs pour les comptes fictifs, `SEED_GITHUB_IDS` pour relier Abdou et Moussa à leurs vrais comptes · §14, §18.1
