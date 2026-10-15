@@ -159,15 +159,11 @@ export const ConnexionPage = () => {
                   {error}
                 </div>
               )}
-              {/* On the way to GitHub: same look, a second click does nothing */}
               <Button
                 size={46}
                 aria-busy={loading}
-                aria-disabled={loading}
                 onClick={authorize}
-                class={`w-[calc(100%-4px)] ${
-                  loading ? 'pointer-events-none' : ''
-                }`}
+                class='w-[calc(100%-4px)]'
               >
                 {loading ? 'Connexion…' : 'Continuer avec GitHub'}
               </Button>

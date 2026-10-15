@@ -44,12 +44,17 @@ type ButtonProps =
 
 /**
  * A key of the isometric system: it rises on hover and sinks when pressed.
- * With `href` or `params` it renders a router link.
+ * With `href` or `params` it renders a router link. With `aria-busy`, while
+ * a request runs, it keeps its look but takes no click nor key: a second
+ * press would send the request twice.
  *
  * @example
  * <Button>Demander une review</Button>
  * <Button variant='secondary'>Plus tard</Button>
  * <Button variant='danger' size={34}>Se désister</Button>
+ * <Button aria-busy={saving} onClick={save}>
+ *   {saving ? 'Enregistrement…' : 'Enregistrer'}
+ * </Button>
  * <Button variant='secondary' size={40} square aria-label='Notifications'>
  *   <Bell class='size-5' />
  * </Button>
@@ -58,18 +63,27 @@ export function Button(
   { variant = 'primary', size = 38, square, class: className, ...props }:
     ButtonProps,
 ) {
+  const busy = !!props['aria-busy'] && props['aria-busy'] !== 'false'
   const classes = [
     'key rounded-md',
     variants[variant],
     square ? squares[size] : sizes[size],
+    busy && 'pointer-events-none',
     className,
   ].filter(Boolean).join(' ')
+  // Still focusable and announced, but inactive until the answer comes
+  const idle = busy
+    ? {
+      'aria-disabled': true,
+      onClick: (event: Event) => event.preventDefault(),
+    }
+    : {}
 
   if (props.href || props.params) {
-    return <A {...(props as LinkProps)} class={classes} />
+    return <A {...(props as LinkProps)} {...idle} class={classes} />
   }
 
-  return <button type='button' {...props} class={classes} />
+  return <button type='button' {...props} {...idle} class={classes} />
 }
 
 type OptionButtonProps = { pressed: boolean } & JSX.IntrinsicElements['button']

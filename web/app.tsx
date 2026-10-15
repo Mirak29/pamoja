@@ -13,6 +13,7 @@ import { PostPage } from '/web/pages/post-page.tsx'
 import { ProjectPage } from '/web/pages/project/project-page.tsx'
 import { ProjectsPage } from '/web/pages/projects/projects-page.tsx'
 import { ConnexionPage } from '/web/pages/public/connexion-page.tsx'
+import { InstallationReturn } from '/web/pages/public/installation-return.tsx'
 import { LandingPage } from '/web/pages/public/landing-page.tsx'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
 import { OnboardingPage } from '/web/pages/public/onboarding-page.tsx'
@@ -55,6 +56,12 @@ const App = () => {
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
   const Route = routeOf(section) ?? routeOf(path)
+  // GitHub returns to /connexion/github after a login, or after the
+  // installation of the app (§5.4), with an installation_id
+  if (
+    section === 'connexion' &&
+    (url.params.installation_id || url.params.setup_action)
+  ) return <InstallationReturn />
   if (section === 'connexion') return <ConnexionPage />
   // Until the server says who is signed in, neither the landing nor the app
   if (currentUser.value === undefined) return null

@@ -17,7 +17,7 @@ import {
 } from '/web/fixtures/onboarding.ts'
 import { countryCodeOf, countryName } from '/api/vocabulary.ts'
 import { countries, me } from '/web/fixtures/people.ts'
-import { api, type ApiOutput } from '/web/lib/api.ts'
+import { api, type ApiOutput, isQuotaError } from '/web/lib/api.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { domains, intents } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -282,11 +282,11 @@ const ProjectStep = (
   { repo, pick }: { repo: string | null; pick: (name: string) => void },
 ) => {
   const [list, setList] = useState<RepoItem[]>()
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<false | 'quota' | 'error'>(false)
   useEffect(() => {
     api['GET/api/github/repositories'].fetch().then(
       (repos) => setList(repos.filter((r) => !r.existing)),
-      () => setFailed(true),
+      (err) => setFailed(isQuotaError(err) ? 'quota' : 'error'),
     )
   }, [])
   return (
@@ -301,8 +301,10 @@ const ProjectStep = (
       )}
       {failed && (
         <span class='text-[14px] text-ink-muted'>
-          Pamoja n’a pas pu lire tes repos. Termine sans projet : tu pourras en
-          importer un depuis « Créer ».
+          {failed === 'quota'
+            ? 'GitHub limite le nombre de lectures par heure et la limite est atteinte.'
+            : 'Pamoja n’a pas pu lire tes repos.'}{' '}
+          Termine sans projet : tu pourras en importer un depuis « Créer ».
         </span>
       )}
       {list?.length
@@ -422,8 +424,11 @@ export const OnboardingPage = () => {
             {last && (
               <button
                 type='button'
+                // While the first project imports, finishing twice would
+                // import it twice
+                disabled={importing}
                 onClick={() => finish(false)}
-                class='cursor-pointer px-2 text-[14px] leading-none font-semibold text-ink-muted'
+                class='cursor-pointer px-2 text-[14px] leading-none font-semibold text-ink-muted disabled:cursor-default disabled:opacity-45'
               >
                 Passer
               </button>

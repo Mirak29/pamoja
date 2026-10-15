@@ -21,6 +21,8 @@ export type Project = {
   appInstalled?: boolean
   /** Name of the GitHub repo when it differs from the slug */
   repo?: string
+  /** Owner of the GitHub repo when it is not the owner of the project */
+  repoOwner?: string
   /** Languages read from GitHub, percent of the code (§6.5) */
   languages?: [string, number][]
   description: string
