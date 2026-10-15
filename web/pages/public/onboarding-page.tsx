@@ -15,13 +15,14 @@ import {
   type OnboardingDraft,
   onboardingDraft,
 } from '/web/fixtures/onboarding.ts'
+import { countryCodeOf, countryName } from '/api/vocabulary.ts'
 import { countries, me } from '/web/fixtures/people.ts'
 import { createProject, importableRepos } from '/web/fixtures/repos.ts'
 import { domains, intents } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { SkillPicker } from '/web/ui/chips.tsx'
-import { Field, Input, Select } from '/web/ui/input.tsx'
+import { Field, Input } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 import { Progress } from '/web/ui/progress.tsx'
@@ -156,28 +157,28 @@ const ProfileStep = (
     </Field>
     <div class='grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5'>
       <Field label='Pays'>
-        <Select
-          value={draft.country in countries ? draft.country : OTHER}
-          onChange={(event) => {
-            const value = event.currentTarget.value
-            update({ country: value === OTHER ? '' : value })
+        {
+          /* One field: the 54 countries of Africa are suggested as you type,
+          any other country is written as is */
+        }
+        <Input
+          value={draft.country}
+          list='onboarding-countries'
+          placeholder='Le pays où tu vis'
+          autocomplete='country-name'
+          onInput={(event) => update({ country: event.currentTarget.value })}
+          // « senegal », « Senegal » or « Sénégal » become « Sénégal »
+          onBlur={(event) => {
+            const code = countryCodeOf(event.currentTarget.value)
+            code && update({ country: countryName(code) })
           }}
-        >
+        />
+        <datalist id='onboarding-countries'>
           {Object.keys(countries).map((country) => (
-            <option key={country} value={country}>{country}</option>
+            <option key={country} value={country} />
           ))}
-          <option value={OTHER}>Autre</option>
-        </Select>
+        </datalist>
       </Field>
-      {!(draft.country in countries) && (
-        <Field label='Ton pays'>
-          <Input
-            value={draft.country}
-            placeholder='Le pays où tu vis'
-            onInput={(event) => update({ country: event.currentTarget.value })}
-          />
-        </Field>
-      )}
       <Field label='Ville'>
         <Input
           value={draft.city}
@@ -311,8 +312,6 @@ const ProjectStep = (
 }
 
 const stepContents = [ProfileStep, SkillsStep, IntentsStep, MatchingStep]
-
-const OTHER = 'autre'
 
 /**
  * /onboarding, after the first GitHub login: profile, skills, intents,
