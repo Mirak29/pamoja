@@ -119,6 +119,7 @@ Une seule GitHub App, en lecture seule, sert à la connexion et aux webhooks. Se
 
 ### 5.1 Configuration de la GitHub App
 
+- **App publique** (« Any account », onglet Advanced → Make public) : une app privée n'accepte que le compte qui la possède, pour la connexion comme pour l'installation, et GitHub répond 404 à tous les autres. Le second développeur, Moussa et le jury en ont besoin. Publique ne veut pas dire listée sur le Marketplace.
 - **Permissions de repository**, toutes en lecture : Metadata, Contents, Issues, Pull requests, Actions, Checks, Commit statuses (les trois dernières pour les alertes CI/CD de `#suivi`, §6.8).
 - **Permission de compte** : Email addresses en lecture, facultative (sans elle, seul l'email public est connu ; l'email n'est jamais obligatoire).
 - **Événements webhook** : `installation`, `installation_repositories`, `push`, `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `workflow_run`, `check_run`, `status`.
