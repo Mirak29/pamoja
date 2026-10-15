@@ -27,7 +27,6 @@ export type GithubUser = {
 // Without a GitHub App in dev, the login is simulated: the demo account of
 // the fixtures, never in production (§5.3)
 export const isSimulated = !GITHUB_CLIENT_ID && APP_ENV !== 'prod'
-const DEMO_CODE = 'demo'
 const demoUser: GithubUser = {
   id: 0,
   login: 'abdou',
@@ -40,25 +39,30 @@ const demoUser: GithubUser = {
   languages: ['Go', 'TypeScript'],
 }
 
-// One-time states against CSRF, like the StateManager of Tournament
+// One-time states against CSRF, like the StateManager of Tournament. A
+// state can carry what the return needs: who installs, for which project.
 const STATE_TTL = 10 * 60 * 1000
-const states = new Map<string, number>()
+type Payload = Record<string, string | number>
+const states = new Map<string, { expires: number; payload: Payload }>()
 
-const newState = () => {
+export const newState = (payload: Payload = {}) => {
   const now = Date.now()
-  for (const [state, expires] of states) {
+  for (const [state, { expires }] of states) {
     if (expires < now) states.delete(state)
   }
   const state = crypto.getRandomValues(new Uint8Array(16)).toBase64(b64url)
-  states.set(state, now + STATE_TTL)
+  states.set(state, { expires: now + STATE_TTL, payload })
   return state
 }
 
-const consumeState = (state: string) => {
-  const expires = states.get(state)
+/** The payload of a valid state, used once; undefined otherwise */
+export const consumeState = (state: string) => {
+  const entry = states.get(state)
   states.delete(state)
-  return expires !== undefined && expires > Date.now()
+  return entry && entry.expires > Date.now() ? entry.payload : undefined
 }
+
+export const DEMO_CODE = 'demo'
 
 /** The URL to send the browser to: GitHub, or the callback page in dev */
 export const authorizationUrl = () => {
@@ -73,15 +77,13 @@ export const authorizationUrl = () => {
 
 const refuse = (message: string) => new respond.UnauthorizedError({ message })
 
-export const githubUserFromCode = async (
-  { code, state }: { code: string; state: string },
-): Promise<GithubUser> => {
-  if (!consumeState(state)) throw refuse('Invalid or expired OAuth state')
-  if (isSimulated) {
-    if (code !== DEMO_CODE) throw refuse('Unknown demo code')
-    return demoUser
-  }
+export type Read = (path: string) => Promise<Response>
 
+/**
+ * Exchanges a `code` for a temporary user token; the returned reader is the
+ * only place it lives, and it is dropped with it (§5.2)
+ */
+export const exchangeCode = async (code: string): Promise<Read> => {
   // GitHub answers 200 with an `error` field when the code is refused
   const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
@@ -108,8 +110,7 @@ export const githubUserFromCode = async (
     })
     throw refuse('Failed to exchange the GitHub code')
   }
-
-  const read = (path: string) =>
+  return (path: string) =>
     fetch(`https://api.github.com${path}`, {
       headers: {
         Accept: 'application/vnd.github+json',
@@ -118,7 +119,18 @@ export const githubUserFromCode = async (
         'X-GitHub-Api-Version': '2022-11-28',
       },
     })
+}
 
+export const githubUserFromCode = async (
+  { code, state }: { code: string; state: string },
+): Promise<GithubUser> => {
+  if (!consumeState(state)) throw refuse('Invalid or expired OAuth state')
+  if (isSimulated) {
+    if (code !== DEMO_CODE) throw refuse('Unknown demo code')
+    return demoUser
+  }
+
+  const read = await exchangeCode(code)
   const userRes = await read('/user')
   if (!userRes.ok) {
     log.error('github-user-error', { status: userRes.status })
@@ -131,8 +143,6 @@ export const githubUserFromCode = async (
   ])
   return { ...user, email, languages }
 }
-
-type Read = (path: string) => Promise<Response>
 
 // Needs the optional Email addresses permission: without it, only the
 // public email is known, and the email is never required (§5.1)

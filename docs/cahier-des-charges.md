@@ -122,7 +122,7 @@ Une seule GitHub App, en lecture seule, sert à la connexion et aux webhooks. Se
 - **Permissions de repository**, toutes en lecture : Metadata, Contents, Issues, Pull requests, Actions, Checks, Commit statuses (les trois dernières pour les alertes CI/CD de `#suivi`, §6.8).
 - **Permission de compte** : Email addresses en lecture, facultative (sans elle, seul l'email public est connu ; l'email n'est jamais obligatoire).
 - **Événements webhook** : `installation`, `installation_repositories`, `push`, `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `workflow_run`, `check_run`, `status`.
-- **Callback URL** (login) et **Setup URL** (retour après installation) pointent vers le frontend.
+- **Callback URL** : `/connexion/github` du frontend. Avec l'option ci-dessous, GitHub désactive la **Setup URL** et renvoie aussi le retour d'installation sur la Callback URL, avec `code`, `installation_id` et `setup_action` : la page distingue les deux cas par `installation_id`.
 - Option **« Request user authorization (OAuth) during installation »** activée : l'installation renvoie aussi un `code`, ce qui permet de vérifier qui a installé (§5.4).
 
 ### 5.2 Tokens et secrets
@@ -136,7 +136,7 @@ Aucun token utilisateur n'est stocké. Les appels serveur utilisent des tokens s
 | Synchro niveau 2 | Token d'installation généré à la demande depuis la clé privée de l'app, valable 1 h, gardé en mémoire | Non |
 | Webhooks | Signature HMAC SHA-256 vérifiée avec le secret webhook | Non |
 
-Secrets en variables d'environnement : `GITHUB_APP_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`, et `SESSION_SECRET`, qui signe les cookies de session (§5.3). En dev, ils vont dans `.env-local`, ignoré par git et lu par `deno task dev` après `.env-dev`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
+Réglages de l'app : `GITHUB_APP_SLUG` (son nom dans l'URL, qui donne la page d'installation) et `GITHUB_APP_ID`. Secrets en variables d'environnement : `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_BOT_TOKEN`, et `SESSION_SECRET`, qui signe les cookies de session (§5.3). En dev, ils vont dans `.env-local`, ignoré par git et lu par `deno task dev` après `.env-dev`. Pourquoi un token bot : sans authentification, l'API GitHub est limitée à 60 requêtes par heure, ce qui ne suffit pas.
 
 ### 5.3 Connexion
 
@@ -174,7 +174,9 @@ Seul le propriétaire d'un repo personnel peut l'importer au niveau 1. Un repo d
    1. **Identité** : `GET /user` renvoie le `githubId` du compte connecté sur la plateforme.
    2. **Couverture** : `GET /user/installations/{installation_id}/repositories` contient ce repo précis.
    3. **Droit** : `GET /repos/{owner}/{repo}` renvoie `permissions.admin` ou `permissions.maintain` à `true` pour cet utilisateur.
-4. Le token est jeté. Si les trois contrôles passent, le repo passe en `syncMode = live` ; sinon, refus avec le contrôle en échec.
+4. Le token est jeté. Si les trois contrôles passent, le repo passe en `syncMode = live` et l'installation est enregistrée (`GithubInstallation`) ; sinon, la page montre le contrôle en échec et comment y remédier.
+
+En pratique (`api/installation.ts`) : `GET/api/github/installation/start` donne la page d'installation avec un `state` qui garde, côté serveur, le développeur et le projet ; seul le propriétaire du projet la demande. Au retour, `setup_action = request` signifie qu'un membre d'organisation a seulement demandé l'installation à ses owners : la page l'explique. Le passage automatique en live, à l'import, interroge GitHub avec un JWT de l'app (`GET /repos/{owner}/{repo}/installation`, signé par `GITHUB_APP_PRIVATE_KEY`) ; sans clé, en dev, il est sauté. Les repos en live sont relus toutes les heures en plus de leurs webhooks (§5.6). En dev sans GitHub App, le parcours est simulé comme le login (§5.3).
 
 Pourquoi trois contrôles : `GET /user/installations` liste aussi les installations auxquelles l'utilisateur n'a qu'un accès en lecture. Y figurer ne prouve pas qu'on administre le repo.
 
@@ -198,6 +200,7 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 - **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.
 - **Quota** : 5 000 requêtes par heure et par token. Cache local, `lastSyncedAt`, ETag et requêtes conditionnelles : une réponse 304 ne compte pas dans le quota. L'import passe par l'API REST : une dizaine de requêtes par repo, et les mêmes chemins se relisent ensuite en conditionnel, ce que GraphQL ne permet pas. Jamais d'appel GitHub pendant l'affichage d'une page.
 - **Board** : synchro en sens unique, GitHub → plateforme. L'app étant en lecture seule, la plateforme n'écrit jamais sur GitHub.
+- **Erreurs** : une erreur de GitHub n'est pas un bug de Pamoja ; la route répond 503 quand le quota est épuisé (il revient dans l'heure), 502 sinon, jamais 500.
 - **Dev local** : tunnel HTTPS (`cloudflared` ou smee.io) pour recevoir les webhooks.
 
 ## 6. Onboarding, Home et projets
@@ -792,7 +795,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | --- | --- |
 | Auth | `GET/api/auth/github` · `POST/api/auth/github/callback` · `POST/api/auth/logout` · `GET/api/user/me` |
 | Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/card` (username) |
-| GitHub | `GET/api/github/repositories` · `GET/api/github/repository` (name : l'aperçu de l'import) · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
+| GitHub | `GET/api/github/repositories` · `GET/api/github/repository` (name : l'aperçu de l'import) · `GET/api/github/installation/start` (project) · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
 | Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres ; sans filtre, les projets dont on est membre) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
 | Équipe | `POST/api/project/join` · `GET/api/project/join-requests` · `POST/api/project/join-request/decide` · `POST/api/project/member/role` · `POST/api/project/member/remove` |
 | Besoins | `GET/api/project/needs` · `POST/api/project/need/create` · `POST/api/project/need/update` · `GET/api/project/recommended-contributors` |

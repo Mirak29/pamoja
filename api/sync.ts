@@ -185,15 +185,19 @@ export const refreshRepository = async (repositoryId: number) => {
   return changed
 }
 
-const listPolled = sql<{ repositoryId: number }, undefined>`
-  SELECT repositoryId FROM repository WHERE syncMode = 'poll'
+// Live repos get their webhooks (PAM-204); GitHub does not promise them, so
+// they are read again every hour all the same (§5.6)
+const listToRefresh = sql<{ repositoryId: number }, number>`
+  SELECT repositoryId FROM repository
+  WHERE syncMode = 'poll'
+    OR (syncMode = 'live' AND coalesce(lastSyncedAt, 0) < ?)
 `.all
 
 export const REFRESH_EVERY = 15 * 60 * 1000
 
 /** Refreshes every polled repo, one after the other, never failing the loop */
 export const refreshAll = async () => {
-  for (const { repositoryId } of listPolled()) {
+  for (const { repositoryId } of listToRefresh(now() - 3600)) {
     try {
       await refreshRepository(repositoryId)
     } catch (err) {

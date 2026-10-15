@@ -267,6 +267,7 @@ export const adoptProjects = (list: ApiProject[]) => {
       stack: project.skills,
       sync: repo ? repo.syncMode as Project['sync'] : 'none',
       repo: repo?.name,
+      repoOwner: repo?.owner,
       languages: repo?.languages.map(({ name, share }) => [name, share]),
       description: project.description,
       vision: project.vision || undefined,

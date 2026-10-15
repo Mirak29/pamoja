@@ -532,6 +532,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `api/github.ts`, `api/import.ts`, `api/sync.ts`, `api/projects.ts`, `api/migrate.ts`, `migrations/002-import-fields.js`, routes dans `api/routes.ts`, `api/import_test.ts` (5 tests avec un faux GitHub), dialogue d'import et étape « Premier projet » de l'onboarding
 - **Par** : @Mirak29
 
+### 2026-10-15 · PAM-203 · Synchro live : installation et trois contrôles
+
+« Activer la synchro live » envoie vers la page d'installation de l'app, avec un `state` qui garde côté serveur le développeur et le projet. GitHub revient sur `/connexion/github` avec `code` et `installation_id` ; `POST/api/github/installation/confirm` échange le code contre un token temporaire et vérifie l'identité, la couverture du repo (sur toutes les pages) et le droit admin ou maintain. Si tout passe, l'installation est enregistrée et le repo passe en live ; la page montre chaque contrôle et, en cas d'échec, comment y remédier. Un import passe en live tout de suite quand l'app couvre déjà le repo, vérifié avec un JWT de l'app signé par sa clé privée (PKCS#1 converti en PKCS#8). Les repos en live sont relus toutes les heures en plus de leurs webhooks. Les erreurs de GitHub remontent en 502 ou 503, plus en 500. Vérifié dans le navigateur avec la connexion simulée : intro, retour, trois contrôles, projet en live.
+
+- **Livrable** : `api/installation.ts`, `api/github-app.ts`, `api/installation_test.ts` (7 tests : contrôles, pagination, accès en lecture refusé, parcours complet, propriétaire seul, JWT), `web/pages/public/installation-return.tsx`, dialogue de synchro, `GITHUB_APP_SLUG`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

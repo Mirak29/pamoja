@@ -13,6 +13,7 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import { confirmInstallation, installationUrl } from '/api/installation.ts'
 import { log } from '/api/lib/log.ts'
 import {
   createSession,
@@ -186,6 +187,43 @@ const defs = {
     }),
     output: OBJ({ slug: STR('Slug of the new project') }),
     description: 'Import a public repository as a project',
+  }),
+
+  /*
+   * GitHub import, level 2: the installation (§5.4)
+   */
+  'GET/api/github/installation/start': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => ({
+      url: installationUrl(ctx.session.userId, project),
+    }),
+    input: OBJ({ project: STR('Slug of a project with a repository') }),
+    output: OBJ({
+      url: STR('Installation page of the app, or the callback page in dev'),
+    }),
+    description: 'Start the live sync of a project: install the app',
+  }),
+
+  'POST/api/github/installation/confirm': route({
+    authorize: withSession,
+    fn: (ctx, input) => confirmInstallation(ctx.session.userId, input),
+    input: OBJ({
+      code: STR('Code returned by GitHub with the installation'),
+      installationId: STR('installation_id returned by GitHub'),
+      state: STR('State of the installation start'),
+    }),
+    output: OBJ({
+      slug: STR('The project'),
+      live: BOOL('All three checks passed: the repo is live'),
+      checks: ARR(
+        OBJ({
+          name: LIST(['identity', 'coverage', 'admin'], 'Check'),
+          ok: BOOL('Passed'),
+        }),
+        'Identity, coverage and admin right (§5.4)',
+      ),
+    }),
+    description: 'The return from the installation: three checks, then live',
   }),
 
   'GET/api/projects': route({

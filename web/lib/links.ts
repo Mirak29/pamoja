@@ -1,11 +1,13 @@
 import type { Project } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 
-type Repo = Pick<Project, 'owner' | 'slug' | 'repo'>
+type Repo = Pick<Project, 'owner' | 'slug' | 'repo' | 'repoOwner'>
 
 /** The repo of a project on GitHub, without the protocol */
 export const repoPath = (project: Repo) =>
-  `github.com/${project.owner}/${project.repo ?? project.slug}`
+  `github.com/${project.repoOwner ?? project.owner}/${
+    project.repo ?? project.slug
+  }`
 
 /** The page of an issue or a PR on GitHub */
 export const githubUrl = (

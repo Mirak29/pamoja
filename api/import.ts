@@ -3,6 +3,8 @@ import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import { countOf, read, readOptional, seconds } from '/api/github.ts'
+import { installationOf } from '/api/github-app.ts'
+import { linkInstallation } from '/api/installation.ts'
 import { Project, ProjectMember, ProjectNeed, Repository } from '/api/schema.ts'
 import { skillIdsOf, skillsFromGithub } from '/api/skills.ts'
 import { upsertIssue, upsertPullRequest } from '/api/sync.ts'
@@ -148,8 +150,14 @@ export const importRepository = async (
     read<GithubPull[]>(`${path}/pulls?state=open&per_page=100`),
   ])
 
+  // Already covered by an installation of the app: the import goes live at
+  // once, the importer owning this personal repo (§5.4)
+  const installation = await installationOf(repo.full_name).catch(() =>
+    undefined
+  )
+
   const at = now()
-  const slug = db.transaction(() => {
+  const created = db.transaction(() => {
     const slug = uniqueSlug(input.title || repo.name)
     const projectId = Project.insert({
       ownerId: user.userId,
@@ -209,7 +217,17 @@ export const importRepository = async (
       projectId,
       source: 'github',
     })
-    return slug
+    return { slug, projectId, repositoryId }
   })()
-  return { slug }
+  if (installation) {
+    linkInstallation({
+      githubInstallationId: installation.id,
+      accountLogin: installation.account.login,
+      accountType: installation.account.type,
+      userId: user.userId,
+      projectId: created.projectId,
+      repositoryId: created.repositoryId,
+    })
+  }
+  return { slug: created.slug }
 }

@@ -1,3 +1,4 @@
+import { respond } from '@01edu/api/response'
 import { GITHUB_BOT_TOKEN } from '/api/lib/env.ts'
 import { log } from '/api/lib/log.ts'
 
@@ -10,11 +11,18 @@ export type GithubAnswer<T> =
   | { status: 304 }
   | { status: 404 }
 
-export class GithubError extends Error {
-  constructor(public status: number, path: string) {
-    super(`GitHub answered ${status} for ${path}`)
-  }
-}
+// A GitHub failure is not a bug of Pamoja: the page gets a 503 when the
+// quota is spent (it comes back within the hour), a 502 otherwise
+const githubFailure = (status: number, path: string, quotaLeft?: string) =>
+  quotaLeft === '0' || status === 429
+    ? new respond.ServiceUnavailableError({
+      message: 'GitHub quota reached, try again later',
+      path,
+    })
+    : new respond.BadGatewayError({
+      message: `GitHub answered ${status}`,
+      path,
+    })
 
 export const github = async <T>(
   path: string,
@@ -38,12 +46,9 @@ export const github = async <T>(
   }
   if (!res.ok) {
     await res.body?.cancel()
-    log.warn('github-read-error', {
-      path,
-      status: res.status,
-      remaining: res.headers.get('x-ratelimit-remaining'),
-    })
-    throw new GithubError(res.status, path)
+    const remaining = res.headers.get('x-ratelimit-remaining') ?? undefined
+    log.warn('github-read-error', { path, status: res.status, remaining })
+    throw githubFailure(res.status, path, remaining)
   }
   return {
     status: 200,
@@ -56,7 +61,7 @@ export const github = async <T>(
 /** The data of a read that must succeed: a 404 is an error here */
 export const read = async <T>(path: string, options?: { raw?: boolean }) => {
   const answer = await github<T>(path, options)
-  if (answer.status !== 200) throw new GithubError(answer.status, path)
+  if (answer.status !== 200) throw githubFailure(answer.status, path)
   return answer.data
 }
 

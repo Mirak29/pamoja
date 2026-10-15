@@ -16,3 +16,10 @@ export const SESSION_SECRET: string = PROD(
 // Reads public repos for the import and the 15 min refresh (§5.2). Without
 // it in dev, GitHub allows 60 requests an hour.
 export const GITHUB_BOT_TOKEN: string = PROD('GITHUB_BOT_TOKEN', '')
+
+// The GitHub App itself (§5.1): its slug gives the installation page, its id
+// and private key sign the JWT that asks GitHub where the app is installed.
+// The key is the PEM GitHub downloads; `\n` written on one line is accepted.
+export const GITHUB_APP_SLUG: string = PROD('GITHUB_APP_SLUG', '')
+export const GITHUB_APP_ID: string = PROD('GITHUB_APP_ID', '')
+export const GITHUB_APP_PRIVATE_KEY: string = PROD('GITHUB_APP_PRIVATE_KEY', '')
