@@ -504,6 +504,13 @@ Au premier login, le profil reprend tout ce que GitHub donne : photo, nom, bio, 
 - **Livrable** : `api/vocabulary.ts`, `api/skills.ts`, `api/user.ts`, `api/github-oauth.ts`, `api/routes.ts`, `api/profile_test.ts` (7 tests), `web/lib/session.ts`, `web/fixtures/people.ts`, `web/ui/avatar.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-14 · PAM-107 · Route temps réel GET/api/events
+
+`GET/api/events` exige une session et l'en-tête `Accept: text/event-stream`, comme dans Tournament. Le serveur calcule lui-même ce que le développeur reçoit : projets dont il est membre, projets suivis, communautés, communautés modérées, développeurs suivis ; le client ne choisit rien. Un `ack` part à l'ouverture puis toutes les 15 s ; le listener est retiré à la fermeture ou dès qu'un envoi échoue. `refreshListeners(userId)` met à jour les connexions ouvertes après une adhésion, un suivi ou un changement de rôle (§13.2).
+
+- **Livrable** : `api/events.ts`, route dans `api/routes.ts`, `api/events_test.ts` (4 tests : session et type exigés, ack puis entries de ses projets seulement, adhésion prise en compte sans reconnexion, aucun listener après fermeture)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

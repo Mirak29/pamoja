@@ -67,7 +67,7 @@ Responsable : _à répartir_
 - [ ] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — à finir fin J1
 - [x] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
 - [x] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
-- [ ] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
+- [x] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
 - [ ] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
 - [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
 - [x] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
