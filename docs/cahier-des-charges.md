@@ -196,6 +196,8 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 
 `WebhookDelivery` **est la file** : elle survit aux redémarrages. Au démarrage, le worker reprend les livraisons `received` et celles restées en `processing` depuis plus de 2 minutes. Le traitement est idempotent (mise à jour par `githubId`, entries créées une seule fois par livraison), donc le rejouer est sans effet de bord. « Reçu » et « traité avec succès » sont deux statuts distincts.
 
+En pratique (`api/webhooks.ts`) : sans `GITHUB_WEBHOOK_SECRET`, toute livraison est refusée. Le worker tourne toutes les 5 secondes et dès qu'une livraison arrive ; les nouveaux essais attendent 10, 20, 40 puis 80 secondes. Chaque événement a son handler, enregistré par `registerHandler` (PAM-205) ; `ping`, envoyé par GitHub à la configuration du webhook, n'a rien à appliquer, et un événement sans handler est marqué traité et ignoré. Un handler est synchrone, sans appel à GitHub, puisqu'il s'exécute dans la transaction de la livraison.
+
 ### 5.6 Fiabilité et quota
 
 - **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.

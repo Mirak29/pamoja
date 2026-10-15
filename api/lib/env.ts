@@ -23,3 +23,7 @@ export const GITHUB_BOT_TOKEN: string = PROD('GITHUB_BOT_TOKEN', '')
 export const GITHUB_APP_SLUG: string = PROD('GITHUB_APP_SLUG', '')
 export const GITHUB_APP_ID: string = PROD('GITHUB_APP_ID', '')
 export const GITHUB_APP_PRIVATE_KEY: string = PROD('GITHUB_APP_PRIVATE_KEY', '')
+
+// Signs the webhooks GitHub sends: X-Hub-Signature-256 (§5.5). The same
+// value goes in the Webhook secret field of the app.
+export const GITHUB_WEBHOOK_SECRET: string = PROD('GITHUB_WEBHOOK_SECRET', '')

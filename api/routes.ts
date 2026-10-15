@@ -16,6 +16,7 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import { receiveWebhook } from '/api/webhooks.ts'
 import { confirmInstallation, installationUrl } from '/api/installation.ts'
 import { log } from '/api/lib/log.ts'
 import {
@@ -243,6 +244,13 @@ const defs = {
       ),
     }),
     description: 'The return from the installation: three checks, then live',
+  }),
+
+  // No `input`: the router leaves the body unread, and the signature is
+  // checked on the raw one. No `authorize`: GitHub signs instead (§5.5).
+  'POST/api/github/webhook': route({
+    fn: (ctx) => receiveWebhook(ctx.req),
+    description: 'A GitHub event: checked, kept, answered 202, processed later',
   }),
 
   'GET/api/projects': route({
