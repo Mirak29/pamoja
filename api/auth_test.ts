@@ -1,6 +1,7 @@
 import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import server from '/api/server.ts'
+import { loginFlow } from '/api/testing.ts'
 
 // The test env has no GitHub App: the login is the simulated one (§5.3)
 const restore = makeRestorePoint()
@@ -23,14 +24,8 @@ const call = (
 const sessionOf = (res: Response) =>
   res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1] ?? ''
 
-const login = async () => {
-  const { url } = await (await call('/api/auth/github')).json()
-  const params = new URL(url, 'http://localhost/').searchParams
-  const res = await call('/api/auth/github/callback', {
-    body: { code: params.get('code'), state: params.get('state') },
-  })
-  return { res, state: params.get('state'), session: sessionOf(res) }
-}
+// The whole login of the test env, nonce cookie included (§5.3)
+const login = loginFlow
 
 const me = (cookie?: string) => call('/api/user/me', { cookie })
 
@@ -70,11 +65,29 @@ Deno.test('auth: the next login finds the same developer', async () => {
 
 Deno.test('auth: a state works only once', async () => {
   restore()
+  const { state, nonce } = await login()
+  const replay = await server.fetch(
+    new Request('http://localhost/api/auth/github/callback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `oauth_nonce=${nonce}`,
+      },
+      body: JSON.stringify({ code: 'demo', state }),
+    }),
+  )
+  assertEquals(replay.status, 401)
+  assertEquals((await replay.json()).reason, 'used')
+})
+
+Deno.test('auth: a state is tied to the browser that started', async () => {
+  restore()
   const { state } = await login()
-  const replay = await call('/api/auth/github/callback', {
+  const elsewhere = await call('/api/auth/github/callback', {
     body: { code: 'demo', state },
   })
-  assertEquals(replay.status, 401)
+  assertEquals(elsewhere.status, 401)
+  assertEquals((await elsewhere.json()).reason, 'browser')
 })
 
 Deno.test('auth: a tampered cookie is refused', async () => {

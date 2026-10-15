@@ -3,8 +3,11 @@ import { respond } from '@01edu/api/response'
 import { ARR, BOOL, LIST, NUM, OBJ, optional, STR } from '@01edu/api/validator'
 import {
   authorizationUrl,
+  clearNonce,
   githubUserFromCode,
   isSimulated,
+  NONCE_COOKIE,
+  withNonce,
 } from '/api/github-oauth.ts'
 import { openEvents } from '/api/events.ts'
 import {
@@ -75,7 +78,10 @@ const defs = {
    * Auth (§5.3)
    */
   'GET/api/auth/github': route({
-    fn: () => ({ url: authorizationUrl() }),
+    fn: async () => {
+      const { url, nonce } = await authorizationUrl()
+      return withNonce(respond.OK({ url }), nonce)
+    },
     output: OBJ({
       url: STR('Where to send the browser: GitHub, or the callback in dev'),
     }),
@@ -83,14 +89,19 @@ const defs = {
   }),
 
   'POST/api/auth/github/callback': route({
-    fn: async (_ctx, params) => {
-      const github = await githubUserFromCode(params)
+    fn: async (ctx, params) => {
+      const github = await githubUserFromCode(
+        params,
+        ctx.cookies[NONCE_COOKIE],
+      )
       const source = isSimulated ? 'demo' : 'github'
       const { userId, created } = findOrCreateGithubUser(github, source)
       const user = getCurrentUser(userId)!
       log.info('user-login', { userId, created })
       const session = await createSession(userId, source)
-      return setSessionCookie(respond.OK({ ...user, created }), session)
+      return clearNonce(
+        setSessionCookie(respond.OK({ ...user, created }), session),
+      )
     },
     input: OBJ({
       code: STR('Code returned by GitHub'),
@@ -194,9 +205,10 @@ const defs = {
    */
   'GET/api/github/installation/start': route({
     authorize: withSession,
-    fn: (ctx, { project }) => ({
-      url: installationUrl(ctx.session.userId, project),
-    }),
+    fn: async (ctx, { project }) => {
+      const { url, nonce } = await installationUrl(ctx.session.userId, project)
+      return withNonce(respond.OK({ url }), nonce)
+    },
     input: OBJ({ project: STR('Slug of a project with a repository') }),
     output: OBJ({
       url: STR('Installation page of the app, or the callback page in dev'),
@@ -206,7 +218,14 @@ const defs = {
 
   'POST/api/github/installation/confirm': route({
     authorize: withSession,
-    fn: (ctx, input) => confirmInstallation(ctx.session.userId, input),
+    fn: async (ctx, input) =>
+      clearNonce(respond.OK(
+        await confirmInstallation(
+          ctx.session.userId,
+          input,
+          ctx.cookies[NONCE_COOKIE],
+        ),
+      )),
     input: OBJ({
       code: STR('Code returned by GitHub with the installation'),
       installationId: STR('installation_id returned by GitHub'),

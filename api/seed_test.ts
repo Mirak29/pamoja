@@ -2,7 +2,7 @@ import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { parseGithubIds, seed } from '/api/seed.ts'
-import server from '/api/server.ts'
+import { loginFlow } from '/api/testing.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { people } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
@@ -65,20 +65,7 @@ Deno.test('seed: a real login opens the seeded profile', async () => {
   restore()
   // The simulated GitHub account of the test env has the id 0 (§5.3)
   seed(new Map([['abdou', 0]]))
-  const { url } = await (await server.fetch(
-    new Request('http://localhost/api/auth/github'),
-  )).json()
-  const params = new URL(url, 'http://localhost/').searchParams
-  const res = await server.fetch(
-    new Request('http://localhost/api/auth/github/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: params.get('code'),
-        state: params.get('state'),
-      }),
-    }),
-  )
+  const { res } = await loginFlow()
   const user = await res.json()
   assertEquals(user.created, false)
   assertEquals(user.headline, people.abdou.headline)

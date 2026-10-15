@@ -75,10 +75,17 @@ export const InstallationReturn = () => {
         icon: Zap,
         tone: 'verified',
       })
-    }, () =>
+    }, (err) => {
+      // The state is checked as for the login (§5.3)
+      const reason = (err as { data?: { reason?: string } })?.data?.reason
       setError(
-        'Pamoja n’a pas pu vérifier l’installation. Relance la synchro live depuis le projet.',
-      ))
+        reason === 'expired'
+          ? 'Le retour de GitHub a expiré : plus de 10 minutes ont passé. Relance la synchro live depuis le projet.'
+          : reason === 'browser'
+          ? 'L’installation a commencé dans un autre navigateur ou une fenêtre privée. Relance-la d’ici, depuis le projet.'
+          : 'Pamoja n’a pas pu vérifier l’installation. Relance la synchro live depuis le projet.',
+      )
+    })
   }, [])
 
   const failed = result?.checks.find((check) => !check.ok)

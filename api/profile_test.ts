@@ -2,6 +2,7 @@ import { assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { makeRestorePoint } from '@01edu/db'
 import server from '/api/server.ts'
 import { parseLocation } from '/api/vocabulary.ts'
+import { login } from '/api/testing.ts'
 
 // The test env logs in the simulated GitHub account: « Dakar, Senegal »,
 // public repos in Go and TypeScript (§5.3)
@@ -22,15 +23,6 @@ const call = async (
     }),
   )
   return { status: res.status, json: await res.json().catch(() => null), res }
-}
-
-const login = async () => {
-  const { json } = await call('/api/auth/github')
-  const params = new URL(json.url, 'http://localhost/').searchParams
-  const { res } = await call('/api/auth/github/callback', {
-    body: { code: params.get('code'), state: params.get('state') },
-  })
-  return res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1] ?? ''
 }
 
 const profile = {

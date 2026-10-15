@@ -5,6 +5,7 @@ import { entries, Entry } from '/api/entries.ts'
 import { refreshListeners } from '/api/events.ts'
 import { Project, ProjectMember } from '/api/schema.ts'
 import server from '/api/server.ts'
+import { loginFlow } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -13,21 +14,9 @@ const request = (path: string, headers: Record<string, string> = {}) =>
 
 // The simulated login of the test env (§5.3)
 const login = async () => {
-  const { url } = await (await request('/api/auth/github')).json()
-  const params = new URL(url, 'http://localhost/').searchParams
-  const res = await server.fetch(
-    new Request('http://localhost/api/auth/github/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: params.get('code'),
-        state: params.get('state'),
-      }),
-    }),
-  )
+  const { res, session } = await loginFlow()
   const user = await res.json()
-  const cookie = res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1]
-  return { userId: user.userId as number, cookie: `session=${cookie}` }
+  return { userId: user.userId as number, cookie: `session=${session}` }
 }
 
 const addProject = (ownerId: number, slug: string) =>

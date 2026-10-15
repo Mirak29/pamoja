@@ -4,6 +4,7 @@ import { appJwt, pkcs1ToPkcs8 } from '/api/github-app.ts'
 import type { Read } from '/api/github-oauth.ts'
 import { verifyInstallation } from '/api/installation.ts'
 import server from '/api/server.ts'
+import { login } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -43,29 +44,23 @@ globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
 
 const call = async (
   path: string,
-  { body, cookie }: { body?: unknown; cookie?: string } = {},
+  { body, cookie, nonce }: { body?: unknown; cookie?: string; nonce?: string } =
+    {},
 ) => {
   const res = await server.fetch(
     new Request(`http://localhost${path}`, {
       method: body === undefined ? 'GET' : 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(cookie && { Cookie: `session=${cookie}` }),
+        ...(cookie &&
+          {
+            Cookie: `session=${cookie}${nonce ? `; oauth_nonce=${nonce}` : ''}`,
+          }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
   )
   return { status: res.status, json: await res.json().catch(() => null), res }
-}
-
-// The simulated login of the test env: the GitHub account `abdou` (§5.3)
-const login = async () => {
-  const { json } = await call('/api/auth/github')
-  const params = new URL(json.url, 'http://localhost/').searchParams
-  const { res } = await call('/api/auth/github/callback', {
-    body: { code: params.get('code'), state: params.get('state') },
-  })
-  return res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1] ?? ''
 }
 
 const importProject = (cookie: string) =>
@@ -159,10 +154,12 @@ Deno.test('installation: from the start to the live sync', async () => {
   restore()
   const cookie = await login()
   const { json: imported } = await importProject(cookie)
-  const { json: start } = await call(
+  const { json: start, res: started } = await call(
     `/api/github/installation/start?project=${imported.slug}`,
     { cookie },
   )
+  const nonce = started.headers.get('Set-Cookie')
+    ?.match(/oauth_nonce=([^;]*)/)?.[1]
   const params = new URL(start.url, 'http://localhost/').searchParams
   assertEquals(params.get('setup_action'), 'install')
   const { status, json } = await call('/api/github/installation/confirm', {
@@ -172,6 +169,7 @@ Deno.test('installation: from the start to the live sync', async () => {
       state: params.get('state'),
     },
     cookie,
+    nonce,
   })
   assertEquals(status, 200)
   assertEquals(json.live, true)
@@ -196,6 +194,7 @@ Deno.test('installation: from the start to the live sync', async () => {
       state: params.get('state'),
     },
     cookie,
+    nonce,
   })
   assertEquals(replay.status, 401)
 })

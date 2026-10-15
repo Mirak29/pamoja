@@ -2,6 +2,7 @@ import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import server from '/api/server.ts'
 import { refreshRepository } from '/api/sync.ts'
+import { login } from '/api/testing.ts'
 
 // A fake GitHub: answers by path, with an ETag that a conditional read
 // matches (304)
@@ -128,23 +129,6 @@ const call = async (
     }),
   )
   return { status: res.status, json: await res.json().catch(() => null) }
-}
-
-// The simulated login of the test env: the GitHub account `abdou` (§5.3)
-const login = async () => {
-  const { json } = await call('/api/auth/github')
-  const params = new URL(json.url, 'http://localhost/').searchParams
-  const res = await server.fetch(
-    new Request('http://localhost/api/auth/github/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: params.get('code'),
-        state: params.get('state'),
-      }),
-    }),
-  )
-  return res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1] ?? ''
 }
 
 const project = {

@@ -2,10 +2,13 @@ import { respond } from '@01edu/api/response'
 import { b64url } from '/api/lib/encoding.ts'
 import {
   APP_ENV,
+  BASE_URL,
   GITHUB_CLIENT_ID,
   GITHUB_CLIENT_SECRET,
 } from '/api/lib/env.ts'
+import { deleteCookie, setCookie } from 'jsr:@std/http@^1.0.20/cookie'
 import { log } from '/api/lib/log.ts'
+import { signText, verifyText } from '/api/lib/sign.ts'
 
 // Login with the GitHub App (§5.3). The user token reads the profile, the
 // primary email and the languages of the public repos to prefill the
@@ -39,40 +42,89 @@ const demoUser: GithubUser = {
   languages: ['Go', 'TypeScript'],
 }
 
-// One-time states against CSRF, like the StateManager of Tournament. A
-// state can carry what the return needs: who installs, for which project.
-const STATE_TTL = 10 * 60 * 1000
+// The state of the round trip to GitHub, against CSRF (§5.3). It is signed
+// and dated rather than kept in memory: `deno task dev` restarts the server
+// on each change, and a restart while the developer was on GitHub made the
+// return fail. A nonce in a short cookie ties it to the browser that left,
+// so a link with someone else's code cannot sign anyone in. A state can
+// carry what the return needs: who installs, for which project.
+export const STATE_TTL = 10 * 60
+export const NONCE_COOKIE = 'oauth_nonce'
 type Payload = Record<string, string | number>
-const states = new Map<string, { expires: number; payload: Payload }>()
 
-export const newState = (payload: Payload = {}) => {
-  const now = Date.now()
-  for (const [state, { expires }] of states) {
-    if (expires < now) states.delete(state)
-  }
-  const state = crypto.getRandomValues(new Uint8Array(16)).toBase64(b64url)
-  states.set(state, { expires: now + STATE_TTL, payload })
-  return state
+// States already used, kept until they expire: a state works once
+const used = new Map<string, number>()
+
+export const newState = async (payload: Payload = {}) => {
+  const nonce = crypto.getRandomValues(new Uint8Array(16)).toBase64(b64url)
+  const expires = Math.floor(Date.now() / 1000) + STATE_TTL
+  const state = await signText(JSON.stringify({ ...payload, nonce, expires }))
+  return { state, nonce }
 }
 
-/** The payload of a valid state, used once; undefined otherwise */
-export const consumeState = (state: string) => {
-  const entry = states.get(state)
-  states.delete(state)
-  return entry && entry.expires > Date.now() ? entry.payload : undefined
+export type StateRefusal = 'invalid' | 'expired' | 'browser' | 'used'
+
+/** The payload of a valid state for this browser, used once */
+export const consumeState = async (
+  state: string,
+  nonce: string | undefined,
+): Promise<{ payload: Payload } | { refused: StateRefusal }> => {
+  const text = await verifyText(state)
+  if (!text) return { refused: 'invalid' }
+  const { nonce: expected, expires, ...payload } = JSON.parse(text)
+  const now = Math.floor(Date.now() / 1000)
+  if (expires < now) return { refused: 'expired' }
+  if (!nonce || nonce !== expected) return { refused: 'browser' }
+  for (const [old, until] of used) until < now && used.delete(old)
+  if (used.has(state)) return { refused: 'used' }
+  used.set(state, expires)
+  return { payload }
+}
+
+/** The nonce cookie of the state, set when the browser leaves for GitHub */
+export const withNonce = (response: Response, nonce: string) => {
+  setCookie(response.headers, {
+    name: NONCE_COOKIE,
+    value: nonce,
+    path: BASE_URL,
+    secure: true,
+    httpOnly: true,
+    sameSite: 'Lax',
+    maxAge: STATE_TTL,
+  })
+  return response
+}
+
+export const clearNonce = (response: Response) => {
+  deleteCookie(response.headers, NONCE_COOKIE, {
+    path: BASE_URL,
+    secure: true,
+    httpOnly: true,
+  })
+  return response
+}
+
+/** The state is refused: the page says why, the log too */
+export const refuseState = (reason: StateRefusal) => {
+  log.warn('github-state-refused', { reason })
+  return new respond.UnauthorizedError({
+    message: 'Invalid or expired OAuth state',
+    reason,
+  })
 }
 
 export const DEMO_CODE = 'demo'
 
 /** The URL to send the browser to: GitHub, or the callback page in dev */
-export const authorizationUrl = () => {
-  const state = newState()
+export const authorizationUrl = async () => {
+  const { state, nonce } = await newState()
   if (isSimulated) {
-    return `connexion/github?${new URLSearchParams({ code: DEMO_CODE, state })}`
+    const params = new URLSearchParams({ code: DEMO_CODE, state })
+    return { url: `connexion/github?${params}`, nonce }
   }
   // No redirect_uri: GitHub uses the Callback URL of the app (§5.1)
   const params = new URLSearchParams({ client_id: GITHUB_CLIENT_ID, state })
-  return `https://github.com/login/oauth/authorize?${params}`
+  return { url: `https://github.com/login/oauth/authorize?${params}`, nonce }
 }
 
 const refuse = (message: string) => new respond.UnauthorizedError({ message })
@@ -108,7 +160,12 @@ export const exchangeCode = async (code: string): Promise<Read> => {
       error: token.error,
       message: token.error_description,
     })
-    throw refuse('Failed to exchange the GitHub code')
+    // bad_verification_code: the code was used already, or is too old
+    throw new respond.UnauthorizedError({
+      message: 'Failed to exchange the GitHub code',
+      reason: 'code',
+      error: token.error,
+    })
   }
   return (path: string) =>
     fetch(`https://api.github.com${path}`, {
@@ -123,8 +180,10 @@ export const exchangeCode = async (code: string): Promise<Read> => {
 
 export const githubUserFromCode = async (
   { code, state }: { code: string; state: string },
+  nonce: string | undefined,
 ): Promise<GithubUser> => {
-  if (!consumeState(state)) throw refuse('Invalid or expired OAuth state')
+  const checked = await consumeState(state, nonce)
+  if ('refused' in checked) throw refuseState(checked.refused)
   if (isSimulated) {
     if (code !== DEMO_CODE) throw refuse('Unknown demo code')
     return demoUser
@@ -134,7 +193,10 @@ export const githubUserFromCode = async (
   const userRes = await read('/user')
   if (!userRes.ok) {
     log.error('github-user-error', { status: userRes.status })
-    throw refuse('Failed to read the GitHub user')
+    throw new respond.BadGatewayError({
+      message: 'Failed to read the GitHub user',
+      reason: 'user',
+    })
   }
   const user = await userRes.json() as Omit<GithubUser, 'languages'>
   const [email, languages] = await Promise.all([

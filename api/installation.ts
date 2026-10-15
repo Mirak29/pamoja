@@ -9,6 +9,7 @@ import {
   isSimulated,
   newState,
   type Read,
+  refuseState,
 } from '/api/github-oauth.ts'
 import { GITHUB_APP_SLUG } from '/api/lib/env.ts'
 import { User } from '/api/schema.ts'
@@ -37,7 +38,7 @@ const projectOf = (where: { slug?: string; projectId?: number }) =>
   getProjectRepo({ slug: where.slug ?? '', projectId: where.projectId ?? 0 })
 
 /** The installation page of the app, or the callback page in dev (§5.3) */
-export const installationUrl = (userId: number, slug: string) => {
+export const installationUrl = async (userId: number, slug: string) => {
   const project = projectOf({ slug })
   if (!project) {
     throw new respond.NotFoundError({
@@ -49,18 +50,27 @@ export const installationUrl = (userId: number, slug: string) => {
       message: 'Only the owner turns on the live sync',
     })
   }
-  const state = newState({ userId, projectId: project.projectId })
+  const { state, nonce } = await newState({
+    userId,
+    projectId: project.projectId,
+  })
   if (isSimulated) {
-    return `connexion/github?${new URLSearchParams({
-      code: DEMO_CODE,
-      installation_id: '0',
-      setup_action: 'install',
-      state,
-    })}`
+    return {
+      nonce,
+      url: `connexion/github?${new URLSearchParams({
+        code: DEMO_CODE,
+        installation_id: '0',
+        setup_action: 'install',
+        state,
+      })}`,
+    }
   }
-  return `https://github.com/apps/${GITHUB_APP_SLUG}/installations/new?${new URLSearchParams(
-    { state },
-  )}`
+  const params = new URLSearchParams({ state })
+  return {
+    nonce,
+    url:
+      `https://github.com/apps/${GITHUB_APP_SLUG}/installations/new?${params}`,
+  }
 }
 
 export type CheckName = 'identity' | 'coverage' | 'admin'
@@ -202,13 +212,13 @@ const getGithubId = User.sql<'githubId', number>`
 export const confirmInstallation = async (
   userId: number,
   input: { code: string; installationId: string; state: string },
+  nonce: string | undefined,
 ) => {
-  const payload = consumeState(input.state)
-  if (!payload || payload.userId !== userId) {
-    throw new respond.UnauthorizedError({
-      message: 'Invalid or expired installation state',
-    })
-  }
+  const checked = await consumeState(input.state, nonce)
+  if ('refused' in checked) throw refuseState(checked.refused)
+  const { payload } = checked
+  // Started by another developer of this browser: not theirs to confirm
+  if (payload.userId !== userId) throw refuseState('browser')
   const project = projectOf({ projectId: Number(payload.projectId) })
   if (!project) {
     throw new respond.NotFoundError({ message: 'Project not found' })

@@ -15,6 +15,24 @@ const scopes = [
 
 const failed = 'La connexion n’a pas abouti. Recommence : rien n’est perdu.'
 
+// Why the server refused the return from GitHub (§5.3), to say it plainly
+const reasons: Record<string, string> = {
+  expired:
+    'La page de connexion a expiré : plus de 10 minutes ont passé. Recommence.',
+  browser:
+    'La connexion a commencé dans un autre navigateur ou une fenêtre privée. Recommence ici.',
+  used: 'Ce retour de GitHub a déjà servi. Recommence la connexion.',
+  invalid: 'Ce retour de GitHub n’est pas valide. Recommence la connexion.',
+  code:
+    'GitHub a refusé le code de connexion, déjà utilisé ou trop ancien. Recommence.',
+  user: 'GitHub n’a pas renvoyé ton profil. Réessaie dans un instant.',
+}
+
+const failureOf = (err: unknown) => {
+  const reason = (err as { data?: { reason?: string } })?.data?.reason
+  return (reason && reasons[reason]) || failed
+}
+
 /**
  * /connexion, and any app page seen without a session: sends the browser to
  * GitHub (§5.3). /connexion/github is the page GitHub sends back to, with
@@ -47,9 +65,9 @@ export const ConnexionPage = () => {
           href: created ? 'onboarding' : takeBack() || '.',
           replace: true,
         }),
-      () => {
+      (err) => {
         setFinishing(false)
-        setError(failed)
+        setError(failureOf(err))
       },
     )
   }, [callback])
