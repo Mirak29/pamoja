@@ -204,7 +204,7 @@ En pratique (`api/webhooks.ts`) : sans `GITHUB_WEBHOOK_SECRET`, toute livraison 
 - **Quota** : 5 000 requêtes par heure et par token. Cache local, `lastSyncedAt`, ETag et requêtes conditionnelles : une réponse 304 ne compte pas dans le quota. L'import passe par l'API REST : une dizaine de requêtes par repo, et les mêmes chemins se relisent ensuite en conditionnel, ce que GraphQL ne permet pas. Jamais d'appel GitHub pendant l'affichage d'une page.
 - **Board** : synchro en sens unique, GitHub → plateforme. L'app étant en lecture seule, la plateforme n'écrit jamais sur GitHub.
 - **Erreurs** : une erreur de GitHub n'est pas un bug de Pamoja ; la route répond 503 quand le quota est épuisé (il revient dans l'heure), 502 sinon, jamais 500.
-- **Dev local** : tunnel HTTPS (`cloudflared` ou smee.io) pour recevoir les webhooks.
+- **Dev local** : `deno task tunnel` (`task-tunnel.ts`) ouvre un tunnel rapide `cloudflared`, sans compte, vers le serveur de dev, et pointe le webhook de l'app sur son adresse (`PATCH /app/hook/config`, avec le JWT de l'app) ; l'adresse change à chaque démarrage. Pas smee.io : il réécrit le JSON, ce qui peut casser la signature. L'app est partagée : le dernier développeur à ouvrir un tunnel reçoit les webhooks. Une fois la production en ligne, le tunnel détournerait ses webhooks : il faudra alors une app réservée au dev.
 
 ## 6. Onboarding, Home et projets
 

@@ -275,3 +275,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-15 · Installation : retour sur la Callback URL (la Setup URL est désactivée par l'autorisation pendant l'installation) ; passage auto en live via un JWT de l'app ; repos live relus toutes les heures ; erreurs GitHub en 502/503 ; `GITHUB_APP_SLUG` · §5.1, §5.2, §5.4, §5.6, §15
 - 2026-10-15 · `state` de connexion et d'installation signé et daté (et non en mémoire, perdu à chaque redémarrage de `deno task dev`), lié au navigateur par le cookie `oauth_nonce` ; raison du refus affichée · §5.3, §5.4
 - 2026-10-15 · GitHub App publique : privée, elle refuse tout compte autre que son propriétaire (404 chez GitHub) · §5.1
+- 2026-10-16 · Tunnel de dev : `cloudflared` (pas smee.io, qui réécrit le JSON signé) ; `deno task tunnel` pointe lui-même le webhook de l'app sur le tunnel ; une app réservée au dev quand la prod sera en ligne · §5.6
