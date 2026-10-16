@@ -7,6 +7,8 @@ import { routeHandler } from '/api/routes.ts'
 import { APP_ENV } from '/api/lib/env.ts'
 import { startRefresh } from '/api/sync.ts'
 import { startWorker } from '/api/webhooks.ts'
+// What each GitHub event changes (§5.5): registered before the worker runs
+import '/api/github-events.ts'
 
 const fetch = server({ log, routeHandler })
 
