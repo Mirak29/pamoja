@@ -5,7 +5,7 @@ import {
   GitPullRequest,
   LifeBuoy,
 } from '/web/assets/icons.tsx'
-import { helpRequests } from '/web/fixtures/help.ts'
+import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
 import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
@@ -32,13 +32,18 @@ const closedHelp = [
 const PullRequestDetail = (
   { project, pr }: { project: Project; pr: PullRequest },
 ) => {
+  // Its own subscription: the requests may arrive after the projects, and a
+  // child with the same props is not rendered again
+  helpChanged.value
   const help = helpRequests.find((h) =>
-    h.pullRequest === pr.number && !closedHelp.includes(h.status)
+    h.project === pr.project && h.pullRequest === pr.number &&
+    !closedHelp.includes(h.status)
   )
   const isMember = project.owner === me.login ||
     project.members.some((m) => m.login === me.login)
-  const canRequest = pr.state === 'open' && pr.review === 'waiting' &&
-    isMember && !help
+  // A demo PR is not on GitHub: no request can be made on it
+  const canRequest = !pr.demo && pr.state === 'open' &&
+    pr.review === 'waiting' && isMember && !help
   const reviewers = pr.reviewers?.length
     ? pr.reviewers.map(firstName).join(', ')
     : pr.review === 'approved'
@@ -79,7 +84,11 @@ const PullRequestDetail = (
       )}
       {canRequest && (
         <div class='flex flex-col gap-2'>
-          <Button size={42} href='aide/nouvelle' params={{ pr: pr.number }}>
+          <Button
+            size={42}
+            href='aide/nouvelle'
+            params={{ project: pr.project, pr: pr.number }}
+          >
             Demander une review
           </Button>
           <span class='text-[12px] text-ink-muted'>

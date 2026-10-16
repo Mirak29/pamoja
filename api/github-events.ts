@@ -2,6 +2,7 @@ import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { seconds } from '/api/github.ts'
+import { scheduleSkillsRead } from '/api/pull-skills.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
 import {
   type GithubIssue,
@@ -80,6 +81,8 @@ registerHandler('pull_request', (payload) => {
     html_url: string
   }
   upsertPullRequest(repo.repositoryId, pull)
+  // Its files are read once the delivery is committed, never here (§5.5)
+  scheduleSkillsRead()
   const pullRequestId = pullRequestOf(repo.repositoryId, pull.number)!
   const userId = maybe(userOf(pull.user))
   const relations = { userId, projectId: repo.projectId, pullRequestId, source }
