@@ -831,15 +831,16 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Webhook falsifié | Faux « PR merged » ou fausse review, badges fabriqués | Vérification HMAC SHA-256 de `X-Hub-Signature-256` sur le corps brut, comparaison en temps constant, avant tout traitement |
 | Rejeu de webhook | Double comptage | `WebhookDelivery` avec UNIQUE(githubDeliveryId) |
 | `installation_id` forgé dans la Setup URL | Rattacher l'installation d'un autre | Trois contrôles : identité, repo couvert par l'installation, droit admin ou maintain sur le repo (§5.4) |
-| CSRF au login | Victime connectée sur le compte de l'attaquant | `state` aléatoire à usage unique, expiration 5 min (`StateManager` de Tournament) |
+| CSRF au login | Victime connectée sur le compte de l'attaquant | `state` signé, à usage unique, valable 10 min, lié au navigateur par le cookie `oauth_nonce` (§5.3) |
 | Vol de session | Prise de compte | Cookie `httpOnly`, `secure`, `SameSite=Lax` ; toutes les écritures en `POST` JSON |
 | Fuite de secrets | Usurpation de l'app ou du bot | Variables d'environnement uniquement, jamais dans le repo ni côté client, rotation documentée |
 | XSS par Markdown | Script exécuté chez les visiteurs (README importés, posts, messages) | Rendu Markdown avec HTML désactivé ou sanitizer, liens externes en `rel="noopener nofollow"` |
+| Lien externe ouvert dans l'onglet de Pamoja | La page ouverte peut rediriger l'onglet d'origine vers un faux Pamoja (tabnabbing) | Tout lien qui sort de Pamoja s'ouvre dans un nouvel onglet, en `rel="noopener noreferrer"`, par une règle unique (`web/lib/external-links.ts`) ; la connexion et l'installation vont sur GitHub dans le même onglet, puisqu'elles en reviennent |
 | Usurpation d'identité GitHub | Un username libéré puis repris | Identification par `githubId` |
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
 | Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
 | Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
-| Injection SQL | Lecture ou écriture arbitraire | Requêtes paramétrées uniquement (tag `sql` de `@01edu/db`) |
+| Injection SQL | Lecture ou écriture arbitraire | Paramètres liés uniquement (`?` ou `:nom`) : le tag `sql` de `@01edu/db` recopie ses valeurs dans le texte de la requête, donc aucune valeur venue d'un utilisateur n'y entre (§12.5) |
 | Détournement de l'IA | Sortie manipulée par un README | Contenu encadré comme donnée, sortie JSON validée (§11) |
 | Meilisearch exposé | Lecture ou modification de l'index par n'importe qui | Conteneur joignable uniquement depuis l'app, clé maître côté serveur, aucun contenu non public indexé |
 | Photo publiée avec sa position GPS | Fuite du lieu de vie d'un utilisateur | Réencodage dans le navigateur avant l'envoi, qui supprime les métadonnées EXIF (§17.3) |

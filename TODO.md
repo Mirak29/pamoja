@@ -277,3 +277,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-15 · GitHub App publique : privée, elle refuse tout compte autre que son propriétaire (404 chez GitHub) · §5.1
 - 2026-10-16 · Tunnel de dev : `cloudflared` (pas smee.io, qui réécrit le JSON signé) ; `deno task tunnel` pointe lui-même le webhook de l'app sur le tunnel ; une app réservée au dev quand la prod sera en ligne · §5.6
 - 2026-10-16 · Événements GitHub : le compte de commentaires d'une review vient de son texte en attendant PAM-211 ; check runs de GitHub Actions ignorés (`workflow_run` les couvre) ; alertes CI sur la branche principale et les PRs ouvertes seulement · §5.5, §6.8
+- 2026-10-16 · Liens externes ouverts dans un nouvel onglet (`noopener noreferrer`) par une règle unique de l'app ; tableau des risques corrigé (`state` signé, `sql` qui recopie ses valeurs) · §16
