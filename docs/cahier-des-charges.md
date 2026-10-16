@@ -198,6 +198,16 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 
 En pratique (`api/webhooks.ts`) : sans `GITHUB_WEBHOOK_SECRET`, toute livraison est refusée. Le worker tourne toutes les 5 secondes et dès qu'une livraison arrive ; les nouveaux essais attendent 10, 20, 40 puis 80 secondes. Chaque événement a son handler, enregistré par `registerHandler` (PAM-205) ; `ping`, envoyé par GitHub à la configuration du webhook, n'a rien à appliquer, et un événement sans handler est marqué traité et ignoré. Un handler est synchrone, sans appel à GitHub, puisqu'il s'exécute dans la transaction de la livraison.
 
+**Événements traités** (`api/github-events.ts`) ; un événement d'un repo absent de Pamoja est ignoré, et l'auteur n'est rattaché à une entry que s'il est sur Pamoja (par `githubId`) :
+
+- `pull_request` : la PR, lignes ajoutées et supprimées comprises ; `PR_OPENED` (ouverte, rouverte), `PR_UPDATED` (titre, brouillon), `PR_CLOSED`, et `PR_MERGED`, preuve aux champs figés (§8.3) avec `authorIsOwner`.
+- `pull_request_review` : la review et `PR_REVIEWED`. Le webhook donne le texte de la review, pas ses commentaires en ligne : un texte compte pour un commentaire, et la vérification d'une demande d'aide (PAM-211) lit le compte exact.
+- `issues` : l'issue, et `ISSUE_UPDATED` à l'ouverture, la fermeture et la réouverture ; `issue_comment` met à jour le nombre de commentaires.
+- `release` (publiée) : la release du repo et `RELEASE_PUBLISHED`, preuve de Project Building pour l'owner.
+- `push` : `COMMITS_PUSHED`, un par push, avec le nombre de commits et les trois derniers messages ; une branche supprimée ne pousse rien.
+- `workflow_run`, `check_run`, `status` : `CiRun` ; `CI_FAILED` sur un échec, `CI_FIXED` quand le même job repasse au vert sur la même branche, seulement sur la branche principale et sur les branches de PR ouvertes. Les check runs de GitHub Actions sont ignorés : `workflow_run` les couvre déjà.
+- `installation`, `installation_repositories` : l'installation ; un repo personnel couvert par le compte de l'owner du projet passe en live, un repo retiré ou une installation supprimée revient à la synchro par rafraîchissement.
+
 ### 5.6 Fiabilité et quota
 
 - **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.

@@ -553,6 +553,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `task-tunnel.ts`, tâche `tunnel` dans `deno.json`
 - **Par** : @Mirak29
 
+### 2026-10-16 · PAM-205 · Traitement des événements GitHub
+
+Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (ouverte, mergée, fermée, lignes modifiées), reviews, issues et commentaires, releases, pushes regroupés, CI (`workflow_run`, `check_run`, `status` dans `CiRun`, avec CI en échec puis réparée), installations (passage en live et retour). Les tables sont mises à jour et les entries de `#suivi` créées, `PR_MERGED` et `RELEASE_PUBLISHED` en preuves aux champs figés (`RULES_VERSION`). Vérifié avec le vrai GitHub : une issue ouverte puis fermée sur Mirak29/memeZgen arrive en quelques secondes par le tunnel, traitée, issue en base et deux entries `ISSUE_UPDATED` rattachées au compte de son auteur.
+
+- **Livrable** : `api/github-events.ts`, `api/reputation.ts`, `api/github-events_test.ts` (9 tests avec de vrais webhooks signés)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
