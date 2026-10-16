@@ -9,7 +9,7 @@ import {
   NONCE_COOKIE,
   withNonce,
 } from '/api/github-oauth.ts'
-import { openEvents } from '/api/events.ts'
+import { openEvents, refreshListeners } from '/api/events.ts'
 import {
   importRepository,
   listRepositories,
@@ -182,12 +182,16 @@ const defs = {
 
   'POST/api/project/import': route({
     authorize: withSession,
-    fn: (ctx, input) => {
+    fn: async (ctx, input) => {
       assertKnown(input.skills, skills, 'skills')
-      return importRepository(
-        { userId: ctx.session.userId, login: getLogin(ctx.session.userId) },
+      const userId = ctx.session.userId
+      const created = await importRepository(
+        { userId, login: getLogin(userId) },
         input,
       )
+      // The new member hears its project at once on the open pages (§13.2)
+      refreshListeners(userId)
+      return created
     },
     input: OBJ({
       name: STR('Repository name, owned by the developer'),
