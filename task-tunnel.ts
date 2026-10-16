@@ -15,10 +15,25 @@ if (APP_ENV === 'prod') {
   Deno.exit(1)
 }
 
-try {
-  await new Deno.Command('cloudflared', { args: ['--version'], stdout: 'null' })
-    .output()
-} catch {
+// On the PATH, or where winget puts it on Windows: a terminal opened before
+// the install does not see the new PATH yet
+const candidates = [
+  'cloudflared',
+  'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe',
+  'C:\\Program Files\\cloudflared\\cloudflared.exe',
+]
+let cloudflared: string | undefined
+for (const candidate of candidates) {
+  try {
+    await new Deno.Command(candidate, { args: ['--version'], stdout: 'null' })
+      .output()
+    cloudflared = candidate
+    break
+  } catch {
+    // not there
+  }
+}
+if (!cloudflared) {
   console.error(
     'cloudflared est introuvable. Installe-le une fois, puis relance :\n' +
       '  winget install --id Cloudflare.cloudflared\n' +
@@ -28,7 +43,7 @@ try {
 }
 
 // A quick tunnel: no account, a new *.trycloudflare.com address each time
-const tunnel = new Deno.Command('cloudflared', {
+const tunnel = new Deno.Command(cloudflared, {
   args: ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${PORT}`],
   stdout: 'null',
   stderr: 'piped',
