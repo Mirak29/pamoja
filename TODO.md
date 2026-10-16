@@ -76,7 +76,7 @@ Responsable : _à répartir_
 - [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4)
 - [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
-- [ ] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
+- [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [ ] **PAM-117** · CI : fmt, lint, tests sur chaque PR
 - [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
 - [x] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7) — @niangoos
