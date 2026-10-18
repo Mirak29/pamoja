@@ -142,7 +142,7 @@ Responsable : _à répartir_
 - [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
 - [ ] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]`
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
-- [ ] **PAM-309** · Collaboration Map (une colonne par pays sur grille isométrique, sans contour de l'Afrique, pays du profil exclu des pays reliés) et Collaboration Graph (§9.3, §12.7) `[démo]`
+- [ ] **PAM-309** · Collaboration Map (plateau isométrique mat et bornes par pays, sans contour de l'Afrique, pays du profil exclu des pays reliés) et Collaboration Graph (§9.3, §12.7) `[démo]`
 - [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
@@ -151,6 +151,7 @@ Responsable : _à répartir_
 - [x] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
 - [x] **PAM-316** · Collection de badges en relief, paliers et preuves ; carte et graphe de collaboration interactifs, lisibles sur mobile et au clavier (§8.2, §9.3) — @niangoos
 - [x] **PAM-317** · Intégrer les trophées 3D mats validés : étagère des badges obtenus, progression séparée, assets optimisés et vue publique (§8.2) — @niangoos
+- [x] **PAM-318** · Collaboration Map mate : plateau et bornes sélectionnables, collaborateurs, répartition des liens et accès aux contributions disponibles (§9.3) — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -281,3 +282,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-15 · GitHub App publique : privée, elle refuse tout compte autre que son propriétaire (404 chez GitHub) · §5.1
 - 2026-10-18 · PAM-316 : badges présentés en collection de médaillons avec paliers et preuves, sans modifier les seuils ; carte schématique espacée et graphe sélectionnable avec listes accessibles ; trait plein = au moins une preuve GitHub, données de démo signalées · §8.2, §9.3
 - 2026-10-18 · PAM-317 : direction 3D mate validée ; trophées obtenus sur une étagère commune, badges en cours séparés, rendus ivoire/indigo en WebP transparents versionnés ; seuils inchangés et niveau conservé en texte et paliers · §8.2
+- 2026-10-18 · PAM-318 : carte sur plateau mat avec bornes basses et quantités écrites ; sélection d'un pays, collaborateurs et détail des preuves/demandes dans les deux sens, sans chiffres illustratifs ; les liens de suivi ne sont pas des collaborations distinctes · §9.3

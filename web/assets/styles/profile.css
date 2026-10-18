@@ -427,12 +427,12 @@ button.trophy-item {
 .collab-subtitle {
   margin: 9px 0 22px;
 }
-.collab-map-layout, .collab-graph-layout {
+.collab-graph-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(210px, 1fr);
   gap: 20px;
 }
-.collab-map-stage, .collab-graph-stage {
+.collab-graph-stage {
   position: relative;
   align-self: stretch;
   display: flex;
@@ -444,16 +444,11 @@ button.trophy-item {
   background: var(--surface-000);
   overflow: hidden;
 }
-.collab-map-stage svg, .collab-graph-stage svg {
+.collab-graph-stage svg {
   display: block;
   width: 100%;
   height: auto;
   min-height: 230px;
-}
-.map-stage-label {
-  position: absolute;
-  top: 14px;
-  left: 16px;
 }
 .map-footnote {
   display: block;
@@ -463,110 +458,24 @@ button.trophy-item {
   line-height: 1.6;
   color: var(--ink-muted);
 }
-.map-country {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--ink);
-  paint-order: stroke;
-  stroke: var(--surface-000);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-}
-.map-caption {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  fill: var(--ink-muted);
-}
-.map-count {
-  font-family: var(--font-mono);
-  font-size: 19px;
-  font-weight: 500;
-  fill: var(--indigo);
-}
-.map-country-button, .graph-node {
+.graph-node {
   cursor: pointer;
 }
-.map-country-button:hover .map-country, .graph-node:hover .graph-name {
+.graph-node:hover .graph-name {
   fill: var(--indigo);
 }
-.map-country-button:focus-visible, .graph-node:focus-visible {
+.graph-node:focus-visible {
   outline: 2px dashed var(--indigo);
   outline-offset: 5px;
 }
-.country-list, .network-panel {
+.network-panel {
   display: flex;
   flex-direction: column;
   gap: 9px;
   min-width: 0;
 }
-.country-list > .collection-label, .network-panel > .collection-label {
+.network-panel > .collection-label {
   margin-bottom: 4px;
-}
-.country-row {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 11px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface-100);
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-}
-.country-row[aria-pressed='true'] {
-  border-color: var(--indigo);
-  background: var(--indigo-soft);
-  box-shadow: 2px 2px 0 var(--indigo-soft-side);
-}
-.country-index {
-  align-self: flex-start;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-muted);
-}
-.country-row > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-.country-row strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-}
-.country-row small {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--ink-muted);
-  font-weight: 400;
-}
-.country-row > b {
-  font-family: var(--font-mono);
-  font-size: 19px;
-  text-align: right;
-  color: var(--indigo);
-}
-.country-row > b small {
-  font-family: var(--font-sans);
-  font-size: 9px;
-}
-.country-detail {
-  margin-top: 7px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-.country-person {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding-top: 12px;
-  color: var(--ink);
-  font-size: 12px;
-}
-.country-person > span:nth-child(2) {
-  flex: 1;
 }
 .collab-legend {
   display: flex;
@@ -679,18 +588,11 @@ button.trophy-item {
   font-weight: 600;
 }
 @media (max-width: 1000px) {
-  .collab-map-layout, .collab-graph-layout {
+  .collab-graph-layout {
     grid-template-columns: minmax(0, 1fr);
   }
-  .collab-map-stage svg, .collab-graph-stage svg {
+  .collab-graph-stage svg {
     max-height: 390px;
-  }
-  .country-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  }
-  .country-list > .collection-label, .country-detail {
-    grid-column: 1 / -1;
   }
   .network-list {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

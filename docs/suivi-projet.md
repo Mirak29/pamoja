@@ -606,6 +606,37 @@ badge, ni donnée de la base n'a été modifié.
   `task-dev.ts`, `task-prod.ts`, cahier des charges §8.2 et `TODO.md`.
 - **Par** : @niangoos, avec Codex
 
+### 2026-10-18 · PAM-318 · Collaboration Map mate et contributions derrière les liens
+
+Intégration du plateau mat validé : bornes basses, points de connexion indigo,
+fils et pastilles de compte, noms de pays espacés, sélection synchronisée avec la
+liste et le panneau des collaborateurs. La géométrie, les matières en dégradés,
+les labels et les interactions sont en SVG/HTML, adaptés aux tokens du profil,
+sans nouvelle image raster. Les bornes sont accessibles par Tab puis Entrée ou
+Espace ; l'attribut SVG `tabindex` est écrit en minuscules, vérifié dans le navigateur.
+
+La répartition et le tiroir utilisent les preuves et les demandes d'aide
+disponibles, dans les deux sens. Les mêmes sources que les anciens liens donnent
+les mêmes totaux : une demande associée à une preuve reste un élément séparé du
+suivi, ce qui est expliqué dans le détail. Le tiroir mène à la personne, au projet,
+à la PR ou à la demande concernés, avec la provenance et le statut. Aucun chiffre
+illustratif de la maquette n'est intégré. Un pays non renseigné est exclu ; le pays
+du profil ne compte pas parmi les destinations. Le graphe conserve son rendu.
+
+- **Validation** : 5 tests du regroupement (sens des liens, comptes, pays exclus,
+  demande et preuve distinctes, absence de fausse vérification GitHub), formatage,
+  lint, typage et build de production réussis. Contrôle navigateur sur l'aperçu
+  isolé avec Abdou, Moussa et Yao : sélection par liste et borne, tabulation et
+  Espace, tiroir des contributions reçues, plusieurs collaborateurs dans un pays,
+  état sans lien transfrontalier, clair/sombre et page sans débordement à 320/390 px.
+  Les sources restent les fixtures existantes, sans ouverture ni modification de
+  la base locale ; le branchement API reste prévu par les tâches existantes.
+- **Livrable** : `web/pages/profile/collaboration-map.tsx`,
+  `collaboration-board.tsx`, `collaboration-data.ts`, `collaboration-data_test.ts`,
+  réexport depuis `collaboration.tsx`, `web/assets/styles/connection-map.css`,
+  nettoyage de `profile.css`, import dans `style.css`, cahier des charges §9.3 et TODO.
+- **Par** : @niangoos, avec Codex
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

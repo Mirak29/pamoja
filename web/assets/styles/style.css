@@ -2,6 +2,7 @@
 @import 'tailwindcss' source('../..');
 @import './theme.css';
 @import './profile.css';
+@import './connection-map.css';
 
 @theme {
   /* Breakpoints of the prototype: mobile layout under 760px */

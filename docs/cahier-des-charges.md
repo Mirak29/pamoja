@@ -478,14 +478,17 @@ Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Cor
 
 - **Developer Passport** : c'est la vue publique de `/@username` (sans connexion) : projets actifs, contributions, reviews, développeurs aidés, pays des collaborateurs, top skills.
 - **Share Card** : image générée côté serveur (nom, pays, headline, 3 chiffres clés, technologies). C'est aussi l'image Open Graph du profil (§17). Bouton de partage LinkedIn, X, WhatsApp, et téléchargement PNG.
-- **Collaboration Map** : « Collaborations à travers l'Afrique » : une colonne par pays posée sur une grille isométrique, sa hauteur selon le nombre de collaborations, un fil indigo vers le pays du profil. Pas de contour de l'Afrique, pour ne pas dessiner une carte approximative. Le pays du profil n'est jamais compté parmi les pays reliés. Calculée depuis les collaborations confirmées et le pays des profils.
+- **Collaboration Map** : « Le code crée des ponts » : un plateau isométrique mat avec une borne par pays et des fils indigo vers le pays du profil. Les volumes restent bas et les nombres de liens sont écrits dans des pastilles ; la hauteur ne représente plus une quantité. Pas de contour de l'Afrique, pour ne pas dessiner une carte approximative. Le pays du profil n'est jamais compté parmi les pays reliés. Calculée depuis les liens de travail disponibles et le pays des profils, avec la provenance et le statut de confirmation explicités.
 - **Collaboration Graph** : réseau développeurs ↔ projets ↔ communautés, construit uniquement sur des liens de travail (projets communs, aides, reviews, contributions), jamais sur les follows.
 
 Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'apparaît pas sur la carte.
 
 La carte est un schéma de liens sur grille isométrique : ses positions sont
 espacées pour la lecture, sans prétendre représenter des coordonnées géographiques.
-Sélectionner un pays met en évidence ses liens et collaborateurs. Le graphe affiche
+Sélectionner un pays met en évidence ses liens et collaborateurs, la répartition
+des contributions disponibles et un accès à leur détail. Les preuves de réputation
+et les demandes d'aide sont distinguées ; les liens reçus et donnés sont tous deux
+visibles. Aucun chiffre illustratif de la maquette n'est repris en dur. Le graphe affiche
 les noms et le poids des liens ; sa sélection donne accès au profil du collaborateur.
 Les deux vues ont une liste utilisable au clavier et sur mobile. Un trait plein
 indique la présence d'au moins une preuve GitHub dans le lien agrégé ; un pointillé
