@@ -1,6 +1,7 @@
 /* Only web/ is scanned for class names */
 @import 'tailwindcss' source('../..');
 @import './theme.css';
+@import './profile.css';
 
 @theme {
   /* Breakpoints of the prototype: mobile layout under 760px */

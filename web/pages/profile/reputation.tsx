@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks'
 import { counted } from '/web/lib/plural.ts'
 import { A } from '@01edu/signal-router'
 import type { Login } from '/web/fixtures/people.ts'
@@ -10,7 +11,7 @@ import {
   proofsOf,
 } from '/web/fixtures/reputation.ts'
 import { Progress } from '/web/ui/progress.tsx'
-import { prism } from '/web/ui/shapes.tsx'
+import { BadgeEmblem } from './badge-emblem.tsx'
 
 /** The five dimensions, each with its count of proofs (§8.1) */
 export const dimensionsOf = (login: Login) => {
@@ -66,124 +67,135 @@ export const DimensionBars = (
   </>
 )
 
-/** A badge is a column: the higher the level, the taller it stands */
-const BadgeColumn = ({ level }: { level: number }) => {
-  const { top, left, right } = prism(16, 32, 11, 6.3, 3 + (level + 1) * 5)
-  return (
-    <svg
-      width='32'
-      height='42'
-      viewBox='0 0 32 42'
-      aria-hidden='true'
-      class='flex-none overflow-visible'
-    >
-      <polygon
-        points={left}
-        fill='var(--surface-100)'
-        stroke='var(--ink)'
-        stroke-width='0.9'
-        stroke-linejoin='round'
-      />
-      <polygon
-        points={right}
-        fill='var(--side)'
-        stroke='var(--ink)'
-        stroke-width='0.9'
-        stroke-linejoin='round'
-      />
-      <polygon
-        points={top}
-        fill='var(--indigo-soft)'
-        stroke='var(--indigo)'
-        stroke-width='1'
-        stroke-linejoin='round'
-      />
-    </svg>
-  )
-}
-
 export const levelName = (badge: Badge) =>
   badge.level < 0 ? 'En route' : levelNames[badge.level]
 
-const BadgeContent = ({ badge, compact }: {
-  badge: Badge
-  compact?: boolean
-}) => (
-  <>
-    <BadgeColumn level={badge.level} />
-    <span
-      class={`flex min-w-0 flex-1 flex-col ${
-        compact ? 'gap-[5px]' : 'gap-1.5'
-      }`}
-    >
-      <span class='flex items-center justify-between gap-2 text-[14px]'>
-        <span class='font-semibold'>{badge.name}</span>
-        <span class='font-mono text-[11px] leading-[18px] font-medium tracking-[.06em] text-indigo uppercase'>
-          {levelName(badge)}
-        </span>
-      </span>
-      <Progress
-        value={badge.count}
-        max={badge.next ?? badge.count}
-        label={badge.name}
-        thin
-      />
-      {!compact && (
-        <span class='flex justify-between gap-2 text-[12px] text-ink-muted'>
-          <span>{badge.nextLabel}</span>
-          <span class='font-mono text-[13px] leading-4 font-medium text-ink'>
-            {badge.next ? `${badge.count} / ${badge.next}` : badge.count}
-          </span>
-        </span>
-      )}
+const BadgeSeal = ({ badge }: { badge: Badge }) => (
+  <span class='badge-seal' data-level={badge.level}>
+    <BadgeEmblem badge={badge} />
+    <span class='badge-rank'>
+      {badge.level < 0 ? 'À débloquer' : levelName(badge)}
     </span>
-  </>
+  </span>
 )
 
-const badgeRow =
-  'flex w-full items-end gap-3 rounded-md border border-line-strong bg-surface-000 py-3 pr-3.5 pl-2.5 text-left text-ink inset-shadow-well'
-
-/**
- * Badges with their level and what is left before the next one (§8.2).
- * `compact` keeps the three highest, for the passport.
- */
+/** The same collection on the full profile and the public passport. */
 export const BadgeList = (
   { login, compact }: { login: Login; compact?: boolean },
 ) => {
   const badges = badgesOf(login)
-  if (compact) {
+  const [selected, setSelected] = useState('')
+  const active = badges.find((badge) => badge.name === selected) ?? badges[0]
+  const earned = badges.filter((badge) => badge.level >= 0).length
+  if (!active) {
     return (
-      <>
-        {[...badges]
-          .sort((a, b) => b.level - a.level || b.count - a.count)
-          .slice(0, 3)
-          .map((badge) => (
-            <div key={badge.name} class='flex items-end gap-3'>
-              <BadgeContent badge={badge} compact />
-            </div>
-          ))}
-      </>
+      <div class='collection-empty'>
+        <span class='font-display text-[18px] font-semibold'>
+          Le premier badge se construit ensemble.
+        </span>
+        <span>
+          Une review utile, une aide confirmée, un projet livré : chaque
+          contribution compte.
+        </span>
+      </div>
     )
   }
-  return (
-    <>
-      {badges.map((badge) =>
-        badge.dimension
-          ? (
-            <A
-              key={badge.name}
-              params={{ dialog: `preuves-${badge.dimension}` }}
-              class={`${badgeRow} no-underline hover:border-figure-edge hover:no-underline`}
-            >
-              <BadgeContent badge={badge} />
-            </A>
-          )
-          : (
-            <div key={badge.name} class={badgeRow}>
-              <BadgeContent badge={badge} />
+  if (compact) {
+    return (
+      <div class='badge-compact'>
+        {[...badges].sort((a, b) => b.level - a.level || b.count - a.count)
+          .slice(0, 3).map((badge) => (
+            <div key={badge.name} class='badge-mini'>
+              <BadgeSeal badge={badge} />
+              <span class='font-semibold text-[13px]'>{badge.name}</span>
+              <span class='text-[12px] text-ink-muted'>{badge.nextLabel}</span>
             </div>
-          )
-      )}
-    </>
+          ))}
+      </div>
+    )
+  }
+  const demo = proofsOf(login).some((proof) => proof.demo)
+  return (
+    <div class='badge-collection'>
+      <div class='collection-intro'>
+        <div>
+          <h2>Le travail devient une collection.</h2>
+          <p>Des badges qui se gagnent en construisant avec les autres.</p>
+        </div>
+        <span class='collection-counter'>
+          <b>{earned}</b> débloqué{earned > 1 ? 's' : ''}
+        </span>
+      </div>
+      <div class='badge-grid' role='group' aria-label='Choisir un badge'>
+        {badges.map((badge) => (
+          <button
+            key={badge.name}
+            type='button'
+            class='badge-card'
+            aria-pressed={badge.name === active.name}
+            onClick={() => setSelected(badge.name)}
+          >
+            <BadgeSeal badge={badge} />
+            <span class='badge-name'>{badge.name}</span>
+            <span class='badge-card-count'>
+              {badge.next ? `${badge.count} / ${badge.next}` : 'Niveau maximal'}
+            </span>
+            <Progress
+              value={badge.count}
+              max={badge.next ?? badge.count}
+              label={`${badge.name} · ${badge.nextLabel}`}
+              thin
+            />
+          </button>
+        ))}
+      </div>
+      <div class='badge-detail' aria-live='polite' aria-atomic='true'>
+        <div class='badge-detail-heading'>
+          <div>
+            <span class='collection-label'>
+              {active.next ? 'Prochain objectif' : 'Parcours complété'}
+            </span>
+            <h3>{active.name}</h3>
+            <p>{active.nextLabel}</p>
+          </div>
+          <span class='badge-detail-number'>
+            {active.count}
+            <small>/ {active.next ?? active.count}</small>
+          </span>
+        </div>
+        <ol class='badge-levels' aria-label={`Paliers de ${active.name}`}>
+          {levelNames.map((name, i) => (
+            <li
+              key={name}
+              data-reached={i <= active.level}
+              aria-current={i === active.level ? 'step' : undefined}
+            >
+              <span aria-hidden='true'>
+                {i <= active.level ? '✓' : String(i + 1).padStart(2, '0')}
+              </span>
+              {name}
+            </li>
+          ))}
+        </ol>
+        <div class='badge-detail-footer'>
+          <span>
+            {demo
+              ? 'Progression sur données de démonstration.'
+              : 'Progression calculée depuis les contributions.'}
+          </span>
+          {active.dimension
+            ? (
+              <A params={{ dialog: `preuves-${active.dimension}` }}>
+                Voir les preuves <span aria-hidden='true'>↗</span>
+              </A>
+            )
+            : (
+              <span>
+                Collaborateurs de pays distincts, hors pays du profil.
+              </span>
+            )}
+        </div>
+      </div>
+    </div>
   )
 }

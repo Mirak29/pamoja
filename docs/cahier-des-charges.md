@@ -408,6 +408,12 @@ Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables
 
 Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit l'entry `BADGE_UNLOCKED` et une notification.
 
+La collection présente chaque badge comme un médaillon en relief, avec un emblème
+propre à son type et son niveau écrit. La sélection d'un badge affiche les quatre
+paliers, la progression et l'accès aux preuves de sa dimension. Les couleurs et
+reliefs suivent les tokens du profil ; aucun point ou niveau supplémentaire n'est
+créé. Les données de démonstration restent identifiables.
+
 ### 8.3 Preuves et calcul
 
 **Chaque preuve est autosuffisante.** Une entry de réputation (`REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED`, `PR_MERGED`…) fige dans ses `fields` (mécanisme natif de `@01edu/db/entries`) tout ce qui a servi à la décision :
@@ -474,6 +480,14 @@ Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Cor
 - **Collaboration Graph** : réseau développeurs ↔ projets ↔ communautés, construit uniquement sur des liens de travail (projets communs, aides, reviews, contributions), jamais sur les follows.
 
 Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'apparaît pas sur la carte.
+
+La carte est un schéma de liens sur grille isométrique : ses positions sont
+espacées pour la lecture, sans prétendre représenter des coordonnées géographiques.
+Sélectionner un pays met en évidence ses liens et collaborateurs. Le graphe affiche
+les noms et le poids des liens ; sa sélection donne accès au profil du collaborateur.
+Les deux vues ont une liste utilisable au clavier et sur mobile. Un trait plein
+indique la présence d'au moins une preuve GitHub dans le lien agrégé ; un pointillé
+indique un lien sans preuve GitHub, sans présenter tout le lien comme vérifié.
 
 ## 10. Communautés, feed, exploration et recherche
 

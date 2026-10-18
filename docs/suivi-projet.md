@@ -551,6 +551,32 @@ Claude ni une mémoire globale.
 - **Livrable** : `AGENTS.md`, `TODO.md`, `docs/suivi-projet.md`
 - **Par** : @niangoos, avec Codex
 
+### 2026-10-18 · PAM-316 · Badges à collectionner et réseau de collaboration
+
+Les badges du profil deviennent des médaillons hexagonaux avec un emblème par
+dimension, un rang, une progression et un détail sélectionnable : quatre paliers
+et accès au tiroir de preuves. La vue publique reprend les trois premiers badges
+avec les mêmes emblèmes. Les seuils et les calculs de réputation sont inchangés.
+
+La carte répartit les pays sur une grille isométrique schématique pour éviter les
+superpositions et permet de sélectionner un pays et ses collaborateurs. Le graphe
+affiche les noms, le nombre et le poids des liens, avec une sélection synchronisée
+à une liste et un accès au profil. Les listes restent lisibles sur mobile ; les
+deux diagrammes répondent à Entrée et Espace. Les données de démo et la présence
+d'au moins une preuve GitHub sont distinguées explicitement.
+
+- **Validation** : formatage, lint, typage des composants et build de production
+  réussis. Contrôle navigateur sur un aperçu isolé des composants avec les fixtures
+  Abdou, Moussa et Yao : sélection, tiroir de preuves, sélection d'un pays, sélection
+  au clavier d'un collaborateur, clair/sombre, largeurs 320 et 390 px sans débordement,
+  état sans badges et sans lien transfrontalier. La base locale n'a pas été ouverte
+  par l'aperçu. Le branchement de ces écrans à l'API reste couvert par les tâches
+  existantes ; cette tâche améliore leur présentation sur fixtures.
+- **Livrable** : `web/pages/profile/badge-emblem.tsx`, `reputation.tsx`,
+  `collaboration.tsx`, `web/assets/styles/profile.css`, `style.css`,
+  `docs/cahier-des-charges.md` §8.2 et §9.3, `TODO.md`.
+- **Par** : @niangoos, avec Codex
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
