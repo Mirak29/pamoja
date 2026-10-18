@@ -61,6 +61,8 @@ Après le bloc 1, les blocs 3 à 5 peuvent avancer en parallèle du bloc 2, selo
 
 Responsable : _à répartir_
 
+- [x] **PAM-123** · Reprendre le contexte local Claude Code dans Codex : références, état du dépôt et conservation des données — @niangoos
+
 - [x] **PAM-101** · Initialiser le projet Deno : `deno.json` (imports `@01edu` aux versions de Tournament, fmt et lint), arborescence `api/`, `web/`, `migrations/` (§12.1, §12.6) — @niangoos
 - [x] **PAM-102** · Build esbuild + `task-dev.ts` (route `/api` vers l'API) + `prod-server.ts` (§12.2) — @niangoos
 - [x] **PAM-103** · **Prototype à risque** : Tailwind CLI v4 sans twind ni daisyUI, en watch en dev et dans le build (§12.3) — à finir fin J1 — @niangoos

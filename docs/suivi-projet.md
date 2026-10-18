@@ -539,6 +539,18 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `api/installation.ts`, `api/github-app.ts`, `api/installation_test.ts` (7 tests : contrôles, pagination, accès en lecture refusé, parcours complet, propriétaire seul, JWT), `web/pages/public/installation-return.tsx`, dialogue de synchro, `GITHUB_APP_SLUG`
 - **Par** : @Mirak29
 
+### 2026-10-18 · PAM-123 · Reprise locale de Claude Code dans Codex
+
+Adaptation du contexte de travail dans `AGENTS.md` : chemin local de Tournament,
+nom réel du brief du prototype, runtime JSX vérifié dans `deno.json` et avancement
+repris depuis `TODO.md` et ce journal. Le code, les fixtures et la base SQLite
+existante sont conservés sur place ; la base a été consultée en lecture seule,
+sans exécuter le seed. Cette reprise n'importe pas l'historique des conversations
+Claude ni une mémoire globale.
+
+- **Livrable** : `AGENTS.md`, `TODO.md`, `docs/suivi-projet.md`
+- **Par** : @niangoos, avec Codex
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
