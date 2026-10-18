@@ -1,7 +1,9 @@
 import { config } from './build-config.ts'
+import { copyBadgeAssets } from './task-copy-assets.ts'
 import { build } from 'npm:esbuild'
 
 await build({ ...config, sourcemap: false, minify: true })
+copyBadgeAssets()
 
 const tailwind = await new Deno.Command('deno', {
   args: [

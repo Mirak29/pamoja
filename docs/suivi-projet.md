@@ -577,6 +577,35 @@ d'au moins une preuve GitHub sont distinguées explicitement.
   `docs/cahier-des-charges.md` §8.2 et §9.3, `TODO.md`.
 - **Par** : @niangoos, avec Codex
 
+### 2026-10-18 · PAM-317 · Étagère de trophées 3D mats
+
+Intégration de la direction visuelle validée après exploration : six objets mats
+ivoire et indigo, générés avec ImageGen, optimisés en WebP 512 px avec transparence
+(environ 170 Ko au total). Les badges obtenus sont exposés sur une étagère commune ;
+les badges avant le Bronze restent dans une zone de progression séparée. La
+sélection conserve les quatre paliers et les liens vers les preuves. La vue
+publique affiche au plus trois trophées réellement obtenus. Les rendus sont des
+images 3D, animées au survol en CSS ; la silhouette dépend du type, le niveau reste
+un libellé et des paliers, sans variantes d'image par niveau.
+
+Les assets sont versionnés dans le dépôt et copiés dans `dist/badges/` aussi bien
+au démarrage du serveur de développement qu'au build de production. La provenance
+et les prompts sont décrits dans leur README. Aucun calcul, seuil, attribution de
+badge, ni donnée de la base n'a été modifié.
+
+- **Validation** : formatage, lint et typage des fichiers concernés, build de
+  production ; six images avec alpha dans le build. Contrôle navigateur sur
+  l'aperçu isolé avec les fixtures Abdou, Moussa et Amina : chargement des visuels,
+  sélection au clavier, preuves Entraide après sélection du badge correspondant,
+  distinction obtenu/en cours, état sans trophée, clair et sombre, page sans
+  débordement à 320 et 390 px, accès au dernier trophée par défilement au clavier,
+  images de la vue publique compacte chargées. Le branchement API reste couvert
+  par les tâches existantes.
+- **Livrable** : `web/assets/badges/`, `web/pages/profile/badge-emblem.tsx`,
+  `reputation.tsx`, `web/assets/styles/profile.css`, `task-copy-assets.ts`,
+  `task-dev.ts`, `task-prod.ts`, cahier des charges §8.2 et `TODO.md`.
+- **Par** : @niangoos, avec Codex
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

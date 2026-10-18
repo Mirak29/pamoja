@@ -73,9 +73,7 @@ export const levelName = (badge: Badge) =>
 const BadgeSeal = ({ badge }: { badge: Badge }) => (
   <span class='badge-seal' data-level={badge.level}>
     <BadgeEmblem badge={badge} />
-    <span class='badge-rank'>
-      {badge.level < 0 ? 'À débloquer' : levelName(badge)}
-    </span>
+    <span class='badge-rank'>{levelName(badge)}</span>
   </span>
 )
 
@@ -85,8 +83,11 @@ export const BadgeList = (
 ) => {
   const badges = badgesOf(login)
   const [selected, setSelected] = useState('')
-  const active = badges.find((badge) => badge.name === selected) ?? badges[0]
-  const earned = badges.filter((badge) => badge.level >= 0).length
+  const unlocked = badges.filter((badge) => badge.level >= 0)
+  const upcoming = badges.filter((badge) => badge.level < 0)
+  const active = badges.find((badge) => badge.name === selected) ??
+    unlocked[0] ?? badges[0]
+  const earned = unlocked.length
   if (!active) {
     return (
       <div class='collection-empty'>
@@ -101,54 +102,111 @@ export const BadgeList = (
     )
   }
   if (compact) {
-    return (
-      <div class='badge-compact'>
-        {[...badges].sort((a, b) => b.level - a.level || b.count - a.count)
-          .slice(0, 3).map((badge) => (
-            <div key={badge.name} class='badge-mini'>
-              <BadgeSeal badge={badge} />
-              <span class='font-semibold text-[13px]'>{badge.name}</span>
-              <span class='text-[12px] text-ink-muted'>{badge.nextLabel}</span>
-            </div>
-          ))}
-      </div>
-    )
+    const featured = [...unlocked].sort((a, b) =>
+      b.level - a.level || b.count - a.count
+    ).slice(0, 3)
+    return featured.length
+      ? (
+        <div class='badge-compact'>
+          <div class='trophy-shelf trophy-shelf-compact'>
+            {featured.map((badge) => (
+              <div key={badge.name} class='trophy-item'>
+                <BadgeSeal badge={badge} />
+                <span class='badge-name'>{badge.name}</span>
+              </div>
+            ))}
+          </div>
+          <span class='trophy-footnote'>
+            Des contributions, reconnues par les autres.
+          </span>
+        </div>
+      )
+      : <div class='collection-empty'>Le premier trophée est en chemin.</div>
   }
   const demo = proofsOf(login).some((proof) => proof.demo)
   return (
     <div class='badge-collection'>
       <div class='collection-intro'>
         <div>
-          <h2>Le travail devient une collection.</h2>
-          <p>Des badges qui se gagnent en construisant avec les autres.</p>
+          <h2>Une collection construite ensemble.</h2>
+          <p>Chaque trophée raconte une contribution.</p>
         </div>
         <span class='collection-counter'>
           <b>{earned}</b> débloqué{earned > 1 ? 's' : ''}
         </span>
       </div>
-      <div class='badge-grid' role='group' aria-label='Choisir un badge'>
-        {badges.map((badge) => (
-          <button
-            key={badge.name}
-            type='button'
-            class='badge-card'
-            aria-pressed={badge.name === active.name}
-            onClick={() => setSelected(badge.name)}
-          >
-            <BadgeSeal badge={badge} />
-            <span class='badge-name'>{badge.name}</span>
-            <span class='badge-card-count'>
-              {badge.next ? `${badge.count} / ${badge.next}` : 'Niveau maximal'}
+      {earned > 0
+        ? (
+          <div class='trophy-shelf' role='group' aria-label='Trophées obtenus'>
+            {unlocked.map((badge) => (
+              <button
+                key={badge.name}
+                type='button'
+                class='trophy-item'
+                aria-pressed={badge.name === active.name}
+                onClick={() => setSelected(badge.name)}
+              >
+                <BadgeSeal badge={badge} />
+                <span class='badge-name'>{badge.name}</span>
+                <span class='trophy-selection' aria-hidden='true'>
+                  {badge.name === active.name ? 'En détail ↓' : 'Découvrir ↗'}
+                </span>
+              </button>
+            ))}
+          </div>
+        )
+        : (
+          <div class='collection-empty'>
+            <strong>Une place attend ton premier trophée.</strong>
+            <span>
+              Les contributions en cours ci-dessous te rapprochent du niveau
+              Bronze.
             </span>
-            <Progress
-              value={badge.count}
-              max={badge.next ?? badge.count}
-              label={`${badge.name} · ${badge.nextLabel}`}
-              thin
-            />
-          </button>
-        ))}
-      </div>
+          </div>
+        )}
+      {upcoming.length > 0 && (
+        <div class='trophy-upcoming'>
+          <div class='trophy-upcoming-heading'>
+            <span class='collection-label'>En cours de construction</span>
+            <span>
+              {counted(upcoming.length, 'badge en route', 'badges en route')}
+            </span>
+          </div>
+          <div
+            class='trophy-goals'
+            role='group'
+            aria-label='Badges en progression'
+          >
+            {upcoming.map((badge) => (
+              <button
+                key={badge.name}
+                type='button'
+                class='trophy-goal'
+                aria-pressed={badge.name === active.name}
+                onClick={() => setSelected(badge.name)}
+              >
+                <span class='trophy-goal-art'>
+                  <BadgeEmblem badge={badge} />
+                </span>
+                <span class='trophy-goal-content'>
+                  <strong>{badge.name}</strong>
+                  <span>{badge.nextLabel}</span>
+                  <Progress
+                    value={badge.count}
+                    max={badge.next!}
+                    label={`${badge.name} · ${badge.nextLabel}`}
+                    thin
+                  />
+                </span>
+                <span class='trophy-goal-count'>
+                  {badge.count}
+                  <small>/ {badge.next}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div class='badge-detail' aria-live='polite' aria-atomic='true'>
         <div class='badge-detail-heading'>
           <div>

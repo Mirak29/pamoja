@@ -408,11 +408,13 @@ Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables
 
 Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit l'entry `BADGE_UNLOCKED` et une notification.
 
-La collection présente chaque badge comme un médaillon en relief, avec un emblème
-propre à son type et son niveau écrit. La sélection d'un badge affiche les quatre
-paliers, la progression et l'accès aux preuves de sa dimension. Les couleurs et
-reliefs suivent les tokens du profil ; aucun point ou niveau supplémentaire n'est
-créé. Les données de démonstration restent identifiables.
+La collection présente les badges obtenus comme des petits trophées 3D mats sur
+une étagère commune. Chaque type a une silhouette propre (presse de review,
+construction, pont…), en ivoire et indigo de la marque, avec son niveau écrit.
+Les badges en cours sont séparés des trophées acquis. La sélection d'un badge
+affiche les quatre paliers, la progression et l'accès aux preuves de sa dimension.
+L'étagère et les interactions suivent les tokens du profil ; aucun point ou niveau
+supplémentaire n'est créé. Les données de démonstration restent identifiables.
 
 ### 8.3 Preuves et calcul
 

@@ -150,6 +150,7 @@ Responsable : _à répartir_
 - [x] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2) — @niangoos
 - [x] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
 - [x] **PAM-316** · Collection de badges en relief, paliers et preuves ; carte et graphe de collaboration interactifs, lisibles sur mobile et au clavier (§8.2, §9.3) — @niangoos
+- [x] **PAM-317** · Intégrer les trophées 3D mats validés : étagère des badges obtenus, progression séparée, assets optimisés et vue publique (§8.2) — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -279,3 +280,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-15 · `state` de connexion et d'installation signé et daté (et non en mémoire, perdu à chaque redémarrage de `deno task dev`), lié au navigateur par le cookie `oauth_nonce` ; raison du refus affichée · §5.3, §5.4
 - 2026-10-15 · GitHub App publique : privée, elle refuse tout compte autre que son propriétaire (404 chez GitHub) · §5.1
 - 2026-10-18 · PAM-316 : badges présentés en collection de médaillons avec paliers et preuves, sans modifier les seuils ; carte schématique espacée et graphe sélectionnable avec listes accessibles ; trait plein = au moins une preuve GitHub, données de démo signalées · §8.2, §9.3
+- 2026-10-18 · PAM-317 : direction 3D mate validée ; trophées obtenus sur une étagère commune, badges en cours séparés, rendus ivoire/indigo en WebP transparents versionnés ; seuils inchangés et niveau conservé en texte et paliers · §8.2

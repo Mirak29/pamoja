@@ -1,4 +1,5 @@
 import { config } from './build-config.ts'
+import { copyBadgeAssets } from './task-copy-assets.ts'
 import { context } from 'npm:esbuild'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
@@ -13,6 +14,7 @@ const ctx = await context({
 await ctx.watch()
 
 Deno.mkdirSync('dist', { recursive: true })
+copyBadgeAssets()
 Deno.copyFileSync('web/index.html', 'dist/index.html')
 
 // Tailwind compiles the CSS next to the bundle, the piped stdin makes it stop
