@@ -24,6 +24,11 @@ import {
   themePreference,
 } from '/web/ui/theme-toggle.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import {
+  type LanguagePreference,
+  languagePreference,
+  setLanguagePreference,
+} from '/web/lib/language.ts'
 
 const Switch = (
   { on, label, onFlip }: { on: boolean; label: string; onFlip: () => void },
@@ -123,6 +128,12 @@ const themes: [ThemePreference, string][] = [
   ['light', 'Clair'],
   ['dark', 'Sombre'],
   ['system', 'Système'],
+]
+
+const languages: [LanguagePreference, string][] = [
+  ['system', 'Système'],
+  ['fr', 'Français'],
+  ['en', 'English'],
 ]
 
 /** Account, notifications, matching, theme and data (§7.3, §7.4) */
@@ -282,6 +293,20 @@ export const SettingsPage = () => {
             </OptionButton>
           ))}
         </div>
+      </section>
+      <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>
+        <Eyebrow>Langue</Eyebrow>
+        <Choices label='Langue de l’interface'>
+          {languages.map(([key, label]) => (
+            <OptionButton
+              key={key}
+              pressed={languagePreference.value === key}
+              onClick={() => setLanguagePreference(key)}
+            >
+              {label}
+            </OptionButton>
+          ))}
+        </Choices>
       </section>
       <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>
         <Eyebrow>Données</Eyebrow>

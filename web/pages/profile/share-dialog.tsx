@@ -3,6 +3,7 @@ import { A } from '@01edu/signal-router'
 import { Copy, Download } from '/web/assets/icons.tsx'
 import { isMe, type Login, me, people, placeOf } from '/web/fixtures/people.ts'
 import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'
+import { language } from '/web/lib/language.ts'
 import { plural } from '/web/lib/plural.ts'
 import { Avatar, Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
@@ -166,10 +167,13 @@ const LinkPreview = ({ login }: { login: Login }) => {
                 {profileUrl(login)}
               </span>
               <span class='self-end text-[10px] text-ink-muted'>
-                {new Date().toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {new Date().toLocaleTimeString(
+                  language.peek() === 'en' ? 'en-US' : 'fr-FR',
+                  {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  },
+                )}
               </span>
             </div>
           </div>

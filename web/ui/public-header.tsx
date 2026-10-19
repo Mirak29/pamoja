@@ -2,6 +2,7 @@ import { A } from '@01edu/signal-router'
 import { signedIn } from '/web/lib/session.ts'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
+import { LanguageToggle } from '/web/ui/language-toggle.tsx'
 
 /**
  * Link to the passport of a developer: /@login for a visitor; signed in,
@@ -31,6 +32,7 @@ export const PublicHeader = () => (
     <A {...passportLink('moussa')} class='text-[14px] font-semibold'>
       Voir un profil
     </A>
+    <LanguageToggle />
     <Button variant='secondary' href='connexion'>Se connecter</Button>
   </header>
 )

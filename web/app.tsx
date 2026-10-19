@@ -22,6 +22,7 @@ import { SearchPage } from '/web/pages/search-page.tsx'
 import { SettingsPage } from '/web/pages/settings-page.tsx'
 import { SoclePage } from '/web/pages/socle.tsx'
 import { currentUser, signedIn } from '/web/lib/session.ts'
+import { language } from '/web/lib/language.ts'
 import { AppLayout } from '/web/ui/layout.tsx'
 
 Object.assign(globalThis, { h, Fragment })
@@ -53,6 +54,9 @@ const routeOf = (key: string) =>
   Object.hasOwn(routes, key) ? routes[key] : undefined
 
 const App = () => {
+  // Subscribe the routed tree so every page re-renders when the language
+  // changes. The vnode translator then replaces interface copy consistently.
+  language.value
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
   const Route = routeOf(section) ?? routeOf(path)

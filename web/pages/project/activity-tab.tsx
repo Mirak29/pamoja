@@ -19,6 +19,7 @@ import {
   activityOf,
 } from '/web/fixtures/activity.ts'
 import type { Project } from '/web/fixtures/projects.ts'
+import { language } from '/web/lib/language.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventText } from '/web/pages/project/event-list.tsx'
 import { DemoBadge } from '/web/ui/badge.tsx'
@@ -57,11 +58,14 @@ const iconOf = (text: string): [IconComponent, string] => {
 }
 
 const dayOf = (at: number) =>
-  new Date(at).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  new Date(at).toLocaleDateString(
+    language.peek() === 'en' ? 'en-US' : 'fr-FR',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    },
+  )
 
 /** Project journal by day, filtered by kind (§6.6) */
 export const ActivityTab = ({ project }: { project: Project }) => {
