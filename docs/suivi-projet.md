@@ -567,6 +567,12 @@ Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (
 - **Livrable** : `api/help.ts`, `api/help-rules.ts`, `api/pull-skills.ts`, `migrations/003-help-request-fields.js`, routes `GET/api/help` et `POST/api/help/create`, `api/help_test.ts` (8 tests), formulaire `web/pages/help/new-help.tsx` branché sur l'API, `web/lib/live-data.ts`
 - **Par** : @Mirak29
 
+## Audits QA
+
+### 2026-10-19 · QA de régression front
+
+Retest transversal après les livraisons du 10 au 16 octobre. Les défauts QA-01, 07–14 sont corrigés ou corrigés pour la session ; QA-02 attend le cycle de vie serveur et la vérification de review. QA-15 relève une contradiction entre « Contributions réelles » et les badges « Donnée de démo » sur le profil. La validation front reste partielle ; voir le [rapport complet](qa/2026-10-19/rapport-qa-front.md).
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
