@@ -1386,6 +1386,7 @@ export const english: Record<string, string> = {
   'La preuve rejoint ton profil.': 'The proof joins your profile.',
   'Elle ne compte pas dans ta réputation : au plus 2 confirmations par demandeur sur 30 jours.':
     'It does not count in your reputation: at most 2 confirmations per requester over 30 days.',
+  'Pilier de communauté': 'Community pillar',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1562,4 +1563,6 @@ export const englishTemplates: Record<string, string> = {
     'Help confirmed: proof added to {0}’s profile',
   '{0} reçoit une preuve sur son profil.': '{0} gets a proof on their profile.',
   '{0} a confirmé ton aide': '{0} confirmed your help',
+  'Badge débloqué : {0}': 'Badge unlocked: {0}',
+  'Niveau {0}.': '{0} level.',
 }

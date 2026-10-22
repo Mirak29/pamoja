@@ -7,6 +7,7 @@ import { getHelpRequest } from '/api/help.ts'
 import { MESSAGE_MAX, OPEN_FOR, RELEASE_AFTER } from '/api/help-rules.ts'
 import { explain, matchesFor, sendWave } from '/api/matching.ts'
 import { createNotification } from '/api/notifications.ts'
+import { evaluateBadges } from '/api/badges.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { HelpMessage } from '/api/schema.ts'
 
@@ -413,6 +414,9 @@ export const confirmHelp = (userId: number, helpRequestId: number) =>
         addProvenSkill({ userId: helperId, skillId, at })
       }
     }
+    // The proof counts at once: the badges of both sides (§8.2)
+    evaluateBadges(helperId, at)
+    evaluateBadges(row.authorId, at)
     tell(row, helperId, 'help_confirmed', userId, {
       eligible: decision.eligible,
     })

@@ -453,6 +453,11 @@ Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables
 
 Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit l'entry `BADGE_UNLOCKED` et une notification.
 
+Précisions de calcul (`api/badges.ts`, lu par `GET/api/user/badges`) :
+
+- **Ce qui est compté** : Trusted Reviewer, les `REVIEW_HELP_CONFIRMED` ; First Responder, toutes les aides confirmées ; Mentor, les `HELP_CONFIRMED` de type mentorat ou pair programming ; Open Source Contributor, les `PR_MERGED` dont l'auteur n'est pas propriétaire ; Builder, les projets du développeur qui ont une release et au moins un contributeur autre que lui (auteur d'une PR mergée) ; Maintainer, la plus longue suite de mois où un projet dont il est propriétaire ou mainteneur a eu de l'activité GitHub ; Cross-border Builder, les pays (autres que le sien) des personnes aidées ou qui l'ont aidé ; Community Pillar, les `ANSWER_ACCEPTED`. Seules les preuves éligibles comptent.
+- **Quand** : après une confirmation (l'aidant et le demandeur), une PR mergée (son auteur, les propriétaires et mainteneurs du projet), une release ou un push (propriétaires et mainteneurs), et à chaque connexion, pour la suite de mois. Une baisse (preuve retirée par la modération) est enregistrée sans notification.
+
 ### 8.3 Preuves et calcul
 
 **Chaque preuve est autosuffisante.** Une entry de réputation (`REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED`, `PR_MERGED`…) fige dans ses `fields` (mécanisme natif de `@01edu/db/entries`) tout ce qui a servi à la décision :
