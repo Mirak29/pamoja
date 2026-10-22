@@ -4,6 +4,7 @@ import { Entry, maybe } from '/api/entries.ts'
 import { github, seconds } from '/api/github.ts'
 import { log } from '/api/lib/log.ts'
 import { readPullRequestSkills } from '/api/pull-skills.ts'
+import { resyncReviews } from '/api/review-check.ts'
 import { Repository } from '/api/schema.ts'
 
 // The refresh of the poll mode (§5.4): every 15 minutes, conditional reads of
@@ -180,6 +181,9 @@ export const refreshRepository = async (repositoryId: number) => {
     etags[pullsPath] = pulls.etag ?? ''
     for (const pull of pulls.data) upsertPullRequest(repositoryId, pull)
   }
+  // The reviews of the PRs a helper accepted: a lost webhook does not lose
+  // one (§7.5)
+  await resyncReviews(repositoryId, repository.fullName)
   writeRepository({
     repositoryId,
     etag: JSON.stringify(etags),

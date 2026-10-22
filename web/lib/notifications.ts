@@ -72,6 +72,14 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
           'Confirme si elle t’a aidé : la preuve rejoint son profil.',
         ),
       }
+    case 'help_reviewed':
+      return {
+        kind: 'help',
+        title: t`${who} a fait sa review sur GitHub`,
+        body: translate(
+          'Confirme si elle t’a aidé : la preuve rejoint son profil.',
+        ),
+      }
     case 'help_declined':
       return {
         kind: 'help',

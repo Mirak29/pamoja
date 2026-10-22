@@ -5,6 +5,12 @@ import { seconds } from '/api/github.ts'
 import { scheduleSkillsRead } from '/api/pull-skills.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
 import {
+  type GithubReview,
+  scheduleCommentCount,
+  upsertReview,
+  verifyReviews,
+} from '/api/review-check.ts'
+import {
   type GithubIssue,
   type GithubPull,
   upsertIssue,
@@ -113,43 +119,14 @@ registerHandler('pull_request', (payload) => {
   // synchronize and the others: the table is up to date, #suivi shows pushes
 })
 
-const writeReview = sql<undefined, Record<string, string | number | null>>`
-  INSERT INTO review (pullRequestId, githubReviewId, reviewerGithubId,
-    reviewerUserId, state, commentCount, submittedAt, source)
-  VALUES (:pullRequestId, :githubReviewId, :reviewerGithubId,
-    :reviewerUserId, :state, :commentCount, :submittedAt, 'github')
-  ON CONFLICT (githubReviewId) DO UPDATE SET
-    state = excluded.state,
-    commentCount = excluded.commentCount,
-    reviewerUserId = coalesce(excluded.reviewerUserId, reviewerUserId)
-`.run
-
 registerHandler('pull_request_review', (payload) => {
   const repo = repoOf(payload)
   if (!repo) return
   const pull = payload.pull_request as GithubPull
-  const review = payload.review as {
-    id: number
-    user: GithubUser
-    state: string
-    body: string | null
-    submitted_at: string | null
-  }
+  const review = payload.review as GithubReview
   upsertPullRequest(repo.repositoryId, pull)
   const pullRequestId = pullRequestOf(repo.repositoryId, pull.number)!
-  const reviewerUserId = userOf(review.user)
-  writeReview({
-    pullRequestId,
-    githubReviewId: review.id,
-    reviewerGithubId: review.user.id,
-    reviewerUserId: reviewerUserId ?? null,
-    // approved, changes_requested, commented or dismissed
-    state: review.state.toLowerCase(),
-    // The webhook carries the body, not the inline comments: a body counts
-    // as one; the help request check (PAM-211) reads the exact count
-    commentCount: review.body?.trim() ? 1 : 0,
-    submittedAt: seconds(review.submitted_at) ?? now(),
-  })
+  const reviewerUserId = upsertReview(pullRequestId, review)
   if (payload.action === 'submitted') {
     Entry.insert.PR_REVIEWED({
       userId: maybe(reviewerUserId),
@@ -159,6 +136,11 @@ registerHandler('pull_request_review', (payload) => {
       source,
     })
   }
+  // Does it validate a help request on this PR? (§7.5) A « commented »
+  // review without a body gets its inline comments counted after the
+  // transaction, then is checked again
+  verifyReviews(pullRequestId)
+  scheduleCommentCount(pullRequestId)
 })
 
 registerHandler('issues', (payload) => {

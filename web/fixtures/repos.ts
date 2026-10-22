@@ -318,7 +318,8 @@ export const adoptProjects = (list: ApiProject[]) => {
         author: pull.authorLogin as Login,
         branch: pull.branch,
         state: pull.state as PullRequest['state'],
-        review: 'waiting',
+        // A review seen on GitHub: no longer waiting (§6.4)
+        review: pull.reviewed ? 'received' : 'waiting',
         ci: 'ok',
         at: pull.createdAt * 1000,
         skills: pull.skills,

@@ -609,6 +609,13 @@ Chaque étape d'une demande d'aide notifie l'autre côté : match, acceptation, 
 - **Reste** : filtres par skills, projets et communautés (PAM-223)
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-211 · Vérification d'une review
+
+Une review faite sur GitHub valide une demande d'aide quand les cinq conditions du §7.5 sont réunies : demande acceptée sur cette PR, relecteur égal à l'aidant, ni auteur de la PR ni demandeur, review postérieure à l'acceptation, et approbation, demande de changements ou commentaire avec au moins un commentaire. La demande passe alors en « Review soumise », la review lui est rattachée et le demandeur est notifié. Le webhook ne portant pas les commentaires de ligne, ceux d'une review « commented » sans texte sont lus sur GitHub juste après ; la resynchronisation relit les reviews des PRs qui attendent une aide, au cas où un webhook se serait perdu. Côté projet, une PR relue n'est plus « en attente de review ». Vérifié par 6 tests avec de vrais webhooks signés et un GitHub simulé ; le parcours avec deux vrais comptes GitHub sera rejoué à la préparation de la démo (PAM-905).
+
+- **Livrable** : `api/review-check.ts`, webhook `pull_request_review` et resynchronisation branchés, état « relue » des PRs dans `GET/api/projects`, notification « … a fait sa review », `api/review_check_test.ts` (6 tests)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
