@@ -105,7 +105,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-205** · Traitement des événements `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `installation*`, `workflow_run`, `check_run`, `status` → tables (dont `CiRun`) + entries (§5.5, §6.8, §14.2)
 - [x] **PAM-206** · Resynchronisation horaire des projets actifs (§5.6)
 - [x] **PAM-207** · Demande d'aide : création, bouton « Request Review » depuis une PR (§7.1) `[démo]`
-- [ ] **PAM-208** · Cycle de vie complet : acceptation atomique, désistement, libération, réouverture, expirations et relances (§7.2)
+- [x] **PAM-208** · Cycle de vie complet : acceptation atomique, désistement, libération, réouverture, expirations et relances (§7.2)
 - [ ] **PAM-209** · Matching SQL : score, raisons, vagues de 5, place « nouveau profil », plafonds par jour (§7.3) `[démo]`
 - [ ] **PAM-210** · Notifications : table, centre, toast temps réel, préférences (§7.4) `[démo]`
 - [ ] **PAM-211** · Vérification d'une review : les 5 conditions → `review_submitted` (§7.5)
@@ -282,3 +282,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-16 · Demande d'aide : skills d'une PR lus à la synchro et gardés avec son commit de tête (migration 003) ; une seule demande en cours par PR ; vidéo en lien web ; délais dans `api/help-rules.ts` ; la réponse simulée d'un aidant disparaît, l'acceptation réelle vient avec PAM-208 · §7.1, §7.2, §14.2, §14.4
 - 2026-10-22 · Interface aussi en anglais (PAM-124) : le français reste la langue du code et la clé de chaque traduction ; une phrase avec des valeurs s'écrit ``t`…` `` ; le contenu écrit par les développeurs n'est jamais traduit · §2
 - 2026-10-22 · Langue lue par la seule racine de l'app, reconstruite au changement de langue (QA-16 : un composant qui lit un signal ne se redessine plus avec son parent) ; section « Contributions » du profil au lieu de « Contributions réelles » du prototype, chaque preuve gardant sa provenance (QA-15) · §2, §9
+- 2026-10-22 · Cycle de vie d'une demande : nouvelles entries `HELP_REQUEST_CANCELLED`, `HELP_REQUEST_DELIVERED`, `HELP_REQUEST_CLOSED`, `HELP_MESSAGE_CREATED` ; l'acceptation prévient aussi les autres matchés ; « pas utile » ferme la demande dès PAM-208, la confirmation reste à PAM-212 ; migration 004 (dates des relances) · §7.2, §13.3, §14.4, §15

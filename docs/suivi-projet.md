@@ -587,6 +587,13 @@ Livrée avec PAM-203 : au démarrage, le serveur lance `startRefresh()`, qui tou
 - **Livrable** : `api/sync.ts` (`refreshAll`, `startRefresh`), `api/server.ts` ; couvert par les tests de rafraîchissement d'`api/import_test.ts`
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-208 · Cycle de vie complet d'une demande d'aide
+
+Chaque transition du §7.2 a sa route et s'applique en une transaction, seulement depuis l'état attendu : deux aidants qui acceptent en même temps donnent une acceptation et un « Déjà prise ». L'aidant se désiste, ou le demandeur le libère 72 h après sa dernière activité ; dans les deux cas la demande rouvre pour 7 jours et l'aidant sorti ne peut plus la reprendre. Le demandeur annule, rouvre une demande expirée ou fermée avec les mêmes données, ou répond « pas utile » ; l'aidant marque livrée une aide sans PR. Le fil privé n'est écrit que par le demandeur et l'aidant, et lu par eux seuls. Toutes les 10 minutes, le serveur expire les demandes ouvertes depuis 7 jours, relance une fois l'aidant silencieux et le demandeur qui ne répond pas, et ferme les aides restées 7 jours sans réponse. Sur une vraie demande, la page joue ces actions sur le serveur, boutons occupés pendant l'envoi, et se met à jour aux entries de la demande. Vérifié dans le navigateur avec deux comptes : Fatou accepte, l'écran d'Abdou passe à « Acceptée par Fatou » sans rafraîchir.
+
+- **Livrable** : `api/help-lifecycle.ts`, `api/help-timers.ts`, `api/notifications.ts`, `migrations/004-help-lifecycle.js`, routes `GET/api/help/detail` et `POST/api/help/{accept,withdraw,release,cancel,reopen,deliver,decline,message}`, `api/help_lifecycle_test.ts` (8 tests, dont l'acceptation simultanée), `web/lib/help.ts`, détail d'une demande branché sur l'API
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
