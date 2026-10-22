@@ -3,6 +3,7 @@ import { Check } from '/web/assets/icons.tsx'
 import { type Community, toggleMembership } from '/web/fixtures/communities.ts'
 import { me } from '/web/fixtures/people.ts'
 import { Button } from '/web/ui/button.tsx'
+import { t } from '/web/lib/language.ts'
 
 /**
  * Join a community in one click; leaving asks first, since its posts leave
@@ -23,7 +24,7 @@ export const Membership = (
     return (
       <Button
         size={size}
-        aria-label={`Rejoindre ${community.name}`}
+        aria-label={t`Rejoindre ${community.name}`}
         onClick={() => toggleMembership(community, me)}
       >
         Rejoindre
@@ -34,7 +35,7 @@ export const Membership = (
     return (
       <span class='flex flex-wrap items-center gap-2'>
         <span class='text-[13px] font-semibold'>
-          Quitter {community.name} ?
+          {t`Quitter ${community.name} ?`}
         </span>
         <Button
           variant='danger'
@@ -60,7 +61,7 @@ export const Membership = (
       </span>
       <button
         type='button'
-        aria-label={`Quitter ${community.name}`}
+        aria-label={t`Quitter ${community.name}`}
         onClick={() => setAsking(true)}
         class='cursor-pointer px-1.5 text-[13px] leading-none font-medium text-ink-muted hover:text-danger'
       >

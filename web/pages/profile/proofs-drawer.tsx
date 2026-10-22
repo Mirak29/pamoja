@@ -8,12 +8,13 @@ import { ago } from '/web/lib/time.ts'
 import { DemoBadge, VerifiedBadge } from '/web/ui/badge.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { t } from '/web/lib/language.ts'
 
 /** Project, person helped and age of a proof */
 export const proofMeta = (proof: Proof, withAge = true) =>
   [
     proof.project && projects[proof.project].name,
-    proof.by && `pour ${people[proof.by].name.split(' ')[0]}`,
+    proof.by && t`pour ${people[proof.by].name.split(' ')[0]}`,
     withAge && ago(proof.at),
   ].filter(Boolean).join(' · ')
 
@@ -71,12 +72,11 @@ export const ProofsDrawer = ({ login }: { login: Login }) => {
           {dimension ? dimension[1] : 'Toutes les preuves'}
         </h2>
         <span class='text-[13px] text-ink-muted'>
-          {counted(list.length, 'preuve', 'preuves')} ·{' '}
-          {counted(verified, 'vérifiée', 'vérifiées')} par GitHub · {counted(
-            list.length - verified,
-            'donnée de démo',
-            'données de démo',
-          )}
+          {t`${counted(list.length, 'preuve', 'preuves')} · ${
+            counted(verified, 'vérifiée', 'vérifiées')
+          } par GitHub · ${
+            counted(list.length - verified, 'donnée de démo', 'données de démo')
+          }`}
         </span>
         {list.map((proof) => <Row key={proof.id} proof={proof} />)}
       </div>

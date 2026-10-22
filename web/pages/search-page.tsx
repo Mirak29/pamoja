@@ -4,6 +4,8 @@ import { search } from '/web/ui/command-palette.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
+import { t } from '/web/lib/language.ts'
+import { counted } from '/web/lib/plural.ts'
 
 /** Full results of the global search, tolerant to typos (§10.4) */
 export const SearchPage = () => {
@@ -29,7 +31,7 @@ export const SearchPage = () => {
       </div>
       {total > 0 && (
         <Eyebrow>
-          {total} {total > 1 ? 'résultats' : 'résultat'} pour « {q} »
+          {t`${counted(total, 'résultat')} pour « ${q} »`}
         </Eyebrow>
       )}
       {groups.map((group) => (
@@ -65,9 +67,7 @@ export const SearchPage = () => {
       {q.trim() && !groups.length && (
         <GhostSlab class='px-6 py-7'>
           <EmptyState>
-            Aucun résultat pour « {q}{' '}
-            ». La recherche tolère les fautes : vérifie le mot ou essaie un
-            skill.
+            {t`Aucun résultat pour « ${q} ». La recherche tolère les fautes : vérifie le mot ou essaie un skill.`}
           </EmptyState>
         </GhostSlab>
       )}

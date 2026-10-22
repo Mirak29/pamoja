@@ -35,6 +35,7 @@ import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { countsOf, emblemOf } from '/web/pages/communities/communities-page.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
+import { t } from '/web/lib/language.ts'
 
 const tabs = [
   ['', 'Fil'],
@@ -57,9 +58,7 @@ const statsOf = (post: Post) => {
   const reactions = Object.values(post.reactions)
     .reduce((sum, list) => sum + (list?.length ?? 0), 0)
   const replies = childrenOf(post.id).length
-  return `${reactions} réaction${
-    reactions > 1 ? 's' : ''
-  } · ${replies} réponse${replies > 1 ? 's' : ''}`
+  return `${counted(reactions, 'réaction')} · ${counted(replies, 'réponse')}`
 }
 
 const membersOf = (community: Community) =>
@@ -226,7 +225,7 @@ const NotFound = ({ slug }: { slug: string }) => (
       <EmptyState
         action={<Button href='communautes'>Voir les communautés</Button>}
       >
-        La communauté « {slug} » n’existe pas.
+        {t`La communauté « ${slug} » n’existe pas.`}
       </EmptyState>
     </GhostSlab>
   </Page>

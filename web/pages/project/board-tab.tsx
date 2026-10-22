@@ -23,6 +23,7 @@ import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { StatusBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 // Diamond of each column: from a dashed outline to a filled indigo
 const marks: Record<BoardColumn, string> = {
@@ -116,10 +117,10 @@ const BoardCard = (
             data-move='previous'
             onClick={() => previous && onMove(card, previous[0])}
             aria-label={previous
-              ? `Déplacer « ${card.title} » vers ${previous[1]}`
+              ? t`Déplacer « ${card.title} » vers ${translate(previous[1])}`
               : 'Première colonne'}
             title={previous
-              ? `Déplacer vers ${previous[1]}`
+              ? t`Déplacer vers ${translate(previous[1])}`
               : 'Première colonne'}
             class={moveKey}
           >
@@ -131,9 +132,11 @@ const BoardCard = (
             data-move='next'
             onClick={() => next && onMove(card, next[0])}
             aria-label={next
-              ? `Déplacer « ${card.title} » vers ${next[1]}`
+              ? t`Déplacer « ${card.title} » vers ${translate(next[1])}`
               : 'Dernière colonne'}
-            title={next ? `Déplacer vers ${next[1]}` : 'Dernière colonne'}
+            title={next
+              ? t`Déplacer vers ${translate(next[1])}`
+              : 'Dernière colonne'}
             class={moveKey}
           >
             <ChevronRight class='size-3.5' />
@@ -181,7 +184,7 @@ export const BoardTab = ({ project }: { project: Project }) => {
     const to = boardColumns.findIndex(([key]) => key === column)
     moveCard(project.slug as ProjectSlug, card, column)
     setMoved(card.id)
-    setAnnounce(`« ${card.title} » est dans ${boardColumns[to][1]}`)
+    setAnnounce(t`« ${card.title} » est dans ${translate(boardColumns[to][1])}`)
     // The card is drawn again in its new column: keep the focus on its key
     setTimeout(() => {
       const keys = document.querySelector(`[data-card='${card.id}']`)

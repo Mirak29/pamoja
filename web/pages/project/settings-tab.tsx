@@ -16,6 +16,7 @@ import { GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { importableRepos, linkRepo } from '/web/fixtures/repos.ts'
 import { MemberRows } from '/web/pages/project/team-tab.tsx'
+import { t } from '/web/lib/language.ts'
 
 type Draft = Pick<Project, 'name' | 'description' | 'needs'> & {
   vision: string
@@ -181,7 +182,7 @@ const LinkRepo = ({ project }: { project: Project }) => {
               notify({
                 title: 'Repo lié',
                 body:
-                  `${repo.owner}/${repo.name} : issues et PRs importées, synchro toutes les 15 min.`,
+                  t`${repo.owner}/${repo.name} : issues et PRs importées, synchro toutes les 15 min.`,
                 icon: Check,
                 tone: 'verified',
               })

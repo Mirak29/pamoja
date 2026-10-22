@@ -16,6 +16,7 @@ import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 const reviewStatus = (pr: PullRequest): Status =>
   pr.state === 'merged' ? 'merged' : `review-${pr.review}`
@@ -78,7 +79,7 @@ const PullRequestDetail = (
           <span class='text-indigo'>
             <LifeBuoy />
           </span>
-          Demande d’aide : {statusLabel(help.status)}
+          {t`Demande d’aide : ${translate(statusLabel(help.status))}`}
           {help.helper ? ` · ${firstName(help.helper)}` : ''}
         </A>
       )}

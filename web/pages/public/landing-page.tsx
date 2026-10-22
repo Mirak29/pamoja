@@ -9,6 +9,7 @@ import { Plates } from '/web/ui/plates.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { passportLink, PublicHeader } from '/web/ui/public-header.tsx'
 import { dimensionsOf } from '/web/pages/profile/reputation.tsx'
+import { t } from '/web/lib/language.ts'
 
 // The developer shown to visitors, as in the demo scenario (§18)
 const sample: Login = 'moussa'
@@ -323,7 +324,7 @@ const Proofs = () => (
         par GitHub.
       </p>
       <A {...passportLink(sample)} class='self-start font-semibold'>
-        Voir le passeport de {people[sample].name.split(' ')[0]}
+        {t`Voir le passeport de ${people[sample].name.split(' ')[0]}`}
       </A>
     </div>
     <ProfilePreview login={sample} />

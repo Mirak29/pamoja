@@ -53,6 +53,7 @@ import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { PostCard } from '/web/ui/post.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -286,9 +287,9 @@ const Composer = () => {
     const name = communities.find((c) => c.slug === community)?.name
     notify({
       title: 'Publié',
-      body: `${
-        name ? `Dans ${name}` : 'Sur ton profil'
-      }. Tes abonnés le voient dans leur fil.`,
+      body: name
+        ? t`Dans ${name}. Tes abonnés le voient dans leur fil.`
+        : 'Sur ton profil. Tes abonnés le voient dans leur fil.',
       icon: Send,
       tone: 'verified',
     })
@@ -410,7 +411,7 @@ const homeData = () => {
     matches,
     waiting,
     matchTitle: matches.length
-      ? `${
+      ? t`${
         counted(
           matches.length,
           'demande d’aide correspond',
@@ -450,7 +451,7 @@ const Rail = () => {
   const follow = (person: Person) => {
     toggleFollowing(person.login)
     notify({
-      title: `Tu suis ${person.name}`,
+      title: t`Tu suis ${person.name}`,
       body: 'Ses posts et republications arrivent dans ton fil.',
       icon: UserPlus,
       tone: 'verified',

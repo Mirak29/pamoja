@@ -4,6 +4,7 @@ import { X } from '/web/assets/icons.tsx'
 import { skills as vocabulary } from '/web/fixtures/skills.ts'
 import { fuzzyMatch } from '/web/lib/fuzzy.ts'
 import { FieldError, Input } from '/web/ui/input.tsx'
+import { t } from '/web/lib/language.ts'
 
 /**
  * A value already chosen, pressed down, with its remove button.
@@ -20,7 +21,7 @@ export const RemovableChip = (
       type='button'
       onClick={onRemove}
       aria-label={typeof children === 'string'
-        ? `Retirer ${children}`
+        ? t`Retirer ${children}`
         : 'Retirer'}
       class='flex size-[22px] cursor-pointer items-center justify-center rounded-sm text-indigo'
     >

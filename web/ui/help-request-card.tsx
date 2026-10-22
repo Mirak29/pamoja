@@ -9,6 +9,7 @@ import {
   StatusBadge,
   VerifiedBadge,
 } from '/web/ui/badge.tsx'
+import { t } from '/web/lib/language.ts'
 
 /**
  * A help request in a list: its match score for the viewer when given,
@@ -61,10 +62,9 @@ export const HelpRequestCard = (
           {people[request.author].name} · {ago(request.at)} · {request.duration}
           {' '}
           · {request.level}
-          {helper &&
-            ` · ${
-              request.status === 'completed' ? 'aidé par' : 'pris par'
-            } ${helper}`}
+          {helper && (request.status === 'completed'
+            ? t` · aidé par ${helper}`
+            : t` · pris par ${helper}`)}
         </span>
       </div>
       <div class='flex flex-none flex-col items-end gap-1.5'>

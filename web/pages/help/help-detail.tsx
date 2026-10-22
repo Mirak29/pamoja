@@ -46,6 +46,8 @@ import { RichText } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
+import { counted } from '/web/lib/plural.ts'
 
 const firstName = (login: keyof typeof people) =>
   people[login].name.split(' ')[0]
@@ -97,14 +99,14 @@ const Lifecycle = ({ request }: { request: HelpRequest }) => {
     : 2
   const helper = request.helper && firstName(request.helper)
   const stateLine = request.status === 'accepted'
-    ? `Acceptée par ${helper} ${ago(request.acceptedAt ?? request.at)}`
+    ? t`Acceptée par ${helper} ${ago(request.acceptedAt ?? request.at)}`
     : request.status === 'review_submitted'
-    ? `Review de ${helper} détectée ${ago(request.at)}`
+    ? t`Review de ${helper} détectée ${ago(request.at)}`
     : request.status === 'completed'
     ? 'Confirmée'
     : request.status === 'delivered'
-    ? `Livrée par ${helper}`
-    : `Publiée ${ago(request.at)}`
+    ? t`Livrée par ${helper}`
+    : t`Publiée ${ago(request.at)}`
   return (
     <section class='slab flex flex-col gap-4 p-[22px]'>
       <Eyebrow>Cycle de vie</Eyebrow>
@@ -185,7 +187,7 @@ type Action = {
 
 // The requester and the helper talk in the thread of the request (§7.2)
 const contactOf = (other: Login): Action => ({
-  label: `Écrire à ${firstName(other)}`,
+  label: t`Écrire à ${firstName(other)}`,
   variant: 'secondary',
   focus: 'help-thread-input',
 })
@@ -201,8 +203,8 @@ const promptOf = (
     if (status === 'open') {
       return [
         notified.length
-          ? `La demande a été envoyée à ${notified.length} ${
-            notified.length > 1 ? 'développeurs' : 'développeur'
+          ? t`La demande a été envoyée à ${
+            counted(notified.length, 'développeur')
           }. Tu seras notifié dès que l’un d’eux accepte.`
           : 'Aucun développeur ne dépasse le score minimum pour l’instant. La demande reste visible dans Aide.',
         [{
@@ -214,11 +216,9 @@ const promptOf = (
     }
     if (status === 'accepted') {
       return [
-        `Acceptée par ${helper}. ${
-          request.pullRequest
-            ? 'Pamoja détectera automatiquement sa review sur GitHub.'
-            : 'Tu seras notifié quand l’aide sera livrée.'
-        }`,
+        request.pullRequest
+          ? t`Acceptée par ${helper}. Pamoja détectera automatiquement sa review sur GitHub.`
+          : t`Acceptée par ${helper}. Tu seras notifié quand l’aide sera livrée.`,
         [
           contactOf(request.helper!),
           {
@@ -240,9 +240,9 @@ const promptOf = (
     }
     if (status === 'completed') {
       return [
-        `Aide confirmée. Une preuve a été ajoutée au profil de ${helper}.`,
+        t`Aide confirmée. Une preuve a été ajoutée au profil de ${helper}.`,
         [{
-          label: `Voir le profil de ${helper}`,
+          label: t`Voir le profil de ${helper}`,
           variant: 'secondary',
           href: `@${request.helper}`,
         }],
@@ -262,7 +262,7 @@ const promptOf = (
         [
           request.pullRequest && request.project
             ? {
-              label: `Ouvrir la PR #${request.pullRequest} sur GitHub`,
+              label: t`Ouvrir la PR #${request.pullRequest} sur GitHub`,
               variant: 'primary',
               href: githubUrl(
                 projects[request.project],
@@ -281,7 +281,7 @@ const promptOf = (
             variant: 'danger',
             action: 'withdraw',
             confirm: {
-              question: `Te désister ? La demande repasse en Ouverte et ${
+              question: t`Te désister ? La demande repasse en Ouverte et ${
                 firstName(request.author)
               } est prévenu. Tu ne la recevras plus.`,
               label: 'Me désister',
@@ -293,7 +293,7 @@ const promptOf = (
     }
     if (status === 'review_submitted' || status === 'delivered') {
       return [
-        `Ta contribution est détectée. En attente de la confirmation de ${
+        t`Ta contribution est détectée. En attente de la confirmation de ${
           firstName(request.author)
         }.`,
         [],
@@ -301,7 +301,7 @@ const promptOf = (
     }
     if (status === 'completed') {
       return [
-        `${
+        t`${
           firstName(request.author)
         } a confirmé ton aide. La preuve est sur ton profil.`,
         [{
@@ -338,7 +338,7 @@ const promptOf = (
       ],
     ]
   }
-  if (helper) return [`Déjà prise par ${helper}.`, []]
+  if (helper) return [t`Déjà prise par ${helper}.`, []]
   return [exitLabels[status] ?? '', []]
 }
 
@@ -483,8 +483,8 @@ const HelpThread = (
               id='help-thread-input'
               rows={2}
               value={draft}
-              aria-label={`Message pour ${people[other].name}`}
-              placeholder={`Écrire à ${firstName(other)}`}
+              aria-label={t`Message pour ${people[other].name}`}
+              placeholder={t`Écrire à ${firstName(other)}`}
               onInput={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) =>
                 event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
@@ -620,10 +620,13 @@ const Matching = (
       <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
         <Eyebrow accent>Matching</Eyebrow>
         <span class='font-display text-[18px] leading-[25px] font-semibold'>
-          Vague 1 · {notified.length}{' '}
-          {notified.length > 1
-            ? 'développeurs notifiés'
-            : 'développeur notifié'}
+          {t`Vague 1 · ${
+            counted(
+              notified.length,
+              'développeur notifié',
+              'développeurs notifiés',
+            )
+          }`}
         </span>
         {formula}
         {mine.total > 0
@@ -654,8 +657,13 @@ const Matching = (
     <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
       <Eyebrow accent>Matching</Eyebrow>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
-        Vague 1 · {notified.length}{' '}
-        {notified.length > 1 ? 'développeurs notifiés' : 'développeur notifié'}
+        {t`Vague 1 · ${
+          counted(
+            notified.length,
+            'développeur notifié',
+            'développeurs notifiés',
+          )
+        }`}
       </span>
       {formula}
       <div class='flex flex-col'>

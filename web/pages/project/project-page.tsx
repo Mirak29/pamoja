@@ -48,6 +48,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
+import { t } from '/web/lib/language.ts'
 
 const tabs = [
   ['', 'Aperçu'],
@@ -301,7 +302,7 @@ const NotFound = ({ slug }: { slug: string }) => (
   <Page title='Projet introuvable' class='pt-5'>
     <GhostSlab>
       <EmptyState action={<Button href='projets'>Voir les projets</Button>}>
-        Le projet « {slug} » n’existe pas ou n’est plus public.
+        {t`Le projet « ${slug} » n’existe pas ou n’est plus public.`}
       </EmptyState>
     </GhostSlab>
   </Page>

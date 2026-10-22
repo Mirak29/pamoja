@@ -6,6 +6,7 @@ import {
   type ProjectSlug,
   projectsOf,
 } from '/web/fixtures/projects.ts'
+import { t, translate } from '/web/lib/language.ts'
 
 // Reputation is computed from frozen proofs only (cahier des charges §8):
 // what GET/api/user, GET/api/user/badges and the badge evaluator
@@ -275,10 +276,10 @@ export const badgesOf = (login: Login): Badge[] => {
         level: i === -1 ? 3 : i - 1,
         next,
         nextLabel: next
-          ? `${missing} ${badge.unit[missing > 1 ? 1 : 0]} avant le niveau ${
-            levelNames[i]
-          }`
-          : 'Niveau maximal atteint',
+          ? t`${missing} ${
+            translate(badge.unit[missing > 1 ? 1 : 0])
+          } avant le niveau ${translate(levelNames[i])}`
+          : translate('Niveau maximal atteint'),
       }
     })
 }

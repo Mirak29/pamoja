@@ -66,6 +66,7 @@ import { Passport } from '/web/pages/profile/passport.tsx'
 import { proofMeta, ProofsDrawer } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
+import { t } from '/web/lib/language.ts'
 
 const dimensionIcons = {
   review: GitPullRequest,
@@ -367,8 +368,8 @@ const Activity = ({ login }: { login: Login }) => {
         >
           <span class='text-[14px] text-pretty'>
             {help.helper === login
-              ? `A aidé ${firstName(help.author)} : ${help.title}`
-              : `A demandé : ${help.title}`}
+              ? t`A aidé ${firstName(help.author)} : ${help.title}`
+              : t`A demandé : ${help.title}`}
           </span>
           <span class='flex items-center gap-2'>
             <span class='text-[12px] text-ink-muted'>{ago(help.at)}</span>
@@ -401,7 +402,7 @@ const NotFound = ({ login }: { login: string }) => (
   <Page title='Profil introuvable' class='pt-5'>
     <GhostSlab>
       <EmptyState action={<Button href='explorer'>Explorer</Button>}>
-        Aucun développeur « {login} » sur Pamoja.
+        {t`Aucun développeur « ${login} » sur Pamoja.`}
       </EmptyState>
     </GhostSlab>
   </Page>

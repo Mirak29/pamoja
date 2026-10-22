@@ -24,6 +24,13 @@ import {
   themePreference,
 } from '/web/ui/theme-toggle.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import {
+  type LanguagePreference,
+  languagePreference,
+  setLanguagePreference,
+  t,
+  translate,
+} from '/web/lib/language.ts'
 
 const Switch = (
   { on, label, onFlip }: { on: boolean; label: string; onFlip: () => void },
@@ -113,7 +120,7 @@ const exportData = () => {
   setTimeout(() => URL.revokeObjectURL(link.href), 10_000)
   notify({
     title: 'Export téléchargé',
-    body: `pamoja-${me.login}.json : profil, preuves, posts et réglages.`,
+    body: t`pamoja-${me.login}.json : profil, preuves, posts et réglages.`,
     icon: Download,
     tone: 'verified',
   })
@@ -123,6 +130,12 @@ const themes: [ThemePreference, string][] = [
   ['light', 'Clair'],
   ['dark', 'Sombre'],
   ['system', 'Système'],
+]
+
+const languages: [LanguagePreference, string][] = [
+  ['system', 'Système'],
+  ['fr', 'Français'],
+  ['en', 'English'],
 ]
 
 /** Account, notifications, matching, theme and data (§7.3, §7.4) */
@@ -182,7 +195,7 @@ export const SettingsPage = () => {
               <span class='flex w-[60px] justify-center'>
                 <Switch
                   on={channel.app}
-                  label={`${label} dans l’app`}
+                  label={t`${translate(label)} dans l’app`}
                   onFlip={() =>
                     updateSettings(() => channel.app = !channel.app)}
                 />
@@ -190,7 +203,7 @@ export const SettingsPage = () => {
               <span class='flex w-[60px] justify-center'>
                 <Switch
                   on={channel.mail}
-                  label={`${label} par e-mail`}
+                  label={t`${translate(label)} par e-mail`}
                   onFlip={() =>
                     updateSettings(() => channel.mail = !channel.mail)}
                 />
@@ -282,6 +295,20 @@ export const SettingsPage = () => {
             </OptionButton>
           ))}
         </div>
+      </section>
+      <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>
+        <Eyebrow>Langue</Eyebrow>
+        <Choices label='Langue de l’interface'>
+          {languages.map(([key, label]) => (
+            <OptionButton
+              key={key}
+              pressed={languagePreference.value === key}
+              onClick={() => setLanguagePreference(key)}
+            >
+              {label}
+            </OptionButton>
+          ))}
+        </Choices>
       </section>
       <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>
         <Eyebrow>Données</Eyebrow>

@@ -1,4 +1,3 @@
-import { counted } from '/web/lib/plural.ts'
 import { repoPath } from '/web/lib/links.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
@@ -42,6 +41,8 @@ import { Button } from '/web/ui/button.tsx'
 import { RichText } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
+import { counted } from '/web/lib/plural.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -380,7 +381,7 @@ const flatten = (
     const all = childrenOf(id)
     const shown = limit ? all.slice(0, limit) : all
     if (parent && shown.length < all.length) {
-      parent.more = `Voir les ${all.length} réponses`
+      parent.more = t`Voir les ${all.length} réponses`
     }
     shown.forEach((post, i) => {
       const next = i < shown.length - 1
@@ -396,9 +397,7 @@ const flatten = (
       const kids = childrenOf(post.id).length
       if (!kids) return
       if (depth + 1 >= maxDepth) {
-        row.more = `Continuer le fil · ${kids} ${
-          kids > 1 ? 'réponses' : 'réponse'
-        }`
+        row.more = t`Continuer le fil · ${counted(kids, 'réponse')}`
       } else if (!unfolded.includes(post.id)) {
         row.fold = 'folded'
       } else {
@@ -559,7 +558,7 @@ const ReplyRow = (
         {replying && (
           <ReplyInput
             size='reply'
-            placeholder={`Répondre à ${name.split(' ')[0]}`}
+            placeholder={t`Répondre à ${name.split(' ')[0]}`}
             onSend={onReply}
           />
         )}
@@ -707,7 +706,7 @@ export const PostCard = (
           <Repeat2 class='size-3.5' />
           {isMe(repostBy as typeof me.login)
             ? 'Tu as republié'
-            : `${firstName(repostBy)} a republié`}
+            : t`${firstName(repostBy)} a republié`}
         </span>
       )}
       {parent && (

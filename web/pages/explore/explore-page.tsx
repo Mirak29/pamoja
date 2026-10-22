@@ -22,6 +22,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { beginnerIssues, ProjectCard } from '/web/ui/project-card.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -57,7 +58,11 @@ const FilterSelect = (
     onChange={(event) => setParam(name, event.currentTarget.value)}
     class='well h-9 max-w-full px-2.5 text-[14px] leading-none text-ink'
   >
-    <option value=''>{label} : {feminine ? 'toutes' : 'tous'}</option>
+    <option value=''>
+      {feminine
+        ? t`${translate(label)} : toutes`
+        : t`${translate(label)} : tous`}
+    </option>
     {options.map((option) => (
       <option key={option} value={option}>{option}</option>
     ))}
@@ -288,8 +293,8 @@ const workGroups = (): [string, Work[]][] => {
     where: project.name,
     title: need,
     reason: stack
-      ? `Le projet est en ${hits.join(', ')}, que tu connais`
-      : `Tu as ${hits.join(', ')}`,
+      ? t`Le projet est en ${hits.join(', ')}, que tu connais`
+      : t`Tu as ${hits.join(', ')}`,
     href: `projet/${project.slug}/equipe`,
     cta: 'Voir l’équipe',
   }))

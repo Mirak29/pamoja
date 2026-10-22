@@ -8,6 +8,7 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const areas = ['Backend', 'Frontend', 'Tests', 'DevOps', 'Documentation']
 const availabilities = [
@@ -46,7 +47,7 @@ const JoinForm = ({ project }: { project: Project }) => {
     navigate({ params: { dialog: null } })
     notify({
       title: 'Candidature envoyée',
-      body: `${owner} la recevra dans ses notifications.`,
+      body: t`${owner} la recevra dans ses notifications.`,
       icon: Send,
       tone: 'verified',
     })
@@ -54,7 +55,9 @@ const JoinForm = ({ project }: { project: Project }) => {
 
   return (
     <div class='flex flex-col gap-5 px-6 pt-[22px] pb-6'>
-      <h2 class='font-display text-heading'>Rejoindre {project.name}</h2>
+      <h2 class='font-display text-heading'>
+        {t`Rejoindre ${project.name}`}
+      </h2>
       <Choices label='Comment veux-tu aider ?'>
         {areas.map((area, i) => (
           <OptionButton
@@ -89,7 +92,7 @@ const JoinForm = ({ project }: { project: Project }) => {
           </OptionButton>
         ))}
       </Choices>
-      <Field label={<span>Message pour {owner}</span>}>
+      <Field label={<span>{t`Message pour ${owner}`}</span>}>
         <Textarea
           rows={3}
           value={message}
@@ -98,9 +101,7 @@ const JoinForm = ({ project }: { project: Project }) => {
         />
       </Field>
       <span class='text-[13px] text-ink-muted'>
-        {owner}{' '}
-        reçoit ta candidature et peut l’accepter directement depuis sa
-        notification.
+        {t`${owner} reçoit ta candidature et peut l’accepter directement depuis sa notification.`}
       </span>
       <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
         <Button size={40} onClick={send}>Envoyer la candidature</Button>

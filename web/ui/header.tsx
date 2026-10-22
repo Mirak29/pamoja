@@ -19,6 +19,7 @@ import { LogoMark } from '/web/ui/logo.tsx'
 import { Menu } from '/web/ui/menu.tsx'
 import { unread } from '/web/ui/navigation.tsx'
 import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
+import { LanguageToggle } from '/web/ui/language-toggle.tsx'
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
@@ -117,6 +118,7 @@ export const Header = () => {
           )}
         </Button>
         <ThemeToggle />
+        <LanguageToggle />
         <button
           type='button'
           popovertarget='account-menu'

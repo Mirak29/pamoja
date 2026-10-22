@@ -28,6 +28,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 type Update = (patch: Partial<OnboardingDraft>) => void
@@ -396,7 +397,7 @@ export const OnboardingPage = () => {
         </span>
         <span class='flex-1' />
         <span class='font-mono text-label text-ink-muted uppercase'>
-          Étape {step + 1} sur {steps.length} · moins de 2 minutes
+          {t`Étape ${step + 1} sur ${steps.length} · moins de 2 minutes`}
         </span>
       </header>
       <main class='mx-auto flex w-full max-w-[760px] flex-1 flex-col gap-6 px-6 pt-3 pb-[120px]'>

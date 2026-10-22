@@ -4,6 +4,7 @@ import { linksOf } from '/web/fixtures/reputation.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { prism } from '/web/ui/shapes.tsx'
+import { translate } from '/web/lib/language.ts'
 
 // Longitude and latitude of the countries shown on the isometric grid
 const positions: Record<string, [number, number]> = {
@@ -187,7 +188,9 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
           <div class='flex flex-col gap-1.5'>
             {[...byCountry].map(([code, { count, names }]) => (
               <span key={code} class='flex items-center gap-2.5 text-[13px]'>
-                <span class='font-semibold'>{countryName(code)}</span>
+                <span class='font-semibold'>
+                  {translate(countryName(code))}
+                </span>
                 {names.join(', ')} · {count}{' '}
                 {count > 1 ? 'collaborations' : 'collaboration'}
               </span>

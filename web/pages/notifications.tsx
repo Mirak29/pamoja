@@ -34,6 +34,7 @@ import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
+import { t } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -105,7 +106,7 @@ const Row = ({ notification }: { notification: Notification }) => {
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'
-              aria-label={`Accepter : ${notification.title}`}
+              aria-label={t`Accepter : ${notification.title}`}
               onClick={() => decideApplication(application, true)}
               class='key key-primary h-[34px] rounded-md px-3.5 text-[13px]'
             >
@@ -113,7 +114,7 @@ const Row = ({ notification }: { notification: Notification }) => {
             </button>
             <button
               type='button'
-              aria-label={`Refuser : ${notification.title}`}
+              aria-label={t`Refuser : ${notification.title}`}
               onClick={() => decideApplication(application, false)}
               class='key key-secondary h-[34px] rounded-md px-3.5 text-[13px]'
             >

@@ -19,6 +19,7 @@ import { GhostSlab } from '/web/ui/states.tsx'
 import { counted } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { NewProjectDialog } from '/web/pages/projects/new-project-dialog.tsx'
+import { t } from '/web/lib/language.ts'
 
 const syncLabels = {
   live: [Zap, 'Synchro live'],
@@ -108,7 +109,7 @@ const MineCard = ({ project }: { project: Project }) => {
 const unfollow = (project: Project) => {
   toggleFollow(project, me.login)
   notify({
-    title: `Tu ne suis plus ${project.name}`,
+    title: t`Tu ne suis plus ${project.name}`,
     body: 'Tu peux le suivre à nouveau depuis sa page.',
     icon: Check,
     tone: 'muted',

@@ -11,6 +11,7 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Progress } from '/web/ui/progress.tsx'
+import { t } from '/web/lib/language.ts'
 
 const Card = (
   { class: className, children }: {
@@ -189,7 +190,7 @@ const Release = ({ project }: { project: Project }) => (
     <span class='text-[13px] text-ink-muted'>
       {project.release === '—'
         ? 'Aucune release pour l’instant.'
-        : `Publiée ${ago(project.releasedAt)}`}
+        : t`Publiée ${ago(project.releasedAt)}`}
     </span>
   </Card>
 )

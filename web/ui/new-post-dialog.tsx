@@ -14,6 +14,7 @@ import {
   useFieldErrors,
 } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const HELP = 'Demande d’aide'
 
@@ -69,7 +70,9 @@ const NewPost = (
     notify({
       title: 'Post publié',
       body: name
-        ? `Dans ${name}${joined ? '.' : ', que tu rejoins au passage.'}`
+        ? joined
+          ? t`Dans ${name}.`
+          : t`Dans ${name}, que tu rejoins au passage.`
         : 'Sur ton profil. Tes abonnés le voient dans leur fil.',
       icon: Send,
       tone: 'verified',
