@@ -54,7 +54,7 @@
     "theme": "deno run -A task-generate-theme.ts",
     "seed": "deno run --env-file=.env-dev --env-file=.env-local -A task-db-seed.ts",
     "tunnel": "deno run --env-file=.env-dev --env-file=.env-local -A task-tunnel.ts",
-    "dev": "deno serve --env-file=.env-dev --env-file=.env-local -A --port=8800 --watch --watch-exclude='{*_,*.,}test.{js,mjs,ts,mts,jsx,tsx}' task-dev.ts & deno task test --watch api web --reporter=dot & deno task fmt --watch api web *.ts & deno task lint --watch api web *.ts",
+    "dev": "deno serve --env-file=.env-dev --env-file=.env-local -A --host=127.0.0.1 --port=8800 --watch --watch-exclude='{*_,*.,}test.{js,mjs,ts,mts,jsx,tsx}' task-dev.ts & deno task test --watch api web --reporter=dot & deno task fmt --watch api web *.ts & deno task lint --watch api web *.ts",
     "prod:build": "deno run -A task-prod.ts",
     "prod:serve": "deno run --env-file -A prod-server.ts",
     "prod": {

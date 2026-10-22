@@ -767,4 +767,21 @@ const defs = {
 }
 
 export type RouteDefinitions = typeof defs
-export const routeHandler = makeRouter(defs, { log })
+
+// @01edu/api adds its dev tools, open without a session outside production:
+// any SQL, query and route metrics. Pamoja serves none of them, whatever
+// APP_ENV says, so a dev server on a network or behind the tunnel gives
+// nothing away (§16).
+const notServed = route({
+  fn: () => {
+    throw new respond.NotFoundError({ message: 'Not found' })
+  },
+  description: 'Dev tool of @01edu/api, not served by Pamoja',
+})
+
+export const routeHandler = makeRouter({
+  ...defs,
+  'POST/api/sql/execute': notServed,
+  'GET/api/sql/metrics': notServed,
+  'GET/api/router/metrics': notServed,
+}, { log })

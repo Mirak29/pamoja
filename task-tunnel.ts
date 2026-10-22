@@ -42,9 +42,42 @@ if (!cloudflared) {
   Deno.exit(1)
 }
 
+// The tunnel is public: only the webhook goes through it, to the dev server
+// on this machine. The rest of the app stays local (§16).
+const WEBHOOK = '/api/github/webhook'
+const skipped = new Set(['host', 'connection', 'content-length'])
+const gate = Deno.serve(
+  { hostname: '127.0.0.1', port: 0, onListen: () => {} },
+  async (req) => {
+    if (req.method !== 'POST' || new URL(req.url).pathname !== WEBHOOK) {
+      return new Response('Not found', { status: 404 })
+    }
+    // The body goes as received: its signature is checked on the raw bytes
+    const headers = new Headers()
+    req.headers.forEach((value, key) =>
+      skipped.has(key) || headers.set(key, value)
+    )
+    try {
+      return await fetch(`http://127.0.0.1:${PORT}${WEBHOOK}`, {
+        method: 'POST',
+        headers,
+        body: await req.arrayBuffer(),
+      })
+    } catch {
+      // The dev server is not running: GitHub will show the failed delivery
+      return new Response('Dev server unreachable', { status: 502 })
+    }
+  },
+)
+
 // A quick tunnel: no account, a new *.trycloudflare.com address each time
 const tunnel = new Deno.Command(cloudflared, {
-  args: ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${PORT}`],
+  args: [
+    'tunnel',
+    '--no-autoupdate',
+    '--url',
+    `http://127.0.0.1:${gate.addr.port}`,
+  ],
   stdout: 'null',
   stderr: 'piped',
 }).spawn()
@@ -72,7 +105,9 @@ if (!address) {
 }
 
 const webhook = `${address}/api/github/webhook`
-console.log(`Tunnel ouvert : ${address} → http://127.0.0.1:${PORT}`)
+console.log(
+  `Tunnel ouvert : ${address}${WEBHOOK} → http://127.0.0.1:${PORT}${WEBHOOK} (le reste de l’app reste local)`,
+)
 
 // Points the webhook of the app at the tunnel (PATCH /app/hook/config)
 if (!appConfigured() || !GITHUB_WEBHOOK_SECRET) {

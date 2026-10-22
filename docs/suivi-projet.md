@@ -637,6 +637,13 @@ Le profil montre la vraie réputation d'un développeur : ses preuves éligibles
 - **Livrable** : `api/proofs.ts`, route `GET/api/user/proofs`, `api/proofs_test.ts` (2 tests : dimensions et sources, construction de projets), `web/lib/reputation.ts`, preuves et badges du serveur sur le profil, le passeport, la carte de partage et la Collaboration Map, mention « confirmée sur Pamoja », traductions ; corrections de types dans `api/badges_test.ts` et `api/review_check_test.ts`
 - **Par** : @Mirak29
 
+### 2026-10-22 · Revue de sécurité du serveur
+
+Revue de tout le code serveur et des affichages du web. Injection SQL, sessions, OAuth, webhooks, installation de la GitHub App, import, droits sur les demandes d'aide, messages et notifications, SSE et XSS : rien d'exploitable. Un point corrigé : hors production, la librairie `@01edu/api` ajoute d'elle-même une route `POST/api/sql/execute` qui exécute n'importe quel SQL sans session, joignable depuis le réseau local, le tunnel de dev ou une page piégée visitée pendant que le serveur de dev tourne. Pamoja ne sert plus cette route ni les métriques de la librairie, quel que soit l'environnement ; le serveur de dev n'écoute plus que sur la machine ; le tunnel ne laisse passer que le webhook GitHub, corps et signature intacts. Un test vérifie qu'une requête SQL envoyée à la route ne touche plus la base (elle passait avant la correction). Reste pour PAM-113 : écrire `APP_ENV=prod` dans le Dockerfile, sans quoi la production repartirait en mode dev.
+
+- **Livrable** : routes fermées dans `api/routes.ts`, `api/dev_tools_test.ts`, `--host=127.0.0.1` dans `deno task dev`, filtre du tunnel dans `task-tunnel.ts`, ligne « Outils de dev » au §16
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
