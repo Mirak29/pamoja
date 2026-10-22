@@ -65,8 +65,6 @@ P1 : bloque un parcours central ou la démonstration. P2 : incohérence fonction
 
 **Cause :** `web/pages/help/help-detail.tsx:179` propose toujours #aide ; `web/pages/project/channels-tab.tsx:391` autorise l'écriture selon l'appartenance au projet uniquement. La présence affichée cite aussi Fatou/PR #84 et Moussa/PR #81 même dans AfriCommerce.
 
-![Aidant sans accès au canal](aidant-canal-verrouille.jpg)
-
 ### QA-02 · P1 · La review confirmée n'est pas répercutée sur le projet
 
 1. OpenPay → PR #81 → Demander une review → publier le formulaire prérempli.
@@ -79,8 +77,6 @@ P1 : bloque un parcours central ou la démonstration. P2 : incohérence fonction
 
 **Cause :** `web/fixtures/help.ts:233` actualise demande et notifications, mais pas les fixtures PR/activité/canaux ; Pulse lit encore les PRs inchangées.
 
-![Demande terminée mais aucune review](review-confirmee-pr-inchangee.jpg)
-
 ### QA-03 · P2 · L'événement de synchro de l'accueil perd son projet
 
 Importer Wave SDK Go, activer la synchro simulée, revenir à l'accueil. La carte « Synchro live activée » n'affiche pas le nom et contient un lien vide vers `/projet/undefined/canaux/suivi`.
@@ -89,8 +85,6 @@ Importer Wave SDK Go, activer la synchro simulée, revenir à l'accueil. La cart
 
 **Attendu :** nom Wave SDK Go et destination `/projet/wave-sdk-go/canaux/suivi`.
 
-![Événement sans nom de projet](mobile-accueil-evenement-sans-projet.jpg)
-
 ### QA-04 · P2 · Pulse invente l'historique et les mesures d'un nouveau projet
 
 Créer de zéro « QA sans repo », techno Go, puis Pulse : 2 PRs mergées, 1 issue fermée, 1 review demandée, CI 94 %, bus factor 2, 3 good first issues. Le projet n'a ni repo ni activité GitHub. DNA affiche Go 70 % seul. À l'import Wave, l'aperçu indique Go 94 % / Makefile 6 %, mais Pulse devient Go 70 % / Backend 30 %.
@@ -98,8 +92,6 @@ Créer de zéro « QA sans repo », techno Go, puis Pulse : 2 PRs mergées, 1 is
 **Cause :** valeurs génériques `quietWeek`, health figé et fallback des langages depuis les skills dans `web/fixtures/pulse.ts:90`, `:125`, `:145`.
 
 **Attendu :** états zéro/inconnu adaptés, distribution des vrais langages du repo, aucun domaine métier présenté comme langage.
-
-![Pulse d'un projet sans repo](pulse-projet-sans-repo.jpg)
 
 ### QA-05 · P2 · Résumé IA en chargement sans fin sur les projets créés/importés
 
@@ -141,8 +133,6 @@ Profil → Partager → Télécharger : aucun retour visible ni téléchargement
 
 **Attendu :** retour dans le dialogue, ou mécanisme de toast compatible avec cette couche. Le PNG est une limite back prévue ; le retour masqué est un défaut front.
 
-![Partage sans retour visible](partage-retour-invisible.jpg)
-
 ### QA-10 · P2 · Des simulations affichent « Vérifié par GitHub »
 
 Après import fictif et activation fictive de synchro, les événements de la session affichent ce badge sans aucune vérification GitHub réelle. Les entrées seedées sont correctement marquées Démo, mais les nouvelles simulations ne le sont plus.
@@ -164,8 +154,6 @@ Accueil : rédaction avec « Sans communauté ». Menu global Créer → Post : 
 À 320 × 740, l'en-tête réduit la recherche à un rectangle sans icône visible ni texte. Le contrôle conserve son nom accessible, mais n'est plus identifiable visuellement.
 
 **Piste :** `web/ui/header.tsx:66`, largeur disponible après les actions fixes ; icône de recherche qui peut rétrécir. Prévoir un bouton icône avec largeur minimale.
-
-![Recherche à 320 px](mobile-320-recherche-vide.jpg)
 
 ### QA-13 · P3 · Deux h1 sur connexion, onboarding et 404
 
