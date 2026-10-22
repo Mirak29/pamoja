@@ -134,7 +134,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 
 Responsable : _à répartir_
 
-- [ ] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
+- [x] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
 - [ ] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2)
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
@@ -153,7 +153,7 @@ Responsable : _à répartir_
 **Critères d'acceptation (§4)**
 
 - [ ] Un lien `/@username` collé dans WhatsApp et LinkedIn affiche l'aperçu avec la Share Card
-- [ ] Chaque chiffre du profil mène à ses preuves
+- [x] Chaque chiffre du profil mène à ses preuves
 - [ ] Le Pulse s'affiche même IA coupée
 
 ## Bloc 4 — Gestion de projet (J8 · 14 oct.)
@@ -291,3 +291,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Badges : Builder = projet avec release et au moins un contributeur hors propriétaire ; Maintainer = plus longue suite de mois d'activité GitHub ; Cross-border = pays des deux côtés d'une aide confirmée, le sien exclu ; évaluation après chaque preuve et à la connexion · §8.2, §8.4
 - 2026-10-22 · Réputation : preuves par dimension lues par `GET/api/user/proofs` (éligibles seulement, membre actif = non Observateur) ; trois mentions de source : « vérifié par GitHub », « donnée de démonstration », « confirmée sur Pamoja » ; les personnes de la démo gardent leurs preuves des fixtures jusqu'au seed des preuves (PAM-901) · §8.1, §8.3, §15
 - 2026-10-22 · Sécurité : les outils de dev de `@01edu/api` (`POST/api/sql/execute`, métriques) ne sont jamais servis (404) ; le serveur de dev écoute sur `127.0.0.1` ; le tunnel ne laisse passer que `POST/api/github/webhook` · §16
+- 2026-10-22 · Profil public : `GET/api/user` sans email ni réglages de matching, projets publics hors Observateur, activité d'aide pour un visiteur connecté seulement ; login de l'adresse sans casse ; chaque chiffre du profil ouvre ses preuves · §9.1, §15

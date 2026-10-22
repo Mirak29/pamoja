@@ -234,7 +234,7 @@ const bringRepo = (key: ProjectSlug, repo: Repo) => {
 
 type ApiProject = ApiOutput['GET/api/projects'][number]
 
-const roleNames: Record<string, ProjectRole> = {
+export const roleNames: Record<string, ProjectRole> = {
   owner: 'Propriétaire',
   maintainer: 'Mainteneur',
   contributor: 'Contributeur',

@@ -233,7 +233,10 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
     }
   })
   return (
-    <section class='slab flex flex-col gap-3 p-[22px]'>
+    <section
+      id='profil-collaborations'
+      class='slab flex flex-col gap-3 p-[22px]'
+    >
       <div class='flex flex-wrap items-baseline justify-between gap-3'>
         <Eyebrow>Collaboration Graph</Eyebrow>
         <span class='text-[13px] text-ink-muted'>

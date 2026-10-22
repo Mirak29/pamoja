@@ -2,6 +2,8 @@ import { signal } from '@preact/signals'
 import {
   countries as vocabularyCountries,
   countryName,
+  helpCategories,
+  type HelpCategory,
 } from '/api/vocabulary.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
 import { translate } from '/web/lib/language.ts'
@@ -176,12 +178,32 @@ export const people: Record<Login, Person> = fixturePeople
 
 // The signed-in developer: `abdou` of the fixtures until the session is
 // known, then the real developer, with the profile prefilled from GitHub.
-// The same record as in `people`, so a change shows everywhere; the other
-// developers stay those of the fixtures until their screens use the API.
+// The same record as in `people`, so a change shows everywhere. Another
+// developer joins `people` once their profile is read (GET/api/user).
 export let me = people.abdou as Person & { login: Login }
 
-/** Makes the signed-in developer `me`, from GET/api/user/me */
-export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
+type ApiPerson =
+  & Pick<
+    ApiOutput['GET/api/user/me'],
+    | 'login'
+    | 'displayName'
+    | 'avatarUrl'
+    | 'headline'
+    | 'bio'
+    | 'country'
+    | 'city'
+    | 'website'
+    | 'skills'
+    | 'domains'
+    | 'intents'
+  >
+  & Partial<{ available: boolean; helpTypes: string[]; communities: string[] }>
+
+/**
+ * A developer read from the API joins `people`, or updates the record of
+ * the pages: what only the pages know (follows, openTo…) is kept
+ */
+const adoptPerson = (user: ApiPerson) => {
   const known = (people as Record<string, Person>)[user.login]
   const person: Person = Object.assign(
     known ?? {
@@ -207,11 +229,30 @@ export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
       intents: user.intents,
       avatarUrl: user.avatarUrl,
     },
+    user.available === undefined ? {} : { available: user.available },
+    user.helpTypes
+      ? {
+        helpTypes: user.helpTypes.map((key) =>
+          helpCategories[key as HelpCategory] ?? key
+        ),
+      }
+      : {},
+    user.communities ? { communities: user.communities } : {},
   )
   ;(people as Record<string, Person>)[user.login] = person
-  me = person as Person & { login: Login }
+  peopleChanged.value++
+  return person
+}
+
+/** Makes the signed-in developer `me`, from GET/api/user/me */
+export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
+  me = adoptPerson(user) as Person & { login: Login }
   peopleChanged.value++
 }
+
+/** A profile read from GET/api/user */
+export const adoptProfile = (user: ApiOutput['GET/api/user']) =>
+  adoptPerson(user)
 
 /** « Dakar, Sénégal », or what is known of it */
 export const placeOf = (person: Person) =>

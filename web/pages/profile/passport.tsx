@@ -2,7 +2,7 @@ import { useEffect } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Github } from '/web/assets/icons.tsx'
 import { type Login, people, placeOf } from '/web/fixtures/people.ts'
-import { profileStats, proofsOf } from '/web/fixtures/reputation.ts'
+import { badgesOf, profileStats, proofsOf } from '/web/fixtures/reputation.ts'
 import { plural } from '/web/lib/plural.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
 import { NoticeBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -12,7 +12,6 @@ import { PublicHeader } from '/web/ui/public-header.tsx'
 import { proofMeta, ProofSource } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 import { t } from '/web/lib/language.ts'
-import { useReputation } from '/web/lib/reputation.ts'
 
 // A visitor sees what someone did: a figure at zero is left out
 const stats = (login: Login) => {
@@ -35,7 +34,6 @@ const stats = (login: Login) => {
  */
 export const Passport = ({ login }: { login: Login }) => {
   const person = people[login]
-  useReputation(login)
   const mine = proofsOf(login)
   const recent = [
     ...mine.filter((p) => p.verified),
@@ -124,25 +122,30 @@ export const Passport = ({ login }: { login: Login }) => {
             <DimensionBars login={login} readOnly />
           </section>
           <div class='flex flex-col gap-7'>
-            <section class='slab flex flex-col gap-3 p-[22px]'>
-              <Eyebrow>Badges</Eyebrow>
-              <BadgeList login={login} compact />
-            </section>
-            <section class='slab flex flex-col gap-2.5 p-[22px]'>
-              <Eyebrow>Preuves récentes</Eyebrow>
-              {recent.map((proof) => (
-                <div
-                  key={proof.id}
-                  class='flex flex-col gap-1 border-t border-line py-2.5'
-                >
-                  <span class='text-[14px] font-semibold'>{proof.title}</span>
-                  <span class='flex flex-wrap items-center gap-2 text-[12px] text-ink-muted'>
-                    {proofMeta(proof, false)}
-                    <ProofSource proof={proof} />
-                  </span>
-                </div>
-              ))}
-            </section>
+            {/* A visitor sees what someone did: an empty section is left out */}
+            {badgesOf(login).length > 0 && (
+              <section class='slab flex flex-col gap-3 p-[22px]'>
+                <Eyebrow>Badges</Eyebrow>
+                <BadgeList login={login} compact />
+              </section>
+            )}
+            {recent.length > 0 && (
+              <section class='slab flex flex-col gap-2.5 p-[22px]'>
+                <Eyebrow>Preuves récentes</Eyebrow>
+                {recent.map((proof) => (
+                  <div
+                    key={proof.id}
+                    class='flex flex-col gap-1 border-t border-line py-2.5'
+                  >
+                    <span class='text-[14px] font-semibold'>{proof.title}</span>
+                    <span class='flex flex-wrap items-center gap-2 text-[12px] text-ink-muted'>
+                      {proofMeta(proof, false)}
+                      <ProofSource proof={proof} />
+                    </span>
+                  </div>
+                ))}
+              </section>
+            )}
           </div>
         </div>
         <div class='flex flex-wrap items-center justify-between gap-3 pt-2'>

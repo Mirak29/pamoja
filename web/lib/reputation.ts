@@ -1,4 +1,3 @@
-import { useEffect } from 'preact/hooks'
 import { adoptReputation } from '/web/fixtures/reputation.ts'
 import { api } from '/web/lib/api.ts'
 import { onEvent, onReconnect } from '/web/lib/realtime.ts'
@@ -18,12 +17,6 @@ export const loadReputation = (login: string) =>
     shown.add(login)
     adoptReputation(login, proofs, badges)
   }, () => {})
-
-/** Reads the reputation of the profile shown, again when its login changes */
-export const useReputation = (login: string | undefined) =>
-  useEffect(() => {
-    login && loadReputation(login)
-  }, [login])
 
 let pending: ReturnType<typeof setTimeout> | undefined
 const reload = () => {

@@ -18,6 +18,7 @@ import {
 import { listMyProjects } from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
+import { getPublicProfile } from '/api/profile.ts'
 import {
   listNotifications,
   readAllNotifications,
@@ -280,6 +281,47 @@ const defs = {
       'The 8 badges of §8.2',
     ),
     description: 'The badges of a developer, public like the passport',
+  }),
+
+  'GET/api/user': route({
+    authorize: withOptionalSession,
+    fn: (ctx, { username }) =>
+      getPublicProfile(username, !!ctx.session) ??
+        respond.NotFound({ message: 'No such developer' }),
+    input: OBJ({ username: STR('GitHub login') }),
+    output: OBJ({
+      login: STR('GitHub login, as GitHub writes it'),
+      displayName: STR('Name shown on the profile'),
+      avatarUrl: STR('GitHub avatar'),
+      headline: STR('One line under the name, empty if none'),
+      bio: STR('Bio, empty if none'),
+      country: STR('ISO code of an African country, or as written'),
+      city: STR('City, empty if none'),
+      website: STR('Website, empty if none'),
+      available: BOOL('Available to help'),
+      helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+      skills: currentUser.skills,
+      domains: currentUser.domains,
+      intents: currentUser.intents,
+      communities: ARR(STR('Slug of a community'), 'Communities joined'),
+      projects: ARR(
+        OBJ({
+          slug: STR('Slug of the project'),
+          name: STR('Name of the project'),
+          description: STR('Description'),
+          status: STR('idea, prototype, beta or production'),
+          stack: ARR(STR('Skill name'), 'Stack of the project'),
+          role: STR('owner, maintainer, contributor or reviewer'),
+          owner: STR('Login of the owner'),
+        }),
+        'Public projects the developer works on, newest first',
+      ),
+      activity: ARR(
+        helpRequest,
+        'Latest help requests written or accepted, for a signed-in visitor',
+      ),
+    }, 'The public profile'),
+    description: 'The profile of a developer at /@login, public (§9.1)',
   }),
 
   'GET/api/user/proofs': route({
