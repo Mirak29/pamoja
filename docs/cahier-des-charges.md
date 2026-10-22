@@ -371,6 +371,17 @@ Exclus : le demandeur, les développeurs ayant mis le matching sur Off, ceux sou
 
 Diffusion : les 5 meilleurs sont notifiés, dont une place réservée à un profil peu expérimenté mais bien aligné sur les skills (moins de 3 aides confirmées ; affiché « Nouveau profil prometteur » dans Why this match?). Sans acceptation après 2 h, les 5 suivants. Un utilisateur reçoit au maximum 10 notifications de matching par jour. Chaque notification crée une ligne `HelpMatch` (score, raisons, `notifiedAt`).
 
+Précisions de calcul (`api/matching.ts`, valeurs dans `api/help-rules.ts`) :
+
+- **Skills** : chaque skill demandé compte selon sa meilleure source, 100 % pour l'activité sur la plateforme, 85 % pour GitHub, 70 % pour une déclaration. Sans aucun des skills demandés, un développeur n'est jamais retenu.
+- **Type d'aide** : accepté si le développeur l'a coché dans ses réglages, ou si une intention le dit (« Faire des reviews » pour une review, « Mentorer » pour du mentorat, « Aider des développeurs » pour tous les types).
+- **Aides confirmées** : seules les preuves retenues par l'anti-abus (§8.4) et portant sur un des skills demandés comptent ; 14 aides donnent les 15 points.
+- **Disponibilité** : 7 points si le profil est disponible (2 sinon), 3 de plus s'il a été actif ces 14 derniers jours.
+- **Seuil** : 50 par défaut, tant que le développeur n'en a pas choisi.
+- **Place « nouveau profil »** : moins de 3 aides confirmées et au moins la moitié des skills demandés.
+- **Vagues** : la première part à la création ; la suivante 2 h après la précédente sans acceptation, ou tout de suite après un désistement, une libération ou une réouverture. Un développeur déjà matché n'est pas notifié à nouveau pour la même demande. En Instantané, il reçoit tout de suite une notification ; en Résumé quotidien, sa ligne `HelpMatch` attend le résumé (`notifiedAt` vide). Une collaboration request (§7.6) n'a pas de matching.
+- **Visibilité** : le demandeur voit tous les matchs et leurs scores ; un développeur matché ne voit que le sien. Le formulaire montre, pendant la saisie, la première vague que le serveur enverrait, sans rien écrire.
+
 ### 7.4 Notifications
 
 - **Temps réel** : insertion de la ligne `Notification` + entry → SSE → toast « This project needs you » sur l'écran du développeur, sans rafraîchir.
@@ -778,7 +789,7 @@ Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt? (aide livrée ou review vue sur GitHub), confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl?, helperRemindedAt?, confirmRemindedAt? | Index (status), (authorId) |
+| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt? (aide livrée ou review vue sur GitHub), confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl?, helperRemindedAt?, confirmRemindedAt?, lastWaveAt? (dernière vague du matching) | Index (status), (authorId) |
 | `HelpMatch` | helpMatchId, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
 | `HelpMessage` | helpMessageId, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
 | `Notification` | notificationId, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
@@ -830,7 +841,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
-| Aide (suite) | POST/api/help/withdraw · POST/api/help/release · POST/api/help/reopen · POST/api/help/decline · POST/api/help/message |
+| Aide (suite) | POST/api/help/withdraw · POST/api/help/release · POST/api/help/reopen · POST/api/help/decline · POST/api/help/message · GET/api/help/preview (type, skills, projet : la vague que le formulaire annonce) |
 
 ## 16. Sécurité
 
