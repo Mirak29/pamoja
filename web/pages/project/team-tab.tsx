@@ -30,6 +30,7 @@ import { SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const roles: [ProjectRole, string][] = [
   ['Propriétaire', 'Gère le projet, ses réglages et la synchro.'],
@@ -104,7 +105,7 @@ export const MemberRows = (
           {isOwner && member.role !== 'Propriétaire'
             ? (
               <select
-                aria-label={`Rôle de ${person.name}`}
+                aria-label={t`Rôle de ${person.name}`}
                 value={member.role}
                 onChange={(event) => {
                   member.role = event.currentTarget.value as ProjectRole
@@ -139,7 +140,7 @@ const Members = (
     <section class='slab overflow-hidden'>
       <SectionHeader
         label='Membres'
-        title={`${count} ${count > 1 ? 'membres' : 'membre'} sur Pamoja · ${
+        title={t`${counted(count, 'membre')} sur Pamoja · ${
           counted(project.contributors, 'contributeur')
         } sur GitHub`}
       />
@@ -157,13 +158,16 @@ const invite = (project: Project, login: Login, need: string) => {
     to: login,
     category: 'projects',
     kind: 'promising',
-    title: `${firstName(me.login)} pense que tu pourrais aider ${project.name}`,
-    body: `Besoin : ${need}. Tu peux proposer ton aide ou rejoindre le projet.`,
+    title: t`${
+      firstName(me.login)
+    } pense que tu pourrais aider ${project.name}`,
+    body:
+      t`Besoin : ${need}. Tu peux proposer ton aide ou rejoindre le projet.`,
     href: `projet/${project.slug}`,
   })
   notify({
     title: 'Invitation envoyée',
-    body: `${personOf(login).name} recevra une notification.`,
+    body: t`${personOf(login).name} recevra une notification.`,
     icon: Send,
     tone: 'verified',
   })
@@ -230,7 +234,7 @@ const Helpers = (
                     <Button
                       variant='secondary'
                       size={32}
-                      aria-label={`Inviter ${person.name} pour ${need}`}
+                      aria-label={t`Inviter ${person.name} pour ${need}`}
                       onClick={() => invite(project, login, need)}
                     >
                       Inviter
@@ -294,7 +298,7 @@ const Applications = ({ project }: { project: Project }) => {
           <div class='flex flex-wrap gap-3 pb-1'>
             <Button
               size={36}
-              aria-label={`Accepter la candidature de ${
+              aria-label={t`Accepter la candidature de ${
                 personOf(application.login).name
               }`}
               onClick={() => decideApplication(application, true)}
@@ -304,7 +308,7 @@ const Applications = ({ project }: { project: Project }) => {
             <Button
               variant='secondary'
               size={36}
-              aria-label={`Refuser la candidature de ${
+              aria-label={t`Refuser la candidature de ${
                 personOf(application.login).name
               }`}
               onClick={() => decideApplication(application, false)}

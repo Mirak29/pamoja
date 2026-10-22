@@ -14,6 +14,7 @@ import { SkillPicker } from '/web/ui/chips.tsx'
 import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const levels = ['Débutant', 'Intermédiaire', 'Intermédiaire+', 'Confirmé']
 const durations = ['~20 min', '~30 min', '~1 h', '~2 h']
@@ -23,7 +24,7 @@ type Form = HelpDraft & { origin: string }
 
 /** What a PR brings to a review request (§7.1) */
 const fromPullRequest = (pr: PullRequest) => ({
-  title: `Review de la PR #${pr.number} : ${pr.title}`,
+  title: t`Review de la PR #${pr.number} : ${pr.title}`,
   description: pr.number === 81
     ? 'Je cherche un regard extérieur sur la gestion des transactions : verrouillage SQLite, rollback quand le callback échoue, et comportement sous accès concurrents.'
     : 'Je cherche une review sur cette PR avant de la merger.',
@@ -56,15 +57,15 @@ const initialForm = (): Form => {
       ...fromPullRequest(pr),
       level: 'Intermédiaire+',
       duration: '~20 min',
-      origin: `Pré-rempli depuis la PR #${pr.number}`,
+      origin: t`Pré-rempli depuis la PR #${pr.number}`,
     })
   }
   if (pr && url.params.ci) {
     Object.assign(form, {
       type: 'Debug',
-      title: `CI en échec sur la PR #${pr.number} : ${pr.title}`,
+      title: t`CI en échec sur la PR #${pr.number} : ${pr.title}`,
       description:
-        `Le job test (go 1.22) échoue sur la branche ${pr.branch} alors que les tests passent en local. Lien du job : github.com/${
+        t`Le job test (go 1.22) échoue sur la branche ${pr.branch} alors que les tests passent en local. Lien du job : github.com/${
           projects[pr.project].owner
         }/${pr.project}/actions/runs/9124`,
       project: pr.project,
@@ -235,7 +236,7 @@ export const NewHelp = () => {
       title: form.title.trim() || filled.title,
       description: form.description.trim() || filled.description,
       skills: form.skills.length ? form.skills : filled.skills,
-      origin: `Pré-rempli depuis la PR #${pr.number}`,
+      origin: t`Pré-rempli depuis la PR #${pr.number}`,
     })
   }
   const myProjects = Object.values(projects).filter((p) =>

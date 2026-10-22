@@ -20,6 +20,7 @@ import { skills } from '/web/fixtures/skills.ts'
 import { fuzzyMatch } from '/web/lib/fuzzy.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { t } from '/web/lib/language.ts'
 
 export const paletteOpen = signal(false)
 const query = signal('')
@@ -136,7 +137,7 @@ export const search = (query: string, limit: number) => {
         .filter((skill) => fuzzyMatch(query, skill))
         .map((skill) => ({
           title: skill,
-          sub: `Développeurs et projets en ${skill}`,
+          sub: t`Développeurs et projets en ${skill}`,
           href: `explorer?skill=${encodeURIComponent(skill)}`,
           lead: <Tag class='size-3.5' />,
         })),
@@ -276,7 +277,7 @@ export const CommandPalette = () => {
             ))}
             {!results.length && (
               <div class='px-4 py-8 text-center text-ink-muted'>
-                Aucun résultat pour « {q} ».
+                {t`Aucun résultat pour « ${q} ».`}
               </div>
             )}
           </div>

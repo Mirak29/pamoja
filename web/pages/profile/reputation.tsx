@@ -11,6 +11,7 @@ import {
 } from '/web/fixtures/reputation.ts'
 import { Progress } from '/web/ui/progress.tsx'
 import { prism } from '/web/ui/shapes.tsx'
+import { t } from '/web/lib/language.ts'
 
 /** The five dimensions, each with its count of proofs (§8.1) */
 export const dimensionsOf = (login: Login) => {
@@ -24,7 +25,7 @@ export const dimensionsOf = (login: Login) => {
       count: list.length,
       next: nextThreshold(key, list.length),
       summary: counted(list.length, 'preuve') +
-        (verified ? ` · ${counted(verified, 'vérifiée')} par GitHub` : ''),
+        (verified ? t` · ${counted(verified, 'vérifiée')} par GitHub` : ''),
     }
   })
 }

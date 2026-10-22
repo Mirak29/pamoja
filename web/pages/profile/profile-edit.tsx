@@ -27,6 +27,7 @@ import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 const toggle = <T,>(list: T[], value: T) =>
   list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
@@ -190,8 +191,8 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </span>
             <button
               type='button'
-              aria-label={`Monter la section ${
-                profileSections.find(([k]) => k === key)?.[1]
+              aria-label={t`Monter la section ${
+                translate(profileSections.find(([k]) => k === key)?.[1] ?? '')
               }`}
               disabled={i === 0}
               onClick={() => move(i, i - 1)}
@@ -201,8 +202,8 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
             </button>
             <button
               type='button'
-              aria-label={`Descendre la section ${
-                profileSections.find(([k]) => k === key)?.[1]
+              aria-label={t`Descendre la section ${
+                translate(profileSections.find(([k]) => k === key)?.[1] ?? '')
               }`}
               disabled={i === last}
               onClick={() => move(i, i + 1)}
@@ -287,8 +288,10 @@ export const ProfileEditPage = () => {
     navigate({ href: `@${me.login}` })
     notify({
       title: 'Profil enregistré',
-      body: `Thème ${
-        profileThemes.find(([key]) => key === draft.theme)?.[1]
+      body: t`Thème ${
+        translate(
+          profileThemes.find(([key]) => key === draft.theme)?.[1] ?? '',
+        )
       }, sections dans le nouvel ordre.`,
       icon: Check,
       tone: 'verified',

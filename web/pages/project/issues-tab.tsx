@@ -15,6 +15,7 @@ import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const GOOD_FIRST_ISSUE = 'good first issue'
 
@@ -127,7 +128,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                 <Button
                   variant='secondary'
                   size={32}
-                  aria-label={`Ajouter l’issue #${issue.number} au board`}
+                  aria-label={t`Ajouter l’issue #${issue.number} au board`}
                   onClick={() => {
                     addCard(
                       project.slug as ProjectSlug,
@@ -136,7 +137,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                     )
                     notify({
                       title: 'Ajoutée au board',
-                      body: `Issue #${issue.number} dans la colonne Backlog.`,
+                      body: t`Issue #${issue.number} dans la colonne Backlog.`,
                       icon: Columns3,
                       tone: 'verified',
                       href: `projet/${project.slug}/board`,

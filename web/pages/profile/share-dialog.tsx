@@ -3,7 +3,7 @@ import { A } from '@01edu/signal-router'
 import { Copy, Download } from '/web/assets/icons.tsx'
 import { isMe, type Login, me, people, placeOf } from '/web/fixtures/people.ts'
 import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'
-import { language } from '/web/lib/language.ts'
+import { language, t } from '/web/lib/language.ts'
 import { plural } from '/web/lib/plural.ts'
 import { Avatar, Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
@@ -21,7 +21,7 @@ const shareLinks = (login: Login) => {
   const text = encodeURIComponent(
     isMe(login)
       ? 'Mon profil Pamoja : mes reviews et contributions, vérifiées par GitHub.'
-      : `Le profil Pamoja de ${people[login].name}`,
+      : t`Le profil Pamoja de ${people[login].name}`,
   )
   return [
     [

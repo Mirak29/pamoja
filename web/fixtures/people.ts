@@ -4,6 +4,7 @@ import {
   countryName,
 } from '/api/vocabulary.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
+import { translate } from '/web/lib/language.ts'
 export type Person = {
   login: string
   name: string
@@ -214,7 +215,7 @@ export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
 
 /** « Dakar, Sénégal », or what is known of it */
 export const placeOf = (person: Person) =>
-  [person.city, person.country].filter(Boolean).join(', ')
+  [person.city, translate(person.country)].filter(Boolean).join(', ')
 
 /** A website as written on a profile, with or without its protocol */
 export const websiteHref = (website: string) =>

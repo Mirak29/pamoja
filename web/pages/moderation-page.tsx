@@ -18,6 +18,7 @@ import { Field, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const actionLabel = (action: ModerationAction) =>
   moderationActions.find(([key]) => key === action)![1]
@@ -43,7 +44,7 @@ const OpenReport = ({ report }: { report: Report }) => {
           {report.reason}
         </span>
         <span class='text-[13px] text-ink-muted'>
-          Signalé par {people[report.by].name} · {ago(report.at)}
+          {t`Signalé par ${people[report.by].name} · ${ago(report.at)}`}
         </span>
       </div>
       {target

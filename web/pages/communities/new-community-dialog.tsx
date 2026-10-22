@@ -11,6 +11,7 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Input, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t } from '/web/lib/language.ts'
 
 const types: CommunityType[] = ['Technologie', 'Pays', 'Domaine']
 
@@ -26,7 +27,7 @@ const NewCommunity = () => {
     const valid = check({
       name: !name.trim()
         ? 'Donne un nom à la communauté.'
-        : existing && `La communauté ${existing.name} existe déjà.`,
+        : existing && t`La communauté ${existing.name} existe déjà.`,
     })
     if (!valid) return
     const community = createCommunity({

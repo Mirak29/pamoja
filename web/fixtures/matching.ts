@@ -2,6 +2,7 @@ import { communities } from '/web/fixtures/communities.ts'
 import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
+import { t, translate } from '/web/lib/language.ts'
 
 // Deterministic matching of a help request (cahier des charges §7.3):
 // skills 45, help type 15, confirmed helps 15, semantic proximity 10,
@@ -39,14 +40,14 @@ export const match = (person: Person, request: Request) => {
   if (!exact.length) return { total: 0, criteria: [] }
 
   const criteria: Criterion[] = [{
-    label: `Skills : ${
+    label: t`Skills : ${
       exact.join(', ')
     } · ${exact.length} sur ${request.skills.length}`,
     points: Math.round(45 * exact.length / request.skills.length),
   }]
   if (person.helpTypes.includes(request.type)) {
     criteria.push({
-      label: `Accepte les demandes « ${request.type} »`,
+      label: t`Accepte les demandes « ${translate(request.type)} »`,
       points: 15,
     })
   }
@@ -66,7 +67,7 @@ export const match = (person: Person, request: Request) => {
   }
   if (near.length) {
     criteria.push({
-      label: `Proximité : ${
+      label: t`Proximité : ${
         near.map((skill) =>
           `${skill} ≈ ${
             nearSkills[skill].find((other) => person.skills.includes(other))
@@ -78,8 +79,8 @@ export const match = (person: Person, request: Request) => {
   }
   criteria.push(
     person.available
-      ? { label: 'Disponible cette semaine', points: 10 }
-      : { label: 'Peu disponible', points: 4 },
+      ? { label: translate('Disponible cette semaine'), points: 10 }
+      : { label: translate('Peu disponible'), points: 4 },
   )
   const author = people[request.author]
   const shared = person.communities.find((slug) =>
@@ -87,7 +88,7 @@ export const match = (person: Person, request: Request) => {
   )
   if (shared) {
     criteria.push({
-      label: `Communauté ${
+      label: t`Communauté ${
         communities.find((c) => c.slug === shared)?.name
       } en commun`,
       points: 5,

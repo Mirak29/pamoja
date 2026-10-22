@@ -28,6 +28,8 @@ import {
   type LanguagePreference,
   languagePreference,
   setLanguagePreference,
+  t,
+  translate,
 } from '/web/lib/language.ts'
 
 const Switch = (
@@ -118,7 +120,7 @@ const exportData = () => {
   setTimeout(() => URL.revokeObjectURL(link.href), 10_000)
   notify({
     title: 'Export téléchargé',
-    body: `pamoja-${me.login}.json : profil, preuves, posts et réglages.`,
+    body: t`pamoja-${me.login}.json : profil, preuves, posts et réglages.`,
     icon: Download,
     tone: 'verified',
   })
@@ -193,7 +195,7 @@ export const SettingsPage = () => {
               <span class='flex w-[60px] justify-center'>
                 <Switch
                   on={channel.app}
-                  label={`${label} dans l’app`}
+                  label={t`${translate(label)} dans l’app`}
                   onFlip={() =>
                     updateSettings(() => channel.app = !channel.app)}
                 />
@@ -201,7 +203,7 @@ export const SettingsPage = () => {
               <span class='flex w-[60px] justify-center'>
                 <Switch
                   on={channel.mail}
-                  label={`${label} par e-mail`}
+                  label={t`${translate(label)} par e-mail`}
                   onFlip={() =>
                     updateSettings(() => channel.mail = !channel.mail)}
                 />

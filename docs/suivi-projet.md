@@ -539,6 +539,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `api/installation.ts`, `api/github-app.ts`, `api/installation_test.ts` (7 tests : contrôles, pagination, accès en lecture refusé, parcours complet, propriétaire seul, JWT), `web/pages/public/installation-return.tsx`, dialogue de synchro, `GITHUB_APP_SLUG`
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-124 · Interface en anglais au choix
+
+L'interface suit par défaut la langue du système et se règle sur français ou anglais dans les réglages ou par le bouton de l'en-tête, qui affiche la langue cible ; le choix vaut pour tous les onglets ouverts. Le français reste la langue du code : `web/lib/english.ts` donne l'anglais de chaque phrase de l'interface, que le rendu traduit en entier, textes et attributs lus (libellés, aides, titres de l'onglet). Une phrase avec des valeurs (« Écrire à Moussa ») s'écrit ``t`Écrire à ${name}` `` : seules ses parties fixes sont traduites. Une première version traduisait par motifs à l'affichage et réécrivait le début des messages de membres (« Tu as vu la démo ? » devenait « You know vu la démo ? ») ; ce que les développeurs écrivent n'est plus jamais touché. Vérifié dans le navigateur, page par page, en anglais : 45 écrans et dialogues relevés jusqu'à ce que seul le contenu de démonstration reste en français ; le texte en cours de saisie survit au changement de langue.
+
+- **Livrable** : `web/lib/language.ts`, `web/lib/english.ts`, `web/ui/language-toggle.tsx`, réglage de langue, ``t`…` `` dans les écrans, `web/lib/language_test.ts` (traduction exacte, contenu de membre intact, phrases à valeurs, changement d'onglet)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

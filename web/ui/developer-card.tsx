@@ -10,6 +10,7 @@ import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { SkillChip } from '/web/ui/badge.tsx'
+import { translate } from '/web/lib/language.ts'
 
 /**
  * A developer to discover: role, place, headline, skills shared with the
@@ -68,7 +69,9 @@ export const DeveloperCard = ({ person }: { person: Person }) => {
             {person.available ? 'Disponible' : 'Peu disponible'}
           </span>
         </span>
-        {person.intents.length > 0 && <span>{person.intents.join(' · ')}</span>}
+        {person.intents.length > 0 && (
+          <span>{person.intents.map(translate).join(' · ')}</span>
+        )}
       </div>
     </A>
   )

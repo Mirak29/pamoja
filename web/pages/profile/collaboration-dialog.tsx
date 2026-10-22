@@ -13,6 +13,7 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Select, Textarea } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 const kinds = [
   'Relire ma PR',
@@ -54,7 +55,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
         : undefined,
       message: message.trim()
         ? undefined
-        : `Écris quelques mots à ${first} : le contexte et ce que tu attends.`,
+        : t`Écris quelques mots à ${first} : le contexte et ce que tu attends.`,
     }
     if (found.pullRequest || found.message) {
       setErrors(found)
@@ -70,7 +71,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
       to: login,
       category: 'social',
       kind: 'collaboration',
-      title: `${me.name.split(' ')[0]} te propose : ${kind}`,
+      title: t`${me.name.split(' ')[0]} te propose : ${translate(kind)}`,
       body: [name, pullRequest && `PR #${pullRequest}`, message.trim()]
         .filter(Boolean).join(' · ') || 'Pas de message.',
       href: project ? `projet/${project}` : `@${me.login}`,
@@ -78,7 +79,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
     navigate({ params: { dialog: null } })
     notify({
       title: 'Proposition envoyée',
-      body: `${people[login].name} la reçoit dans ses notifications.`,
+      body: t`${people[login].name} la reçoit dans ses notifications.`,
       icon: Send,
       tone: 'verified',
     })
@@ -86,7 +87,9 @@ const CollaborationForm = ({ login }: { login: Login }) => {
 
   return (
     <div class='flex flex-col gap-[18px] px-6 pt-5 pb-6'>
-      <h2 class='font-display text-heading'>Avec {people[login].name}</h2>
+      <h2 class='font-display text-heading'>
+        {t`Avec ${people[login].name}`}
+      </h2>
       <div class='flex flex-col gap-2 text-[13px] font-semibold'>
         <span>Ce que tu proposes</span>
         <div class='flex flex-wrap gap-2 pb-1'>
@@ -154,7 +157,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
         </Field>
       )}
       <Field
-        label={<span>Message pour {first}</span>}
+        label={<span>{t`Message pour ${first}`}</span>}
         error={errors.message}
         errorId='collab-message-error'
       >

@@ -16,6 +16,7 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
 import { proofMeta } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
+import { t } from '/web/lib/language.ts'
 
 // A visitor sees what someone did: a figure at zero is left out
 const stats = (login: Login) => {
@@ -86,7 +87,7 @@ export const Passport = ({ login }: { login: Login }) => {
                 href='connexion'
                 params={{ retour: `/@${login}?dialog=collaboration` }}
               >
-                Collaborer avec {person.name}
+                {t`Collaborer avec ${person.name}`}
               </Button>
             </div>
             <div class='flex flex-col gap-0.5'>

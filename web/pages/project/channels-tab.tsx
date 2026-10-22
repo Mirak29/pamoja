@@ -38,6 +38,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Input } from '/web/ui/input.tsx'
 import { RichText } from '/web/ui/rich-text.tsx'
+import { t, translate } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -342,7 +343,7 @@ const Thread = (
 const Presence = ({ channelName }: { channelName: string }) => {
   // Presence lives in memory on the server (§13.6), here a fixed snapshot
   const present: [name: string, what: string, photo?: string][] = [
-    [me.name, `regarde #${channelName}`, me.avatarUrl],
+    [me.name, t`regarde #${translate(channelName)}`, me.avatarUrl],
     [people.fatou.name, 'travaille sur la PR #84'],
     [people.moussa.name, 'regarde la PR #81'],
   ]
@@ -495,7 +496,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
           ? (
             <div class='flex items-center gap-3 border-t border-line p-3.5'>
               <Composer
-                placeholder={`Écrire dans #${name} (Markdown, \`code\`)`}
+                placeholder={t`Écrire dans #${
+                  translate(name)
+                } (Markdown, \`code\`)`}
                 label='Message'
                 onSend={(text) =>
                   sendMessage(`${project.slug}:${path}`, {

@@ -5,6 +5,7 @@ import { api } from '/web/lib/api.ts'
 import { repoPath } from '/web/lib/links.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
+import { t } from '/web/lib/language.ts'
 
 const Footer = ({ children }: { children: preact.ComponentChildren }) => (
   <div class='flex flex-wrap items-center gap-3.5 border-t border-line pt-[18px]'>
@@ -23,9 +24,7 @@ const Intro = (
   <>
     <h2 class='font-display text-heading'>Recevoir GitHub en temps réel</h2>
     <span class='text-[14px] leading-[22px] text-ink-muted'>
-      Aujourd’hui, Pamoja lit {repo}{' '}
-      toutes les 15 minutes. Avec la synchro live, les PRs, reviews, CI et
-      releases arrivent dans #suivi en quelques secondes.
+      {t`Aujourd’hui, Pamoja lit ${repo} toutes les 15 minutes. Avec la synchro live, les PRs, reviews, CI et releases arrivent dans #suivi en quelques secondes.`}
     </span>
     <div class='flex flex-col gap-3'>
       {[
