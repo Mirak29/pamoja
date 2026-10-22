@@ -20,8 +20,6 @@ import {
   decideApplication,
 } from '/web/fixtures/applications.ts'
 import {
-  markAllRead,
-  markRead,
   type Notification,
   type NotificationCategory,
   type NotificationKind,
@@ -35,6 +33,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
+import { readAll, readOne } from '/web/lib/notifications.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -67,7 +66,7 @@ const icons: Record<NotificationKind, IconComponent> = {
 }
 
 const open = (notification: Notification) => {
-  markRead(notification)
+  readOne(notification)
   navigate({ href: notification.href })
 }
 
@@ -157,7 +156,7 @@ export const NotificationsPage = () => {
         <Button
           variant='secondary'
           disabled={!unread}
-          onClick={() => markAllRead(me.login)}
+          onClick={readAll}
         >
           <CheckCheck />
           Tout marquer comme lu

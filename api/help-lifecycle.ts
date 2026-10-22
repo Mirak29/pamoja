@@ -6,6 +6,7 @@ import { entryNames } from '/api/entry-types.ts'
 import { getHelpRequest } from '/api/help.ts'
 import { MESSAGE_MAX, OPEN_FOR, RELEASE_AFTER } from '/api/help-rules.ts'
 import { explain, matchesFor, sendWave } from '/api/matching.ts'
+import { createNotification } from '/api/notifications.ts'
 import { HelpMessage } from '/api/schema.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
@@ -23,13 +24,30 @@ type Row = {
   status: string
   acceptedBy: number | null
   acceptedAt: number | null
+  title: string
 }
 
 const getRow = sql<Row, number>`
   SELECT helpRequestId, authorId, targetUserId, projectId, pullRequestId,
-    status, acceptedBy, acceptedAt
+    status, acceptedBy, acceptedAt, title
   FROM helpRequest WHERE helpRequestId = ?
 `.get
+
+/** The other side of a request learns what happened (§7.4) */
+const tell = (
+  row: Row,
+  to: number | null,
+  type: string,
+  actorId: number,
+  extra: Record<string, unknown> = {},
+) =>
+  to && to !== actorId && createNotification({
+    userId: to,
+    type,
+    category: 'for-you',
+    actorId,
+    payload: { helpRequestId: row.helpRequestId, title: row.title, ...extra },
+  })
 
 const notFound = () =>
   new respond.NotFoundError({ message: 'Help request not found' })
@@ -138,6 +156,7 @@ export const acceptHelp = (userId: number, helpRequestId: number) =>
       helpRequestId,
       source,
     })
+    tell(row, row.authorId, 'help_accepted', userId)
   })()
 
 const setOpenAgain = sql<
@@ -179,9 +198,13 @@ const reopenWithout = (
     helpRequestId: row.helpRequestId,
     source,
   }
-  left === 'withdrawn'
-    ? Entry.insert.HELP_REQUEST_WITHDRAWN(relations)
-    : Entry.insert.HELP_REQUEST_RELEASED(relations)
+  if (left === 'withdrawn') {
+    Entry.insert.HELP_REQUEST_WITHDRAWN(relations)
+    tell(row, row.authorId, 'help_withdrawn', helperId)
+  } else {
+    Entry.insert.HELP_REQUEST_RELEASED(relations)
+    tell(row, helperId, 'help_released', row.authorId)
+  }
 }
 
 export const withdrawHelp = (userId: number, helpRequestId: number) =>
@@ -245,6 +268,7 @@ export const cancelHelp = (userId: number, helpRequestId: number) =>
       helpRequestId,
       source,
     })
+    tell(row, row.acceptedBy, 'help_cancelled', userId)
   })()
 
 const setReopened = sql<
@@ -289,6 +313,7 @@ export const deliverHelp = (userId: number, helpRequestId: number) =>
       throw conflict('Only an accepted request can be delivered')
     }
     Entry.insert.HELP_REQUEST_DELIVERED({ userId, helpRequestId, source })
+    tell(row, row.authorId, 'help_delivered', userId)
   })()
 
 /** « Was this helpful? → No »: closed, no proof (§7.2, §8.3) */
@@ -301,6 +326,7 @@ export const declineHelp = (userId: number, helpRequestId: number) =>
     }
     move(row, 'closed_unhelpful')
     Entry.insert.HELP_REQUEST_CLOSED({ userId, helpRequestId, source })
+    tell(row, row.acceptedBy, 'help_declined', userId)
   })()
 
 /*
@@ -335,6 +361,14 @@ export const postHelpMessage = (
     })
     // Counts as activity of the helper, against a release (§7.2)
     Entry.insert.HELP_MESSAGE_CREATED({ userId, helpRequestId, source })
+    // The other side is told, with the start of the message (§7.2)
+    tell(
+      row,
+      userId === row.authorId ? row.acceptedBy : row.authorId,
+      'help_message',
+      userId,
+      { excerpt: body.length > 90 ? `${body.slice(0, 88)}…` : body },
+    )
   })()
 
 /*

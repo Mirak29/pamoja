@@ -4,8 +4,13 @@ import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
 import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
-import { matchingModeOf } from '/api/vocabulary.ts'
-import { saveMe, signOut } from '/web/lib/session.ts'
+import {
+  helpCategories,
+  type HelpCategory,
+  keyOf,
+  matchingModeOf,
+} from '/api/vocabulary.ts'
+import { saveMatching, signOut } from '/web/lib/session.ts'
 import {
   matchingModes,
   notificationRows,
@@ -221,7 +226,7 @@ export const SettingsPage = () => {
               pressed={settings.matching === mode}
               onClick={() => {
                 updateSettings((s) => s.matching = mode)
-                saveMe({ profile: { matchingMode: matchingModeOf(mode) } })
+                saveMatching({ matchingMode: matchingModeOf(mode) })
               }}
             >
               {mode}
@@ -246,6 +251,9 @@ export const SettingsPage = () => {
               updateSettings((s) =>
                 s.minScore = Number(event.currentTarget.value)
               )}
+            // Saved once the slider is released
+            onChange={(event) =>
+              saveMatching({ minScore: Number(event.currentTarget.value) })}
             class='m-0.5 w-full accent-indigo'
           />
           <span class='font-normal text-ink-muted'>
@@ -272,10 +280,16 @@ export const SettingsPage = () => {
             <OptionButton
               key={type}
               pressed={person.helpTypes.includes(type)}
-              onClick={() =>
+              onClick={() => {
                 setPerson(() =>
                   person.helpTypes = toggle(person.helpTypes, type)
-                )}
+                )
+                saveMatching({
+                  helpTypes: person.helpTypes
+                    .map((label) => keyOf(helpCategories, label))
+                    .filter((key): key is HelpCategory => !!key),
+                })
+              }}
             >
               {type}
             </OptionButton>

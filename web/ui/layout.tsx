@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
+import { LifeBuoy } from '/web/assets/icons.tsx'
 import { incoming } from '/web/fixtures/notifications.ts'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
@@ -23,6 +24,9 @@ const LiveNotifications = () => {
         title: notification.title,
         body: notification.body,
         href: here ? undefined : notification.href,
+        // « Ce projet a besoin de toi »: skills, score and duration (§7.4)
+        match: notification.match,
+        icon: notification.kind === 'help' ? LifeBuoy : undefined,
       })
     })
   }, [])

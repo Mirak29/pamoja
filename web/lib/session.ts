@@ -1,10 +1,15 @@
 import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { adoptHelpRequests } from '/web/fixtures/help.ts'
-import { adoptUser } from '/web/fixtures/people.ts'
+import { adoptUser, me } from '/web/fixtures/people.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
-import { matchingModes } from '/api/vocabulary.ts'
+import {
+  helpCategories,
+  type HelpCategory,
+  type MatchingMode,
+  matchingModes,
+} from '/api/vocabulary.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 
@@ -21,6 +26,11 @@ const setUser = (user: User) => {
   const first = currentUser.peek()?.userId !== user.userId
   adoptUser(user)
   settings.matching = matchingModes[user.matchingMode]
+  // The matching preferences saved on the server (§7.4)
+  settings.minScore = user.minScore
+  me.helpTypes = user.helpTypes.map((key) =>
+    helpCategories[key as HelpCategory] ?? key
+  )
   currentUser.value = user
   if (first) {
     loadProjects()
@@ -143,4 +153,28 @@ const save = async (changes: {
       .fetch({ intents: changes.intents })
   }
   setUser(saved)
+}
+
+/**
+ * Saves how help requests reach the developer: mode, minimum score, types
+ * of help accepted (§7.4). The page shows the change at once.
+ */
+export const saveMatching = (change: {
+  matchingMode?: MatchingMode
+  minScore?: number
+  helpTypes?: string[]
+}) => {
+  const user = currentUser.peek()
+  if (!user) return
+  return api['POST/api/notification/preferences'].fetch({
+    matchingMode: change.matchingMode ?? user.matchingMode,
+    minScore: change.minScore ?? user.minScore,
+    helpTypes: change.helpTypes ?? user.helpTypes,
+  }).then(setUser, () =>
+    notify({
+      title: 'Réglages non enregistrés',
+      body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
+      icon: CircleAlert,
+      tone: 'danger',
+    }))
 }

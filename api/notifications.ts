@@ -1,3 +1,4 @@
+import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import { Notification } from '/api/schema.ts'
@@ -36,3 +37,67 @@ export const createNotification = (
   })
   return notificationId
 }
+
+/*
+ * The inbox (§7.4)
+ */
+
+type Row = {
+  notificationId: number
+  type: string
+  category: string
+  actor: string | null
+  payload: string
+  readAt: number | null
+  createdAt: number
+}
+
+const listInbox = sql<Row, number>`
+  SELECT notificationId, type, category, actor.githubUsername AS actor,
+    payload, readAt, notification.createdAt
+  FROM notification
+  LEFT JOIN user AS actor ON actor.userId = notification.actorId
+  WHERE notification.userId = ?
+  ORDER BY notification.createdAt DESC, notificationId DESC
+  LIMIT 100
+`.all
+
+// What a notification says: the page writes the sentence in its language
+const shown = (row: Row) => {
+  const payload = JSON.parse(row.payload) as Record<string, unknown>
+  return {
+    id: row.notificationId,
+    type: row.type,
+    category: row.category,
+    actor: row.actor ?? '',
+    helpRequestId: Number(payload.helpRequestId ?? 0),
+    title: String(payload.title ?? ''),
+    project: String(payload.project ?? ''),
+    score: Number(payload.score ?? 0),
+    minutes: Number(payload.minutes ?? 0),
+    skills: Array.isArray(payload.skills) ? payload.skills.map(String) : [],
+    excerpt: String(payload.excerpt ?? ''),
+    readAt: row.readAt ?? 0,
+    createdAt: row.createdAt,
+  }
+}
+
+export const listNotifications = (userId: number) =>
+  listInbox(userId).map(shown)
+
+const setRead = sql<undefined, { userId: number; id: number; at: number }>`
+  UPDATE notification SET readAt = :at
+  WHERE notificationId = :id AND userId = :userId AND readAt IS NULL
+`.run
+
+const setAllRead = sql<undefined, { userId: number; at: number }>`
+  UPDATE notification SET readAt = :at
+  WHERE userId = :userId AND readAt IS NULL
+`.run
+
+/** Only the recipient reads their notification */
+export const readNotification = (userId: number, id: number) =>
+  setRead({ userId, id, at: now() })
+
+export const readAllNotifications = (userId: number) =>
+  setAllRead({ userId, at: now() })
