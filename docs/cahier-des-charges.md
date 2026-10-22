@@ -436,6 +436,8 @@ Pas de score global de type « 93/100 ». Cinq dimensions affichées en barres :
 | Open Source | `PR_MERGED` dont l'auteur n'est pas Owner du projet |
 | Community Help | `HELP_CONFIRMED` (autres types), `ANSWER_ACCEPTED` |
 
+Précisions (`api/proofs.ts`, lu par `GET/api/user/proofs`, public comme le passeport) : seules les preuves éligibles sont listées ; un membre actif est un membre qui n'est pas Observateur ; une PR mergée sur le projet d'un autre est rendue « pour » son propriétaire. Chaque preuve porte ce qui la prouve (PR et lien GitHub, demande d'aide, réponse ou projet), la personne aidée avec son nom et son pays (pour la Collaboration Map), et sa source : `github` porte « vérifié par GitHub », `demo` « donnée de démonstration », `platform` « confirmée sur Pamoja » (aide livrée sur Pamoja puis confirmée par le demandeur). Le profil, le passeport et la carte lisent ces preuves et les badges de `GET/api/user/badges`, et se mettent à jour en direct à chaque nouvelle preuve.
+
 ### 8.2 Badges
 
 Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables dans un fichier de constantes.
@@ -848,7 +850,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Domaine | Routes |
 | --- | --- |
 | Auth | `GET/api/auth/github` · `POST/api/auth/github/callback` · `POST/api/auth/logout` · `GET/api/user/me` |
-| Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/card` (username) |
+| Profil | `GET/api/user` (username) · `POST/api/user/profile/update` · `POST/api/user/skills/update` · `POST/api/user/intents/update` · `GET/api/user/activity` (username) · `GET/api/user/badges` (username) · `GET/api/user/proofs` (username) · `GET/api/user/card` (username) |
 | GitHub | `GET/api/github/repositories` · `GET/api/github/repository` (name : l'aperçu de l'import) · `GET/api/github/installation/start` (project) · `POST/api/github/installation/confirm` · `POST/api/github/webhook` |
 | Projets | `GET/api/project` (slug) · `GET/api/projects` (filtres ; sans filtre, les projets dont on est membre) · `POST/api/project/import` · `POST/api/project/create` · `POST/api/project/update` · `GET/api/project/pulse` · `GET/api/project/health` · `GET/api/project/story` |
 | Équipe | `POST/api/project/join` · `GET/api/project/join-requests` · `POST/api/project/join-request/decide` · `POST/api/project/member/role` · `POST/api/project/member/remove` |

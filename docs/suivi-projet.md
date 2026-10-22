@@ -630,6 +630,13 @@ Les 8 badges du §8.2 sont calculés à partir des seules preuves éligibles, à
 - **Livrable** : `api/badges.ts`, appels depuis `api/help-lifecycle.ts`, `api/github-events.ts` et la connexion, route `GET/api/user/badges`, notification « Badge débloqué », `api/badges_test.ts` (6 tests : niveaux et diversité, preuve exclue, Or, Cross-border, Open Source, Builder, Maintainer, lecture par login)
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-303 · Réputation par dimensions avec preuves
+
+Le profil montre la vraie réputation d'un développeur : ses preuves éligibles, rangées dans les cinq dimensions du §8.1 (review de code, construction de projets, mentorat, open source, entraide), et ses badges avec leur niveau et ce qui manque pour le suivant. Chaque preuve dit d'où elle vient : « vérifié par GitHub » pour une review ou une PR vue sur GitHub, « donnée de démonstration » pour le seed, « confirmée sur Pamoja » pour une aide livrée sur Pamoja et confirmée par le demandeur. Elle mène à ce qui la prouve : la PR sur GitHub, la demande d'aide, le projet. La personne aidée apparaît avec son nom, et son pays alimente la Collaboration Map. Une nouvelle preuve s'affiche en direct, badges compris. Les personnes de la démo gardent leurs preuves des fixtures jusqu'au seed des preuves (PAM-901). Vérifié dans le navigateur avec trois comptes : les reviews de Kadi pour Sena apparaissent vérifiées par GitHub ; la troisième aide confirmée par Sena est bien écartée par le plafond par paire ; quand Yaw confirme un pair programming, la preuve, la dimension Mentorat, deux badges Bronze et la Côte d'Ivoire sur la carte arrivent sans rafraîchir, en français comme en anglais.
+
+- **Livrable** : `api/proofs.ts`, route `GET/api/user/proofs`, `api/proofs_test.ts` (2 tests : dimensions et sources, construction de projets), `web/lib/reputation.ts`, preuves et badges du serveur sur le profil, le passeport, la carte de partage et la Collaboration Map, mention « confirmée sur Pamoja », traductions ; corrections de types dans `api/badges_test.ts` et `api/review_check_test.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

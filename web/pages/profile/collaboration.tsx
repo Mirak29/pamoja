@@ -1,5 +1,10 @@
 import { A } from '@01edu/signal-router'
-import { countries, type Login, people } from '/web/fixtures/people.ts'
+import {
+  countries,
+  type Login,
+  people,
+  personOf,
+} from '/web/fixtures/people.ts'
 import { linksOf } from '/web/fixtures/reputation.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -47,13 +52,14 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
     { count: number; verified: boolean; names: string[] }
   >()
   for (const link of linksOf(login)) {
-    const code = people[link.login].countryCode
-    if (code === home) continue
+    // A developer without a country is not on the map (§9.3)
+    const code = personOf(link.login).countryCode
+    if (!code || code === home) continue
     const entry = byCountry.get(code) ??
       { count: 0, verified: false, names: [] }
     entry.count += link.count
     entry.verified ||= link.verified
-    entry.names.push(people[link.login].name.split(' ')[0])
+    entry.names.push(personOf(link.login).name.split(' ')[0])
     byCountry.set(code, entry)
   }
   const [hx, hy] = positions[home] ? project(...positions[home]) : [200, 118]
@@ -290,7 +296,7 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
                     fill='var(--ink)'
                     class='font-display text-[10px] font-semibold'
                   >
-                    {initials(people[node.login].name)}
+                    {initials(personOf(node.login).name)}
                   </text>
                 </g>
               ))}
@@ -303,7 +309,7 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
                   class='tile inline-flex flex-col px-2.5 py-1.5 text-ink no-underline hover:no-underline'
                 >
                   <span class='text-[13px] font-semibold'>
-                    {people[node.login].name}
+                    {personOf(node.login).name}
                   </span>
                   <span class='text-[11px] text-ink-muted'>
                     {node.count}{' '}

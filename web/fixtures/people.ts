@@ -238,13 +238,21 @@ export const isMe = (login: string) => login === me.login
  */
 export const nameOf = (login: string) => personOf(login).name
 
+// Developers the API named without their profile (the person helped by a
+// proof): their name and country, until GET/api/user reads them (PAM-301)
+const heard = new Map<string, { name: string; countryCode: string }>()
+
+/** Remembers the name and country the API gave for a developer */
+export const hearOf = (login: string, name: string, countryCode: string) =>
+  heard.set(login, { name: name || login, countryCode })
+
 /** A developer of the pages; one read from the API alone is known by login */
 export const personOf = (login: string): Person =>
   (people as Record<string, Person>)[login] ?? {
     login,
-    name: login,
-    country: '',
-    countryCode: '',
+    name: heard.get(login)?.name ?? login,
+    country: countryName(heard.get(login)?.countryCode ?? ''),
+    countryCode: heard.get(login)?.countryCode ?? '',
     city: '',
     role: 'Développeur',
     skills: [],

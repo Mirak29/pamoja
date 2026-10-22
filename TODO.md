@@ -136,7 +136,7 @@ Responsable : _à répartir_
 
 - [ ] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
 - [ ] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2)
-- [ ] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
+- [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
 - [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
@@ -289,3 +289,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Vérification d'une review : les commentaires de ligne d'une review « commented » sans texte sont lus après le webhook (fin du compte provisoire de PAM-205) ; la resynchronisation relit les reviews des PRs à aide acceptée ; `deliveredAt` = heure de la détection · §5.5, §7.5
 - 2026-10-22 · Confirmation : `REVIEW_HELP_CONFIRMED` (`github`) pour une review, `HELP_CONFIRMED` (`platform`) pour une aide livrée ; plafond par paire décidé à la confirmation (`pair_limit`) ; skills prouvés en `platform_activity` pour l'aidant · §7.3, §8.3, §8.4
 - 2026-10-22 · Badges : Builder = projet avec release et au moins un contributeur hors propriétaire ; Maintainer = plus longue suite de mois d'activité GitHub ; Cross-border = pays des deux côtés d'une aide confirmée, le sien exclu ; évaluation après chaque preuve et à la connexion · §8.2, §8.4
+- 2026-10-22 · Réputation : preuves par dimension lues par `GET/api/user/proofs` (éligibles seulement, membre actif = non Observateur) ; trois mentions de source : « vérifié par GitHub », « donnée de démonstration », « confirmée sur Pamoja » ; les personnes de la démo gardent leurs preuves des fixtures jusqu'au seed des preuves (PAM-901) · §8.1, §8.3, §15

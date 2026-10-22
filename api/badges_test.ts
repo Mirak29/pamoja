@@ -170,6 +170,7 @@ Deno.test('badges: the page reads them by login', async () => {
   const badges = await res.json() as {
     badge: string
     level: number
+    count: number
     next: number
   }[]
   assertEquals(badges.length, 8)

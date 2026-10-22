@@ -36,6 +36,7 @@ import {
   projectsOf,
 } from '/web/fixtures/projects.ts'
 import {
+  badgesOf,
   type Dimension,
   profileStats,
   type Proof,
@@ -45,12 +46,7 @@ import { githubUrl } from '/web/lib/links.ts'
 import { plural } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
-import {
-  DemoBadge,
-  SkillChip,
-  StatusBadge,
-  VerifiedBadge,
-} from '/web/ui/badge.tsx'
+import { SkillChip, StatusBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -63,10 +59,15 @@ import {
 import { CollaborationDialog } from '/web/pages/profile/collaboration-dialog.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
 import { Passport } from '/web/pages/profile/passport.tsx'
-import { proofMeta, ProofsDrawer } from '/web/pages/profile/proofs-drawer.tsx'
+import {
+  proofMeta,
+  ProofsDrawer,
+  ProofSource,
+} from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
 import { t } from '/web/lib/language.ts'
+import { useReputation } from '/web/lib/reputation.ts'
 
 const dimensionIcons = {
   review: GitPullRequest,
@@ -283,7 +284,9 @@ const SectionHeader = (
 // A proof leads to what proves it: the PR on GitHub, the accepted answer,
 // the help request, or the project
 const proofHref = (proof: Proof) =>
-  proof.pullRequest && proof.project
+  proof.url
+    ? proof.url
+    : proof.pullRequest && proof.project
     ? githubUrl(projects[proof.project], 'pull', proof.pullRequest)
     : proof.post
     ? `post/${proof.post}`
@@ -317,8 +320,7 @@ const Contributions = ({ login }: { login: Login }) => {
                 {proofMeta(proof)}
               </span>
             </span>
-            {proof.verified && <VerifiedBadge />}
-            {proof.demo && !proof.verified && <DemoBadge />}
+            <ProofSource proof={proof} />
           </A>
         )
       })}
@@ -347,7 +349,14 @@ const Reputation = ({ login }: { login: Login }) => (
 const Badges = ({ login }: { login: Login }) => (
   <section class='slab flex flex-col gap-3.5 p-[22px]'>
     <Eyebrow>Badges</Eyebrow>
-    <BadgeList login={login} />
+    {badgesOf(login).length
+      ? <BadgeList login={login} />
+      : (
+        <span class='text-[14px] text-pretty text-ink-muted'>
+          Pas encore de badge. Trois reviews confirmées font le premier :
+          Reviewer de confiance, niveau Bronze.
+        </span>
+      )}
   </section>
 )
 
@@ -430,6 +439,7 @@ export const ProfilePage = () => {
   profileChanged.value
   peopleChanged.value
   const login = profileLogin()
+  useReputation(login)
   if (!login) return <NotFound login={url.relativePath.slice(2)} />
   const { theme, accent, order } = settingsOf(login)
   return (
