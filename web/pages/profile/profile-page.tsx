@@ -1,4 +1,4 @@
-import { A, url } from '@01edu/signal-router'
+import { A, navigate, url } from '@01edu/signal-router'
 import {
   Check,
   Flag,
@@ -12,7 +12,7 @@ import {
   UserPlus,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
-import { helpRequests } from '/web/fixtures/help.ts'
+import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
 import {
   isMe,
   type Login,
@@ -20,6 +20,7 @@ import {
   people,
   peopleChanged,
   type Person,
+  personOf,
   placeOf,
   toggleFollowing,
   websiteHref,
@@ -33,7 +34,7 @@ import {
 import {
   projects,
   type ProjectSlug,
-  projectsOf,
+  projectsShownOf,
 } from '/web/fixtures/projects.ts'
 import {
   badgesOf,
@@ -67,7 +68,11 @@ import {
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
 import { t } from '/web/lib/language.ts'
-import { useReputation } from '/web/lib/reputation.ts'
+import {
+  loadProfile,
+  type ProfileStatus,
+  useProfile,
+} from '/web/lib/profile.ts'
 
 const dimensionIcons = {
   review: GitPullRequest,
@@ -77,12 +82,21 @@ const dimensionIcons = {
   help: LifeBuoy,
 } satisfies Record<Dimension, unknown>
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
-/** Login of the profile at /@login, if that person exists */
-const profileLogin = () => {
-  const login = url.relativePath.slice(2).split('/')[0]
-  return Object.hasOwn(people, login) ? login as Login : undefined
+/** The login written in the address /@login */
+const addressLogin = () => url.relativePath.slice(2).split('/')[0]
+
+/**
+ * The profile of the address, read from the server (§9.1); a demo person
+ * of the pages shows at once. Undefined while it is read, or for nobody.
+ */
+const useProfileLogin = () => {
+  const { status, login } = useProfile(addressLogin())
+  return {
+    status,
+    login: Object.hasOwn(people, login) ? login as Login : undefined,
+  }
 }
 
 const Actions = ({ login }: { login: Login }) => {
@@ -197,6 +211,25 @@ const Hero = ({ login }: { login: Login }) => {
   )
 }
 
+const tile =
+  'flex flex-col gap-0.5 rounded-[8px] border border-figure-edge bg-surface-100 px-4 py-3.5 text-left text-ink no-underline shadow-tile hover:border-indigo hover:no-underline'
+
+/** Scrolls to a section of the profile; false when it is not shown */
+const scrollTo = (id: string) => {
+  const section = document.getElementById(id)
+  // Smooth, unless the developer asked for less motion
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  section?.scrollIntoView({
+    behavior: still ? 'auto' : 'smooth',
+    block: 'start',
+  })
+  return !!section
+}
+
+/**
+ * The figures of the profile, each leading to what proves it (§8, §9.1):
+ * the proofs behind it, the people worked with, the projects
+ */
 const Stats = ({ login }: { login: Login }) => {
   const figures = profileStats(login)
   // What was done for others first, then one's own projects
@@ -204,68 +237,105 @@ const Stats = ({ login }: { login: Login }) => {
     [
       figures.reviews,
       plural(figures.reviews, 'review confirmée', 'reviews confirmées'),
+      'preuves-review',
     ],
-    [figures.contributions, plural(figures.contributions, 'contribution')],
+    [
+      figures.contributions,
+      plural(figures.contributions, 'contribution'),
+      'preuves-contributions',
+    ],
     [
       figures.helped,
       plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
+      'preuves-aides',
     ],
-    [figures.collaborations, plural(figures.collaborations, 'collaboration')],
-    [figures.projects, plural(figures.projects, 'projet')],
+    [
+      figures.collaborations,
+      plural(figures.collaborations, 'collaboration'),
+      'profil-collaborations',
+    ],
+    [figures.projects, plural(figures.projects, 'projet'), 'profil-projets'],
   ] as const
   return (
     <div class='mr-2 grid grid-cols-[repeat(auto-fit,minmax(118px,1fr))] gap-5'>
-      {stats.map(([value, label]) => (
-        <div
-          key={label}
-          class='flex flex-col gap-0.5 rounded-[8px] border border-figure-edge bg-surface-100 px-4 py-3.5 shadow-tile'
-        >
-          <span class='font-mono text-[28px] leading-8 font-medium tabular-nums'>
-            {value}
-          </span>
-          <span class='text-[13px] text-ink-muted'>{label}</span>
-        </div>
-      ))}
+      {stats.map(([value, label, target]) => {
+        const content = (
+          <>
+            <span class='font-mono text-[28px] leading-8 font-medium tabular-nums'>
+              {value}
+            </span>
+            <span class='text-[13px] text-ink-muted'>{label}</span>
+          </>
+        )
+        return target.startsWith('preuves')
+          ? (
+            <A key={label} params={{ dialog: target }} class={tile}>
+              {content}
+            </A>
+          )
+          : (
+            <button
+              key={label}
+              type='button'
+              class={`${tile} cursor-pointer`}
+              // A section hidden by the developer: its proofs instead
+              onClick={() =>
+                scrollTo(target) || navigate({ params: { dialog: 'preuves' } })}
+            >
+              {content}
+            </button>
+          )
+      })}
     </div>
   )
 }
 
+const projectCard =
+  'slab mb-2 flex items-start gap-3.5 p-[18px] text-ink no-underline hover:no-underline'
+
 const Building = ({ login }: { login: Login }) => {
   const { featured } = settingsOf(login)
-  const list = projectsOf(login).filter((project) =>
+  const list = projectsShownOf(login).filter((project) =>
     !featured.length || featured.includes(project.slug as ProjectSlug)
   )
   if (!list.length) return null
   return (
-    <section class='flex flex-col gap-4'>
+    <section id='profil-projets' class='flex flex-col gap-4'>
       <Eyebrow>En train de construire</Eyebrow>
-      {list.map((project) => (
-        <A
-          key={project.slug}
-          href={`projet/${project.slug}`}
-          class='slab slab-lift mb-2 flex items-start gap-3.5 p-[18px] text-ink no-underline hover:no-underline'
-        >
-          <Cube size={40} />
-          <span class='flex min-w-0 flex-1 flex-col gap-1'>
-            <span class='flex items-center justify-between gap-2'>
-              <span class='font-display text-[17px] leading-[22px] font-semibold'>
-                {project.name}
+      {list.map((project) => {
+        const content = (
+          <>
+            <Cube size={40} />
+            <span class='flex min-w-0 flex-1 flex-col gap-1'>
+              <span class='flex items-center justify-between gap-2'>
+                <span class='font-display text-[17px] leading-[22px] font-semibold'>
+                  {project.name}
+                </span>
+                <span class='text-[12px] text-ink-muted'>{project.role}</span>
               </span>
-              <span class='text-[12px] text-ink-muted'>
-                {project.owner === login
-                  ? 'Propriétaire'
-                  : project.members.find((m) => m.login === login)?.role}
+              <span class='text-[14px] text-pretty text-ink-muted'>
+                {project.description}
+              </span>
+              <span class='font-mono text-[12px] leading-4 text-ink-muted'>
+                {project.stack.join(' · ')}
               </span>
             </span>
-            <span class='text-[14px] text-pretty text-ink-muted'>
-              {project.description}
-            </span>
-            <span class='font-mono text-[12px] leading-4 text-ink-muted'>
-              {project.stack.join(' · ')}
-            </span>
-          </span>
-        </A>
-      ))}
+          </>
+        )
+        // A project the pages cannot open yet (another developer's, read
+        // with their profile) is shown without a link until PAM-401
+        return Object.hasOwn(projects, project.slug)
+          ? (
+            <A
+              key={project.slug}
+              href={`projet/${project.slug}`}
+              class={`${projectCard} slab-lift`}
+            >
+              {content}
+            </A>
+          )
+          : <div key={project.slug} class={projectCard}>{content}</div>
+      })}
     </section>
   )
 }
@@ -361,6 +431,8 @@ const Badges = ({ login }: { login: Login }) => (
 )
 
 const Activity = ({ login }: { login: Login }) => {
+  // The requests read with the profile join the list
+  helpChanged.value
   const list = helpRequests
     .filter((h) => h.helper === login || h.author === login)
     .sort((a, b) => b.at - a.at)
@@ -390,22 +462,25 @@ const Activity = ({ login }: { login: Login }) => {
   )
 }
 
-const Communities = ({ login }: { login: Login }) => (
-  <section class='slab flex flex-col gap-3 p-[22px]'>
-    <Eyebrow>Communautés</Eyebrow>
-    <div class='flex flex-wrap gap-2.5 pb-[3px]'>
-      {people[login].communities.map((slug) => (
-        <A
-          key={slug}
-          href={`communaute/${slug}`}
-          class='inline-flex h-[30px] items-center rounded-[5px] border border-figure-edge bg-surface-100 px-2.5 text-[13px] text-ink no-underline shadow-tile hover:bg-surface-200 hover:no-underline'
-        >
-          {communities.find((c) => c.slug === slug)?.name}
-        </A>
-      ))}
-    </div>
-  </section>
-)
+const Communities = ({ login }: { login: Login }) =>
+  people[login].communities.length === 0
+    ? null
+    : (
+      <section class='slab flex flex-col gap-3 p-[22px]'>
+        <Eyebrow>Communautés</Eyebrow>
+        <div class='flex flex-wrap gap-2.5 pb-[3px]'>
+          {people[login].communities.map((slug) => (
+            <A
+              key={slug}
+              href={`communaute/${slug}`}
+              class='inline-flex h-[30px] items-center rounded-[5px] border border-figure-edge bg-surface-100 px-2.5 text-[13px] text-ink no-underline shadow-tile hover:bg-surface-200 hover:no-underline'
+            >
+              {communities.find((c) => c.slug === slug)?.name}
+            </A>
+          ))}
+        </div>
+      </section>
+    )
 
 const NotFound = ({ login }: { login: string }) => (
   <Page title='Profil introuvable' class='pt-5'>
@@ -416,6 +491,30 @@ const NotFound = ({ login }: { login: string }) => (
     </GhostSlab>
   </Page>
 )
+
+const Unavailable = ({ login }: { login: string }) => (
+  <Page title='Profil indisponible' class='pt-5'>
+    <GhostSlab>
+      <EmptyState
+        action={
+          <Button variant='secondary' onClick={() => loadProfile(login)}>
+            Réessayer
+          </Button>
+        }
+      >
+        Pamoja n’a pas pu charger ce profil. Vérifie ta connexion et réessaie.
+      </EmptyState>
+    </GhostSlab>
+  </Page>
+)
+
+/** While the profile is read, nobody, or a network failure */
+const Missing = ({ status }: { status: ProfileStatus }) =>
+  status === 'loading'
+    ? null
+    : status === 'failed'
+    ? <Unavailable login={addressLogin()} />
+    : <NotFound login={addressLogin()} />
 
 const sections: Record<
   ProfileSection,
@@ -438,9 +537,8 @@ const sections: Record<
 export const ProfilePage = () => {
   profileChanged.value
   peopleChanged.value
-  const login = profileLogin()
-  useReputation(login)
-  if (!login) return <NotFound login={url.relativePath.slice(2)} />
+  const { status, login } = useProfileLogin()
+  if (!login) return <Missing status={status} />
   const { theme, accent, order } = settingsOf(login)
   return (
     <Page title={people[login].name} heading={false} class='pt-5'>
@@ -469,14 +567,15 @@ export const ProfilePage = () => {
 
 /**
  * The profile seen without a session: the passport, outside the app shell
- * (§9.3). Until sessions exist (PAM-110) it shows at /@login?vue=publique.
+ * (§9.3). Signed in, /@login?vue=publique shows it as a visitor sees it.
  */
 export const PassportPage = () => {
-  const login = profileLogin()
+  peopleChanged.value
+  const { status, login } = useProfileLogin()
   if (login) return <Passport login={login} />
   return (
     <main class='mx-auto w-full max-w-[820px] px-6'>
-      <ProfilePage />
+      <Missing status={status} />
     </main>
   )
 }

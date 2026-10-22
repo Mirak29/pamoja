@@ -5,7 +5,7 @@ import { hearOf, type Login, people, personOf } from '/web/fixtures/people.ts'
 import {
   projects,
   type ProjectSlug,
-  projectsOf,
+  projectsShownOf,
 } from '/web/fixtures/projects.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
@@ -386,7 +386,7 @@ export const profileStats = (login: Login) => {
   const count = (dimension: Dimension) =>
     mine.filter((p) => p.dimension === dimension).length
   return {
-    projects: projectsOf(login).length,
+    projects: projectsShownOf(login).length,
     reviews: count('review'),
     contributions: count('oss') + count('build'),
     helped: new Set(

@@ -70,17 +70,34 @@ const Row = ({ proof }: { proof: Proof }) => {
   )
 }
 
+// The proofs behind a figure of the profile (§9.1): one dimension, the
+// contributions, or the developers helped
+const filters: Record<string, [string, (proof: Proof) => boolean]> = {
+  ...Object.fromEntries(
+    dimensions.map(([key, label]) => [
+      `preuves-${key}`,
+      [label, (proof: Proof) => proof.dimension === key],
+    ]),
+  ),
+  'preuves-contributions': [
+    'Contributions',
+    (proof) => proof.dimension === 'oss' || proof.dimension === 'build',
+  ],
+  'preuves-aides': [
+    'Développeurs aidés',
+    (proof) => !!proof.by && proof.dimension !== 'build',
+  ],
+}
+
 /**
  * Proofs behind the reputation, all of them (?dialog=preuves) or those of
- * one dimension (?dialog=preuves-review).
+ * one figure (?dialog=preuves-review, preuves-contributions…).
  */
 export const ProofsDrawer = ({ login }: { login: Login }) => {
   const opened = String(url.params.dialog ?? '')
   if (!opened.startsWith('preuves')) return null
-  const dimension = dimensions.find(([key]) => opened === `preuves-${key}`)
-  const list = proofsOf(login).filter((p) =>
-    !dimension || p.dimension === dimension[0]
-  )
+  const filter = Object.hasOwn(filters, opened) ? filters[opened] : undefined
+  const list = proofsOf(login).filter((p) => !filter || filter[1](p))
   const verified = list.filter((p) => p.verified).length
   const demo = list.filter((p) => p.demo && !p.verified).length
   const confirmed = list.length - verified - demo
@@ -93,7 +110,7 @@ export const ProofsDrawer = ({ login }: { login: Login }) => {
     >
       <div class='flex flex-col gap-3.5 p-[22px]'>
         <h2 class='font-display text-[23px] leading-[29px] font-semibold'>
-          {dimension ? dimension[1] : 'Toutes les preuves'}
+          {filter ? filter[0] : 'Toutes les preuves'}
         </h2>
         <span class='text-[13px] text-ink-muted'>
           {[

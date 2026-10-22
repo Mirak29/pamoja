@@ -644,6 +644,13 @@ Revue de tout le code serveur et des affichages du web. Injection SQL, sessions,
 - **Livrable** : routes fermées dans `api/routes.ts`, `api/dev_tools_test.ts`, `--host=127.0.0.1` dans `deno task dev`, filtre du tunnel dans `task-tunnel.ts`, ligne « Outils de dev » au §16
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-301 · Profil public à une seule adresse
+
+Le profil `/@login` s'ouvre pour n'importe quel développeur inscrit, plus seulement pour soi et les personnes de la démo. Il est lu sur le serveur : nom, photo, headline, bio, ville et pays, site, skills, communautés, projets publics avec le rôle de la personne, réputation et badges. Sans connexion, c'est le passeport en lecture seule ; connecté, le profil complet, avec en plus l'activité d'aide de la personne. Le profil ne donne jamais l'email ni les réglages de matching. Chaque chiffre est cliquable : reviews, contributions et développeurs aidés ouvrent leurs preuves ; collaborations et projets mènent au graphe et aux projets. Un projet que l'app ne sait pas encore ouvrir (celui d'un autre, PAM-401) s'affiche sans lien ; un login inconnu donne « Profil introuvable », une coupure réseau « Réessayer ». Sur le passeport, une section vide (badges, preuves) n'est plus affichée. Les personnes de la démo restent visibles sans base seedée. Vérifié dans le navigateur, en français et en anglais : le profil de Sena ouvert par Kadi (adresse en minuscules pour le login « Sena »), son passeport sans session, un login inconnu, le profil de démo de Moussa, les chiffres qui ouvrent leurs preuves.
+
+- **Livrable** : `api/profile.ts`, route `GET/api/user`, `listHelpActivity` dans `api/help.ts`, `api/public_profile_test.ts`, `web/lib/profile.ts`, profil et passeport chargés par l'adresse, chiffres cliquables, projets du profil (`projectsShownOf`), traductions
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

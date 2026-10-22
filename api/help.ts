@@ -220,6 +220,14 @@ const listVisible = sql<HelpRow, { userId: number }>`${helpSelect}
   LIMIT 200
 `.all
 
+// The latest requests a developer wrote or accepted: the Activity of their
+// profile (§9.1)
+const listActivity = sql<HelpRow, { userId: number }>`${helpSelect}
+  WHERE helpRequest.authorId = :userId OR helpRequest.acceptedBy = :userId
+  ORDER BY helpRequest.createdAt DESC
+  LIMIT 10
+`.all
+
 const getOne = sql<HelpRow, number>`${helpSelect}
   WHERE helpRequest.helpRequestId = ?
 `.get
@@ -246,6 +254,9 @@ const shown = (row: HelpRow) => ({
 
 export const listHelpRequests = (userId: number) =>
   listVisible({ userId }).map(shown)
+
+export const listHelpActivity = (userId: number) =>
+  listActivity({ userId }).map(shown)
 
 export const getHelpRequest = (helpRequestId: number) => {
   const row = getOne(helpRequestId)

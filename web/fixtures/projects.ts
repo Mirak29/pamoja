@@ -321,3 +321,40 @@ export const projectsOf = (login: Login): Project[] =>
     project.owner === login ||
     project.members.some((member) => member.login === login)
   )
+
+/** A project as a profile shows it: « En train de construire » (§9.1) */
+export type ProfileProject = {
+  slug: string
+  name: string
+  description: string
+  stack: string[]
+  role: ProjectRole
+}
+
+// The public projects of the profiles read from GET/api/user, by login
+const profileProjects = new Map<string, ProfileProject[]>()
+export const profileProjectsChanged = signal(0)
+
+export const adoptProfileProjects = (login: string, list: ProfileProject[]) => {
+  profileProjects.set(login, list)
+  profileProjectsChanged.value++
+}
+
+/**
+ * The projects shown on a profile: those the server gave for it, else those
+ * of the pages. A component that reads them follows them.
+ */
+export const projectsShownOf = (login: string): ProfileProject[] => {
+  profileProjectsChanged.value
+  return profileProjects.get(login) ??
+    projectsOf(login as Login).map((project) => ({
+      slug: project.slug,
+      name: project.name,
+      description: project.description,
+      stack: project.stack,
+      role: project.owner === login
+        ? 'Propriétaire'
+        : project.members.find((m) => m.login === login)?.role ??
+          'Contributeur',
+    }))
+}

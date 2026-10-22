@@ -516,6 +516,8 @@ Le profil est un produit à part entière : public, partageable, indexable, serv
 - **Réputation et badges** (§8).
 - **Sections** : Overview, Projects, Contributions, Reviews, Activity, Badges, Communities, GitHub. Une seule colonne, dans l'ordre choisi par le développeur.
 
+Précisions (`api/profile.ts`, lu par `GET/api/user`, public) : le profil ne donne jamais l'email ni les réglages de matching ; les projets montrés sont les projets publics dont le développeur est membre (pas Observateur) ; l'activité (dernières demandes d'aide écrites ou acceptées) n'est donnée qu'à un visiteur connecté, qui peut ouvrir ces demandes (§7.2). L'adresse ne tient pas compte de la casse du login. Chaque chiffre mène à ses preuves : reviews, contributions et développeurs aidés ouvrent les preuves correspondantes ; collaborations et projets mènent au Collaboration Graph et aux projets du profil.
+
 ### 9.2 Personnalisation
 
 Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.

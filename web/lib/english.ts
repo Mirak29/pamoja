@@ -1398,6 +1398,11 @@ export const english: Record<string, string> = {
   'réponses acceptées': 'accepted answers',
   'confirmée': 'confirmed',
   'confirmées': 'confirmed',
+  'Développeur': 'Developer',
+  'Développeurs aidés': 'Developers helped',
+  'Profil indisponible': 'Profile unavailable',
+  'Pamoja n’a pas pu charger ce profil. Vérifie ta connexion et réessaie.':
+    'Pamoja could not load this profile. Check your connection and try again.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
