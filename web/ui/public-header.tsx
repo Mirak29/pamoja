@@ -29,12 +29,17 @@ export const PublicHeader = () => (
         Pamoja
       </span>
     </A>
-    <span class='flex-1' />
-    <A {...passportLink('moussa')} class='text-[14px] font-semibold'>
-      Voir un profil
-    </A>
-    <ThemeToggle />
-    <LanguageToggle />
-    <Button variant='secondary' href='connexion'>Se connecter</Button>
+    {/* One group: on a phone it goes under the logo as a whole */}
+    <div class='ml-auto flex items-center gap-2.5'>
+      <A
+        {...passportLink('moussa')}
+        class='mr-1.5 text-[14px] font-semibold'
+      >
+        Voir un profil
+      </A>
+      <ThemeToggle />
+      <LanguageToggle />
+      <Button variant='secondary' href='connexion'>Se connecter</Button>
+    </div>
   </header>
 )
