@@ -6,6 +6,7 @@ import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { t } from '/web/lib/language.ts'
 
 export type PostType =
   | 'Discussion'
@@ -311,7 +312,7 @@ export const toggleRepost = (post: Post, login: Login) => {
       to: post.author,
       category: 'social',
       kind: 'repost',
-      title: `${firstName(login)} a republié ton post`,
+      title: t`${firstName(login)} a republié ton post`,
       body: post.title || post.body.slice(0, 90),
       href: `post/${post.id}`,
     })

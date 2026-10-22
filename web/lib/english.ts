@@ -1296,6 +1296,55 @@ export const english: Record<string, string> = {
   'bloqueur': 'blocker',
   'bloqueurs': 'blockers',
   'en attente de review': 'waiting for review',
+  'Awa veut rejoindre OpenPay Africa': 'Awa wants to join OpenPay Africa',
+  'Frontend et Tests, 4 h par semaine : « J’aimerais contribuer au projet. »':
+    'Frontend, Tests, 4 h a week: “J’aimerais contribuer au projet.”',
+  'Fatou a ouvert la PR #80': 'Fatou opened PR #80',
+  '« Idempotency keys for webhooks » sur OpenPay Africa attend une review.':
+    '“Idempotency keys for webhooks” on OpenPay Africa is waiting for a review.',
+  'AfriCommerce a besoin de toi': 'AfriCommerce needs you',
+  'Kofi demande une review de code Go : « Relire l’API Go de paiement à la livraison ». Environ 30 min.':
+    'Kofi asks for a Go code review: “Relire l’API Go de paiement à la livraison”. About 30 min.',
+  'Dakar Transit a besoin de toi': 'Dakar Transit needs you',
+  'Fatou cherche un avis d’architecture Go et SQL : « Choisir l’architecture du backend des horaires ». Environ 45 min.':
+    'Fatou is looking for Go and SQL architecture advice: “Choisir l’architecture du backend des horaires”. About 45 min.',
+  'Moussa suit OpenPay Africa': 'Moussa follows OpenPay Africa',
+  'Il rejoint Awa et Zeinab parmi les abonnés du projet.':
+    'He joins Awa and Zeinab among the project’s followers.',
+  'Synchro live active sur OpenPay Africa': 'Live sync on for OpenPay Africa',
+  'Les PRs, reviews et CI arrivent en temps réel dans #suivi.':
+    'PRs, reviews and CI arrive in real time in #tracking.',
+  '3 demandes d’aide correspondent à tes skills':
+    '3 help requests match your skills',
+  'Go, SQLite, Backend : AfriCommerce, Dakar Transit et OpenPay Africa.':
+    'Go, SQLite, Backend: AfriCommerce, Dakar Transit and OpenPay Africa.',
+  'Nouvelle discussion dans Go': 'New discussion in Go',
+  'Zeinab : « Vos patterns pour les transactions SQLite en Go ? »':
+    'Zeinab: “Vos patterns pour les transactions SQLite en Go ?”',
+  'La PR #31 attend une review': 'PR #31 is waiting for a review',
+  '« Tile cache for offline mode » sur Senegal Maps.':
+    '“Tile cache for offline mode” on Senegal Maps.',
+  'Tu es modératrice de la communauté Go':
+    'You are a moderator of the Go community',
+  'Ton profil est mis en avant comme prometteur':
+    'Your profile is featured as promising',
+  'Candidature non retenue': 'Application not accepted',
+  'Ton post a été masqué': 'Your post was hidden',
+  'Ta demande d’aide a été retirée': 'Your help request was removed',
+  'Ton profil est retiré des recherches': 'Your profile is removed from search',
+  'Ton message a été masqué': 'Your message was hidden',
+  'Avertissement de la modération': 'Warning from moderation',
+  'Ton compte est suspendu 7 jours': 'Your account is suspended for 7 days',
+  'Une preuve a été retirée de ton profil':
+    'A proof was removed from your profile',
+  'Tu t’es désisté': 'You withdrew',
+  'La demande repasse en Ouverte.': 'The request is Open again.',
+  'ton message': 'your message',
+  'ta demande d’aide': 'your help request',
+  'ton profil': 'your profile',
+  'ta réponse': 'your reply',
+  'ton post': 'your post',
+  'Message': 'Message',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1427,4 +1476,21 @@ export const englishTemplates: Record<string, string> = {
   'Captures ({0} maximum)': 'Screenshots ({0} maximum)',
   'ouverte {0}': 'opened {0}',
   '{0} · ouverte {1} · {2}': '{0} · opened {1} · {2}',
+  '{0} veut rejoindre {1}': '{0} wants to join {1}',
+  '{0}, {1} : « {2} »': '{0}, {1}: “{2}”',
+  'Tu rejoins {0}': 'You join {0}',
+  '{0} a accepté ta candidature. Tu peux écrire dans #général.':
+    '{0} accepted your application. You can write in #general.',
+  '{0} n’a pas retenu ta candidature cette fois.':
+    '{0} did not accept your application this time.',
+  '{0} t’a écrit': '{0} wrote to you',
+  '{0} s’est désisté': '{0} withdrew',
+  '« {0} » repasse en Ouverte.': '“{0}” is Open again.',
+  '{0} a republié ton post': '{0} reposted your post',
+  'Nouveau signalement : {0}': 'New report: {0}',
+  '{0} signalé. Il attend ta décision dans la file de modération.':
+    '{0} reported. It awaits your decision in the moderation queue.',
+  '« {0} » · Motif : {1}': '“{0}” · Reason: {1}',
+  'Motif : {0}': 'Reason: {0}',
+  'À propos de {0} · {1}': 'About {0} · {1}',
 }

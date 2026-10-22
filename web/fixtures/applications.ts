@@ -13,6 +13,7 @@ import {
   projects,
   type ProjectSlug,
 } from '/web/fixtures/projects.ts'
+import { t, translate } from '/web/lib/language.ts'
 
 // Requests to join a project (§6.6), what POST/api/project/join and
 // POST/api/project/join-request/decide will handle
@@ -66,8 +67,10 @@ export const apply = (
     to: project.owner,
     category: 'projects',
     kind: 'application',
-    title: `${firstName(draft.login)} veut rejoindre ${project.name}`,
-    body: `${draft.areas.join(' et ')}, ${draft.availability} : « ${message} »`,
+    title: t`${firstName(draft.login)} veut rejoindre ${project.name}`,
+    body: t`${draft.areas.map(translate).join(', ')}, ${
+      translate(draft.availability)
+    } : « ${message} »`,
     href: `projet/${draft.project}/equipe`,
     application: id,
   })
@@ -100,12 +103,14 @@ export const decideApplication = (
     to: application.login,
     category: 'projects',
     kind: 'application',
-    title: accept ? `Tu rejoins ${project.name}` : 'Candidature non retenue',
+    title: accept
+      ? t`Tu rejoins ${project.name}`
+      : translate('Candidature non retenue'),
     body: accept
-      ? `${
+      ? t`${
         firstName(project.owner)
       } a accepté ta candidature. Tu peux écrire dans #général.`
-      : `${project.name} n’a pas retenu ta candidature cette fois.`,
+      : t`${project.name} n’a pas retenu ta candidature cette fois.`,
     href: accept
       ? `projet/${application.project}/canaux/general`
       : `projet/${application.project}`,

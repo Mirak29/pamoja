@@ -580,6 +580,13 @@ L'interface suit par défaut la langue du système et se règle sur français ou
 - **Livrable** : `web/lib/language.ts`, `web/lib/english.ts`, `web/ui/language-toggle.tsx`, en-tête public (`web/ui/public-header.tsx`), réglage de langue, ``t`…` `` dans les écrans, `web/lib/language_test.ts` (traduction exacte, contenu de membre intact, phrases à valeurs, changement d'onglet)
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-206 · Resynchronisation horaire des projets actifs
+
+Livrée avec PAM-203 : au démarrage, le serveur lance `startRefresh()`, qui toutes les 15 minutes relit en conditionnel (ETag) les repos en mode simple et ceux en synchro live qui n'ont pas été relus depuis une heure, puisque GitHub ne garantit pas la livraison des webhooks. Une nouvelle de GitHub crée une entry `PROJECT_UPDATED` et les pages ouvertes se mettent à jour ; les fichiers des PRs poussées depuis sont relus ensuite (§7.1).
+
+- **Livrable** : `api/sync.ts` (`refreshAll`, `startRefresh`), `api/server.ts` ; couvert par les tests de rafraîchissement d'`api/import_test.ts`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -7,6 +7,7 @@ import { type Login, people, type Person } from '/web/fixtures/people.ts'
 import { posts, postsChanged } from '/web/fixtures/posts.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
+import { t, translate } from '/web/lib/language.ts'
 
 // Reports and moderation decisions (§10.5), what POST/api/report/create and
 // POST/api/moderation/decide will handle
@@ -159,9 +160,10 @@ export const submitReport = (
       to: person.login as Login,
       category: 'system',
       kind: 'moderation',
-      title: `Nouveau signalement : ${draft.reason}`,
-      body:
-        `${kindLabel} signalé. Il attend ta décision dans la file de modération.`,
+      title: t`Nouveau signalement : ${translate(draft.reason)}`,
+      body: t`${
+        translate(kindLabel)
+      } signalé. Il attend ta décision dans la file de modération.`,
       href: 'moderation',
     })
   }
@@ -184,12 +186,13 @@ export const decideReport = (
     decidedAt: Date.now(),
   })
   if (target && action !== 'ignore') {
+    // The motive and the title are written by people: kept as they are
     const tell = (title: string, body: string) =>
       pushNotification({
         to: target.author,
         category: 'system',
         kind: 'moderation',
-        title,
+        title: translate(title),
         body,
         href: target.href,
       })
@@ -198,14 +201,14 @@ export const decideReport = (
         const post = posts.find((p) => p.id === report.target)!
         post.hidden = true
         post.hiddenReason = motif
-        tell('Ton post a été masqué', `« ${target.title} » · Motif : ${motif}`)
+        tell('Ton post a été masqué', t`« ${target.title} » · Motif : ${motif}`)
       } else if (report.kind === 'help') {
         const help = helpRequests.find((h) => h.id === report.target)!
         help.status = 'cancelled'
         help.hidden = true
         tell(
           'Ta demande d’aide a été retirée',
-          `« ${target.title} » · Motif : ${motif}`,
+          t`« ${target.title} » · Motif : ${motif}`,
         )
       } else if (report.kind === 'profile') {
         const person: Person = people[report.target as Login]
@@ -215,13 +218,13 @@ export const decideReport = (
         const found = findMessage(report.target)!
         found.message.text = 'Message masqué par la modération.'
         found.message.moderated = true
-        tell('Ton message a été masqué', `Motif : ${motif}`)
+        tell('Ton message a été masqué', t`Motif : ${motif}`)
       }
     }
     if (action === 'warn') {
       tell(
         'Avertissement de la modération',
-        `À propos de ${target.label} · ${motif}`,
+        t`À propos de ${translate(target.label)} · ${motif}`,
       )
     }
     if (action === 'suspend') {

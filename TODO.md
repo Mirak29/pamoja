@@ -103,7 +103,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-203** · Import niveau 2 : `POST/api/github/installation/confirm` avec les trois contrôles, passage automatique en live (§5.4)
 - [x] **PAM-204** · Webhooks : HMAC sur le corps brut, `WebhookDelivery` comme file persistante, worker, reprise au démarrage, nouveaux essais (§5.5)
 - [x] **PAM-205** · Traitement des événements `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `installation*`, `workflow_run`, `check_run`, `status` → tables (dont `CiRun`) + entries (§5.5, §6.8, §14.2)
-- [ ] **PAM-206** · Resynchronisation horaire des projets actifs (§5.6)
+- [x] **PAM-206** · Resynchronisation horaire des projets actifs (§5.6)
 - [x] **PAM-207** · Demande d'aide : création, bouton « Request Review » depuis une PR (§7.1) `[démo]`
 - [ ] **PAM-208** · Cycle de vie complet : acceptation atomique, désistement, libération, réouverture, expirations et relances (§7.2)
 - [ ] **PAM-209** · Matching SQL : score, raisons, vagues de 5, place « nouveau profil », plafonds par jour (§7.3) `[démo]`

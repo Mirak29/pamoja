@@ -13,6 +13,7 @@ import {
   type HelpLevel,
   helpLevels,
 } from '/api/vocabulary.ts'
+import { t } from '/web/lib/language.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
 export const helpTypes: string[] = Object.values(helpCategories)
@@ -239,7 +240,7 @@ export const sendHelpMessage = (
       to,
       category: 'for-you',
       kind: 'help',
-      title: `${firstName(author)} t’a écrit`,
+      title: t`${firstName(author)} t’a écrit`,
       body: text.length > 90 ? `${text.slice(0, 88)}…` : text,
       href: `aide/${request.id}`,
     })
@@ -335,8 +336,8 @@ export const actOnHelp = (
             to: request.author,
             category: 'for-you',
             kind: 'help',
-            title: `${firstName(helper!)} s’est désisté`,
-            body: `« ${request.title} » repasse en Ouverte.`,
+            title: t`${firstName(helper!)} s’est désisté`,
+            body: t`« ${request.title} » repasse en Ouverte.`,
             href: `aide/${request.id}`,
           })
           return {
