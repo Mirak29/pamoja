@@ -57,10 +57,7 @@ const routes: Record<string, () => JSX.Element | null> = {
 const routeOf = (key: string) =>
   Object.hasOwn(routes, key) ? routes[key] : undefined
 
-const App = () => {
-  // Subscribe the routed tree so every page re-renders when the language
-  // changes. The vnode translator then replaces interface copy consistently.
-  language.value
+const Pages = () => {
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
   const Route = routeOf(section) ?? routeOf(path)
@@ -90,6 +87,14 @@ const App = () => {
     </AppLayout>
   )
 }
+
+/**
+ * The whole app is built again when the language changes, so that every
+ * sentence is translated at once. No component reads the language itself:
+ * @preact/signals would then render it again only when its props change,
+ * and screens fed by mutated data (applications, notifications) froze.
+ */
+const App = () => <Pages key={language.value} />
 
 const root = document.getElementById('app')
 if (!root) throw Error('unable to find root element #app')

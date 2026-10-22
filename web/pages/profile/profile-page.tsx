@@ -295,7 +295,7 @@ const Contributions = ({ login }: { login: Login }) => {
   const mine = proofsOf(login)
   return (
     <section class='slab overflow-hidden'>
-      <SectionHeader title='Contributions réelles'>
+      <SectionHeader title='Contributions'>
         <Button variant='secondary' size={32} params={{ dialog: 'preuves' }}>
           Toutes les preuves · <span>{mine.length}</span>
         </Button>

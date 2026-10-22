@@ -30,7 +30,7 @@ export const profileCovers = [
 
 export const profileSections = [
   ['building', 'En train de construire'],
-  ['contributions', 'Contributions réelles'],
+  ['contributions', 'Contributions'],
   ['reputation', 'Réputation'],
   ['badges', 'Badges'],
   ['activity', 'Activité'],

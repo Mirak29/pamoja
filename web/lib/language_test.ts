@@ -1,9 +1,9 @@
 import { assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { parseHTML } from 'npm:linkedom@0.18.12'
 import { h, options, render } from 'preact'
-import { useState } from 'preact/hooks'
+import { signal } from '@preact/signals'
 
-Deno.test('language: English render, switching and clicks preserve component state', async () => {
+Deno.test('language: English render, switching, member content and screens fed by mutated data', async () => {
   const { document } = parseHTML('<html><body><main></main></body></html>')
   const storage = new Map<string, string>()
   const replacements = {
@@ -23,37 +23,47 @@ Deno.test('language: English render, switching and clicks preserve component sta
   const root = document.querySelector('main')!
   const flush = () => new Promise((resolve) => setTimeout(resolve, 50))
   try {
-    const { language, setLanguagePreference } = await import('./language.ts')
+    const { language, setLanguagePreference, t, translate } = await import(
+      './language.ts'
+    )
+
+    // Data mutated in place, as the fixtures are, and a signal that says so
+    const data = { count: 0 }
+    const changed = signal(0)
     let received = ''
-    const Child = ({ children }: { children: string }) => {
-      received = children
-      const [count, setCount] = useState(0)
+    const Child = (
+      { label, data }: { label: string; data: { count: number } },
+    ) => {
+      received = label
       return h(
         'button',
-        {
-          onClick: () => setCount(count + 1),
-          title: 'Accueil',
-        },
-        children,
-        count,
+        { title: 'Accueil' },
+        label,
+        data.count,
         h('span', null, 'Message original écrit par un membre'),
       )
     }
-    const App = () => {
-      language.value
-      return h(Child, { children: 'Accueil' })
+    const Page = () => {
+      changed.value
+      return h(Child, { label: 'Accueil', data })
     }
+    // As web/app.tsx: the tree is built again when the language changes
+    const App = () => h(Page, { key: language.value })
+
     render(h(App, null), root)
     assertEquals(root.textContent, 'Home0Message original écrit par un membre')
+    // A component prop is content: never translated
     assertEquals(received, 'Accueil')
+    assertEquals(root.querySelector('button')!.getAttribute('title'), 'Home')
     assertEquals(document.documentElement.lang, 'en')
-    setLanguagePreference('fr')
+
+    // QA-16: a child with the same props still shows the mutated data
+    data.count = 1
+    changed.value++
     await flush()
-    assertEquals(
-      root.textContent,
-      'Accueil0Message original écrit par un membre',
-    )
-    root.querySelector('button')!.click()
+    assertEquals(root.textContent, 'Home1Message original écrit par un membre')
+
+    setLanguagePreference('fr')
     await flush()
     assertEquals(
       root.textContent,
@@ -62,7 +72,7 @@ Deno.test('language: English render, switching and clicks preserve component sta
     setLanguagePreference('en')
     await flush()
     assertEquals(root.textContent, 'Home1Message original écrit par un membre')
-    assertEquals(root.querySelector('button')!.getAttribute('title'), 'Home')
+
     // Another tab chose French: the storage holds it when the event comes
     storage.set('language', 'fr')
     const event = new Event('storage')
@@ -84,7 +94,6 @@ Deno.test('language: English render, switching and clicks preserve component sta
 
     // Only whole sentences of the interface: a member's text that begins
     // like one of them stays as written
-    const { t, translate } = await import('./language.ts')
     assertEquals(translate('Accueil'), 'Home')
     assertEquals(translate('Tu as vu la démo ?'), 'Tu as vu la démo ?')
     assertEquals(translate('Dans deux semaines'), 'Dans deux semaines')

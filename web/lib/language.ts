@@ -101,8 +101,10 @@ export const translate = (value: string): string => {
  * t`Écrire à ${name}` // 'Write to Moussa' in English
  */
 export const t = (parts: TemplateStringsArray, ...values: unknown[]) => {
-  // Read here: the component that renders the sentence follows the language
-  const current = language.value
+  // Peeked, never subscribed: the whole app is rendered again on a change
+  // (web/app.tsx), and a component that reads a signal is only rendered again
+  // when its props change, which froze the screens fed by mutated data
+  const current = language.peek()
   const french = parts.reduce(
     (text, part, i) => text + part + (i < values.length ? values[i] : ''),
     '',
@@ -131,14 +133,13 @@ const translateChildren = (children: unknown): unknown =>
     : children
 
 // Every element created while English is on gets its text and readable props
-// in English. Component props are left alone: they may hold content.
+// in English. Component props are left alone: they may hold content. The
+// language is peeked, not read, for the reason given at `t`.
 const previousVNode = options.vnode
 options.vnode = (vnode: VNode) => {
   previousVNode?.(vnode)
   if (typeof vnode.type !== 'string') return
-  // Read for every element: the component that creates it follows the
-  // language, even one that its parent would not render again
-  if (language.value !== 'en') return
+  if (language.peek() !== 'en') return
   const props = vnode.props as Record<string, unknown>
   for (const name of readable) {
     if (typeof props[name] === 'string') {

@@ -8,7 +8,7 @@ import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
 import { CreateMenu, MobileNav, Sidebar } from '/web/ui/navigation.tsx'
 import { ReportDialog } from '/web/ui/report-dialog.tsx'
 import { notify, Toasts } from '/web/ui/toast.tsx'
-import { language, translate } from '/web/lib/language.ts'
+import { translate } from '/web/lib/language.ts'
 
 // A notification that arrives for the signed-in developer pops up as a
 // toast, as the SSE entry will do (§7.4, §13)
@@ -146,8 +146,7 @@ export const Page = (
     children: ComponentChildren
   },
 ) => {
-  // The title of the tab follows the language too
-  language.value
+  // Translated here: the app is rendered again when the language changes
   const shown = translate(title)
   useEffect(() => {
     document.title = `${shown} · Pamoja`

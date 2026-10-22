@@ -177,7 +177,7 @@ const Captures = (
   },
 ) => (
   <div class='flex flex-col gap-2 text-[13px] font-semibold'>
-    <span>Captures ({MAX_CAPTURES} maximum)</span>
+    <span>{t`Captures (${MAX_CAPTURES} maximum)`}</span>
     <div class='grid grid-cols-4 gap-3.5 pb-1'>
       {Array.from({ length: MAX_CAPTURES }, (_, i) => {
         const capture = captures[i]
