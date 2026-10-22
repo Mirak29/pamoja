@@ -1,30 +1,21 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import { logActivity } from '/web/fixtures/activity.ts'
-import { postAlert } from '/web/fixtures/channels.ts'
-import { match, waves } from '/web/fixtures/matching.ts'
+import { match } from '/web/fixtures/matching.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
-import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
-import { counted } from '/web/lib/plural.ts'
 import { settings } from '/web/fixtures/settings.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
+import {
+  helpCategories,
+  type HelpCategory,
+  type HelpLevel,
+  helpLevels,
+} from '/api/vocabulary.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
-export const helpTypes = [
-  'Review de code',
-  'Debug',
-  'Architecture',
-  'Sécurité',
-  'Tests',
-  'DevOps',
-  'UI/UX',
-  'Documentation',
-  'Pair programming',
-  'Mentorat',
-  'Recherche de contributeur',
-]
+export const helpTypes: string[] = Object.values(helpCategories)
 
 /** Lifecycle of a help request (cahier des charges §7.2) */
 export type HelpStatus =
@@ -154,8 +145,8 @@ export const helpRequests: HelpRequest[] = [
   },
 ]
 
-// Session changes until the help routes exist (PAM-207, PAM-208): screens
-// read this signal to refresh, as they will on an SSE entry
+// Changes of the requests, read from the API or played on the page until the
+// lifecycle routes exist (PAM-208): screens read this signal to refresh
 export const helpChanged = signal(0)
 
 /**
@@ -180,51 +171,56 @@ const log = (request: HelpRequest, text: string) => {
   ]
 }
 
-export type HelpDraft = Pick<
-  HelpRequest,
-  | 'type'
-  | 'title'
-  | 'description'
-  | 'project'
-  | 'pullRequest'
-  | 'skills'
-  | 'level'
-  | 'duration'
-  | 'branch'
-  | 'job'
-  | 'video'
-  | 'captures'
->
+type ApiHelp = ApiOutput['GET/api/help'][number]
 
-/** POST/api/help/create: publish and notify the first wave */
-export const publishHelp = (draft: HelpDraft) => {
-  const at = Date.now()
-  const request: HelpRequest = {
-    ...draft,
-    id: `h${at}`,
-    author: me.login,
-    status: 'open',
-    at,
-    wave: 1,
-    demo: false,
-  }
-  request.log = [
-    { text: 'Demande publiée', at },
-    {
-      text: `Vague 1 : ${
-        counted(
-          waves(request)[0].length,
-          'développeur notifié',
-          'développeurs notifiés',
-        )
-      }`,
-      at,
-    },
-  ]
-  helpRequests.unshift(request)
+/** « ~20 min », « ~1 h »: a duration in minutes as the form shows it */
+export const durationLabel = (minutes: number) =>
+  minutes >= 60 ? `~${minutes / 60} h` : `~${minutes} min`
+
+/** Minutes of a duration label of the form */
+export const minutesOf = (label: string) => {
+  const [, value, unit] = label.match(/(\d+)\s*(min|h)/) ?? []
+  return value ? Number(value) * (unit === 'h' ? 60 : 1) : 0
+}
+
+/**
+ * The requests read from the API join those of the pages (§7.1), until the
+ * help screens read the API themselves. Returns them as the pages see them.
+ */
+export const adoptHelpRequests = (list: ApiHelp[]) => {
+  const adopted = list.map((help) => {
+    const id = String(help.id)
+    const known = helpRequests.find((h) => h.id === id)
+    const request: HelpRequest = Object.assign(known ?? {} as HelpRequest, {
+      id,
+      author: help.author as Login,
+      helper: (help.helper || undefined) as Login | undefined,
+      project: (help.project || undefined) as ProjectSlug | undefined,
+      type: helpCategories[help.category as HelpCategory] ?? help.category,
+      title: help.title,
+      description: help.description,
+      skills: help.skills,
+      level: helpLevels[help.expectedLevel as HelpLevel] ?? '',
+      duration: help.estimatedMinutes
+        ? durationLabel(help.estimatedMinutes)
+        : '',
+      status: help.status as HelpStatus,
+      at: help.createdAt * 1000,
+      acceptedAt: help.acceptedAt ? help.acceptedAt * 1000 : undefined,
+      pullRequest: help.pullRequest || undefined,
+      branch: help.branch || undefined,
+      video: help.videoUrl || undefined,
+      demo: help.demo,
+    })
+    known || helpRequests.unshift(request)
+    return request
+  })
+  // Newest first, as the lists show them
+  helpRequests.sort((a, b) => b.at - a.at)
   helpChanged.value++
-  answer(request)
-  return request
+  // A project page shows its requests too: counter, PR, #suivi
+  projectsChanged.value++
+  return adopted
 }
 
 /** POST/api/help/message: the other side of the thread is notified */
@@ -249,102 +245,6 @@ export const sendHelpMessage = (
     })
   }
   helpChanged.value++
-}
-
-/**
- * A review detected on GitHub (§7.5): the request, and the whole project
- * with it, the PR, its Pulse, #suivi and the journal
- */
-const reviewDetected = (request: HelpRequest, helper: Login) => {
-  const name = firstName(helper)
-  const number = request.pullRequest!
-  request.status = 'review_submitted'
-  log(request, `Review de ${name} détectée sur la PR #${number}`)
-  const pr = pullRequests.find((p) =>
-    p.project === request.project && p.number === number
-  )
-  if (pr) {
-    pr.review = 'received'
-    pr.reviewers = [...(pr.reviewers ?? []), helper]
-  }
-  if (request.project) {
-    logActivity(request.project, `Review de ${name} reçue sur la PR #${number}`)
-    postAlert(
-      request.project,
-      'review',
-      `Review de ${name} sur la PR #${number}${pr ? ` « ${pr.title} »` : ''}.`,
-    )
-    projectsChanged.value++
-  }
-}
-
-// Delays of the simulated answer, short enough to rehearse the demo
-const ACCEPT_DELAY = 4000
-const MESSAGE_DELAY = 1500
-const REVIEW_DELAY = 7000
-
-/**
- * What the other side does until the API exists: the best notified developer
- * accepts, then their review is detected on GitHub, or they deliver the help
- * (§7.2, §7.5). Each step reaches the requester as a notification.
- */
-const answer = (request: HelpRequest) => {
-  const helper = waves(request)[0][0]?.login
-  if (!helper) return
-  const name = firstName(helper)
-  setTimeout(() => {
-    if (request.status !== 'open') return
-    Object.assign(request, {
-      status: 'accepted',
-      helper,
-      acceptedAt: Date.now(),
-    })
-    log(request, `${name} a accepté la demande`)
-    helpChanged.value++
-    pushNotification({
-      to: request.author,
-      category: 'for-you',
-      kind: 'help',
-      title: `${name} a accepté ta demande`,
-      body: request.pullRequest
-        ? `Sa review de la PR #${request.pullRequest} sera détectée sur GitHub.`
-        : `« ${request.title} »`,
-      href: `aide/${request.id}`,
-    })
-    // The helper says hello in the thread of the request
-    setTimeout(() => {
-      if (request.helper !== helper) return
-      sendHelpMessage(
-        request,
-        helper,
-        request.pullRequest
-          ? `Je prends la PR #${request.pullRequest}. Je commence par les tests, puis ${
-            request.skills.slice(0, 2).join(' et ')
-          }. Je te laisse mes remarques sur GitHub.`
-          : 'Je regarde ça aujourd’hui. Si tu as un exemple qui reproduit le problème, mets-le ici.',
-      )
-    }, MESSAGE_DELAY)
-    setTimeout(() => {
-      if (request.status !== 'accepted' || request.helper !== helper) return
-      const review = !!request.pullRequest
-      if (review) reviewDetected(request, helper)
-      else {
-        request.status = 'delivered'
-        log(request, `${name} a marqué l’aide comme livrée`)
-      }
-      helpChanged.value++
-      pushNotification({
-        to: request.author,
-        category: 'for-you',
-        kind: 'help',
-        title: review
-          ? `${name} a relu la PR #${request.pullRequest}`
-          : `${name} a livré son aide`,
-        body: 'Confirme si elle t’a aidé : la preuve rejoint son profil.',
-        href: `aide/${request.id}`,
-      })
-    }, REVIEW_DELAY)
-  }, ACCEPT_DELAY)
 }
 
 export type HelpAction =

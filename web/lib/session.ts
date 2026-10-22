@@ -1,5 +1,6 @@
 import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
+import { adoptHelpRequests } from '/web/fixtures/help.ts'
 import { adoptUser } from '/web/fixtures/people.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -21,13 +22,20 @@ const setUser = (user: User) => {
   adoptUser(user)
   settings.matching = matchingModes[user.matchingMode]
   currentUser.value = user
-  first && loadProjects()
+  if (first) {
+    loadProjects()
+    loadHelpRequests()
+  }
   return user
 }
 
 /** The projects of the developer, imported ones included (§5.4) */
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
+
+/** The help requests the developer wrote, accepted, or of their projects */
+export const loadHelpRequests = () =>
+  api['GET/api/help'].fetch().then(adoptHelpRequests, () => {})
 
 api['GET/api/user/me'].fetch().then(
   setUser,
