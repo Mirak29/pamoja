@@ -3,6 +3,7 @@ import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { github, seconds } from '/api/github.ts'
 import { log } from '/api/lib/log.ts'
+import { readPullRequestSkills } from '/api/pull-skills.ts'
 import { Repository } from '/api/schema.ts'
 
 // The refresh of the poll mode (§5.4): every 15 minutes, conditional reads of
@@ -89,15 +90,16 @@ export const upsertIssue = (repositoryId: number, issue: GithubIssue) =>
 
 const writePull = sql<undefined, Record<string, string | number | null>>`
   INSERT INTO pullRequest (repositoryId, githubId, number, title, state,
-    authorGithubId, authorLogin, branch, additions, deletions, mergedAt,
-    source, createdAt, updatedAt)
+    authorGithubId, authorLogin, branch, headSha, additions, deletions,
+    mergedAt, source, createdAt, updatedAt)
   VALUES (:repositoryId, :githubId, :number, :title, :state, :authorGithubId,
-    :authorLogin, :branch, coalesce(:additions, 0), coalesce(:deletions, 0),
-    :mergedAt, 'github', :createdAt, :updatedAt)
+    :authorLogin, :branch, :headSha, coalesce(:additions, 0),
+    coalesce(:deletions, 0), :mergedAt, 'github', :createdAt, :updatedAt)
   ON CONFLICT (repositoryId, number) DO UPDATE SET
     title = excluded.title,
     state = excluded.state,
     branch = excluded.branch,
+    headSha = coalesce(excluded.headSha, headSha),
     additions = coalesce(:additions, additions),
     deletions = coalesce(:deletions, deletions),
     mergedAt = excluded.mergedAt,
@@ -115,6 +117,8 @@ export const upsertPullRequest = (repositoryId: number, pull: GithubPull) =>
     authorGithubId: pull.user?.id ?? 0,
     authorLogin: pull.user?.login ?? null,
     branch: pull.head.ref,
+    // A new head: the skills of its files are read again (§7.1)
+    headSha: pull.head.sha ?? null,
     // Only a webhook knows them: the refresh keeps what it brought
     additions: pull.additions ?? null,
     deletions: pull.deletions ?? null,
@@ -217,6 +221,8 @@ export const refreshAll = async () => {
       })
     }
   }
+  // Then the files of the PRs pushed since (§7.1)
+  await readPullRequestSkills()
 }
 
 /** Started by the server, every 15 minutes (§5.4) */

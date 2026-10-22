@@ -21,9 +21,6 @@ const call = (
     }),
   )
 
-const sessionOf = (res: Response) =>
-  res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1] ?? ''
-
 // The whole login of the test env, nonce cookie included (§5.3)
 const login = loginFlow
 

@@ -16,6 +16,11 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import {
+  createHelpRequest,
+  getHelpRequest,
+  listHelpRequests,
+} from '/api/help.ts'
 import { receiveWebhook } from '/api/webhooks.ts'
 import { confirmInstallation, installationUrl } from '/api/installation.ts'
 import { log } from '/api/lib/log.ts'
@@ -33,7 +38,16 @@ import {
   updateProfile,
   updateSkills,
 } from '/api/user.ts'
-import { domains, intents, skills } from '/api/vocabulary.ts'
+import {
+  domains,
+  helpCategories,
+  type HelpCategory,
+  helpDurations,
+  type HelpLevel,
+  helpLevels,
+  intents,
+  skills,
+} from '/api/vocabulary.ts'
 import { getLogin } from '/api/user.ts'
 
 const matchingMode = LIST(
@@ -62,6 +76,26 @@ const currentUser = {
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
 }
+
+const helpRequest = OBJ({
+  id: NUM('Id of the request'),
+  author: STR('Login of the requester'),
+  project: STR('Slug of the project, empty if none'),
+  pullRequest: NUM('Number of the PR, 0 if none'),
+  branch: STR('Branch of the PR, empty if none'),
+  category: STR('Type of help, a key of helpCategories'),
+  title: STR('Title'),
+  description: STR('Description in Markdown'),
+  skills: ARR(STR('Skill of the vocabulary')),
+  expectedLevel: STR('A key of helpLevels, empty if none'),
+  estimatedMinutes: NUM('Estimated duration, 0 if none'),
+  videoUrl: STR('Video showing the problem, empty if none'),
+  status: STR('Status of the lifecycle (§7.2)'),
+  helper: STR('Login of the helper who accepted, empty if none'),
+  acceptedAt: NUM('Acceptance, in seconds, 0 if none'),
+  createdAt: NUM('Creation, in seconds'),
+  demo: BOOL('Data of the seed'),
+}, 'A help request (§7.1)')
 
 // Only names of the vocabulary are saved: a developer never creates one
 const assertKnown = (names: string[], known: string[], what: string) => {
@@ -301,12 +335,58 @@ const defs = {
             authorLogin: STR(),
             branch: STR(),
             createdAt: NUM(),
+            skills: ARR(
+              STR('Skill of the vocabulary'),
+              'Languages of the changed files, empty until read (§7.1)',
+            ),
           })),
         })),
       }),
       'Projects the developer is a member of',
     ),
     description: 'The projects of the signed-in developer',
+  }),
+
+  /*
+   * Help requests (§7.1)
+   */
+  'GET/api/help': route({
+    authorize: withSession,
+    fn: (ctx) => listHelpRequests(ctx.session.userId),
+    output: ARR(helpRequest, 'Newest first'),
+    description:
+      'The requests the developer wrote, accepted, or that concern one of their projects',
+  }),
+
+  'POST/api/help/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => {
+      assertKnown(input.skills, skills, 'skills')
+      if (!helpDurations.includes(input.estimatedMinutes)) {
+        throw new respond.BadRequestError({ message: 'Unknown duration' })
+      }
+      const id = createHelpRequest(ctx.session.userId, input)
+      return getHelpRequest(id)!
+    },
+    input: OBJ({
+      category: LIST(
+        Object.keys(helpCategories) as HelpCategory[],
+        'Type of help',
+      ),
+      title: STR('What is needed, in one sentence'),
+      description: STR('Context, what was tried, what is expected'),
+      skills: ARR(STR('Skill of the vocabulary'), 'One to eight'),
+      expectedLevel: LIST(
+        Object.keys(helpLevels) as HelpLevel[],
+        'Level expected',
+      ),
+      estimatedMinutes: NUM('One of helpDurations'),
+      project: STR('Slug of a project of the developer, empty if none'),
+      pullRequest: NUM('Open PR of that project, 0 if none'),
+      videoUrl: STR('Web link of a video, empty if none'),
+    }),
+    output: helpRequest,
+    description: 'Publish a help request, from the form or from a PR',
   }),
 
   /*
