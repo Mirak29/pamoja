@@ -201,6 +201,11 @@ export const PullRequest = createTable('pullRequest', {
   // Added by migrations/002: the author is often not on Pamoja
   authorLogin: { type: 'TEXT', optional: true },
   branch: { type: 'TEXT', optional: true },
+  // Added by migrations/003 (§7.1): skill ids of the languages of the changed
+  // files, read at the head commit skillsSha; read again after a push
+  headSha: { type: 'TEXT', optional: true },
+  skills: { type: 'JSON', optional: true },
+  skillsSha: { type: 'TEXT', optional: true },
 })
 unique('pull_request_number', 'pullRequest', 'repositoryId, number')
 
@@ -407,6 +412,8 @@ export const HelpRequest = createTable('helpRequest', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/003: a video that shows the problem (§7.1)
+  videoUrl: { type: 'TEXT', optional: true },
 })
 index('help_request_status', 'helpRequest', 'status')
 index('help_request_author', 'helpRequest', 'authorId')

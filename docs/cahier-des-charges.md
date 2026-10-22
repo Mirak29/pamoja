@@ -198,6 +198,16 @@ La route `POST/api/github/webhook` est déclarée **sans `input`** : le routeur 
 
 En pratique (`api/webhooks.ts`) : sans `GITHUB_WEBHOOK_SECRET`, toute livraison est refusée. Le worker tourne toutes les 5 secondes et dès qu'une livraison arrive ; les nouveaux essais attendent 10, 20, 40 puis 80 secondes. Chaque événement a son handler, enregistré par `registerHandler` (PAM-205) ; `ping`, envoyé par GitHub à la configuration du webhook, n'a rien à appliquer, et un événement sans handler est marqué traité et ignoré. Un handler est synchrone, sans appel à GitHub, puisqu'il s'exécute dans la transaction de la livraison.
 
+**Événements traités** (`api/github-events.ts`) ; un événement d'un repo absent de Pamoja est ignoré, et l'auteur n'est rattaché à une entry que s'il est sur Pamoja (par `githubId`) :
+
+- `pull_request` : la PR, lignes ajoutées et supprimées comprises ; `PR_OPENED` (ouverte, rouverte), `PR_UPDATED` (titre, brouillon), `PR_CLOSED`, et `PR_MERGED`, preuve aux champs figés (§8.3) avec `authorIsOwner`.
+- `pull_request_review` : la review et `PR_REVIEWED`. Le webhook donne le texte de la review, pas ses commentaires en ligne : un texte compte pour un commentaire, et la vérification d'une demande d'aide (PAM-211) lit le compte exact.
+- `issues` : l'issue, et `ISSUE_UPDATED` à l'ouverture, la fermeture et la réouverture ; `issue_comment` met à jour le nombre de commentaires.
+- `release` (publiée) : la release du repo et `RELEASE_PUBLISHED`, preuve de Project Building pour l'owner.
+- `push` : `COMMITS_PUSHED`, un par push, avec le nombre de commits et les trois derniers messages ; une branche supprimée ne pousse rien.
+- `workflow_run`, `check_run`, `status` : `CiRun` ; `CI_FAILED` sur un échec, `CI_FIXED` quand le même job repasse au vert sur la même branche, seulement sur la branche principale et sur les branches de PR ouvertes. Les check runs de GitHub Actions sont ignorés : `workflow_run` les couvre déjà.
+- `installation`, `installation_repositories` : l'installation ; un repo personnel couvert par le compte de l'owner du projet passe en live, un repo retiré ou une installation supprimée revient à la synchro par rafraîchissement.
+
 ### 5.6 Fiabilité et quota
 
 - **Resynchronisation** : GitHub ne garantit pas la livraison des webhooks. Une tâche périodique (`setInterval`, comme `api/matchmaking.ts`) réconcilie PRs, issues et métadonnées des projets actifs toutes les heures.
@@ -311,6 +321,13 @@ Types : Code Review, Debugging, Architecture, Security, Testing, DevOps, UI/UX, 
 
 Champs : titre, description (Markdown), jusqu'à 4 captures d'écran, un lien vidéo facultatif (par exemple un Loom qui montre le bug), type, projet et PR GitHub optionnels, skills requis (vocabulaire contrôlé), niveau attendu, durée estimée. Depuis une PR, le bouton **Request Review** pré-remplit projet, repo, PR et skills (langages des fichiers modifiés).
 
+Règles de la création :
+
+- **Skills d'une PR** : le serveur lit les fichiers modifiés des PRs ouvertes après la synchro qui apporte leur commit de tête (import, rafraîchissement, webhook), jamais pendant l'affichage (§5.6). Il garde les skills avec ce commit : un push les fait relire.
+- **Projet et PR** : une demande sur un projet vient d'un de ses membres ; sa PR doit être ouverte. Une seule demande en cours (`open`, `accepted`, `review_submitted`, `delivered`) par PR, pour ne pas disperser les relecteurs.
+- **Vidéo** : une adresse web (`http` ou `https`) seulement.
+- **Captures** : gardées dans la page jusqu'à l'envoi d'images (PAM-409).
+
 Une demande peut aussi naître d'une alerte de `#suivi` (§6.8) : « Demander de l'aide » sur une CI en échec, « Demander une review » sur une PR qui attend.
 
 ### 7.2 Cycle de vie
@@ -333,7 +350,7 @@ Règles des transitions :
 - **Réouverture** : remet la demande en `open` et relance le matching en excluant les aidants déjà sortis.
 - Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`.
 
-Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes.
+Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes (`api/help-rules.ts`).
 
 ### 7.3 Matching
 
@@ -727,7 +744,7 @@ Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `help
 | --- | --- | --- |
 | `GithubInstallation` | installationId, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId?, createdAt, updatedAt | UNIQUE(githubInstallationId) |
 | `Repository` | repositoryId, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag? (JSON), lastSyncedAt?, source, readme?, stats? (JSON : étoiles, forks, topics, langages, contributeurs, issues et PRs ouvertes, release) | UNIQUE(githubId) |
-| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state (open / merged / closed), authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt, authorLogin?, branch? | UNIQUE(repositoryId, number) |
+| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state (open / merged / closed), authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt, authorLogin?, branch?, headSha?, skills? (JSON d'ids : langages des fichiers modifiés), skillsSha? (commit auquel ils ont été lus) | UNIQUE(repositoryId, number) |
 | `Issue` | issueId, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, source, createdAt, updatedAt, authorLogin?, comments? | UNIQUE(repositoryId, number) |
 | `Review` | reviewId, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId?, source | UNIQUE(githubReviewId) |
 | `WebhookDelivery` | deliveryId, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
@@ -758,7 +775,7 @@ Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt | Index (status), (authorId) |
+| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl? | Index (status), (authorId) |
 | `HelpMatch` | helpMatchId, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
 | `HelpMessage` | helpMessageId, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
 | `Notification` | notificationId, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
@@ -821,15 +838,16 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Webhook falsifié | Faux « PR merged » ou fausse review, badges fabriqués | Vérification HMAC SHA-256 de `X-Hub-Signature-256` sur le corps brut, comparaison en temps constant, avant tout traitement |
 | Rejeu de webhook | Double comptage | `WebhookDelivery` avec UNIQUE(githubDeliveryId) |
 | `installation_id` forgé dans la Setup URL | Rattacher l'installation d'un autre | Trois contrôles : identité, repo couvert par l'installation, droit admin ou maintain sur le repo (§5.4) |
-| CSRF au login | Victime connectée sur le compte de l'attaquant | `state` aléatoire à usage unique, expiration 5 min (`StateManager` de Tournament) |
+| CSRF au login | Victime connectée sur le compte de l'attaquant | `state` signé, à usage unique, valable 10 min, lié au navigateur par le cookie `oauth_nonce` (§5.3) |
 | Vol de session | Prise de compte | Cookie `httpOnly`, `secure`, `SameSite=Lax` ; toutes les écritures en `POST` JSON |
 | Fuite de secrets | Usurpation de l'app ou du bot | Variables d'environnement uniquement, jamais dans le repo ni côté client, rotation documentée |
 | XSS par Markdown | Script exécuté chez les visiteurs (README importés, posts, messages) | Rendu Markdown avec HTML désactivé ou sanitizer, liens externes en `rel="noopener nofollow"` |
+| Lien externe ouvert dans l'onglet de Pamoja | La page ouverte peut rediriger l'onglet d'origine vers un faux Pamoja (tabnabbing) | Tout lien qui sort de Pamoja s'ouvre dans un nouvel onglet, en `rel="noopener noreferrer"`, par une règle unique (`web/lib/external-links.ts`) ; la connexion et l'installation vont sur GitHub dans le même onglet, puisqu'elles en reviennent |
 | Usurpation d'identité GitHub | Un username libéré puis repris | Identification par `githubId` |
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
 | Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
 | Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
-| Injection SQL | Lecture ou écriture arbitraire | Requêtes paramétrées uniquement (tag `sql` de `@01edu/db`) |
+| Injection SQL | Lecture ou écriture arbitraire | Paramètres liés uniquement (`?` ou `:nom`) : le tag `sql` de `@01edu/db` recopie ses valeurs dans le texte de la requête, donc aucune valeur venue d'un utilisateur n'y entre (§12.5) |
 | Détournement de l'IA | Sortie manipulée par un README | Contenu encadré comme donnée, sortie JSON validée (§11) |
 | Meilisearch exposé | Lecture ou modification de l'index par n'importe qui | Conteneur joignable uniquement depuis l'app, clé maître côté serveur, aucun contenu non public indexé |
 | Photo publiée avec sa position GPS | Fuite du lieu de vie d'un utilisateur | Réencodage dans le navigateur avant l'envoi, qui supprime les métadonnées EXIF (§17.3) |

@@ -13,7 +13,11 @@ import {
   applicationsChanged,
 } from '/web/fixtures/applications.ts'
 import { unreadIn } from '/web/fixtures/channels.ts'
-import { helpRequests, type HelpStatus } from '/web/fixtures/help.ts'
+import {
+  helpChanged,
+  helpRequests,
+  type HelpStatus,
+} from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { isMe, me } from '/web/fixtures/people.ts'
 import {
@@ -169,6 +173,9 @@ const Actions = ({ project }: { project: Project }) => {
 const Header = (
   { project, overview }: { project: Project; overview: boolean },
 ) => {
+  // Its own subscription: the requests may arrive after the projects, and a
+  // child with the same props is not rendered again
+  helpChanged.value
   const openPullRequests = pullRequests.filter((pr) =>
     pr.project === project.slug && pr.state === 'open'
   )

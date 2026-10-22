@@ -14,6 +14,8 @@ export type PullRequest = {
   reviewers?: Login[]
   ci: 'ok' | 'failed'
   at: number
+  /** Languages of the changed files, read by the server (§7.1) */
+  skills?: string[]
   demo: boolean
 }
 

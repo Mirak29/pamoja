@@ -1,4 +1,8 @@
 import { Fragment, h, type JSX, render } from 'preact'
+// Links leaving Pamoja open in a new tab, everywhere
+import '/web/lib/external-links.ts'
+// Projects and help requests follow their entries, without a refresh
+import '/web/lib/live-data.ts'
 import { url } from '@01edu/signal-router'
 import { CommunitiesPage } from '/web/pages/communities/communities-page.tsx'
 import { CommunityPage } from '/web/pages/communities/community-page.tsx'
