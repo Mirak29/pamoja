@@ -30,8 +30,14 @@ new Deno.Command('deno', {
 }).spawn()
 
 // 127.0.0.1, not localhost: on Windows, localhost tries IPv6 first and
-// esbuild only listens on IPv4, which cost 2 s per file
-const { port } = await ctx.serve({ servedir: 'dist', host: '127.0.0.1' })
+// esbuild only listens on IPv4, which cost 2 s per file. Port 8801, next to
+// the app: on its default 8000, esbuild served the pages without /api, and a
+// login opened there failed
+const { port } = await ctx.serve({
+  servedir: 'dist',
+  host: '127.0.0.1',
+  port: 8801,
+})
 
 // esbuild writes the bundle into dist: every file is read from disk, the
 // page included. Only the live reload events come from esbuild: going
