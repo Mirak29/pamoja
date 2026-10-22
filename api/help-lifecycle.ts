@@ -7,6 +7,7 @@ import { getHelpRequest } from '/api/help.ts'
 import { MESSAGE_MAX, OPEN_FOR, RELEASE_AFTER } from '/api/help-rules.ts'
 import { explain, matchesFor, sendWave } from '/api/matching.ts'
 import { createNotification } from '/api/notifications.ts'
+import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { HelpMessage } from '/api/schema.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
@@ -314,6 +315,107 @@ export const deliverHelp = (userId: number, helpRequestId: number) =>
     }
     Entry.insert.HELP_REQUEST_DELIVERED({ userId, helpRequestId, source })
     tell(row, row.authorId, 'help_delivered', userId)
+  })()
+
+const getProofSource = sql<
+  {
+    category: string
+    skills: string
+    githubReviewId: number | null
+    reviewState: string | null
+    fullName: string | null
+    number: number | null
+  },
+  number
+>`
+  SELECT helpRequest.category, helpRequest.skills, review.githubReviewId,
+    review.state AS reviewState, repository.fullName, pullRequest.number
+  FROM helpRequest
+  LEFT JOIN review ON review.helpRequestId = helpRequest.helpRequestId
+  LEFT JOIN pullRequest
+    ON pullRequest.pullRequestId = helpRequest.pullRequestId
+  LEFT JOIN repository
+    ON repository.repositoryId = pullRequest.repositoryId
+  WHERE helpRequest.helpRequestId = ?
+`.get
+
+const listSkillRows = sql<
+  { skillId: number; slug: string; name: string },
+  string
+>`
+  SELECT skillId, slug, name FROM skill
+  WHERE skillId IN (SELECT value FROM json_each(?))
+`.all
+
+const setCompleted = sql<undefined, { helpRequestId: number; at: number }>`
+  UPDATE helpRequest SET status = 'completed', confirmedAt = :at,
+    updatedAt = :at
+  WHERE helpRequestId = :helpRequestId
+    AND status IN ('review_submitted', 'delivered')
+`.run
+
+// A skill proven by a confirmed help weighs the most in the matching (§6.1)
+const addProvenSkill = sql<
+  undefined,
+  { userId: number; skillId: number; at: number }
+>`
+  INSERT OR IGNORE INTO userSkill (userId, skillId, source, createdAt)
+  VALUES (:userId, :skillId, 'platform_activity', :at)
+`.run
+
+/**
+ * « Was this helpful? → Yes »: completed, and a proof for the helper that
+ * freezes everything the decision used (§8.3). A review seen on GitHub gives
+ * REVIEW_HELP_CONFIRMED, « vérifié par GitHub »; a help delivered on Pamoja
+ * gives HELP_CONFIRMED. The anti-abuse rules decide once if it counts (§8.4).
+ */
+export const confirmHelp = (userId: number, helpRequestId: number) =>
+  db.transaction(() => {
+    const row = rowOf(helpRequestId)
+    requireAuthor(row, userId)
+    const at = now()
+    if (!setCompleted({ helpRequestId, at })) {
+      throw conflict('Only a delivered help can be confirmed')
+    }
+    const helperId = row.acceptedBy!
+    const proof = getProofSource(helpRequestId)!
+    const skillRows = listSkillRows(proof.skills)
+    const decision = eligibilityOf(helperId, row.authorId, at)
+    const common = {
+      userId: helperId,
+      projectId: maybe(row.projectId),
+      helpRequestId,
+      requesterId: row.authorId,
+      skills: skillRows,
+      helpCategory: proof.category,
+      rulesVersion: RULES_VERSION,
+      ...decision,
+    }
+    if (
+      row.status === 'review_submitted' && proof.githubReviewId &&
+      proof.fullName && proof.number && row.pullRequestId
+    ) {
+      Entry.insert.REVIEW_HELP_CONFIRMED({
+        ...common,
+        pullRequestId: row.pullRequestId,
+        repository: proof.fullName,
+        prNumber: proof.number,
+        url: `https://github.com/${proof.fullName}/pull/${proof.number}`,
+        githubReviewId: proof.githubReviewId,
+        reviewState: proof.reviewState ?? 'commented',
+        source: 'github',
+      })
+    } else {
+      Entry.insert.HELP_CONFIRMED({ ...common, source: 'platform' })
+    }
+    if (decision.eligible) {
+      for (const { skillId } of skillRows) {
+        addProvenSkill({ userId: helperId, skillId, at })
+      }
+    }
+    tell(row, helperId, 'help_confirmed', userId, {
+      eligible: decision.eligible,
+    })
   })()
 
 /** « Was this helpful? → No »: closed, no proof (§7.2, §8.3) */

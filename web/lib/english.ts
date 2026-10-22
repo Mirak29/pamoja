@@ -1382,6 +1382,10 @@ export const english: Record<string, string> = {
   'Ta demande a expiré': 'Your request expired',
   'Une demande attend ton aide': 'A request is waiting for your help',
   'Réglages non enregistrés': 'Settings not saved',
+  'Merci pour la confirmation': 'Thanks for confirming',
+  'La preuve rejoint ton profil.': 'The proof joins your profile.',
+  'Elle ne compte pas dans ta réputation : au plus 2 confirmations par demandeur sur 30 jours.':
+    'It does not count in your reputation: at most 2 confirmations per requester over 30 days.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1554,4 +1558,8 @@ export const englishTemplates: Record<string, string> = {
   '{0} attend ta réponse': '{0} is waiting for your answer',
   'L’aide sur « {0} » t’a-t-elle aidé ?': 'Did the help on “{0}” help you?',
   '{0} a fait sa review sur GitHub': '{0} did their review on GitHub',
+  'Aide confirmée : preuve ajoutée au profil de {0}':
+    'Help confirmed: proof added to {0}’s profile',
+  '{0} reçoit une preuve sur son profil.': '{0} gets a proof on their profile.',
+  '{0} a confirmé ton aide': '{0} confirmed your help',
 }

@@ -469,13 +469,15 @@ Une modification de profil ou la suppression d'une demande ne change donc aucun 
 
 **L'éligibilité est décidée une fois, à la confirmation, puis figée.** Un changement de règles ne réécrit jamais l'historique en silence : appliquer de nouvelles règles au passé est une migration explicite et versionnée.
 
+**À la confirmation** (`POST/api/help/confirm`, `api/help-lifecycle.ts`) : une review vue sur GitHub donne `REVIEW_HELP_CONFIRMED` (`source = github`, avec repo, numéro de PR, URL, id et état de la review) ; une aide livrée sur Pamoja donne `HELP_CONFIRMED` (`source = platform`). Les deux figent demandeur, aidant, skills (ids, slugs et noms) et type d'aide. Si la preuve compte, ses skills passent en `platform_activity` pour l'aidant, la source qui pèse le plus dans le matching (§7.3). L'aidant est notifié, et la notification dit si la preuve compte.
+
 **Les entries de réputation ne sont jamais archivées**, sauf par une sanction de modération (§10.5), qui retire volontairement la preuve. L'évaluateur de badges s'exécute après chaque entry concernée et recalcule `BadgeProgress` à partir des seules entries éligibles : entry → évaluateur → `BadgeProgress` → stats du profil.
 
 ### 8.4 Anti-abus
 
 Objectif : empêcher que « A reviewe B, B reviewe A, 100 fois » fabrique de la réputation.
 
-- **Plafond par paire** : au plus 2 confirmations comptabilisées par paire demandeur / aidant sur 30 jours glissants.
+- **Plafond par paire** : au plus 2 confirmations comptabilisées par paire demandeur / aidant sur 30 jours glissants. Au-delà, la preuve est créée avec `eligible = 0` et `exclusionReason = pair_limit` (`api/reputation.ts`).
 - **Pas d'auto-review** : le reviewer n'est ni l'auteur de la PR ni le demandeur.
 - **Une seule confirmation** par demande d'aide.
 - **Confirmation du demandeur** obligatoire.

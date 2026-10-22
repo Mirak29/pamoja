@@ -109,7 +109,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-209** · Matching SQL : score, raisons, vagues de 5, place « nouveau profil », plafonds par jour (§7.3) `[démo]`
 - [x] **PAM-210** · Notifications : table, centre, toast temps réel, préférences (§7.4) `[démo]`
 - [x] **PAM-211** · Vérification d'une review : les 5 conditions → `review_submitted` (§7.5)
-- [ ] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
+- [x] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [ ] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
 - [ ] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4)
@@ -287,3 +287,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Matching : poids des sources de skills 100/85/70 %, disponibilité 7 + 3 si actif, seuil par défaut 50, place « nouveau profil » sur la moitié des skills au moins ; types d'aide acceptés dans `Profile.matchingFilters` (seedés depuis les fixtures) ; migration 005 (`lastWaveAt`) ; la proximité sémantique vaut 0 jusqu'à PAM-311 · §7.3, §14.4, §15
 - 2026-10-22 · Notifications : le serveur garde le type et les faits, la page écrit la phrase dans sa langue ; une notification par étape d'une demande pour l'autre côté ; préférences enregistrées dans `Profile.matchingFilters` (score minimum, types d'aide), filtres par skills, projets et communautés reportés en PAM-223 · §7.4
 - 2026-10-22 · Vérification d'une review : les commentaires de ligne d'une review « commented » sans texte sont lus après le webhook (fin du compte provisoire de PAM-205) ; la resynchronisation relit les reviews des PRs à aide acceptée ; `deliveredAt` = heure de la détection · §5.5, §7.5
+- 2026-10-22 · Confirmation : `REVIEW_HELP_CONFIRMED` (`github`) pour une review, `HELP_CONFIRMED` (`platform`) pour une aide livrée ; plafond par paire décidé à la confirmation (`pair_limit`) ; skills prouvés en `platform_activity` pour l'aidant · §7.3, §8.3, §8.4
