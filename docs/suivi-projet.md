@@ -651,6 +651,13 @@ Le profil `/@login` s'ouvre pour n'importe quel développeur inscrit, plus seule
 - **Livrable** : `api/profile.ts`, route `GET/api/user`, `listHelpActivity` dans `api/help.ts`, `api/public_profile_test.ts`, `web/lib/profile.ts`, profil et passeport chargés par l'adresse, chiffres cliquables, projets du profil (`projectsShownOf`), traductions
 - **Par** : @Mirak29
 
+### 2026-10-22 · QA de consolidation
+
+Passe complète sur `master` après PAM-301, avant tout nouveau chantier : base seedée, deux comptes en même temps, ordinateur et mobile, français et anglais, et une série de contenus piégés sur chaque champ où un membre écrit. La boucle d'aide marche de bout en bout, rien n'est injectable et le serveur n'a renvoyé aucune erreur 500. Quinze défauts relevés (QA-19 à QA-33) : pas de limite de taille sur les posts, réponses, messages de canal et champs du profil ; un mot très long fait déborder la page ; retours à la ligne perdus ; pas de « voir plus » ; Markdown annoncé mais non rendu ; liens et mentions non cliquables ; doublon du compte « abdou » à la connexion simulée ; risque pour la démo réelle (le login seedé est renommé à la connexion du vrai compte). Le rapport liste aussi les scénarios réseau social à jouer quand posts, images et modération auront leur serveur ; voir le [rapport](qa/2026-10-22/rapport-qa-consolidation.md).
+
+- **Livrable** : `docs/qa/2026-10-22/rapport-qa-consolidation.md`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
