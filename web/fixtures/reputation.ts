@@ -1,16 +1,20 @@
+import { signal } from '@preact/signals'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
-import { type Login, people } from '/web/fixtures/people.ts'
+import { hearOf, type Login, people, personOf } from '/web/fixtures/people.ts'
 import {
   projects,
   type ProjectSlug,
   projectsOf,
 } from '/web/fixtures/projects.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
 
-// Reputation is computed from frozen proofs only (cahier des charges §8):
-// what GET/api/user, GET/api/user/badges and the badge evaluator
-// (PAM-213, PAM-303) will return, computed here on the fixtures
+// Reputation is computed from frozen proofs only (cahier des charges §8).
+// A developer the server knows shows the proofs of GET/api/user/proofs and
+// the badges of GET/api/user/badges (PAM-303, web/lib/reputation.ts); the
+// demo people keep those of the fixtures, computed here, until the seed
+// gives them their proofs (PAM-901).
 
 export type Dimension = 'review' | 'build' | 'mentor' | 'oss' | 'help'
 
@@ -38,6 +42,10 @@ export type Proof = {
   /** The question whose answer was accepted */
   post?: string
   demo: boolean
+  /** Name of the project, for a project the pages do not know */
+  projectName?: string
+  /** The proof on GitHub: the PR, the release */
+  url?: string
 }
 
 const proof = (
@@ -172,8 +180,19 @@ export const proofs: Proof[] = [
   proof('amina', 'help', 'Pipeline CI pour Senegal Maps', 'senegal-maps'),
 ].map((p, i) => ({ ...p, id: `p${i + 1}`, at: daysAgo((i + 1) * 2 + 3) }))
 
-export const proofsOf = (login: Login) =>
-  proofs.filter((p) => p.who === login).sort((a, b) => b.at - a.at)
+// A component that reads the proofs follows them: a confirmed help shows
+// on the profile without a refresh
+export const reputationChanged = signal(0)
+
+export const proofsOf = (login: Login) => {
+  reputationChanged.value
+  return proofs.filter((p) => p.who === login).sort((a, b) => b.at - a.at)
+}
+
+/** Name of the project of a proof */
+export const projectNameOf = (proof: Proof) =>
+  proof.projectName ||
+  (proof.project && projects[proof.project]?.name) || ''
 
 /**
  * Reviews and help confirmed by someone else: the « aides confirmées » of
@@ -193,6 +212,8 @@ export const confirmedHelpsOf = (
 export const levelNames = ['Bronze', 'Argent', 'Or', 'Platine']
 
 type BadgeDefinition = {
+  /** Key of the badge on the server (§8.2) */
+  key: string
   name: string
   dimension?: Dimension
   thresholds: number[]
@@ -203,30 +224,35 @@ type BadgeDefinition = {
 // Thresholds of §8.2, initial values to tune after the seed
 const badgeDefinitions: BadgeDefinition[] = [
   {
+    key: 'trusted_reviewer',
     name: 'Reviewer de confiance',
     dimension: 'review',
     thresholds: [3, 10, 20, 50],
     unit: ['review confirmée', 'reviews confirmées'],
   },
   {
+    key: 'first_responder',
     name: 'Premier à répondre',
     dimension: 'help',
     thresholds: [3, 10, 25, 50],
     unit: ['aide', 'aides'],
   },
   {
+    key: 'mentor',
     name: 'Mentor',
     dimension: 'mentor',
     thresholds: [2, 5, 15, 30],
     unit: ['mentorat', 'mentorats'],
   },
   {
+    key: 'open_source',
     name: 'Contributeur open source',
     dimension: 'oss',
     thresholds: [3, 10, 25, 50],
     unit: ['PR mergée', 'PRs mergées'],
   },
   {
+    key: 'builder',
     name: 'Bâtisseur',
     dimension: 'build',
     thresholds: [1, 3, 5, 10],
@@ -235,10 +261,35 @@ const badgeDefinitions: BadgeDefinition[] = [
 ]
 
 const crossBorder: BadgeDefinition = {
+  key: 'cross_border',
   name: 'Bâtisseur sans frontières',
   thresholds: [2, 3, 5, 8],
   unit: ['pays', 'pays'],
 }
+
+// Badges only the server computes: they need the GitHub activity and the
+// communities
+const serverOnly: BadgeDefinition[] = [
+  {
+    key: 'maintainer',
+    name: 'Mainteneur',
+    thresholds: [1, 3, 6, 12],
+    unit: ['mois d’affilée', 'mois d’affilée'],
+  },
+  {
+    key: 'community_pillar',
+    name: 'Pilier de communauté',
+    dimension: 'help',
+    thresholds: [5, 15, 40, 100],
+    unit: ['réponse acceptée', 'réponses acceptées'],
+  },
+]
+
+const definitions = [...badgeDefinitions, crossBorder, ...serverOnly]
+
+/** Name of a badge of the server, as the notifications say it */
+export const badgeName = (key: string) =>
+  definitions.find((b) => b.key === key)?.name ?? key
 
 export type Badge = {
   name: string
@@ -250,11 +301,49 @@ export type Badge = {
   nextLabel: string
 }
 
+const nextLabel = (badge: BadgeDefinition, count: number, next: number) => {
+  const missing = next - count
+  const level = translate(levelNames[badge.thresholds.indexOf(next)])
+  // Enough proofs, not yet with enough different people (§8.4)
+  if (missing <= 0) {
+    return t`Aide des personnes plus variées pour le niveau ${level}`
+  }
+  return t`${missing} ${
+    translate(badge.unit[missing > 1 ? 1 : 0])
+  } avant le niveau ${level}`
+}
+
+type ApiBadge = ApiOutput['GET/api/user/badges'][number]
+
+// Badges read from the server, by login
+const serverBadges = new Map<string, ApiBadge[]>()
+
+/** A badge of the server: its levels go from 0 (none) to 4 (Platinum) */
+const fromServer = ({ badge, level, count, next }: ApiBadge): Badge => {
+  const definition = definitions.find((b) => b.key === badge)!
+  return {
+    name: definition.name,
+    dimension: definition.dimension,
+    count,
+    level: level - 1,
+    next: next || undefined,
+    nextLabel: next
+      ? nextLabel(definition, count, next)
+      : translate('Niveau maximal atteint'),
+  }
+}
+
 export const badgesOf = (login: Login): Badge[] => {
   const mine = proofsOf(login)
+  const saved = serverBadges.get(login)
+  if (saved) {
+    return saved
+      .filter((b) => b.count > 0 && definitions.some((d) => d.key === b.badge))
+      .map(fromServer)
+  }
   const home = people[login].countryCode
   const countries = new Set(
-    mine.map((p) => p.by && people[p.by].countryCode)
+    mine.map((p) => p.by && personOf(p.by).countryCode)
       .filter((code) => code && code !== home),
   )
   return [
@@ -268,7 +357,6 @@ export const badgesOf = (login: Login): Badge[] => {
     .map(({ badge, count }) => {
       const i = badge.thresholds.findIndex((threshold) => count < threshold)
       const next = i === -1 ? undefined : badge.thresholds[i]
-      const missing = next ? next - count : 0
       return {
         name: badge.name,
         dimension: badge.dimension,
@@ -276,9 +364,7 @@ export const badgesOf = (login: Login): Badge[] => {
         level: i === -1 ? 3 : i - 1,
         next,
         nextLabel: next
-          ? t`${missing} ${
-            translate(badge.unit[missing > 1 ? 1 : 0])
-          } avant le niveau ${translate(levelNames[i])}`
+          ? nextLabel(badge, count, next)
           : translate('Niveau maximal atteint'),
       }
     })
@@ -313,6 +399,7 @@ export const profileStats = (login: Login) => {
 
 /** Working links only: proofs and help, never follows (§9.3) */
 export const linksOf = (login: Login): Link[] => {
+  reputationChanged.value
   const links = new Map<Login, Link>()
   const add = (other: Login | undefined, verified: boolean) => {
     if (!other || other === login) return
@@ -330,4 +417,81 @@ export const linksOf = (login: Login): Link[] => {
     if (h.author === login && h.helper) add(h.helper, false)
   }
   return [...links.values()].sort((a, b) => b.count - a.count)
+}
+
+/*
+ * Proofs read from the server (GET/api/user/proofs)
+ */
+
+type ApiProof = ApiOutput['GET/api/user/proofs'][number]
+
+// The demo people of the fixtures, before the session adds its developer
+const demoPeople = new Set<string>(Object.keys(people))
+
+const helpTypes: Record<string, string> = {
+  mentorship: 'Mentorat',
+  pair_programming: 'Pair programming',
+}
+
+/** What a proof says, in the language of the page */
+const titleOf = (p: ApiProof) => {
+  switch (p.kind) {
+    case 'review':
+      return t`Review de la PR #${p.prNumber}`
+    case 'merged':
+      return p.dimension === 'oss'
+        ? t`PR #${p.prNumber} mergée chez ${p.projectName}`
+        : t`PR #${p.prNumber} mergée`
+    case 'release':
+      return t`Release ${p.tag} de ${p.projectName}`
+    case 'created':
+      return t`A créé ${p.projectName}`
+    case 'answer':
+      return translate('Réponse acceptée')
+    default:
+      // The title of the help request, as its author wrote it
+      return p.title || translate(helpTypes[p.category] ?? 'Aide confirmée')
+  }
+}
+
+const proofOf = (login: string, p: ApiProof): Proof => ({
+  id: `e${p.id}`,
+  who: login as Login,
+  dimension: p.dimension as Dimension,
+  get title() {
+    return titleOf(p)
+  },
+  project: (p.project || undefined) as ProjectSlug | undefined,
+  projectName: p.projectName || undefined,
+  by: (p.by || undefined) as Login | undefined,
+  at: p.at * 1000,
+  // Only an action seen on GitHub is « vérifié par GitHub » (§8.3)
+  verified: p.source === 'github',
+  demo: p.source === 'demo',
+  pullRequest: p.prNumber || undefined,
+  url: p.url || undefined,
+  help: p.helpRequestId ? String(p.helpRequestId) : undefined,
+  post: p.postId ? String(p.postId) : undefined,
+})
+
+/**
+ * The proofs and badges of a developer read from the server take the place
+ * of those of the pages. A demo person keeps their fixtures, which the seed
+ * mirrors, and gains what they really did on Pamoja or GitHub.
+ */
+export const adoptReputation = (
+  login: string,
+  list: ApiProof[],
+  badges: ApiBadge[],
+) => {
+  const demo = demoPeople.has(login)
+  const kept = proofs.filter((p) =>
+    p.who !== login || (demo && !p.id.startsWith('e'))
+  )
+  const adopted = list.filter((p) => !demo || p.source !== 'demo')
+    .map((p) => proofOf(login, p))
+  for (const p of list) p.by && hearOf(p.by, p.byName, p.byCountry)
+  proofs.splice(0, proofs.length, ...kept, ...adopted)
+  demo || serverBadges.set(login, badges)
+  reputationChanged.value++
 }

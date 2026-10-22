@@ -145,11 +145,6 @@ const getAnswers = sql<{ count: number; askers: number }, number>`
     AND ${eligible}
 `.get
 
-const all = (count: number): Measure => ({
-  count,
-  gold: count,
-  platinum: count,
-})
 const ifOk = (count: number, gold: boolean, platinum: boolean): Measure => ({
   count,
   gold: gold ? count : 0,

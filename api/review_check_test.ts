@@ -183,7 +183,7 @@ const submitted = () =>
   )
     .all(entries.REVIEW_SUBMITTED)
 
-const reviewed = (deliver: typeof review) => ({
+const reviewed = (deliver: ReturnType<typeof review>) => ({
   action: 'submitted',
   pull_request: pull(),
   review: deliver,

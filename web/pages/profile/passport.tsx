@@ -5,18 +5,14 @@ import { type Login, people, placeOf } from '/web/fixtures/people.ts'
 import { profileStats, proofsOf } from '/web/fixtures/reputation.ts'
 import { plural } from '/web/lib/plural.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
-import {
-  DemoBadge,
-  NoticeBadge,
-  SkillChip,
-  VerifiedBadge,
-} from '/web/ui/badge.tsx'
+import { NoticeBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
-import { proofMeta } from '/web/pages/profile/proofs-drawer.tsx'
+import { proofMeta, ProofSource } from '/web/pages/profile/proofs-drawer.tsx'
 import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
 import { t } from '/web/lib/language.ts'
+import { useReputation } from '/web/lib/reputation.ts'
 
 // A visitor sees what someone did: a figure at zero is left out
 const stats = (login: Login) => {
@@ -39,6 +35,7 @@ const stats = (login: Login) => {
  */
 export const Passport = ({ login }: { login: Login }) => {
   const person = people[login]
+  useReputation(login)
   const mine = proofsOf(login)
   const recent = [
     ...mine.filter((p) => p.verified),
@@ -141,8 +138,7 @@ export const Passport = ({ login }: { login: Login }) => {
                   <span class='text-[14px] font-semibold'>{proof.title}</span>
                   <span class='flex flex-wrap items-center gap-2 text-[12px] text-ink-muted'>
                     {proofMeta(proof, false)}
-                    {proof.verified && <VerifiedBadge />}
-                    {proof.demo && !proof.verified && <DemoBadge />}
+                    <ProofSource proof={proof} />
                   </span>
                 </div>
               ))}

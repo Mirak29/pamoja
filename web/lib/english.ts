@@ -1387,6 +1387,17 @@ export const english: Record<string, string> = {
   'Elle ne compte pas dans ta réputation : au plus 2 confirmations par demandeur sur 30 jours.':
     'It does not count in your reputation: at most 2 confirmations per requester over 30 days.',
   'Pilier de communauté': 'Community pillar',
+  'Confirmée sur Pamoja': 'Confirmed on Pamoja',
+  'Sur GitHub': 'On GitHub',
+  'Pas encore de badge. Trois reviews confirmées font le premier : Reviewer de confiance, niveau Bronze.':
+    'No badge yet. Three confirmed reviews earn the first one: Trusted reviewer, Bronze level.',
+  'Aide confirmée': 'Confirmed help',
+  'Pair programming': 'Pair programming',
+  'mois d’affilée': 'months in a row',
+  'réponse acceptée': 'accepted answer',
+  'réponses acceptées': 'accepted answers',
+  'confirmée': 'confirmed',
+  'confirmées': 'confirmed',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1565,4 +1576,13 @@ export const englishTemplates: Record<string, string> = {
   '{0} a confirmé ton aide': '{0} confirmed your help',
   'Badge débloqué : {0}': 'Badge unlocked: {0}',
   'Niveau {0}.': '{0} level.',
+  'Review de la PR #{0}': 'Review of PR #{0}',
+  'PR #{0} mergée chez {1}': 'PR #{0} merged into {1}',
+  'PR #{0} mergée': 'PR #{0} merged',
+  'Release {0} de {1}': 'Release {0} of {1}',
+  'A créé {0}': 'Created {0}',
+  'Aide des personnes plus variées pour le niveau {0}':
+    'Help a wider range of people to reach {0}',
+  '{0} par GitHub': '{0} by GitHub',
+  '{0} sur Pamoja': '{0} on Pamoja',
 }

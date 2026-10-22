@@ -7,7 +7,7 @@ import {
   notificationsChanged,
 } from '/web/fixtures/notifications.ts'
 import { durationLabel } from '/web/fixtures/help.ts'
-import { levelNames } from '/web/fixtures/reputation.ts'
+import { badgeName, levelNames } from '/web/fixtures/reputation.ts'
 import { me, personOf } from '/web/fixtures/people.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
@@ -22,17 +22,6 @@ import { effect } from '@preact/signals'
 type Item = ApiOutput['GET/api/notifications'][number]
 
 // The badges of §8.2, by their key on the server
-const badgeNames: Record<string, string> = {
-  trusted_reviewer: 'Reviewer de confiance',
-  first_responder: 'Premier à répondre',
-  mentor: 'Mentor',
-  open_source: 'Contributeur open source',
-  builder: 'Bâtisseur',
-  maintainer: 'Mainteneur',
-  cross_border: 'Bâtisseur sans frontières',
-  community_pillar: 'Pilier de communauté',
-}
-
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
 // Ids of the server, kept apart from the demo ones
@@ -106,7 +95,7 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
     case 'badge_unlocked':
       return {
         kind: 'promising',
-        title: t`Badge débloqué : ${translate(badgeNames[n.badge] ?? n.badge)}`,
+        title: t`Badge débloqué : ${translate(badgeName(n.badge))}`,
         body: t`Niveau ${translate(levelNames[n.level - 1] ?? '')}.`,
       }
     case 'help_declined':

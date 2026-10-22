@@ -17,6 +17,7 @@ import {
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
+import { proofsOf } from '/api/proofs.ts'
 import {
   listNotifications,
   readAllNotifications,
@@ -279,6 +280,43 @@ const defs = {
       'The 8 badges of §8.2',
     ),
     description: 'The badges of a developer, public like the passport',
+  }),
+
+  'GET/api/user/proofs': route({
+    authorize: withOptionalSession,
+    fn: (_ctx, { username }) => {
+      const userId = userIdOfLogin(username)
+      if (!userId) {
+        throw new respond.NotFoundError({ message: 'No such developer' })
+      }
+      return proofsOf(userId)
+    },
+    input: OBJ({ username: STR('GitHub login') }),
+    output: ARR(
+      OBJ({
+        id: NUM('Entry of the proof'),
+        kind: STR('review, help, merged, release, created or answer'),
+        dimension: STR('review, build, mentor, oss or help (§8.1)'),
+        title: STR('Title of the help request, empty for the others'),
+        category: STR('Type of help, empty without a help request'),
+        skills: ARR(STR('Skill name'), 'Skills frozen at the confirmation'),
+        project: STR('Slug of the project, empty without one'),
+        projectName: STR('Name of the project'),
+        by: STR('Login of the developer helped, empty for their own work'),
+        byName: STR('Their display name'),
+        byCountry: STR('Their country code, empty when unknown'),
+        at: NUM('When it was proven, in seconds'),
+        source: STR('github, platform or demo: only github is verified'),
+        repository: STR('owner/name on GitHub, empty off GitHub'),
+        prNumber: NUM('Number of the PR, 0 without one'),
+        url: STR('Link to GitHub, empty off GitHub'),
+        tag: STR('Tag of a release'),
+        helpRequestId: NUM('Help request, 0 without one'),
+        postId: NUM('Accepted answer, 0 without one'),
+      }),
+      'Eligible proofs, newest first',
+    ),
+    description: 'The proofs of the reputation of a developer, public',
   }),
 
   'GET/api/user/me': route({
