@@ -616,6 +616,13 @@ Une review faite sur GitHub valide une demande d'aide quand les cinq conditions 
 - **Livrable** : `api/review-check.ts`, webhook `pull_request_review` et resynchronisation branchés, état « relue » des PRs dans `GET/api/projects`, notification « … a fait sa review », `api/review_check_test.ts` (6 tests)
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-212 · Confirmation du demandeur et preuve de réputation
+
+« Oui, elle m'a aidé » fait passer la demande en « Terminée » et crée la preuve de l'aidant. Elle fige tout ce qui a servi à la décision (§8.3) : demandeur et aidant, skills au moment de l'aide, type d'aide, et pour une review vue sur GitHub le repo, le numéro de PR, l'URL, l'id et l'état de la review. Une review donne `REVIEW_HELP_CONFIRMED` « vérifiée par GitHub » ; une aide livrée sur Pamoja donne `HELP_CONFIRMED`. L'éligibilité est décidée une fois, à la confirmation : au plus 2 confirmations comptées par paire demandeur / aidant sur 30 jours (§8.4). Une preuve qui compte rend ses skills « prouvés sur Pamoja », ce qui pèse le plus dans le matching. L'aidant est notifié. Vérifié dans le navigateur avec deux comptes, de bout en bout : Abdou publie, Fatou accepte et livre, l'écran d'Abdou passe à « Cette aide t'a été utile ? » sans rafraîchir, Abdou confirme, le toast « Abdou a confirmé ton aide » arrive chez Fatou.
+
+- **Livrable** : `confirmHelp` dans `api/help-lifecycle.ts`, règle d'éligibilité dans `api/reputation.ts`, route `POST/api/help/confirm`, `api/help_confirmation_test.ts` (3 tests : aide livrée, review GitHub, plafond par paire), bouton de confirmation et frise branchés
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
