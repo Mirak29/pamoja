@@ -1187,6 +1187,22 @@ export const english: Record<string, string> = {
   'Pamoja n’arrive pas à joindre le serveur. Tes données sont intactes : rien n’est perdu.':
     'Pamoja cannot reach the server. Your data is intact: nothing is lost.',
   'IA / ML': 'AI / ML',
+  'Une demande est déjà en cours sur cette PR. Retrouve-la dans Aide, onglet Mes demandes.':
+    'A request is already in progress on this PR. Find it in Help, My requests tab.',
+  'Cette PR a été fermée ou mergée entre-temps.':
+    'This PR was closed or merged in the meantime.',
+  'Ce projet ou cette PR n’existe que dans les données de démonstration. Choisis un projet importé depuis GitHub.':
+    'This project or PR only exists in the demo data. Choose a project imported from GitHub.',
+  'Seuls les membres du projet peuvent demander de l’aide sur ce projet.':
+    'Only project members can ask for help on this project.',
+  'Pamoja n’a pas pu publier ta demande. Réessaie dans un instant.':
+    'Pamoja could not publish your request. Try again in a moment.',
+  'Colle l’adresse complète de la vidéo, en https://.':
+    'Paste the full video address, starting with https://.',
+  'Elle est ouverte 7 jours, le temps qu’un développeur l’accepte.':
+    'It stays open for 7 days, time for a developer to accept it.',
+  'Demande non publiée': 'Request not published',
+  'Publication…': 'Publishing…',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
