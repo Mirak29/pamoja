@@ -77,6 +77,8 @@ const shown = (row: Row) => {
     minutes: Number(payload.minutes ?? 0),
     skills: Array.isArray(payload.skills) ? payload.skills.map(String) : [],
     excerpt: String(payload.excerpt ?? ''),
+    // A confirmed help that counts in the reputation (§8.4)
+    eligible: payload.eligible === 0 ? 0 : 1,
     readAt: row.readAt ?? 0,
     createdAt: row.createdAt,
   }

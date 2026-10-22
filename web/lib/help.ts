@@ -43,7 +43,7 @@ const logLine = ({ event, login }: Detail['timeline'][number]) => {
     case 'REVIEW_SUBMITTED':
       return t`Review de ${name} détectée sur GitHub`
     default:
-      return t`${name} a confirmé l’aide`
+      return t`Aide confirmée : preuve ajoutée au profil de ${name}`
   }
 }
 
@@ -130,6 +130,7 @@ const routes = {
   reopen: 'POST/api/help/reopen',
   deliver: 'POST/api/help/deliver',
   decline: 'POST/api/help/decline',
+  confirm: 'POST/api/help/confirm',
 } as const
 
 export type Feedback = {
@@ -185,6 +186,14 @@ const done = (
       }
     case 'decline':
       return { title: translate('Demande fermée'), tone: 'muted' }
+    case 'confirm':
+      return {
+        title: translate('Merci pour la confirmation'),
+        body: t`${
+          firstName(request.helper ?? '')
+        } reçoit une preuve sur son profil.`,
+        tone: 'verified',
+      }
   }
 }
 

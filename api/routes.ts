@@ -32,6 +32,7 @@ import {
 import {
   acceptHelp,
   cancelHelp,
+  confirmHelp,
   declineHelp,
   deliverHelp,
   getHelpDetail,
@@ -554,6 +555,10 @@ const defs = {
     deliverHelp,
     'The helper says the help is done, for a request without a PR',
   ),
+  'POST/api/help/confirm': transition(
+    confirmHelp,
+    'The requester confirms the help: completed, a proof for the helper',
+  ),
   'POST/api/help/decline': transition(
     declineHelp,
     'The requester answers that the help was not useful',
@@ -588,6 +593,7 @@ const defs = {
         minutes: NUM('Estimated duration, 0 if none'),
         skills: ARR(STR('Skill asked')),
         excerpt: STR('Start of a message, empty if none'),
+        eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
         readAt: NUM('In seconds, 0 if unread'),
         createdAt: NUM('In seconds'),
       }),

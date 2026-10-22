@@ -80,6 +80,16 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
           'Confirme si elle t’a aidé : la preuve rejoint son profil.',
         ),
       }
+    case 'help_confirmed':
+      return {
+        kind: 'help',
+        title: t`${who} a confirmé ton aide`,
+        body: translate(
+          n.eligible
+            ? 'La preuve rejoint ton profil.'
+            : 'Elle ne compte pas dans ta réputation : au plus 2 confirmations par demandeur sur 30 jours.',
+        ),
+      }
     case 'help_declined':
       return {
         kind: 'help',

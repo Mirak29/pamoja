@@ -240,16 +240,7 @@ const promptOf = (
     }
     if (status === 'review_submitted' || status === 'delivered') {
       return ['Cette aide t’a été utile ?', [
-        {
-          label: 'Oui, elle m’a aidé',
-          variant: 'primary',
-          action: 'confirm',
-          // The proof of a real help comes with its confirmation (PAM-212)
-          disabled: !request.demo,
-          hint: request.demo
-            ? undefined
-            : 'La confirmation, qui crée la preuve sur son profil, arrive bientôt.',
-        },
+        { label: 'Oui, elle m’a aidé', variant: 'primary', action: 'confirm' },
         { label: 'Non', variant: 'secondary', action: 'decline' },
       ]]
     }
