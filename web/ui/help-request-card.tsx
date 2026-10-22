@@ -1,6 +1,6 @@
 import { A } from '@01edu/signal-router'
 import type { HelpRequest } from '/web/fixtures/help.ts'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, personOf } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import {
@@ -22,7 +22,7 @@ import { t } from '/web/lib/language.ts'
 export const HelpRequestCard = (
   { request, score }: { request: HelpRequest; score?: number },
 ) => {
-  const helper = request.helper && people[request.helper].name.split(' ')[0]
+  const helper = request.helper && personOf(request.helper).name.split(' ')[0]
   return (
     <A
       href={`aide/${request.id}`}
@@ -59,9 +59,8 @@ export const HelpRequestCard = (
           ))}
         </div>
         <span class='text-[13px] leading-5 text-ink-muted'>
-          {people[request.author].name} · {ago(request.at)} · {request.duration}
-          {' '}
-          · {request.level}
+          {personOf(request.author).name} · {ago(request.at)} ·{' '}
+          {request.duration} · {request.level}
           {helper && (request.status === 'completed'
             ? t` · aidé par ${helper}`
             : t` · pris par ${helper}`)}
@@ -69,7 +68,9 @@ export const HelpRequestCard = (
       </div>
       <div class='flex flex-none flex-col items-end gap-1.5'>
         <StatusBadge status={request.status} />
-        {request.log?.some((entry) => entry.verified) && <VerifiedBadge />}
+        {request.log?.some((entry) =>
+          entry.verified
+        ) && <VerifiedBadge />}
         {request.demo && <DemoBadge />}
       </div>
     </A>

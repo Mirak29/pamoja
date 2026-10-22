@@ -21,6 +21,17 @@ import {
   getHelpRequest,
   listHelpRequests,
 } from '/api/help.ts'
+import {
+  acceptHelp,
+  cancelHelp,
+  declineHelp,
+  deliverHelp,
+  getHelpDetail,
+  postHelpMessage,
+  releaseHelp,
+  reopenHelp,
+  withdrawHelp,
+} from '/api/help-lifecycle.ts'
 import { receiveWebhook } from '/api/webhooks.ts'
 import { confirmInstallation, installationUrl } from '/api/installation.ts'
 import { log } from '/api/lib/log.ts'
@@ -77,7 +88,7 @@ const currentUser = {
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
 }
 
-const helpRequest = OBJ({
+const helpRequestFields = {
   id: NUM('Id of the request'),
   author: STR('Login of the requester'),
   project: STR('Slug of the project, empty if none'),
@@ -95,7 +106,51 @@ const helpRequest = OBJ({
   acceptedAt: NUM('Acceptance, in seconds, 0 if none'),
   createdAt: NUM('Creation, in seconds'),
   demo: BOOL('Data of the seed'),
-}, 'A help request (§7.1)')
+}
+
+const helpRequest = OBJ(helpRequestFields, 'A help request (§7.1)')
+
+const helpDetail = OBJ({
+  ...helpRequestFields,
+  releasableAt: NUM(
+    'When the requester may release the helper, in seconds, 0 if not accepted',
+  ),
+  left: BOOL('The developer withdrew or was released: out of this request'),
+  messages: ARR(
+    OBJ({
+      author: STR('Login'),
+      body: STR('Markdown'),
+      createdAt: NUM('In seconds'),
+    }),
+    'The thread, for the requester and its helpers only (§7.2)',
+  ),
+  timeline: ARR(
+    OBJ({
+      event: STR('Entry type of the lifecycle'),
+      at: NUM('In seconds'),
+      login: STR('Who did it'),
+    }),
+    'The lifecycle, oldest first',
+  ),
+}, 'A help request with its thread and lifecycle (§7.2)')
+
+const requestId = OBJ({ id: NUM('Id of the request') })
+
+/** A transition of the lifecycle (§7.2), answered with the request */
+const transition = (
+  play: (userId: number, id: number) => void,
+  description: string,
+) =>
+  route({
+    authorize: withSession,
+    fn: (ctx, { id }) => {
+      play(ctx.session.userId, id)
+      return getHelpDetail(ctx.session.userId, id)
+    },
+    input: requestId,
+    output: helpDetail,
+    description,
+  })
 
 // Only names of the vocabulary are saved: a developer never creates one
 const assertKnown = (names: string[], known: string[], what: string) => {
@@ -387,6 +442,55 @@ const defs = {
     }),
     output: helpRequest,
     description: 'Publish a help request, from the form or from a PR',
+  }),
+
+  /*
+   * Lifecycle of a help request (§7.2)
+   */
+  'GET/api/help/detail': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => getHelpDetail(ctx.session.userId, Number(id)),
+    input: OBJ({ id: STR('Id of the request') }),
+    output: helpDetail,
+    description: 'A request with its thread and lifecycle',
+  }),
+  'POST/api/help/accept': transition(
+    acceptHelp,
+    'Take an open request: atomic, a second helper gets 409',
+  ),
+  'POST/api/help/withdraw': transition(
+    withdrawHelp,
+    'The helper leaves: the request is open again without them',
+  ),
+  'POST/api/help/release': transition(
+    releaseHelp,
+    'The requester frees the request 72 h after the last activity of the helper',
+  ),
+  'POST/api/help/cancel': transition(
+    cancelHelp,
+    'The requester cancels an open or accepted request',
+  ),
+  'POST/api/help/reopen': transition(
+    reopenHelp,
+    'The requester opens an expired or closed request again',
+  ),
+  'POST/api/help/deliver': transition(
+    deliverHelp,
+    'The helper says the help is done, for a request without a PR',
+  ),
+  'POST/api/help/decline': transition(
+    declineHelp,
+    'The requester answers that the help was not useful',
+  ),
+  'POST/api/help/message': route({
+    authorize: withSession,
+    fn: (ctx, { id, body }) => {
+      postHelpMessage(ctx.session.userId, id, body)
+      return getHelpDetail(ctx.session.userId, id)
+    },
+    input: OBJ({ id: NUM('Id of the request'), body: STR('Markdown') }),
+    output: helpDetail,
+    description: 'A message in the thread of the requester and the helper',
   }),
 
   /*
