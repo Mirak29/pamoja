@@ -601,6 +601,14 @@ Le serveur calcule pour chaque demande un score sur 100 et ses raisons, lues en 
 - **Livrable** : `api/matching.ts`, `migrations/005-help-waves.js`, routes `GET/api/help/for-me` et `GET/api/help/preview`, matchs dans `GET/api/help/detail`, vagues dans `api/help-timers.ts`, `api/matching_test.ts` (5 tests : score et raisons, place « nouveau profil », vagues, plafond quotidien, aperçu), types d'aide seedés
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-210 · Notifications
+
+Chaque étape d'une demande d'aide notifie l'autre côté : match, acceptation, désistement, libération, annulation, aide livrée, « pas utile », message du fil, demande expirée, relances. Le serveur garde le type et les faits (demande, titre, score, skills, durée, début du message) ; la page en écrit la phrase, en français ou en anglais. Le centre de notifications et le badge du menu lisent la boîte du serveur, à côté des notifications de démo ; ouvrir une notification ou tout marquer comme lu est enregistré. Une notification arrive en direct par son entry et s'affiche en toast ; un match montre « … a besoin de toi » avec skills, score et durée. Le mode de matching, le score minimum et les types d'aide des réglages sont enregistrés et appliqués par le matching. Vérifié dans le navigateur avec deux comptes : Abdou publie, le toast de match arrive chez Fatou sans rafraîchir ; Fatou accepte, le toast « … a accepté ta demande » arrive chez Abdou.
+
+- **Livrable** : `api/notifications.ts`, notifications du cycle de vie dans `api/help-lifecycle.ts` et `api/help-timers.ts`, routes `GET/api/notifications`, `POST/api/notification/read`, `POST/api/notifications/read-all`, `POST/api/notification/preferences`, `api/notifications_test.ts` (3 tests), `web/lib/notifications.ts`, toast de match, réglages branchés
+- **Reste** : filtres par skills, projets et communautés (PAM-223)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
