@@ -92,7 +92,10 @@ const MineCard = ({ project }: { project: Project }) => {
           </span>
         </div>
       </div>
-      <span class='text-[14px] leading-[22px] text-pretty text-ink-muted'>
+      <span
+        translate={false}
+        class='text-[14px] leading-[22px] text-pretty text-ink-muted'
+      >
         {project.description}
       </span>
       <span class='font-mono text-[12px] leading-4 text-ink-muted'>
@@ -126,7 +129,10 @@ const FollowedRow = ({ project }: { project: Project }) => (
       <span class='font-display text-[16px] leading-[22px] font-semibold'>
         {project.name}
       </span>
-      <span class='truncate text-[13px] leading-5 text-ink-muted'>
+      <span
+        translate={false}
+        class='truncate text-[13px] leading-5 text-ink-muted'
+      >
         {project.description}
       </span>
     </A>

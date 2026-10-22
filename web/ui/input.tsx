@@ -15,30 +15,82 @@ const sizes = {
  * @example
  * <Field label='Titre'><Input name='title' /></Field>
  */
+/**
+ * Characters left near the limit of a field (§16): shown from 80 % on, read
+ * out by screen readers. The field itself stops at the limit.
+ */
+export const Counter = (
+  { value, limit }: { value: unknown; limit: number },
+) => {
+  const count = typeof value === 'string' ? value.length : 0
+  if (count < limit * 0.8) return null
+  return (
+    <span
+      aria-live='polite'
+      class={`self-end font-mono text-[12px] leading-4 tabular-nums ${
+        count >= limit ? 'text-danger' : 'text-ink-muted'
+      }`}
+    >
+      {count} / {limit}
+    </span>
+  )
+}
+
+type Limit = {
+  /** Maximum length, with a counter near it (`api/limits.ts`) */
+  limit?: number
+  /** Classes of the box holding the field and its counter, in a row */
+  wrap?: string
+}
+
+/** The field and, when it has a limit, its counter under it */
+const Limited = (
+  { limit, wrap, value, children }: Limit & {
+    value: unknown
+    children: ComponentChildren
+  },
+) =>
+  limit
+    ? (
+      <div class={`flex flex-col gap-1 ${wrap ?? 'w-full'}`}>
+        {children}
+        <Counter value={value} limit={limit} />
+      </div>
+    )
+    : <>{children}</>
+
 export const Input = (
-  { compact, class: className, ...props }:
+  { compact, class: className, limit, wrap, ...props }:
     & { compact?: boolean }
+    & Limit
     & JSX.IntrinsicElements['input'],
 ) => (
-  <input
-    {...props}
-    class={`${field} ${sizes[compact ? 'compact' : 'default']} ${
-      className ?? ''
-    }`}
-  />
+  <Limited limit={limit} wrap={wrap} value={props.value}>
+    <input
+      {...props}
+      maxLength={limit ?? props.maxLength}
+      class={`${field} ${sizes[compact ? 'compact' : 'default']} ${
+        className ?? ''
+      }`}
+    />
+  </Limited>
 )
 
 export const Textarea = (
-  { compact, class: className, ...props }:
+  { compact, class: className, limit, wrap, ...props }:
     & { compact?: boolean }
+    & Limit
     & JSX.IntrinsicElements['textarea'],
 ) => (
-  <textarea
-    {...props}
-    class={`${field} px-3 py-2.5 ${
-      compact ? 'text-[14px]' : 'text-[15px]'
-    } leading-[22px] resize-y ${className ?? ''}`}
-  />
+  <Limited limit={limit} wrap={wrap} value={props.value}>
+    <textarea
+      {...props}
+      maxLength={limit ?? props.maxLength}
+      class={`${field} px-3 py-2.5 ${
+        compact ? 'text-[14px]' : 'text-[15px]'
+      } leading-[22px] resize-y ${className ?? ''}`}
+    />
+  </Limited>
 )
 
 export const Select = (

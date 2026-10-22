@@ -32,6 +32,8 @@ import { ParentChain, PostBody, save, Thread } from '/web/ui/post.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
+import { overLimit } from '/web/lib/limits.ts'
 
 const reactions = [
   ['like', ThumbsUp, 'J’aime'],
@@ -182,7 +184,7 @@ const Replies = ({ post }: { post: Post }) => {
   const count = descendantCount(post.id)
   const open = post.type === 'Question' && !post.acceptedReply
   const send = () => {
-    if (!draft.trim()) return
+    if (!draft.trim() || overLimit(draft, 'reply')) return
     replyTo(post, me.login, draft.trim())
     setDraft('')
   }
@@ -211,6 +213,7 @@ const Replies = ({ post }: { post: Post }) => {
         <Textarea
           rows={3}
           value={draft}
+          limit={LIMITS.reply}
           aria-label='Réponse'
           placeholder='Écrire une réponse (Markdown, `code`)'
           onInput={(event) => setDraft(event.currentTarget.value)}

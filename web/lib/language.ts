@@ -141,6 +141,9 @@ options.vnode = (vnode: VNode) => {
   if (typeof vnode.type !== 'string') return
   if (language.peek() !== 'en') return
   const props = vnode.props as Record<string, unknown>
+  // What a member wrote is never translated, even when it reads like a
+  // sentence of the interface (« Merci », « Tests »)
+  if (props.translate === false) return
   for (const name of readable) {
     if (typeof props[name] === 'string') {
       props[name] = translate(props[name] as string)

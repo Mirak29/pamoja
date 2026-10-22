@@ -14,6 +14,7 @@ import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Select, Textarea } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t, translate } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const kinds = [
   'Relire ma PR',
@@ -165,6 +166,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
           id='collab-message'
           rows={3}
           value={message}
+          limit={LIMITS.note}
           aria-invalid={errors.message ? true : undefined}
           aria-describedby={errors.message ? 'collab-message-error' : undefined}
           onInput={(event) => {

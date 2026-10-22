@@ -93,7 +93,7 @@ export const Passport = ({ login }: { login: Login }) => {
                 <span>{placeOf(person)}</span>
               </span>
             </div>
-            <p class='text-[18px] leading-[27px] text-pretty'>
+            <p translate={false} class='text-[18px] leading-[27px] text-pretty'>
               {person.headline}
             </p>
             <div class='flex flex-wrap gap-1.5'>

@@ -9,6 +9,7 @@ import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const areas = ['Backend', 'Frontend', 'Tests', 'DevOps', 'Documentation']
 const availabilities = [
@@ -96,6 +97,7 @@ const JoinForm = ({ project }: { project: Project }) => {
         <Textarea
           rows={3}
           value={message}
+          limit={LIMITS.note}
           onInput={(event) => setMessage(event.currentTarget.value)}
           placeholder='Ce que tu aimerais faire sur le projet'
         />

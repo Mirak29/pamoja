@@ -54,6 +54,9 @@ import { PostCard } from '/web/ui/post.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
+import { Counter } from '/web/ui/input.tsx'
+import { overLimit } from '/web/lib/limits.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -155,7 +158,7 @@ const HelpInsert = (
       href={`aide/${request.id}`}
       class='font-display text-[18px] leading-[25px] font-semibold text-pretty text-ink hover:text-indigo hover:no-underline'
     >
-      {request.title}
+      <span translate={false}>{request.title}</span>
     </A>
     <span class='text-[13px] text-ink-muted'>
       {request.type}
@@ -275,7 +278,7 @@ const Composer = () => {
     Number(me.communities.includes(a.slug))
   )
   const publish = () => {
-    if (!text.trim()) return
+    if (!text.trim() || overLimit(text, 'post')) return
     publishPost(
       { community, type, title: '', body: text.trim(), images },
       me as Person,
@@ -312,8 +315,10 @@ const Composer = () => {
           onKeyDown={(event) =>
             event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
             publish()}
+          maxLength={LIMITS.post}
           class='well w-full resize-y px-3 py-2.5 text-[16px] leading-[23px] text-ink'
         />
+        <Counter value={text} limit={LIMITS.post} />
         {images > 0 && (
           <div class='flex flex-wrap gap-2.5'>
             {Array.from({ length: images }, (_, i) => (
@@ -473,7 +478,10 @@ const Rail = () => {
               {score}
             </span>
             <span class='flex min-w-0 flex-1 flex-col'>
-              <span class='text-[14px] leading-5 font-semibold text-pretty'>
+              <span
+                translate={false}
+                class='text-[14px] leading-5 font-semibold text-pretty'
+              >
                 {request.title}
               </span>
               <span class='text-[12px] leading-4 text-ink-muted'>

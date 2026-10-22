@@ -34,6 +34,9 @@
 
   body {
     @apply bg-surface-000 font-sans text-body text-ink antialiased;
+    /* A word longer than its column (a link, a hash, pasted text) breaks
+     * instead of widening the page: members write anything (QA-20) */
+    overflow-wrap: anywhere;
   }
 
   a {

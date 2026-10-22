@@ -29,6 +29,7 @@ import { LogoMark } from '/web/ui/logo.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 type Update = (patch: Partial<OnboardingDraft>) => void
@@ -37,7 +38,12 @@ const steps = ['Profil', 'Skills', 'Intentions', 'Matching', 'Premier projet']
 
 const matchingOptions: [MatchingMode, string, IconComponent][] = [
   ['Instantané', 'Une notification dès qu’une demande te correspond.', Zap],
-  ['Résumé quotidien', 'Un récapitulatif chaque matin à 8 h.', Sun],
+  // The e-mail itself comes with PAM-509 (QA-31)
+  [
+    'Résumé quotidien',
+    'Un récapitulatif chaque matin à 8 h, par e-mail (bientôt).',
+    Sun,
+  ],
   ['Désactivé', 'Tu cherches toi-même dans Aide et Explorer.', BellOff],
 ]
 
@@ -153,6 +159,7 @@ const ProfileStep = (
     <Field label='Accroche'>
       <Input
         value={draft.headline}
+        limit={LIMITS.headline}
         placeholder='Ce que tu construis, en une phrase'
         onInput={(event) => update({ headline: event.currentTarget.value })}
       />
@@ -165,6 +172,7 @@ const ProfileStep = (
         }
         <Input
           value={draft.country}
+          limit={LIMITS.country}
           list='onboarding-countries'
           placeholder='Le pays où tu vis'
           autocomplete='country-name'
@@ -184,6 +192,7 @@ const ProfileStep = (
       <Field label='Ville'>
         <Input
           value={draft.city}
+          limit={LIMITS.city}
           onInput={(event) => update({ city: event.currentTarget.value })}
         />
       </Field>
@@ -191,6 +200,7 @@ const ProfileStep = (
     <Field label='Site (facultatif)'>
       <Input
         value={draft.website}
+        limit={LIMITS.website}
         placeholder='ton-site.dev'
         onInput={(event) => update({ website: event.currentTarget.value })}
       />

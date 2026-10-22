@@ -15,6 +15,8 @@ import {
 } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
+import { overLimit } from '/web/lib/limits.ts'
 
 const HELP = 'Demande d’aide'
 
@@ -55,7 +57,9 @@ const NewPost = (
       title: !title.trim() && 'Donne un titre à ton post.',
       body: !body.trim() && 'Écris le contenu du post.',
     })
-    if (!valid) return
+    if (!valid || overLimit(title, 'postTitle') || overLimit(body, 'post')) {
+      return
+    }
     const joined = !community || me.communities.includes(community)
     const post = publishPost({
       community,
@@ -129,6 +133,7 @@ const NewPost = (
               <Input
                 {...control('title')}
                 value={title}
+                limit={LIMITS.postTitle}
                 placeholder='Une phrase claire'
                 onInput={(event) => {
                   setTitle(event.currentTarget.value)
@@ -141,6 +146,7 @@ const NewPost = (
                 {...control('body')}
                 rows={6}
                 value={body}
+                limit={LIMITS.post}
                 placeholder='Markdown accepté. Code entre accents graves, blocs entre trois accents graves.'
                 onInput={(event) => {
                   setBody(event.currentTarget.value)

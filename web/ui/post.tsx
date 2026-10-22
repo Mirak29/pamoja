@@ -38,15 +38,13 @@ import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { PostTypeBadge, StatusBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
-import { RichText } from '/web/ui/rich-text.tsx'
+import { Markdown } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { counted } from '/web/lib/plural.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
-
-const FENCE = '`'.repeat(3)
 
 const bodySizes = {
   small: [
@@ -63,31 +61,38 @@ const bodySizes = {
   ],
 }
 
-/** Paragraphs with `inline code`, and fenced code blocks */
+// A post or a reply longer than this is folded in the lists, as on LinkedIn:
+// the whole text is one click away
+const FOLD_CHARACTERS = 600
+const FOLD_LINES = 8
+
+/** The Markdown of a post or a reply, folded in the lists when long */
 export const PostBody = (
   { body, size = 'default' }: { body: string; size?: keyof typeof bodySizes },
 ) => {
   const [text, code] = bodySizes[size]
+  const [unfolded, setUnfolded] = useState(false)
+  const folded = size !== 'large' && !unfolded &&
+    (body.length > FOLD_CHARACTERS || body.split('\n').length > FOLD_LINES)
   return (
-    <div class={`flex flex-col ${text}`}>
-      {body.split(FENCE).flatMap((part, i) =>
-        i % 2
-          ? [
-            <pre
-              key={i}
-              class={`overflow-x-auto rounded-md border border-line-strong bg-surface-000 font-mono text-ink inset-shadow-well ${code}`}
-            >
-              {part.replace(/^[a-z]*\n/, '').trim()}
-            </pre>,
-          ]
-          : part.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((
-            paragraph,
-            j,
-          ) => (
-            <p key={`${i}-${j}`} class='text-pretty'>
-              <RichText text={paragraph} />
-            </p>
-          ))
+    <div class='flex min-w-0 flex-col items-start gap-1'>
+      <div
+        class={`w-full ${
+          folded
+            ? 'max-h-[12.5rem] overflow-hidden [mask-image:linear-gradient(to_bottom,black_65%,transparent)]'
+            : ''
+        }`}
+      >
+        <Markdown text={body} class={text} code={code} />
+      </div>
+      {folded && (
+        <button
+          type='button'
+          onClick={() => setUnfolded(true)}
+          class='cursor-pointer text-[13px] font-semibold text-ink-muted hover:text-indigo'
+        >
+          … voir plus
+        </button>
       )}
     </div>
   )
@@ -764,7 +769,7 @@ export const PostCard = (
               href={`post/${post.id}`}
               class='font-display text-[17px] leading-6 font-semibold text-pretty text-ink hover:text-indigo hover:no-underline'
             >
-              {post.title}
+              <span translate={false}>{post.title}</span>
             </A>
           )}
           <PostBody body={post.body} />

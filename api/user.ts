@@ -9,17 +9,27 @@ import { type MatchingMode, parseLocation } from '/api/vocabulary.ts'
 
 // A developer is identified by `githubId`, never by the username, which can
 // change on GitHub (§14.1)
-const getUserIdByGithubId = User.sql<'userId', number>`
-  SELECT userId FROM user WHERE githubId = ?
+const getUserIdByGithubId = sql<{ userId: number; source: string }, number>`
+  SELECT userId, source FROM user WHERE githubId = ?
 `.get
+
+// A login names one account (QA-26): a GitHub account that takes a login
+// another one held (renamed or freed on GitHub) leaves it `login~githubId`,
+// until that one logs in again with its new login
+const releaseLogin = sql<undefined, { login: string; githubId: number }>`
+  UPDATE user SET githubUsername = githubUsername || '~' || abs(githubId)
+  WHERE githubUsername = :login COLLATE NOCASE AND githubId != :githubId
+`.run
 
 const clean = (text: string | null | undefined) => text?.trim() || null
 
 const create = db.transaction((github: GithubUser, source: string) => {
   const at = now()
+  releaseLogin({ login: github.login, githubId: github.id })
   const userId = User.insert({
     githubId: github.id,
     githubUsername: github.login,
+    githubLogin: github.login,
     avatarUrl: github.avatar_url,
     email: github.email,
     source,
@@ -65,10 +75,15 @@ export const findOrCreateGithubUser = (
   const userId = existing?.userId ?? create(github, source)
   if (existing) {
     // Login and avatar can change on GitHub; `update` keeps a column it is
-    // given null for, so a hidden email stays as it was
+    // given null for, so a hidden email stays as it was. A demo account
+    // reached by a real one (SEED_GITHUB_IDS) keeps its demo login, so the
+    // story of the demo stays on it (§14, QA-27)
+    const keepsLogin = existing.source === 'demo'
+    keepsLogin || releaseLogin({ login: github.login, githubId: github.id })
     User.update({
       userId,
-      githubUsername: github.login,
+      githubUsername: keepsLogin ? undefined : github.login,
+      githubLogin: github.login,
       avatarUrl: github.avatar_url,
       email: github.email,
       updatedAt: now(),
@@ -88,6 +103,7 @@ const getProfile = sql<
   {
     userId: number
     githubUsername: string
+    githubLogin: string | null
     avatarUrl: string
     displayName: string
     headline: string | null
@@ -100,7 +116,7 @@ const getProfile = sql<
   },
   number
 >`
-  SELECT user.userId, githubUsername, avatarUrl, displayName, headline, bio,
+  SELECT user.userId, githubUsername, githubLogin, avatarUrl, displayName, headline, bio,
     country, city, website, matchingMode, matchingFilters
   FROM user
   JOIN profile ON profile.userId = user.userId
@@ -152,6 +168,8 @@ export const getCurrentUser = (userId: number) => {
   return {
     userId,
     login: user.githubUsername,
+    // The account on GitHub: a demo account keeps its demo login (§14)
+    githubLogin: user.githubLogin ?? user.githubUsername,
     avatarUrl: user.avatarUrl,
     displayName: user.displayName,
     // An empty field is an empty string for the page
@@ -229,12 +247,16 @@ export const updateIntents = db.transaction(
   },
 )
 
-const getUsername = User.sql<'githubUsername', number>`
-  SELECT githubUsername FROM user WHERE userId = ?
+const getUsername = sql<{ login: string }, number>`
+  SELECT coalesce(githubLogin, githubUsername) AS login FROM user
+  WHERE userId = ?
 `.get
 
-/** The GitHub login of a developer, for the reads of their repos */
-export const getLogin = (userId: number) => getUsername(userId)!.githubUsername
+/**
+ * The login on GitHub of a developer, for the reads of their repos: a demo
+ * account reached by a real one reads the repos of the real one (§14)
+ */
+export const getLogin = (userId: number) => getUsername(userId)!.login
 
 const getUserIdByLogin = sql<{ userId: number }, string>`
   SELECT userId FROM user WHERE githubUsername = ? COLLATE NOCASE

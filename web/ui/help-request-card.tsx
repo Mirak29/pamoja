@@ -48,7 +48,10 @@ export const HelpRequestCard = (
             {request.project ? projects[request.project].name : 'Sans projet'}
           </span>
         </div>
-        <span class='text-[16px] leading-6 font-semibold text-pretty'>
+        <span
+          translate={false}
+          class='text-[16px] leading-6 font-semibold text-pretty'
+        >
           {request.title}
         </span>
         <div class='flex flex-wrap gap-1.5'>

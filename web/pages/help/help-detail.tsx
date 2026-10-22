@@ -42,7 +42,7 @@ import { Button, type ButtonVariant } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
-import { RichText } from '/web/ui/rich-text.tsx'
+import { Markdown } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -50,6 +50,7 @@ import { t } from '/web/lib/language.ts'
 import { loadHelpDetail, playOnServer, sendOnServer } from '/web/lib/help.ts'
 import { useEvent } from '/web/lib/realtime.ts'
 import { counted } from '/web/lib/plural.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
@@ -501,7 +502,7 @@ const HelpThread = (
               <span class='text-[12px] text-ink-muted'>{ago(message.at)}</span>
             </span>
             <div class='text-[15px] leading-6 text-pretty'>
-              <RichText text={message.text} />
+              <Markdown text={message.text} class='gap-2' />
             </div>
           </div>
         </div>
@@ -519,6 +520,7 @@ const HelpThread = (
               id='help-thread-input'
               rows={2}
               value={draft}
+              limit={LIMITS.helpMessage}
               aria-label={t`Message pour ${personOf(other).name}`}
               placeholder={t`Écrire à ${firstName(other)}`}
               onInput={(event) => setDraft(event.currentTarget.value)}
@@ -830,7 +832,10 @@ export const HelpDetail = ({ id }: { id: string }) => {
       <div class='flex min-w-0 flex-col gap-7'>
         <div class='flex flex-col gap-2.5'>
           <Eyebrow>Aide / {request.type}</Eyebrow>
-          <h1 class='font-display text-[30px] leading-9 font-bold tracking-[-.015em] text-pretty'>
+          <h1
+            translate={false}
+            class='font-display text-[30px] leading-9 font-bold tracking-[-.015em] text-pretty'
+          >
             {request.title}
           </h1>
           <div class='flex flex-wrap items-center gap-2'>
@@ -896,9 +901,9 @@ export const HelpDetail = ({ id }: { id: string }) => {
           />
         )}
         <Section title='Description'>
-          <p class='whitespace-pre-wrap text-pretty'>
-            {request.description || 'Pas de description détaillée.'}
-          </p>
+          {request.description
+            ? <Markdown text={request.description} />
+            : <p class='text-ink-muted'>Pas de description détaillée.</p>}
           <div class='flex flex-wrap gap-1.5'>
             {request.skills.map((skill) => (
               <SkillChip key={skill} match={me.skills.includes(skill)}>
