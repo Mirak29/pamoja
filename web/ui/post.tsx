@@ -769,7 +769,7 @@ export const PostCard = (
               href={`post/${post.id}`}
               class='font-display text-[17px] leading-6 font-semibold text-pretty text-ink hover:text-indigo hover:no-underline'
             >
-              <span translate={false}>{post.title}</span>
+              <span translate={false} class='wrap-anywhere'>{post.title}</span>
             </A>
           )}
           <PostBody body={post.body} />

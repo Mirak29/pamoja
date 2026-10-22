@@ -71,7 +71,7 @@ Un mot sans espace (une URL, un hash, un texte collé) élargit toute la page : 
 
 ### QA-21 · P2 · Les retours à la ligne sont perdus
 
-Un post ou une description de demande écrits sur plusieurs lignes s'affichent en un seul paragraphe (`white-space: normal`). Seul un bloc de code entre ``` garde sa forme.
+Un post, une réponse ou un message de canal écrits sur plusieurs lignes s'affichent en un seul paragraphe (`white-space: normal`). Seul un bloc de code entre ``` garde sa forme. *Correction au recontrôle : la description d'une demande d'aide gardait déjà ses retours à la ligne (`whitespace-pre-wrap`) ; la mesure avait lu un conteneur.*
 
 **Attendu :** les retours à la ligne du membre sont gardés (`white-space: pre-line`), comme sur LinkedIn.
 
@@ -165,3 +165,44 @@ Le routeur de `@01edu/api` journalise chaque entrée validée (`in-params`) : le
 4. QA-22 à QA-25 : « voir plus », Markdown sûr ou texte d'aide corrigé, liens et mentions cliquables, zone de texte des canaux.
 5. QA-29 à QA-33.
 6. QA-27 : à jouer avec les vrais comptes pendant la préparation de la démo.
+
+## Corrections et seconde passe — 22 octobre 2026
+
+Corrections sur la branche `QA-consolidation-fixes`, puis la même passe rejouée sur une copie de la base de `master` (migration comprise), avec les deux comptes, à 375 et 1024 px, en français et en anglais.
+
+| Défaut | Correction | Vérifié |
+| --- | --- | --- |
+| QA-19 | Tailles par champ dans `api/limits.ts` (§16) : le serveur refuse au-delà pour le profil (les demandes d'aide et leurs messages l'étaient déjà) ; chaque champ s'arrête à sa limite avec un compteur dès 80 % ; chaque publication refuse un texte trop long même si le champ est contourné | Accroche de 221 caractères refusée par le serveur ; post de 3 001 caractères refusé avec « Texte trop long » ; réponse de 1 251 refusée ; compteur « 3001 / 3000 » ; tests serveur |
+| QA-20 | Un mot trop long se coupe partout (`overflow-wrap: break-word`) ; ce qu'écrit un membre (textes, titres, noms) se coupe aussi dans une colonne étroite (`wrap-anywhere`) | Contenu aux limites (nom 70, accroche 220, bio 2 600, titre 140, description de 7 900 caractères sans espace) : aucun débordement sur 11 écrans, à 375 et 1024 px |
+| QA-21 | Retours à la ligne gardés dans les posts, réponses et messages | Post, message de canal et fil d'aide sur plusieurs lignes |
+| QA-22 | Au-delà de 600 caractères ou 8 lignes, un post ou une réponse se replie avec « … voir plus » dans les listes ; la page du post montre tout | Post de 3 000 caractères : 373 px replié, 1 249 px déplié |
+| QA-23 | Markdown réduit (§10.1), lu en éléments, jamais en HTML : gras, italique, `code`, liens `http`/`https`, listes, citations, titres, blocs de code | Post, message d'aide et description rendus ; `[lien](javascript:…)` reste du texte ; test `web/ui/rich-text_test.ts` |
+| QA-24 | Liens nus, `@login` et `#hashtag` cliquables (le hashtag ouvre la recherche) ; le point final ne fait pas partie du lien | Dans un post et une description |
+| QA-25 | Le champ des canaux devient une zone de texte : Entrée envoie, Maj + Entrée passe à la ligne | Message sur trois lignes avec bloc de code |
+| QA-26 | Un login, un compte (index unique sans casse, migration 006) ; la connexion simulée entre dans l'Abdou seedé | Migration sur une base avec le doublon : il devient `abdou~0` ; connexion simulée → compte 1, sans onboarding ; le matching ne propose plus Abdou à lui-même ; tests |
+| QA-27 | Un compte de démo relié à un vrai compte garde son login de démo ; le login GitHub est gardé à part (`githubLogin`) pour le lien GitHub et la lecture des repos | Tests ; à rejouer avec les vrais comptes (PAM-903, PAM-905) |
+| QA-28 | Le rôle connu de la page est gardé quand le serveur n'a pas de domaine | « Développeur backend » pour Moussa |
+| QA-29 | Les titres des preuves de démo suivent la langue | « Review of PR #62 », « PR #40 merged into AfriCommerce », « Created OpenPay Africa » |
+| QA-30 | Le login de l'adresse est décodé | « Aucun développeur « a<b » » |
+| QA-31 | « … par e-mail (bientôt) » : le digest arrive avec PAM-509 | Onboarding |
+| QA-32 | Le propriétaire voit « Modifier les besoins » (vers les réglages) ; un membre ne voit plus « Proposer mon aide » | OpenPay Africa vu par Abdou |
+| QA-33 | Les textes des membres (messages, bio, accroche, descriptions), le `code` et le `state` OAuth sont masqués dans les journaux | Configuration du routeur |
+
+**Trouvé et corrigé pendant la seconde passe :**
+
+- **QA-34 · Un texte de membre pouvait être traduit.** La traduction automatique s'appliquait à tout texte identique à une phrase de l'interface : un post « Merci » ou une demande titrée « Tests » passait en anglais. Les textes des membres sont désormais marqués `translate={false}`, respecté aussi par les traducteurs des navigateurs.
+- **QA-35 · Cartes de demande d'aide écrasées sur mobile.** Déjà présent sur `master` : à 375 px, la carte gardait trois colonnes et le texte n'avait que 64 px de large. Le statut passe maintenant sous le texte.
+- **QA-36 · Titre de page « Réponse de … » sur un post qui n'est pas une réponse.** Il devient « Post de … ».
+- **Pluriel anglais du badge pays** : « 1 countries » devient « 1 different country ».
+- **Effet de bord évité.** La première version de QA-20 coupait n'importe quel mot dans une colonne étroite (« Bronze » sur deux lignes, « AfriCommerce » coupé). La comparaison des mises en page avec `master` l'a montré, et la règle a été resserrée.
+- **Bug évité avant le navigateur.** Une modification en masse avait cassé l'expression régulière du rendu de texte ; le test unitaire l'a arrêté.
+
+**Comparaison des mises en page avec `master`.** Positions et tailles de chaque texte, sur 25 écrans, à 1024 et 375 px, avec les mêmes données. Les seules différences restantes sont voulues :
+
+- le rôle « Développeur backend », retrouvé ;
+- la nouvelle structure des posts et messages ;
+- les cartes d'aide sur mobile (QA-35).
+
+**Reste hors de cette passe :** la connexion GitHub réelle et le parcours de démo avec les vrais comptes (QA-27, PAM-903, PAM-905). Les tailles des posts, réponses et messages de canal seront vérifiées par le serveur quand leurs routes existeront (PAM-406, PAM-501, PAM-512).
+
+Vérifications : `deno task test` (118 tests), `deno lint`, `deno fmt --check`, `deno check` sur `api/`, `web/` et les tâches.

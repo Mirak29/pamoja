@@ -8,6 +8,7 @@ import {
   projectsShownOf,
 } from '/web/fixtures/projects.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
+import { plural } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 // Reputation is computed from frozen proofs only (cahier des charges §8).
@@ -277,7 +278,7 @@ const crossBorder: BadgeDefinition = {
   key: 'cross_border',
   name: 'Bâtisseur sans frontières',
   thresholds: [2, 3, 5, 8],
-  unit: ['pays', 'pays'],
+  unit: ['pays différent', 'pays différents'],
 }
 
 // Badges only the server computes: they need the GitHub activity and the
@@ -322,7 +323,7 @@ const nextLabel = (badge: BadgeDefinition, count: number, next: number) => {
     return t`Aide des personnes plus variées pour le niveau ${level}`
   }
   return t`${missing} ${
-    translate(badge.unit[missing > 1 ? 1 : 0])
+    plural(missing, badge.unit[0], badge.unit[1])
   } avant le niveau ${level}`
 }
 

@@ -75,7 +75,10 @@ const Card = ({ login }: { login: Login }) => {
             </span>
           </span>
         </div>
-        <span translate={false} class='text-[2.3cqw] leading-[1.4] text-pretty'>
+        <span
+          translate={false}
+          class='wrap-anywhere text-[2.3cqw] leading-[1.4] text-pretty'
+        >
           {person.headline}
         </span>
         <div class='flex gap-[2.4cqw]'>
@@ -157,7 +160,7 @@ const LinkPreview = ({ login }: { login: Login }) => {
                   </span>
                   <span
                     translate={false}
-                    class='text-[12px] leading-[17px] text-ink-muted'
+                    class='wrap-anywhere text-[12px] leading-[17px] text-ink-muted'
                   >
                     {person.headline}
                   </span>

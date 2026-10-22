@@ -38,7 +38,10 @@ export const DeveloperCard = ({ person }: { person: Person }) => {
           </span>
         </div>
       </div>
-      <span translate={false} class='text-[14px] leading-[22px] text-pretty'>
+      <span
+        translate={false}
+        class='wrap-anywhere text-[14px] leading-[22px] text-pretty'
+      >
         {person.headline}
       </span>
       <div class='flex flex-wrap gap-1.5'>

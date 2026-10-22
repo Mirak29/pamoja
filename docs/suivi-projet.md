@@ -655,7 +655,9 @@ Le profil `/@login` s'ouvre pour n'importe quel développeur inscrit, plus seule
 
 Passe complète sur `master` après PAM-301, avant tout nouveau chantier : base seedée, deux comptes en même temps, ordinateur et mobile, français et anglais, et une série de contenus piégés sur chaque champ où un membre écrit. La boucle d'aide marche de bout en bout, rien n'est injectable et le serveur n'a renvoyé aucune erreur 500. Quinze défauts relevés (QA-19 à QA-33) : pas de limite de taille sur les posts, réponses, messages de canal et champs du profil ; un mot très long fait déborder la page ; retours à la ligne perdus ; pas de « voir plus » ; Markdown annoncé mais non rendu ; liens et mentions non cliquables ; doublon du compte « abdou » à la connexion simulée ; risque pour la démo réelle (le login seedé est renommé à la connexion du vrai compte). Le rapport liste aussi les scénarios réseau social à jouer quand posts, images et modération auront leur serveur ; voir le [rapport](qa/2026-10-22/rapport-qa-consolidation.md).
 
-- **Livrable** : `docs/qa/2026-10-22/rapport-qa-consolidation.md`
+Les quinze défauts sont corrigés et la passe a été rejouée sur une copie de la base de `master`. Ce qu'un membre écrit a une taille maximale, se coupe dans sa colonne, garde ses retours à la ligne, se lit en Markdown sans jamais devenir du HTML, et un long post se replie. Un login ne désigne plus qu'un compte, et le compte de la démo garde son login quand le vrai compte s'y connecte. La seconde passe a trouvé et corrigé trois défauts de plus (QA-34 à QA-36) : un texte de membre pouvait être traduit, les cartes d'aide étaient écrasées sur mobile, et le titre d'un post disait « Réponse de ». Une comparaison des mises en page avec `master` a vérifié que rien d'autre n'a bougé.
+
+- **Livrable** : `docs/qa/2026-10-22/rapport-qa-consolidation.md` ; `api/limits.ts`, Markdown sûr dans `web/ui/rich-text.tsx`, « voir plus », zone de texte des canaux, `migrations/006-github-login.js`, règles de login dans `api/user.ts`, journaux masqués ; tests `api/profile_test.ts`, `api/user_login_test.ts`, `web/ui/rich-text_test.ts`
 - **Par** : @Mirak29
 
 ## Fermé sans réalisation

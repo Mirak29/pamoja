@@ -34,13 +34,21 @@
 
   body {
     @apply bg-surface-000 font-sans text-body text-ink antialiased;
-    /* A word longer than its column (a link, a hash, pasted text) breaks
-     * instead of widening the page: members write anything (QA-20) */
-    overflow-wrap: anywhere;
+    /* A word longer than its line breaks instead of widening the page
+     * (QA-20). What members write also breaks inside a narrow flex column
+     * (`wrap-anywhere` on their texts): there a word cannot push the layout,
+     * while the words of the interface keep whole. */
+    overflow-wrap: break-word;
   }
 
   a {
     color: var(--indigo);
+  }
+
+  /* A link to a profile shows a name its member chose: a long one breaks
+   * like the rest of what members write (QA-20) */
+  a[href*='/@'] {
+    overflow-wrap: anywhere;
   }
 
   a:hover {

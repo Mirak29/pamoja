@@ -251,7 +251,10 @@ export const PostPage = () => {
   const community = communities.find((c) => c.slug === post.community)
   return (
     <Page
-      title={post.title || t`Réponse de ${people[post.author].name}`}
+      title={post.title ||
+        (post.parent
+          ? t`Réponse de ${people[post.author].name}`
+          : t`Post de ${people[post.author].name}`)}
       heading={!post.title}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >

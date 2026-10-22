@@ -41,7 +41,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
       </div>
       <span
         translate={false}
-        class='text-[14px] leading-[22px] text-pretty text-ink-muted'
+        class='wrap-anywhere text-[14px] leading-[22px] text-pretty text-ink-muted'
       >
         {project.description}
       </span>

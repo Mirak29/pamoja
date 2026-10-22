@@ -122,7 +122,9 @@ const inline = (text: string, depth = 0): ComponentChildren[] => {
  * <RichText text='On obtient `database is locked` sous charge.' />
  */
 export const RichText = ({ text }: { text: string }) => (
-  <span translate={false} class='whitespace-pre-line'>{inline(text)}</span>
+  <span translate={false} class='whitespace-pre-line wrap-anywhere'>
+    {inline(text)}
+  </span>
 )
 
 type Block =
@@ -194,7 +196,10 @@ export const Markdown = (
     code?: string
   },
 ) => (
-  <div translate={false} class={`flex min-w-0 flex-col ${className}`}>
+  <div
+    translate={false}
+    class={`flex min-w-0 flex-col wrap-anywhere ${className}`}
+  >
     {blocksOf(text).map((block, i) => {
       switch (block.kind) {
         case 'code':

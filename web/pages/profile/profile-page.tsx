@@ -177,7 +177,7 @@ const Hero = ({ login }: { login: Login }) => {
         </div>
         <p
           translate={false}
-          class='max-w-[680px] text-[18px] leading-[27px] text-pretty'
+          class='wrap-anywhere max-w-[680px] text-[18px] leading-[27px] text-pretty'
         >
           {person.headline}
         </p>
@@ -188,7 +188,7 @@ const Hero = ({ login }: { login: Login }) => {
         </div>
         <p
           translate={false}
-          class='max-w-[680px] whitespace-pre-line text-pretty text-ink-muted'
+          class='wrap-anywhere max-w-[680px] whitespace-pre-line text-pretty text-ink-muted'
         >
           {person.bio}
         </p>
@@ -330,7 +330,7 @@ const Building = ({ login }: { login: Login }) => {
               </span>
               <span
                 translate={false}
-                class='text-[14px] text-pretty text-ink-muted'
+                class='wrap-anywhere text-[14px] text-pretty text-ink-muted'
               >
                 {project.description}
               </span>

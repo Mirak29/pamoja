@@ -158,7 +158,7 @@ const HelpInsert = (
       href={`aide/${request.id}`}
       class='font-display text-[18px] leading-[25px] font-semibold text-pretty text-ink hover:text-indigo hover:no-underline'
     >
-      <span translate={false}>{request.title}</span>
+      <span translate={false} class='wrap-anywhere'>{request.title}</span>
     </A>
     <span class='text-[13px] text-ink-muted'>
       {request.type}
@@ -480,7 +480,7 @@ const Rail = () => {
             <span class='flex min-w-0 flex-1 flex-col'>
               <span
                 translate={false}
-                class='text-[14px] leading-5 font-semibold text-pretty'
+                class='wrap-anywhere text-[14px] leading-5 font-semibold text-pretty'
               >
                 {request.title}
               </span>

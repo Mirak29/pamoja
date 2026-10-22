@@ -1408,6 +1408,8 @@ export const english: Record<string, string> = {
   'Modifier les besoins': 'Edit the needs',
   'Un récapitulatif chaque matin à 8 h, par e-mail (bientôt).':
     'A summary every morning at 8 am, by e-mail (coming soon).',
+  'pays différent': 'different country',
+  'pays différents': 'different countries',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1597,4 +1599,5 @@ export const englishTemplates: Record<string, string> = {
   '{0} sur Pamoja': '{0} on Pamoja',
   '{0} caractères au plus.': '{0} characters at most.',
   'Audit sécurité de la PR #{0}': 'Security audit of PR #{0}',
+  'Post de {0}': 'Post by {0}',
 }

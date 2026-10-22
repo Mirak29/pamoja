@@ -834,7 +834,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
           <Eyebrow>Aide / {request.type}</Eyebrow>
           <h1
             translate={false}
-            class='font-display text-[30px] leading-9 font-bold tracking-[-.015em] text-pretty'
+            class='wrap-anywhere font-display text-[30px] leading-9 font-bold tracking-[-.015em] text-pretty'
           >
             {request.title}
           </h1>

@@ -26,7 +26,7 @@ export const HelpRequestCard = (
   return (
     <A
       href={`aide/${request.id}`}
-      class='flex items-start gap-4 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline'
+      class='flex flex-wrap items-start gap-4 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline sm:flex-nowrap'
     >
       {score != null && (
         <span class='tile flex h-[54px] w-[62px] flex-none flex-col items-center justify-center gap-0.5'>
@@ -38,19 +38,22 @@ export const HelpRequestCard = (
           </span>
         </span>
       )}
-      <div class='flex min-w-0 flex-1 flex-col gap-1.5'>
+      {/* On a phone the status goes under the text, which keeps its width */}
+      <div class='flex min-w-[180px] flex-1 flex-col gap-1.5'>
         <div class='flex flex-wrap items-center gap-2'>
           <span class='font-mono text-label text-ink-muted uppercase'>
             {request.type}
           </span>
           <span class='text-line-strong'>/</span>
           <span class='text-[13px] leading-4 text-ink-muted'>
-            {request.project ? projects[request.project].name : 'Sans projet'}
+            {request.project
+              ? projects[request.project]?.name ?? request.project
+              : 'Sans projet'}
           </span>
         </div>
         <span
           translate={false}
-          class='text-[16px] leading-6 font-semibold text-pretty'
+          class='wrap-anywhere text-[16px] leading-6 font-semibold text-pretty'
         >
           {request.title}
         </span>
@@ -69,7 +72,7 @@ export const HelpRequestCard = (
             : t` · pris par ${helper}`)}
         </span>
       </div>
-      <div class='flex flex-none flex-col items-end gap-1.5'>
+      <div class='flex flex-wrap items-center gap-1.5 sm:flex-none sm:flex-col sm:items-end'>
         <StatusBadge status={request.status} />
         {request.log?.some((entry) =>
           entry.verified
