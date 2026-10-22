@@ -439,6 +439,7 @@ const defs = {
               STR('Skill of the vocabulary'),
               'Languages of the changed files, empty until read (§7.1)',
             ),
+            reviewed: BOOL('A review was submitted on GitHub'),
           })),
         })),
       }),

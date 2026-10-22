@@ -410,6 +410,12 @@ Une review valide une demande d'aide si toutes ces conditions sont vraies :
 
 La demande passe en `review_submitted`. Elle ne devient `completed` qu'après confirmation du demandeur. GitHub n'a pas de notion de « review acceptée » : notre événement de confiance est `REVIEW_HELP_CONFIRMED`.
 
+Précisions (`api/review-check.ts`) :
+
+- **Commentaires** : le webhook porte le texte de la review, pas ses commentaires de ligne. Le texte compte pour un commentaire ; une review `commented` sans texte voit ses commentaires de ligne lus sur GitHub juste après le webhook, hors de sa transaction (§5.5), puis est vérifiée à nouveau.
+- **Resynchronisation** : pour les PRs dont une demande est acceptée, elle relit les reviews ; un webhook perdu ne perd pas la review.
+- **Effets** : la review est rattachée à la demande (`Review.helpRequestId`, une demande par review), l'entry `REVIEW_SUBMITTED` est créée, le demandeur est notifié, et `deliveredAt` prend l'heure de la détection : les relances et la fermeture sans réponse en partent (§7.2). Côté projet, une PR qui a reçu une review n'est plus « en attente de review ».
+
 ### 7.6 Collaboration Requests
 
 Depuis un profil, **Request collaboration** : Review my PR, Help me debug, Architecture advice, Join my project, Pair programming, Mentor me, Build something together. C'est une demande d'aide adressée à une seule personne : même cycle de vie, sans matching.

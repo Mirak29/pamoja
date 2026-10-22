@@ -77,10 +77,16 @@ const listPulls = sql<
     branch: string | null
     createdAt: number
     skills: string | null
+    reviewed: number
   },
   number
 >`
-  SELECT number, title, state, authorLogin, branch, createdAt, skills
+  SELECT number, title, state, authorLogin, branch, createdAt, skills,
+    EXISTS (
+      SELECT 1 FROM review
+      WHERE review.pullRequestId = pullRequest.pullRequestId
+        AND review.state != 'dismissed'
+    ) AS reviewed
   FROM pullRequest WHERE repositoryId = ? ORDER BY number DESC
 `.all
 
@@ -139,6 +145,7 @@ export const listMyProjects = (userId: number) =>
             authorLogin: pull.authorLogin ?? '',
             branch: pull.branch ?? '',
             skills: skillNamesOf(parse<number[]>(pull.skills, [])),
+            reviewed: pull.reviewed === 1,
           })),
         }
         : undefined,

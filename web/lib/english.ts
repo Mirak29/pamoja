@@ -1553,4 +1553,5 @@ export const englishTemplates: Record<string, string> = {
     '“{0}”: you accepted it more than 24 h ago.',
   '{0} attend ta réponse': '{0} is waiting for your answer',
   'L’aide sur « {0} » t’a-t-elle aidé ?': 'Did the help on “{0}” help you?',
+  '{0} a fait sa review sur GitHub': '{0} did their review on GitHub',
 }
