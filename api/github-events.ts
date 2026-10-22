@@ -3,6 +3,7 @@ import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { seconds } from '/api/github.ts'
 import { scheduleSkillsRead } from '/api/pull-skills.ts'
+import { evaluateBadges, evaluateProject } from '/api/badges.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
 import {
   type GithubReview,
@@ -109,6 +110,10 @@ registerHandler('pull_request', (payload) => {
       exclusionReason: '',
       rulesVersion: RULES_VERSION,
     })
+    // Its author's Open Source, the Builder of the project (§8.2)
+    const author = userOf(pull.user)
+    author && evaluateBadges(author)
+    evaluateProject(repo.projectId)
   } else if (action === 'closed') {
     Entry.insert.PR_CLOSED(relations)
   } else if (
@@ -213,6 +218,7 @@ registerHandler('release', (payload) => {
     rulesVersion: RULES_VERSION,
     source,
   })
+  evaluateProject(repo.projectId)
 })
 
 registerHandler('push', (payload) => {
@@ -233,6 +239,8 @@ registerHandler('push', (payload) => {
     },
     source,
   })
+  // An active month for the Maintainer badge (§8.2)
+  evaluateProject(repo.projectId)
 })
 
 const getOpenPullOnBranch = sql<

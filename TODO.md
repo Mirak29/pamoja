@@ -110,7 +110,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-210** · Notifications : table, centre, toast temps réel, préférences (§7.4) `[démo]`
 - [x] **PAM-211** · Vérification d'une review : les 5 conditions → `review_submitted` (§7.5)
 - [x] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
-- [ ] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
+- [x] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
 - [ ] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4)
 - [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
@@ -288,3 +288,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Notifications : le serveur garde le type et les faits, la page écrit la phrase dans sa langue ; une notification par étape d'une demande pour l'autre côté ; préférences enregistrées dans `Profile.matchingFilters` (score minimum, types d'aide), filtres par skills, projets et communautés reportés en PAM-223 · §7.4
 - 2026-10-22 · Vérification d'une review : les commentaires de ligne d'une review « commented » sans texte sont lus après le webhook (fin du compte provisoire de PAM-205) ; la resynchronisation relit les reviews des PRs à aide acceptée ; `deliveredAt` = heure de la détection · §5.5, §7.5
 - 2026-10-22 · Confirmation : `REVIEW_HELP_CONFIRMED` (`github`) pour une review, `HELP_CONFIRMED` (`platform`) pour une aide livrée ; plafond par paire décidé à la confirmation (`pair_limit`) ; skills prouvés en `platform_activity` pour l'aidant · §7.3, §8.3, §8.4
+- 2026-10-22 · Badges : Builder = projet avec release et au moins un contributeur hors propriétaire ; Maintainer = plus longue suite de mois d'activité GitHub ; Cross-border = pays des deux côtés d'une aide confirmée, le sien exclu ; évaluation après chaque preuve et à la connexion · §8.2, §8.4

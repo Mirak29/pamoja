@@ -623,6 +623,13 @@ Une review faite sur GitHub valide une demande d'aide quand les cinq conditions 
 - **Livrable** : `confirmHelp` dans `api/help-lifecycle.ts`, règle d'éligibilité dans `api/reputation.ts`, route `POST/api/help/confirm`, `api/help_confirmation_test.ts` (3 tests : aide livrée, review GitHub, plafond par paire), bouton de confirmation et frise branchés
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-213 · Évaluateur de badges
+
+Les 8 badges du §8.2 sont calculés à partir des seules preuves éligibles, à chaque nouvelle preuve : aide confirmée (l'aidant et le demandeur), PR mergée, release ou push (propriétaires et mainteneurs du projet), et à chaque connexion pour la suite de mois du Maintainer. Les niveaux Or et Platine demandent la diversité du §8.4 : demandeurs et projets distincts pour Trusted Reviewer, demandeurs pour First Responder et Mentor, projets pour Open Source, contributeurs par projet pour Builder, contributeurs actifs par mois pour Maintainer, personnes par pays pour Cross-border Builder, auteurs pour Community Pillar. La progression est enregistrée dans `BadgeProgress` ; un nouveau niveau donne l'entry `BADGE_UNLOCKED` et une notification « Badge débloqué » qui mène au profil. `GET/api/user/badges` les lit par login, sans session, comme le passeport. Leur affichage sur le profil vient avec PAM-303.
+
+- **Livrable** : `api/badges.ts`, appels depuis `api/help-lifecycle.ts`, `api/github-events.ts` et la connexion, route `GET/api/user/badges`, notification « Badge débloqué », `api/badges_test.ts` (6 tests : niveaux et diversité, preuve exclue, Or, Cross-border, Open Source, Builder, Maintainer, lecture par login)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -7,6 +7,7 @@ import {
   notificationsChanged,
 } from '/web/fixtures/notifications.ts'
 import { durationLabel } from '/web/fixtures/help.ts'
+import { levelNames } from '/web/fixtures/reputation.ts'
 import { me, personOf } from '/web/fixtures/people.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
@@ -19,6 +20,18 @@ import { effect } from '@preact/signals'
 // page writes the sentence in its language.
 
 type Item = ApiOutput['GET/api/notifications'][number]
+
+// The badges of §8.2, by their key on the server
+const badgeNames: Record<string, string> = {
+  trusted_reviewer: 'Reviewer de confiance',
+  first_responder: 'Premier à répondre',
+  mentor: 'Mentor',
+  open_source: 'Contributeur open source',
+  builder: 'Bâtisseur',
+  maintainer: 'Mainteneur',
+  cross_border: 'Bâtisseur sans frontières',
+  community_pillar: 'Pilier de communauté',
+}
 
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
@@ -90,6 +103,12 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
             : 'Elle ne compte pas dans ta réputation : au plus 2 confirmations par demandeur sur 30 jours.',
         ),
       }
+    case 'badge_unlocked':
+      return {
+        kind: 'promising',
+        title: t`Badge débloqué : ${translate(badgeNames[n.badge] ?? n.badge)}`,
+        body: t`Niveau ${translate(levelNames[n.level - 1] ?? '')}.`,
+      }
     case 'help_declined':
       return {
         kind: 'help',
@@ -125,7 +144,11 @@ const toPage = (n: Item): Notification => ({
   id: idOf(n),
   to: me.login,
   category: n.category as Notification['category'],
-  href: n.helpRequestId ? `aide/${n.helpRequestId}` : 'notifications',
+  href: n.helpRequestId
+    ? `aide/${n.helpRequestId}`
+    : n.type === 'badge_unlocked'
+    ? `@${me.login}`
+    : 'notifications',
   at: n.createdAt * 1000,
   read: n.readAt > 0,
   demo: false,

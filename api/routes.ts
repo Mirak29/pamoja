@@ -16,6 +16,7 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import {
   listNotifications,
   readAllNotifications,
@@ -70,7 +71,7 @@ import {
   intents,
   skills,
 } from '/api/vocabulary.ts'
-import { getLogin } from '/api/user.ts'
+import { getLogin, userIdOfLogin } from '/api/user.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -232,6 +233,8 @@ const defs = {
       )
       const source = isSimulated ? 'demo' : 'github'
       const { userId, created } = findOrCreateGithubUser(github, source)
+      // The months of the Maintainer badge go on while away (§8.2)
+      evaluateBadges(userId)
       const user = getCurrentUser(userId)!
       log.info('user-login', { userId, created })
       const session = await createSession(userId, source)
@@ -254,6 +257,28 @@ const defs = {
     authorize: withOptionalSession,
     fn: (ctx) => endSession(ctx.session),
     description: 'Close the session, even when the cookie was copied',
+  }),
+
+  'GET/api/user/badges': route({
+    authorize: withOptionalSession,
+    fn: (_ctx, { username }) => {
+      const userId = userIdOfLogin(username)
+      if (!userId) {
+        throw new respond.NotFoundError({ message: 'No such developer' })
+      }
+      return badgesOf(userId)
+    },
+    input: OBJ({ username: STR('GitHub login') }),
+    output: ARR(
+      OBJ({
+        badge: STR('Key of the badge'),
+        level: NUM('0 none, 1 Bronze, 2 Silver, 3 Gold, 4 Platinum'),
+        count: NUM('What it counts, eligible proofs only'),
+        next: NUM('Count asked by the next level, 0 at Platinum'),
+      }),
+      'The 8 badges of §8.2',
+    ),
+    description: 'The badges of a developer, public like the passport',
   }),
 
   'GET/api/user/me': route({
@@ -594,6 +619,8 @@ const defs = {
         skills: ARR(STR('Skill asked')),
         excerpt: STR('Start of a message, empty if none'),
         eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
+        badge: STR('Key of a badge unlocked, empty if none'),
+        level: NUM('Level of that badge, 0 if none'),
         readAt: NUM('In seconds, 0 if unread'),
         createdAt: NUM('In seconds'),
       }),

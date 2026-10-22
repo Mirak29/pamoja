@@ -235,3 +235,10 @@ const getUsername = User.sql<'githubUsername', number>`
 
 /** The GitHub login of a developer, for the reads of their repos */
 export const getLogin = (userId: number) => getUsername(userId)!.githubUsername
+
+const getUserIdByLogin = sql<{ userId: number }, string>`
+  SELECT userId FROM user WHERE githubUsername = ? COLLATE NOCASE
+`.get
+
+/** The developer of a login, undefined if not on Pamoja */
+export const userIdOfLogin = (login: string) => getUserIdByLogin(login)?.userId
