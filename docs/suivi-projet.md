@@ -546,20 +546,6 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `api/webhooks.ts`, route dans `api/routes.ts`, démarrage du worker dans `api/server.ts`, `GITHUB_WEBHOOK_SECRET`, `api/webhooks_test.ts` (7 tests : signature, double livraison, événement inconnu, réessais puis échec, transaction annulée, reprise d'une livraison bloquée)
 - **Par** : @Mirak29
 
-### 2026-10-15 · PAM-116 · Tunnel HTTPS pour les webhooks en dev
-
-`deno task tunnel` ouvre un tunnel rapide `cloudflared`, sans compte, vers le serveur de dev, et pointe lui-même le webhook de l'app sur son adresse, qui change à chaque démarrage (`PATCH /app/hook/config` avec le JWT de l'app). cloudflared est cherché sur le `PATH` puis à son emplacement d'installation Windows. Vérifié de bout en bout avec la vraie app : le `ping` renvoyé par GitHub est arrivé par le tunnel, signature acceptée, gardé dans `WebhookDelivery` et traité (`done`). Le webhook de l'app est actif et abonné aux événements du §5.1.
-
-- **Livrable** : `task-tunnel.ts`, tâche `tunnel` dans `deno.json`
-- **Par** : @Mirak29
-
-### 2026-10-16 · PAM-205 · Traitement des événements GitHub
-
-Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (ouverte, mergée, fermée, lignes modifiées), reviews, issues et commentaires, releases, pushes regroupés, CI (`workflow_run`, `check_run`, `status` dans `CiRun`, avec CI en échec puis réparée), installations (passage en live et retour). Les tables sont mises à jour et les entries de `#suivi` créées, `PR_MERGED` et `RELEASE_PUBLISHED` en preuves aux champs figés (`RULES_VERSION`). Vérifié avec le vrai GitHub : une issue ouverte puis fermée sur Mirak29/memeZgen arrive en quelques secondes par le tunnel, traitée, issue en base et deux entries `ISSUE_UPDATED` rattachées au compte de son auteur.
-
-- **Livrable** : `api/github-events.ts`, `api/reputation.ts`, `api/github-events_test.ts` (9 tests avec de vrais webhooks signés)
-- **Par** : @Mirak29
-
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
