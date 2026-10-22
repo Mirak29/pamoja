@@ -38,6 +38,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Input } from '/web/ui/input.tsx'
 import { RichText } from '/web/ui/rich-text.tsx'
+import { counted } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
@@ -213,9 +214,7 @@ const MessageRow = (
             class='inline-flex h-[26px] items-center gap-1 rounded-md px-2 text-[12px] leading-none font-medium text-ink-muted no-underline hover:text-indigo hover:no-underline'
           >
             <MessageSquare class='size-3.5' />
-            {replies
-              ? `${replies} ${replies > 1 ? 'réponses' : 'réponse'}`
-              : 'Répondre en fil'}
+            {replies ? counted(replies, 'réponse') : 'Répondre en fil'}
           </A>
           {message.author !== 'platform' && message.author !== me.login && (
             // The report dialog comes with PAM-516

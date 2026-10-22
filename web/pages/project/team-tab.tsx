@@ -270,11 +270,11 @@ const Applications = ({ project }: { project: Project }) => {
       <SectionHeader
         label='Candidatures'
         title={pending.length
-          ? `${pending.length} ${
-            pending.length > 1
-              ? 'candidatures en attente'
-              : 'candidature en attente'
-          }`
+          ? counted(
+            pending.length,
+            'candidature en attente',
+            'candidatures en attente',
+          )
           : 'Aucune candidature en attente'}
       />
       {pending.map((application) => (

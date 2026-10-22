@@ -1289,6 +1289,12 @@ export const english: Record<string, string> = {
   'Grille': 'Grid',
   'Plaques': 'Plates',
   'Typographie': 'Typography',
+  'collaboration': 'collaboration',
+  'collaborations': 'collaborations',
+  'commentaire': 'comment',
+  'commentaires': 'comments',
+  'bloqueur': 'blocker',
+  'bloqueurs': 'blockers',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,

@@ -54,8 +54,8 @@ const facts = (project: Project) => {
       issue.labels.includes('blocked')
     ).length
   return [
-    `${waiting} ${waiting > 1 ? 'PRs en attente' : 'PR en attente'}`,
-    blockers && `${blockers} ${blockers > 1 ? 'bloqueurs' : 'bloqueur'}`,
+    counted(waiting, 'PR en attente', 'PRs en attente'),
+    blockers && counted(blockers, 'bloqueur'),
     counted(project.contributors, 'contributeur'),
   ].filter(Boolean).join(' · ')
 }
