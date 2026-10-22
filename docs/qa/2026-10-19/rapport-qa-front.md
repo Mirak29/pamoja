@@ -47,11 +47,13 @@
 
 ## Nouveau défaut
 
-### QA-15 · P2 · Le profil présente les preuves de démo comme réelles
+### QA-15 · P3 · Le titre « Contributions réelles » coiffe des preuves de démo
 
-Sur `/@abdou`, le titre de section est « Contributions réelles », mais chacune des cinq preuves listées porte le badge « Donnée de démo ». Le profil met aussi en avant les compteurs de réputation construits depuis ces preuves. Cette contradiction affaiblit la promesse centrale de preuves vérifiables.
+Sur `/@abdou`, le titre de section est « Contributions réelles », mais chacune des cinq preuves listées porte le badge « Donnée de démo ». Le profil met aussi en avant les compteurs de réputation construits depuis ces preuves. Le titre promet ce que les lignes démentent.
 
-**Attendu :** aligner le titre et les compteurs avec la provenance réelle des lignes, ou réserver cette section aux preuves GitHub vérifiées. Reproduit le 19 octobre sur le profil connecté. Aucun correctif appliqué pendant cet audit.
+Le marquage des preuves, lui, est conforme : le cahier veut des preuves de démo affichées avec leur mention, à côté des preuves vérifiées par GitHub, sans jamais les confondre (§14, « Seed ») ; la démo montre même les deux sur le même profil, 14 reviews de démo et une 15e vérifiée (§18.2, étape 12). Les retirer de la section casserait ce scénario.
+
+**Attendu :** un titre qui n'affirme pas la provenance (par exemple « Contributions »), ou qui la chiffre (« 1 vérifiée par GitHub · 14 de démo ») ; les preuves restent toutes listées avec leur mention. Reproduit le 19 octobre sur le profil connecté. Aucun correctif appliqué pendant cet audit.
 
 ## Vérifications techniques
 
@@ -59,14 +61,33 @@ Sur `/@abdou`, le titre de section est « Contributions réelles », mais chacun
 | --- | --- |
 | `deno lint` | OK — 164 fichiers |
 | `deno fmt --check` | OK — 168 fichiers |
-| `deno check web/app.tsx` | Non exécuté : cache npm incomplet et accès DNS au registre indisponible (`@preact/signals`). |
-| `deno task test` | Échec avant le lancement des tests pour la même raison ; aucun test ne démarre. |
+| `deno check web/app.tsx` | Non exécuté le 19 : cache npm incomplet et accès DNS au registre indisponible (`@preact/signals`). Relancé le 22 sur `master` (même code front que `9113e89`) : OK, avec `api/server.ts`. |
+| `deno task test` | Échec le 19 avant le lancement des tests, pour la même raison. Relancé le 22 sur `master` : 79 tests réussis, aucun échec. |
 
 ## Suite conseillée
 
-1. Corriger QA-15 et vérifier le même affichage sur le passeport public et la carte de partage.
+1. Corriger le titre de QA-15 sans retirer les preuves de démo (§18.2), et vérifier le même affichage sur le passeport public et la carte de partage.
 2. Terminer PAM-208/209/211/212, puis rejouer la boucle demande → acceptation → review réelle → confirmation sur PR, Pulse, `#suivi`, activité et profil.
 3. Rejouer création/import sans repo et l’onboarding complet sur une base QA isolée ; vérifier sauvegarde, reprise après rechargement et états d’erreur.
-4. Retester 320 px, grand écran, clavier et lecteurs d’écran ; relancer typecheck/tests quand le registre Deno est joignable.
+4. Retester 320 px, grand écran, clavier et lecteurs d’écran.
 
 **Aucun code applicatif n’a été modifié pendant cette passe.**
+
+## Contrôle des faits — 22 octobre 2026
+
+Faits du rapport vérifiés dans le code de `9113e89` :
+
+- **Confirmés :**
+  - données d’OpenPay : 5 PRs ouvertes, 5 issues, branche `feat/payment-tx` pour la PR #81 ;
+  - erreurs du formulaire d’aide affichées ensemble, focus sur le titre ;
+  - QA-09 : toast « L’image PNG 1200 × 630 arrive avec la génération côté serveur » ;
+  - QA-10 : badge démo dans les notifications ;
+  - QA-11 : audience vide par défaut ;
+  - QA-12 : bouton de recherche `min-w-[42px]`, icône `flex-none` ;
+  - QA-13 : un seul `h1` affiché sur la connexion (les deux du fichier sont les deux branches d’une même condition) ;
+  - QA-14 : `counted()` dans la liste des PRs ;
+  - QA-15 : cinq preuves, toutes de démo ;
+  - références PAM-208, PAM-211, PAM-212 et PAM-412 (`ChannelState`).
+- **Corrigé :**
+  - QA-15 : l’attendu demandait de réserver la section aux preuves vérifiées, ce que le cahier exclut (§18.2, étape 12) ; sévérité ramenée à P3, le défaut étant le titre seul ;
+  - typecheck et tests, qui n’avaient pas pu tourner le 19, relancés et réussis.
