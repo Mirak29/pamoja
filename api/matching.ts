@@ -290,12 +290,17 @@ type RequestRow = {
   title: string
   skills: string
   status: string
+  estimatedMinutes: number | null
+  project: string | null
 }
 
 const getRequest = sql<RequestRow, number>`
-  SELECT helpRequestId, authorId, targetUserId, projectId, category, title,
-    skills, status
-  FROM helpRequest WHERE helpRequestId = ?
+  SELECT helpRequestId, authorId, targetUserId, helpRequest.projectId,
+    category, title, helpRequest.skills, helpRequest.status, estimatedMinutes,
+    project.name AS project
+  FROM helpRequest
+  LEFT JOIN project ON project.projectId = helpRequest.projectId
+  WHERE helpRequestId = ?
 `.get
 
 const listMatched = sql<{ userId: number; wave: number }, number>`
@@ -373,10 +378,14 @@ export const sendWave = (helpRequestId: number, at = now()) =>
         type: 'help_match',
         category: 'for-you',
         actorId: request.authorId,
+        // What the toast « Ce projet a besoin de toi » shows (§7.4)
         payload: {
           helpRequestId,
           title: request.title,
           score: candidate.score,
+          skills: skillNamesOf(json<number[]>(request.skills, [])),
+          minutes: request.estimatedMinutes ?? 0,
+          project: request.project ?? '',
         },
       })
     }

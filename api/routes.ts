@@ -16,6 +16,11 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import {
+  listNotifications,
+  readAllNotifications,
+  readNotification,
+} from '/api/notifications.ts'
 import { previewWave } from '/api/matching.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
@@ -50,6 +55,7 @@ import {
   findOrCreateGithubUser,
   getCurrentUser,
   updateIntents,
+  updateMatching,
   updateProfile,
   updateSkills,
 } from '/api/user.ts'
@@ -81,6 +87,8 @@ const currentUser = {
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
   matchingMode,
+  minScore: NUM('Score under which a help request does not reach them'),
+  helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
   skills: ARR(
     OBJ({
       name: STR('Technology of the vocabulary'),
@@ -558,6 +566,63 @@ const defs = {
     input: OBJ({ id: NUM('Id of the request'), body: STR('Markdown') }),
     output: helpDetail,
     description: 'A message in the thread of the requester and the helper',
+  }),
+
+  /*
+   * Notifications (§7.4)
+   */
+  'GET/api/notifications': route({
+    authorize: withSession,
+    fn: (ctx) => listNotifications(ctx.session.userId),
+    output: ARR(
+      OBJ({
+        id: NUM('Id of the notification'),
+        type: STR('help_match, help_accepted, help_message…'),
+        category: STR('for-you, projects, communities, social or system'),
+        actor: STR('Login of who caused it, empty if no one'),
+        helpRequestId: NUM('Request it is about, 0 if none'),
+        title: STR('Title of what it is about'),
+        project: STR('Project name, empty if none'),
+        score: NUM('Matching score, 0 if none'),
+        minutes: NUM('Estimated duration, 0 if none'),
+        skills: ARR(STR('Skill asked')),
+        excerpt: STR('Start of a message, empty if none'),
+        readAt: NUM('In seconds, 0 if unread'),
+        createdAt: NUM('In seconds'),
+      }),
+      'Newest first, the 100 last',
+    ),
+    description: 'The inbox of the developer; the page writes the sentences',
+  }),
+  'POST/api/notification/read': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => {
+      readNotification(ctx.session.userId, id)
+    },
+    input: OBJ({ id: NUM('Id of the notification') }),
+    description: 'Mark one of my notifications as read',
+  }),
+  'POST/api/notifications/read-all': route({
+    authorize: withSession,
+    fn: (ctx) => {
+      readAllNotifications(ctx.session.userId)
+    },
+    description: 'Mark all my notifications as read',
+  }),
+  'POST/api/notification/preferences': route({
+    authorize: withSession,
+    fn: (ctx, input) => {
+      assertKnown(input.helpTypes, Object.keys(helpCategories), 'help types')
+      updateMatching(ctx.session.userId, input)
+      return getCurrentUser(ctx.session.userId)!
+    },
+    input: OBJ({
+      matchingMode,
+      minScore: NUM('0 to 100'),
+      helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+    }, 'How help requests reach the developer'),
+    output: OBJ(currentUser, 'The profile saved'),
+    description: 'Save the matching preferences',
   }),
 
   /*

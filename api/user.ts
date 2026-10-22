@@ -1,4 +1,5 @@
 import { db, sql } from '@01edu/db'
+import { DEFAULT_MIN_SCORE } from '/api/help-rules.ts'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import type { GithubUser } from '/api/github-oauth.ts'
@@ -95,11 +96,12 @@ const getProfile = sql<
     city: string | null
     website: string | null
     matchingMode: MatchingMode
+    matchingFilters: string | null
   },
   number
 >`
   SELECT user.userId, githubUsername, avatarUrl, displayName, headline, bio,
-    country, city, website, matchingMode
+    country, city, website, matchingMode, matchingFilters
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE user.userId = ?
@@ -108,6 +110,40 @@ const getProfile = sql<
 const listIntents = UserIntent.sql<'intent', number>`
   SELECT intent FROM userIntent WHERE userId = ? ORDER BY userIntentId
 `.all
+
+const matchingFiltersOf = (stored: string | null) => {
+  const filters = stored
+    ? JSON.parse(stored) as { minScore?: number; helpTypes?: string[] }
+    : {}
+  return {
+    minScore: filters.minScore ?? DEFAULT_MIN_SCORE,
+    helpTypes: filters.helpTypes ?? [],
+  }
+}
+
+const writeMatching = sql<
+  undefined,
+  { userId: number; matchingMode: string; filters: string; at: number }
+>`
+  UPDATE profile SET matchingMode = :matchingMode, matchingFilters = :filters,
+    updatedAt = :at
+  WHERE userId = :userId
+`.run
+
+/** How help requests reach the developer: mode, minimum score, types (§7.4) */
+export const updateMatching = (
+  userId: number,
+  input: { matchingMode: MatchingMode; minScore: number; helpTypes: string[] },
+) =>
+  writeMatching({
+    userId,
+    matchingMode: input.matchingMode,
+    filters: JSON.stringify({
+      minScore: Math.min(100, Math.max(0, Math.round(input.minScore))),
+      helpTypes: [...new Set(input.helpTypes)],
+    }),
+    at: now(),
+  })
 
 /** The signed in developer and their profile, prefilled from GitHub */
 export const getCurrentUser = (userId: number) => {
@@ -125,6 +161,8 @@ export const getCurrentUser = (userId: number) => {
     city: user.city ?? '',
     website: user.website ?? '',
     matchingMode: user.matchingMode,
+    // What the matching reads besides the mode (§7.3, §7.4)
+    ...matchingFiltersOf(user.matchingFilters),
     ...skillsOf(userId),
     intents: listIntents(userId).map((row) => row.intent),
   }

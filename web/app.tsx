@@ -3,6 +3,8 @@ import { Fragment, h, type JSX, render } from 'preact'
 import '/web/lib/external-links.ts'
 // Projects and help requests follow their entries, without a refresh
 import '/web/lib/live-data.ts'
+// The notifications of the server, and their toast (§7.4)
+import '/web/lib/notifications.ts'
 import { url } from '@01edu/signal-router'
 import { CommunitiesPage } from '/web/pages/communities/communities-page.tsx'
 import { CommunityPage } from '/web/pages/communities/community-page.tsx'

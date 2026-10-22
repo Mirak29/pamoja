@@ -19,8 +19,11 @@ import { createNotification } from '/api/notifications.ts'
 
 const source = 'platform'
 
-const listExpired = sql<{ helpRequestId: number; authorId: number }, number>`
-  SELECT helpRequestId, authorId FROM helpRequest
+const listExpired = sql<
+  { helpRequestId: number; authorId: number; title: string },
+  number
+>`
+  SELECT helpRequestId, authorId, title FROM helpRequest
   WHERE status = 'open' AND expiresAt <= ?
 `.all
 
@@ -100,12 +103,18 @@ export const runHelpTimers = (at = now()) => {
 
 const timers = (at: number) =>
   db.transaction(() => {
-    for (const { helpRequestId, authorId } of listExpired(at)) {
+    for (const { helpRequestId, authorId, title } of listExpired(at)) {
       if (!setExpired({ helpRequestId, at })) continue
       Entry.insert.HELP_REQUEST_EXPIRED({
         userId: authorId,
         helpRequestId,
         source,
+      })
+      createNotification({
+        userId: authorId,
+        type: 'help_expired',
+        category: 'for-you',
+        payload: { helpRequestId, title },
       })
     }
     for (const row of listToRemindHelper()) {

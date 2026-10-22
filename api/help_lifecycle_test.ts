@@ -279,9 +279,11 @@ Deno.test('help lifecycle: the thread is for the requester and the helper', asyn
 
 Deno.test('help timers: expiry, reminders once, closed unconfirmed', async () => {
   const s = await setup()
+  // The reminders only: each step of the lifecycle notifies too (PAM-210)
   const notifications = () =>
-    db.prepare('SELECT userId, type FROM notification ORDER BY notificationId')
-      .all() as { userId: number; type: string }[]
+    db.prepare(
+      "SELECT userId, type FROM notification WHERE type LIKE '%reminder' ORDER BY notificationId",
+    ).all() as { userId: number; type: string }[]
   // An open request expires after 7 days
   runHelpTimers(now() + 6 * DAY)
   assertEquals(statusOf(s.id), 'open')

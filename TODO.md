@@ -107,11 +107,12 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-207** · Demande d'aide : création, bouton « Request Review » depuis une PR (§7.1) `[démo]`
 - [x] **PAM-208** · Cycle de vie complet : acceptation atomique, désistement, libération, réouverture, expirations et relances (§7.2)
 - [x] **PAM-209** · Matching SQL : score, raisons, vagues de 5, place « nouveau profil », plafonds par jour (§7.3) `[démo]`
-- [ ] **PAM-210** · Notifications : table, centre, toast temps réel, préférences (§7.4) `[démo]`
+- [x] **PAM-210** · Notifications : table, centre, toast temps réel, préférences (§7.4) `[démo]`
 - [ ] **PAM-211** · Vérification d'une review : les 5 conditions → `review_submitted` (§7.5)
 - [ ] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [ ] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
+- [ ] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4)
 - [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
 - [x] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]` — @niangoos
 - [x] **PAM-217** · Écran Notifications sur données fictives : centre par catégories, actions directes, toast « Ce projet a besoin de toi » (§7.4) `[démo]` — @niangoos
@@ -284,3 +285,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Langue lue par la seule racine de l'app, reconstruite au changement de langue (QA-16 : un composant qui lit un signal ne se redessine plus avec son parent) ; section « Contributions » du profil au lieu de « Contributions réelles » du prototype, chaque preuve gardant sa provenance (QA-15) · §2, §9
 - 2026-10-22 · Cycle de vie d'une demande : nouvelles entries `HELP_REQUEST_CANCELLED`, `HELP_REQUEST_DELIVERED`, `HELP_REQUEST_CLOSED`, `HELP_MESSAGE_CREATED` ; l'acceptation prévient aussi les autres matchés ; « pas utile » ferme la demande dès PAM-208, la confirmation reste à PAM-212 ; migration 004 (dates des relances) · §7.2, §13.3, §14.4, §15
 - 2026-10-22 · Matching : poids des sources de skills 100/85/70 %, disponibilité 7 + 3 si actif, seuil par défaut 50, place « nouveau profil » sur la moitié des skills au moins ; types d'aide acceptés dans `Profile.matchingFilters` (seedés depuis les fixtures) ; migration 005 (`lastWaveAt`) ; la proximité sémantique vaut 0 jusqu'à PAM-311 · §7.3, §14.4, §15
+- 2026-10-22 · Notifications : le serveur garde le type et les faits, la page écrit la phrase dans sa langue ; une notification par étape d'une demande pour l'autre côté ; préférences enregistrées dans `Profile.matchingFilters` (score minimum, types d'aide), filtres par skills, projets et communautés reportés en PAM-223 · §7.4

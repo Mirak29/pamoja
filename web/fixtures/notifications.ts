@@ -34,6 +34,8 @@ export type Notification = {
   href: string
   /** Id of a join request, accepted or refused from the notification (§6.6) */
   application?: string
+  /** A help request that matches me: what the toast shows (§7.4) */
+  match?: { skills: string[]; score: number; duration: string }
   demo: boolean
 }
 

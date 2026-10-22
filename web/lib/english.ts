@@ -1377,6 +1377,11 @@ export const english: Record<string, string> = {
     'The next wave leaves 2 h after the previous one if nobody accepts.',
   'Le matching s’arrête tant que la demande n’est pas ouverte.':
     'Matching stops while the request is not open.',
+  'Confirme si elle t’a aidé : la preuve rejoint son profil.':
+    'Confirm whether it helped you: the proof joins their profile.',
+  'Ta demande a expiré': 'Your request expired',
+  'Une demande attend ton aide': 'A request is waiting for your help',
+  'Réglages non enregistrés': 'Settings not saved',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1533,4 +1538,19 @@ export const englishTemplates: Record<string, string> = {
   '{0} a confirmé l’aide': '{0} confirmed the help',
   'En attente de la confirmation de {0}.': 'Waiting for {0} to confirm.',
   'Vague {0} · {1} en tout': 'Wave {0} · {1} in all',
+  '« {0} »': '“{0}”',
+  '{0} a besoin de toi': '{0} needs you',
+  '{0} a accepté ta demande': '{0} accepted your request',
+  '{0} t’a libéré de sa demande': '{0} released you from their request',
+  '{0} a annulé sa demande': '{0} cancelled their request',
+  '{0} a livré son aide': '{0} delivered their help',
+  '{0} a fermé sa demande': '{0} closed their request',
+  '« {0} » : ton aide n’a pas été jugée utile.':
+    '“{0}”: your help was not found useful.',
+  '« {0} » : 7 jours sans acceptation. Tu peux la rouvrir.':
+    '“{0}”: 7 days without acceptance. You can reopen it.',
+  '« {0} » : tu l’as acceptée il y a plus de 24 h.':
+    '“{0}”: you accepted it more than 24 h ago.',
+  '{0} attend ta réponse': '{0} is waiting for your answer',
+  'L’aide sur « {0} » t’a-t-elle aidé ?': 'Did the help on “{0}” help you?',
 }
