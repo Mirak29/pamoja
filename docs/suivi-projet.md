@@ -539,6 +539,13 @@ Le navigateur ouvre `api/events` dès que la session est connue et le ferme à l
 - **Livrable** : `api/installation.ts`, `api/github-app.ts`, `api/installation_test.ts` (7 tests : contrôles, pagination, accès en lecture refusé, parcours complet, propriétaire seul, JWT), `web/pages/public/installation-return.tsx`, dialogue de synchro, `GITHUB_APP_SLUG`
 - **Par** : @Mirak29
 
+### 2026-10-15 · PAM-204 · Webhooks : file persistante et worker
+
+`POST/api/github/webhook` lit le corps brut, vérifie `X-Hub-Signature-256` en temps constant, garde la livraison dans `WebhookDelivery` (une seule fois par `X-GitHub-Delivery`) et répond 202 tout de suite. Un worker la traite dans une seule transaction : handler de l'événement et passage en `done`. En cas d'erreur, il réessaie après 10, 20, 40 puis 80 secondes, puis la passe en `failed` avec une alerte dans les logs. Au démarrage, il reprend les livraisons reçues et celles restées en cours plus de 2 minutes. Les événements eux-mêmes se branchent avec `registerHandler` (PAM-205) ; `ping` est traité, les autres sont pour l'instant ignorés.
+
+- **Livrable** : `api/webhooks.ts`, route dans `api/routes.ts`, démarrage du worker dans `api/server.ts`, `GITHUB_WEBHOOK_SECRET`, `api/webhooks_test.ts` (7 tests : signature, double livraison, événement inconnu, réessais puis échec, transaction annulée, reprise d'une livraison bloquée)
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

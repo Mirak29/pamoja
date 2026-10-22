@@ -6,6 +6,7 @@ import { log } from '/api/lib/log.ts'
 import { routeHandler } from '/api/routes.ts'
 import { APP_ENV } from '/api/lib/env.ts'
 import { startRefresh } from '/api/sync.ts'
+import { startWorker } from '/api/webhooks.ts'
 
 const fetch = server({ log, routeHandler })
 
@@ -15,7 +16,11 @@ export default {
   },
 }
 
-// Polled repos refresh every 15 min (§5.4); tests call it themselves
-APP_ENV === 'test' || startRefresh()
+// Polled repos refresh every 15 min (§5.4) and the webhook worker picks up
+// what a restart left (§5.5); tests call them themselves
+if (APP_ENV !== 'test') {
+  startRefresh()
+  startWorker()
+}
 
 log.info('server-start')

@@ -100,7 +100,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-201** · Onboarding et profil de base : skills en vocabulaire contrôlé, `SkillAlias`, intentions (§6.1) `[démo]`
 - [x] **PAM-202** · Import niveau 1 : liste des repos via le token bot, import des métadonnées, README, issues, PRs ; rafraîchissement toutes les 15 min avec ETag (§5.4) `[démo]`
 - [x] **PAM-203** · Import niveau 2 : `POST/api/github/installation/confirm` avec les trois contrôles, passage automatique en live (§5.4)
-- [ ] **PAM-204** · Webhooks : HMAC sur le corps brut, `WebhookDelivery` comme file persistante, worker, reprise au démarrage, nouveaux essais (§5.5)
+- [x] **PAM-204** · Webhooks : HMAC sur le corps brut, `WebhookDelivery` comme file persistante, worker, reprise au démarrage, nouveaux essais (§5.5)
 - [ ] **PAM-205** · Traitement des événements `pull_request`, `pull_request_review`, `issues`, `issue_comment`, `release`, `installation*`, `workflow_run`, `check_run`, `status` → tables (dont `CiRun`) + entries (§5.5, §6.8, §14.2)
 - [ ] **PAM-206** · Resynchronisation horaire des projets actifs (§5.6)
 - [ ] **PAM-207** · Demande d'aide : création, bouton « Request Review » depuis une PR (§7.1) `[démo]`
@@ -275,3 +275,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-15 · Installation : retour sur la Callback URL (la Setup URL est désactivée par l'autorisation pendant l'installation) ; passage auto en live via un JWT de l'app ; repos live relus toutes les heures ; erreurs GitHub en 502/503 ; `GITHUB_APP_SLUG` · §5.1, §5.2, §5.4, §5.6, §15
 - 2026-10-15 · `state` de connexion et d'installation signé et daté (et non en mémoire, perdu à chaque redémarrage de `deno task dev`), lié au navigateur par le cookie `oauth_nonce` ; raison du refus affichée · §5.3, §5.4
 - 2026-10-15 · GitHub App publique : privée, elle refuse tout compte autre que son propriétaire (404 chez GitHub) · §5.1
+- 2026-10-16 · Tunnel de dev : `cloudflared` (pas smee.io, qui réécrit le JSON signé) ; `deno task tunnel` pointe lui-même le webhook de l'app sur le tunnel ; une app réservée au dev quand la prod sera en ligne · §5.6
