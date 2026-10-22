@@ -321,13 +321,6 @@ Types : Code Review, Debugging, Architecture, Security, Testing, DevOps, UI/UX, 
 
 Champs : titre, description (Markdown), jusqu'à 4 captures d'écran, un lien vidéo facultatif (par exemple un Loom qui montre le bug), type, projet et PR GitHub optionnels, skills requis (vocabulaire contrôlé), niveau attendu, durée estimée. Depuis une PR, le bouton **Request Review** pré-remplit projet, repo, PR et skills (langages des fichiers modifiés).
 
-Règles de la création :
-
-- **Skills d'une PR** : le serveur lit les fichiers modifiés des PRs ouvertes après la synchro qui apporte leur commit de tête (import, rafraîchissement, webhook), jamais pendant l'affichage (§5.6). Il garde les skills avec ce commit : un push les fait relire.
-- **Projet et PR** : une demande sur un projet vient d'un de ses membres ; sa PR doit être ouverte. Une seule demande en cours (`open`, `accepted`, `review_submitted`, `delivered`) par PR, pour ne pas disperser les relecteurs.
-- **Vidéo** : une adresse web (`http` ou `https`) seulement.
-- **Captures** : gardées dans la page jusqu'à l'envoi d'images (PAM-409).
-
 Une demande peut aussi naître d'une alerte de `#suivi` (§6.8) : « Demander de l'aide » sur une CI en échec, « Demander une review » sur une PR qui attend.
 
 ### 7.2 Cycle de vie
@@ -350,7 +343,7 @@ Règles des transitions :
 - **Réouverture** : remet la demande en `open` et relance le matching en excluant les aidants déjà sortis.
 - Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`.
 
-Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes (`api/help-rules.ts`).
+Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes.
 
 ### 7.3 Matching
 
@@ -744,7 +737,7 @@ Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `help
 | --- | --- | --- |
 | `GithubInstallation` | installationId, githubInstallationId, accountLogin, accountType (User / Organization), installedByUserId?, createdAt, updatedAt | UNIQUE(githubInstallationId) |
 | `Repository` | repositoryId, projectId, githubId, installationId?, owner, name, fullName, defaultBranch, syncMode (poll / live), etag? (JSON), lastSyncedAt?, source, readme?, stats? (JSON : étoiles, forks, topics, langages, contributeurs, issues et PRs ouvertes, release) | UNIQUE(githubId) |
-| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state (open / merged / closed), authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt, authorLogin?, branch?, headSha?, skills? (JSON d'ids : langages des fichiers modifiés), skillsSha? (commit auquel ils ont été lus) | UNIQUE(repositoryId, number) |
+| `PullRequest` | pullRequestId, repositoryId, githubId, number, title, state (open / merged / closed), authorGithubId, additions, deletions, mergedAt?, source, createdAt, updatedAt, authorLogin?, branch? | UNIQUE(repositoryId, number) |
 | `Issue` | issueId, repositoryId, githubId, number, title, state, labels (JSON), authorGithubId, source, createdAt, updatedAt, authorLogin?, comments? | UNIQUE(repositoryId, number) |
 | `Review` | reviewId, pullRequestId, githubReviewId, reviewerGithubId, reviewerUserId?, state, commentCount, submittedAt, helpRequestId?, source | UNIQUE(githubReviewId) |
 | `WebhookDelivery` | deliveryId, githubDeliveryId, event, repositoryId?, payload (JSON), status (received / processing / done / failed), attempts, lastError?, receivedAt, processingStartedAt?, processedAt? | UNIQUE(githubDeliveryId) ; index (status, receivedAt). Sert de file persistante |
@@ -775,7 +768,7 @@ Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl? | Index (status), (authorId) |
+| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt | Index (status), (authorId) |
 | `HelpMatch` | helpMatchId, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
 | `HelpMessage` | helpMessageId, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
 | `Notification` | notificationId, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |

@@ -321,7 +321,6 @@ export const adoptProjects = (list: ApiProject[]) => {
         review: 'waiting',
         ci: 'ok',
         at: pull.createdAt * 1000,
-        skills: pull.skills,
         demo: false,
       })
     }

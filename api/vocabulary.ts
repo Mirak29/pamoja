@@ -84,39 +84,6 @@ export const matchingModes = {
 } as const
 export type MatchingMode = keyof typeof matchingModes
 
-// Help requests (§7.1): the stored type and its label, the level expected,
-// and the durations offered, in minutes
-export const helpCategories = {
-  code_review: 'Review de code',
-  debugging: 'Debug',
-  architecture: 'Architecture',
-  security: 'Sécurité',
-  testing: 'Tests',
-  devops: 'DevOps',
-  ui_ux: 'UI/UX',
-  documentation: 'Documentation',
-  pair_programming: 'Pair programming',
-  mentorship: 'Mentorat',
-  contributor_search: 'Recherche de contributeur',
-} as const
-export type HelpCategory = keyof typeof helpCategories
-
-export const helpLevels = {
-  beginner: 'Débutant',
-  intermediate: 'Intermédiaire',
-  intermediate_plus: 'Intermédiaire+',
-  senior: 'Confirmé',
-} as const
-export type HelpLevel = keyof typeof helpLevels
-
-export const helpDurations = [20, 30, 60, 120]
-
-/** The stored key of a label shown in the app */
-export const keyOf = <K extends string>(
-  labels: Record<K, string>,
-  label: string,
-) => (Object.keys(labels) as K[]).find((key) => labels[key] === label)
-
 /** The stored mode of a label shown in the app */
 export const matchingModeOf = (label: string) =>
   (Object.keys(matchingModes) as MatchingMode[])

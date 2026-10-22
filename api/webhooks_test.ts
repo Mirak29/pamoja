@@ -163,7 +163,7 @@ Deno.test('webhooks: a failed handler leaves nothing behind', async () => {
   )
 })
 
-Deno.test('webhooks: a delivery stuck in processing is picked up again', () => {
+Deno.test('webhooks: a delivery stuck in processing is picked up again', async () => {
   restore()
   let applied = 0
   registerHandler('test_stuck', () => applied++)

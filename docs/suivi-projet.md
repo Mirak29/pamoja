@@ -560,19 +560,6 @@ Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (
 - **Livrable** : `api/github-events.ts`, `api/reputation.ts`, `api/github-events_test.ts` (9 tests avec de vrais webhooks signés)
 - **Par** : @Mirak29
 
-### 2026-10-16 · PAM-207 · Demande d'aide : création et « Demander une review »
-
-`POST/api/help/create` publie une demande, ouverte 7 jours. Le serveur revérifie tout le formulaire : titre, skills du vocabulaire, type, niveau, durée, lien vidéo en http(s). Sur un projet, le demandeur doit en être membre et la PR doit y être ouverte, avec une seule demande en cours par PR. La demande garde son entry `HELP_REQUEST_CREATED`. `GET/api/help` liste celles que le développeur a écrites ou acceptées, et celles de ses projets ; le web les montre dans Aide, sur le projet et sur la PR, et les relit à chaque entry de leur cycle de vie. « Demander une review » sur une vraie PR pré-remplit projet, PR, branche, titre et skills. Ces skills sont les langages des fichiers modifiés, lus par le serveur après la synchro de la PR et relus après un push (migration 003). Le bouton reste occupé pendant l'envoi ; un refus du serveur est expliqué. La réponse simulée d'un aidant est retirée : l'acceptation réelle vient avec PAM-208, le matching réel avec PAM-209. Vérifié dans le navigateur avec la connexion simulée : demande depuis une PR (skills Go et SQL tirés de ses fichiers), demande sans projet, doublon refusé, état juste après rechargement.
-
-- **Livrable** : `api/help.ts`, `api/help-rules.ts`, `api/pull-skills.ts`, `migrations/003-help-request-fields.js`, routes `GET/api/help` et `POST/api/help/create`, `api/help_test.ts` (8 tests), formulaire `web/pages/help/new-help.tsx` branché sur l'API, `web/lib/live-data.ts`
-- **Par** : @Mirak29
-
-## Audits QA
-
-### 2026-10-19 · QA de régression front
-
-Retest transversal après les livraisons du 10 au 16 octobre. Les défauts QA-01, 07–14 sont corrigés ou corrigés pour la session ; QA-02 attend le cycle de vie serveur et la vérification de review. QA-15 relève une contradiction entre « Contributions réelles » et les badges « Donnée de démo » sur le profil. La validation front reste partielle ; voir le [rapport complet](qa/2026-10-19/rapport-qa-front.md).
-
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

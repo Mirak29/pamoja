@@ -27,7 +27,7 @@ import {
   type Message,
   unreadIn,
 } from '/web/fixtures/channels.ts'
-import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
+import { helpRequests } from '/web/fixtures/help.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
@@ -101,20 +101,14 @@ const repliesOf = (message: Message) => [
 
 // Alerts lead to the help loop (§6.8): a failing CI asks for help, a PR
 // waiting for a review asks for one
-const alertAction = (project: string, message: Message) => {
-  const pr = pullRequests.find((p) =>
-    p.project === project && p.number === message.pullRequest
-  )
-  // A demo PR is not on GitHub: no request can be made on it
-  if (!pr || pr.demo || pr.state !== 'open') return
+const alertAction = (message: Message) => {
+  const pr = pullRequests.find((p) => p.number === message.pullRequest)
+  if (!pr || pr.state !== 'open') return
   if (message.kind === 'ci-failed' && pr.ci === 'failed') {
-    return {
-      label: 'Demander de l’aide',
-      params: { project: pr.project, ci: pr.number },
-    }
+    return { label: 'Demander de l’aide', params: { ci: pr.number } }
   }
   const asked = helpRequests.some((help) =>
-    help.project === pr.project && help.pullRequest === pr.number &&
+    help.pullRequest === pr.number &&
     !['cancelled', 'expired', 'closed_unhelpful', 'closed_unconfirmed']
       .includes(help.status)
   )
@@ -122,10 +116,7 @@ const alertAction = (project: string, message: Message) => {
     (message.kind === 'pr' || message.kind === 'waiting') &&
     pr.review === 'waiting' && !asked
   ) {
-    return {
-      label: 'Demander une review',
-      params: { project: pr.project, pr: pr.number },
-    }
+    return { label: 'Demander une review', params: { pr: pr.number } }
   }
 }
 
@@ -155,20 +146,14 @@ const Author = ({ message }: { message: Message }) => {
 }
 
 const MessageRow = (
-  { project, message, canAct }: {
-    project: string
-    message: Message
-    canAct: boolean
-  },
+  { message, canAct }: { message: Message; canAct: boolean },
 ) => {
-  // Its own subscription: an alert loses its action once help is asked
-  helpChanged.value
   const likes = message.reactions?.like ?? []
   const [liked, setLiked] = useState(likes.some(isMe))
   const count = likes.length - (likes.some(isMe) ? 1 : 0) +
     (liked ? 1 : 0)
   const replies = repliesOf(message).length
-  const action = canAct && alertAction(project, message)
+  const action = canAct && alertAction(message)
   return (
     <div class='flex gap-3 rounded-md p-2.5 hover:bg-surface-000'>
       <Author message={message} />
@@ -496,7 +481,6 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
           {messages.map((message) => (
             <MessageRow
               key={message.id}
-              project={project.slug}
               message={message}
               canAct={isMember || following}
             />

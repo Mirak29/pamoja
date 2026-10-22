@@ -1,26 +1,12 @@
 import type { ComponentChildren } from 'preact'
-import { useEffect, useState } from 'preact/hooks'
+import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
-import { CircleAlert, GitPullRequest, Send, X } from '/web/assets/icons.tsx'
-import {
-  adoptHelpRequests,
-  durationLabel,
-  type HelpRequest,
-  helpTypes,
-  minutesOf,
-} from '/web/fixtures/help.ts'
+import { GitPullRequest, Send, X } from '/web/assets/icons.tsx'
+import { type HelpDraft, helpTypes, publishHelp } from '/web/fixtures/help.ts'
 import { waves } from '/web/fixtures/matching.ts'
 import { isMe, me, people } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
-import { api } from '/web/lib/api.ts'
-import { loadProjects } from '/web/lib/session.ts'
-import {
-  helpCategories,
-  helpDurations,
-  helpLevels,
-  keyOf,
-} from '/api/vocabulary.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -29,75 +15,25 @@ import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
-const levels: string[] = Object.values(helpLevels)
-const durations = helpDurations.map(durationLabel)
+const levels = ['Débutant', 'Intermédiaire', 'Intermédiaire+', 'Confirmé']
+const durations = ['~20 min', '~30 min', '~1 h', '~2 h']
 const MAX_CAPTURES = 4
 
-type Form =
-  & Pick<
-    HelpRequest,
-    | 'type'
-    | 'title'
-    | 'description'
-    | 'project'
-    | 'pullRequest'
-    | 'skills'
-    | 'level'
-    | 'duration'
-    | 'branch'
-    | 'job'
-    | 'video'
-    | 'captures'
-  >
-  & { origin: string }
+type Form = HelpDraft & { origin: string }
 
-type Errors = { title?: string; skills?: string; video?: string }
-
-/** The PR of the page: a number is unique within its project only */
-const pullRequestOf = (project: string | undefined, number: number) =>
-  pullRequests.find((p) =>
-    p.number === number && (!project || p.project === project)
-  )
-
-/**
- * What a PR brings to a review request (§7.1): the skills are the languages
- * of its changed files, read by the server; a demo PR keeps its story
- */
+/** What a PR brings to a review request (§7.1) */
 const fromPullRequest = (pr: PullRequest) => ({
   title: `Review de la PR #${pr.number} : ${pr.title}`,
-  description: pr.demo && pr.number === 81
+  description: pr.number === 81
     ? 'Je cherche un regard extérieur sur la gestion des transactions : verrouillage SQLite, rollback quand le callback échoue, et comportement sous accès concurrents.'
     : 'Je cherche une review sur cette PR avant de la merger.',
   project: pr.project,
   pullRequest: pr.number,
-  skills: !pr.demo
-    ? pr.skills ?? []
-    : pr.number === 81
+  skills: pr.number === 81
     ? ['Go', 'SQLite', 'Backend']
     : projects[pr.project].stack.slice(0, 2),
   branch: pr.branch,
 })
-
-/** An http(s) link only, as the server checks it */
-const isWebLink = (link: string) => {
-  try {
-    return ['https:', 'http:'].includes(new URL(link).protocol)
-  } catch {
-    return false
-  }
-}
-
-/** What the server answered, said for the developer */
-const failureOf = (err: unknown) =>
-  err instanceof Error && /already in progress/.test(err.message)
-    ? 'Une demande est déjà en cours sur cette PR. Retrouve-la dans Aide, onglet Mes demandes.'
-    : err instanceof Error && /no longer open/.test(err.message)
-    ? 'Cette PR a été fermée ou mergée entre-temps.'
-    : err instanceof Error && /not found/.test(err.message)
-    ? 'Ce projet ou cette PR n’existe que dans les données de démonstration. Choisis un projet importé depuis GitHub.'
-    : err instanceof Error && /Only a member/.test(err.message)
-    ? 'Seuls les membres du projet peuvent demander de l’aide sur ce projet.'
-    : 'Pamoja n’a pas pu publier ta demande. Réessaie dans un instant.'
 
 // Request Review from a PR (?pr=) or help from a failing CI alert (?ci=)
 // pre-fills the form (§7.1)
@@ -114,7 +50,7 @@ const initialForm = (): Form => {
     origin: '',
   }
   const number = Number(url.params.pr ?? url.params.ci)
-  const pr = pullRequestOf(url.params.project ?? undefined, number)
+  const pr = pullRequests.find((p) => p.number === number)
   if (pr && url.params.pr) {
     Object.assign(form, {
       ...fromPullRequest(pr),
@@ -277,30 +213,19 @@ const Preview = ({ form }: { form: Form }) => {
 /** /aide/nouvelle, pre-filled from a PR or a CI alert */
 export const NewHelp = () => {
   const [form, setForm] = useState(initialForm)
-  const [errors, setErrors] = useState<Errors>({})
-  const [sending, setSending] = useState(false)
+  const [errors, setErrors] = useState<{ title?: string; skills?: string }>(
+    {},
+  )
   const update = (patch: Partial<Form>) => {
     const fixed = { ...errors }
     'title' in patch && delete fixed.title
     'skills' in patch && delete fixed.skills
-    'video' in patch && delete fixed.video
     setErrors(fixed)
     setForm({ ...form, ...patch })
   }
-  // The skills of a PR are read by the server after a push (§7.1): read the
-  // projects again, and fill the skills if they are still empty
-  useEffect(() => {
-    if (!form.pullRequest || !form.project) return
-    const { project, pullRequest } = form
-    loadProjects().then(() => {
-      const skills = pullRequestOf(project, pullRequest)?.skills
-      skills?.length &&
-        setForm((now) => now.skills.length ? now : { ...now, skills })
-    })
-  }, [])
   // Choosing a PR fills what is still empty, as « Request Review » does
   const choosePullRequest = (number: number) => {
-    const pr = pullRequestOf(form.project, number)
+    const pr = pullRequests.find((p) => p.number === number)
     if (!pr) return update({ pullRequest: undefined, branch: undefined })
     const filled = fromPullRequest(pr)
     update({
@@ -320,56 +245,32 @@ export const NewHelp = () => {
     pr.project === form.project && pr.state === 'open'
   )
 
-  const publish = async () => {
-    if (sending) return
-    const video = form.video?.trim() ?? ''
-    const found: Errors = {
+  const publish = () => {
+    const found = {
       title: form.title.trim() ? undefined : 'Donne un titre à ta demande.',
       skills: form.skills.length
         ? undefined
         : 'Ajoute au moins un skill pour que le matching trouve les bons développeurs.',
-      video: !video || isWebLink(video)
-        ? undefined
-        : 'Colle l’adresse complète de la vidéo, en https://.',
     }
-    const first = (['title', 'skills', 'video'] as const).find((k) => found[k])
-    if (first) {
+    if (found.title || found.skills) {
       setErrors(found)
-      document.getElementById(`help-${first}`)?.focus()
+      document.getElementById(found.title ? 'help-title' : 'help-skills')
+        ?.focus()
       return
     }
-    setSending(true)
-    try {
-      const created = await api['POST/api/help/create'].fetch({
-        category: keyOf(helpCategories, form.type) ?? 'code_review',
-        title: form.title.trim(),
-        description: form.description.trim(),
-        skills: form.skills,
-        expectedLevel: keyOf(helpLevels, form.level) ?? 'intermediate',
-        estimatedMinutes: minutesOf(form.duration),
-        project: form.project ?? '',
-        pullRequest: form.pullRequest ?? 0,
-        videoUrl: video,
-      })
-      const [request] = adoptHelpRequests([created])
-      // Kept on this page until the upload of images (PAM-409)
-      Object.assign(request, { captures: form.captures, job: form.job })
-      navigate({ href: `aide/${request.id}` })
-      notify({
-        title: 'Demande publiée',
-        body: 'Elle est ouverte 7 jours, le temps qu’un développeur l’accepte.',
-        icon: Send,
-        tone: 'verified',
-      })
-    } catch (err) {
-      setSending(false)
-      notify({
-        title: 'Demande non publiée',
-        body: failureOf(err),
-        icon: CircleAlert,
-        tone: 'danger',
-      })
-    }
+    const { origin: _, ...draft } = form
+    const request = publishHelp({
+      ...draft,
+      title: form.title.trim(),
+      description: form.description.trim(),
+    })
+    navigate({ href: `aide/${request.id}` })
+    notify({
+      title: 'Demande publiée',
+      body: 'Envoyée aux développeurs qui correspondent le mieux.',
+      icon: Send,
+      tone: 'verified',
+    })
   }
 
   return (
@@ -487,25 +388,15 @@ export const NewHelp = () => {
             captures={form.captures ?? []}
             onChange={(captures) => update({ captures })}
           />
-          <Field
-            label='Lien vidéo (facultatif)'
-            error={errors.video}
-            errorId='help-video-error'
-          >
+          <Field label='Lien vidéo (facultatif)'>
             <Input
-              id='help-video'
-              type='url'
-              aria-invalid={errors.video ? true : undefined}
-              aria-describedby={errors.video ? 'help-video-error' : undefined}
               value={form.video ?? ''}
               onInput={(event) => update({ video: event.currentTarget.value })}
               placeholder='Lien YouTube ou Loom'
             />
           </Field>
           <div class='flex flex-wrap gap-3.5 border-t border-line pt-5'>
-            <Button size={40} onClick={publish} aria-busy={sending}>
-              {sending ? 'Publication…' : 'Publier la demande'}
-            </Button>
+            <Button size={40} onClick={publish}>Publier la demande</Button>
             <Button
               variant='secondary'
               size={40}

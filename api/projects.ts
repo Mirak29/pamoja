@@ -76,11 +76,10 @@ const listPulls = sql<
     authorLogin: string | null
     branch: string | null
     createdAt: number
-    skills: string | null
   },
   number
 >`
-  SELECT number, title, state, authorLogin, branch, createdAt, skills
+  SELECT number, title, state, authorLogin, branch, createdAt
   FROM pullRequest WHERE repositoryId = ? ORDER BY number DESC
 `.all
 
@@ -138,7 +137,6 @@ export const listMyProjects = (userId: number) =>
             ...pull,
             authorLogin: pull.authorLogin ?? '',
             branch: pull.branch ?? '',
-            skills: skillNamesOf(parse<number[]>(pull.skills, [])),
           })),
         }
         : undefined,

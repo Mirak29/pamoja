@@ -8,7 +8,6 @@ import { linkInstallation } from '/api/installation.ts'
 import { Project, ProjectMember, ProjectNeed, Repository } from '/api/schema.ts'
 import { skillIdsOf, skillsFromGithub } from '/api/skills.ts'
 import { upsertIssue, upsertPullRequest } from '/api/sync.ts'
-import { scheduleSkillsRead } from '/api/pull-skills.ts'
 import type { GithubIssue, GithubPull, GithubRepo } from '/api/sync.ts'
 
 // Level 1 import (§5.4): a public repo of the developer becomes a project,
@@ -230,7 +229,5 @@ export const importRepository = async (
       repositoryId: created.repositoryId,
     })
   }
-  // The skills of its open PRs, read after the answer (§7.1)
-  scheduleSkillsRead()
   return { slug: created.slug }
 }
