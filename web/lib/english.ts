@@ -1345,6 +1345,29 @@ export const english: Record<string, string> = {
   'ta réponse': 'your reply',
   'ton post': 'your post',
   'Message': 'Message',
+  'Action impossible': 'Action not possible',
+  'Demande expirée : 7 jours sans acceptation':
+    'Request expired: 7 days without acceptance',
+  'Demande fermée': 'Request closed',
+  'Demande rouverte avec les mêmes données':
+    'Request reopened with the same details',
+  'Elle est proposée à d’autres développeurs.':
+    'It is offered to other developers.',
+  'Elle repasse en Ouverte et la vague suivante est notifiée.':
+    'It is Open again and the next wave is notified.',
+  'Fais ta review sur GitHub : Pamoja la détectera automatiquement.':
+    'Do your review on GitHub: Pamoja will detect it automatically.',
+  'La demande a changé entre-temps. La page montre son état actuel.':
+    'The request changed in the meantime. The page shows its current state.',
+  'Marque l’aide comme livrée quand c’est fait.':
+    'Mark the help as delivered when it is done.',
+  'Pas encore': 'Not yet',
+  'Tu t’es désisté de cette demande': 'You withdrew from this request',
+  'Un autre développeur a accepté cette demande avant toi.':
+    'Another developer accepted this request before you.',
+  'La confirmation, qui crée la preuve sur son profil, arrive bientôt.':
+    'Confirmation, which adds the proof to their profile, is coming soon.',
+  'Message non envoyé': 'Message not sent',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1493,4 +1516,11 @@ export const englishTemplates: Record<string, string> = {
   '« {0} » · Motif : {1}': '“{0}” · Reason: {1}',
   'Motif : {0}': 'Reason: {0}',
   'À propos de {0} · {1}': 'About {0} · {1}',
+  '{0} a accepté la demande': '{0} accepted the request',
+  'Demande libérée : {0} sans activité depuis 72 h':
+    'Request released: {0} inactive for 72 h',
+  '{0} a marqué l’aide comme livrée': '{0} marked the help as delivered',
+  'Review de {0} détectée sur GitHub': 'Review by {0} detected on GitHub',
+  '{0} a confirmé l’aide': '{0} confirmed the help',
+  'En attente de la confirmation de {0}.': 'Waiting for {0} to confirm.',
 }

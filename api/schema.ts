@@ -414,6 +414,9 @@ export const HelpRequest = createTable('helpRequest', {
   updatedAt: { type: 'REAL' },
   // Added by migrations/003: a video that shows the problem (§7.1)
   videoUrl: { type: 'TEXT', optional: true },
+  // Added by migrations/004 (§7.2): each reminder goes out once
+  helperRemindedAt: { type: 'REAL', optional: true },
+  confirmRemindedAt: { type: 'REAL', optional: true },
 })
 index('help_request_status', 'helpRequest', 'status')
 index('help_request_author', 'helpRequest', 'authorId')

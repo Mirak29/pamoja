@@ -58,6 +58,8 @@ export type HelpRequest = {
   /** Withdrawn by a moderator */
   hidden?: boolean
   log?: { text: string; at: number; verified?: boolean }[]
+  /** A real request: when the requester may release the helper (§7.2) */
+  releasableAt?: number
   /** The thread between the requester and the helper (§7.2) */
   messages?: HelpMessage[]
   demo: boolean

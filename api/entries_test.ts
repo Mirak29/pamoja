@@ -258,7 +258,8 @@ Deno.test('entries: help events reach the requester and the matched', () => {
   })
   clear()
   assertEquals(requester, ['HELP_REQUEST_ACCEPTED', 'HELP_REQUEST_WITHDRAWN'])
-  assertEquals(matched, ['HELP_REQUEST_WITHDRAWN'])
+  // The other matched developers learn that it is taken (§7.2)
+  assertEquals(matched, ['HELP_REQUEST_ACCEPTED', 'HELP_REQUEST_WITHDRAWN'])
   assertEquals(stranger, [])
 })
 

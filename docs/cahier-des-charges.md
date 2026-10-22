@@ -348,7 +348,9 @@ Règles des transitions :
 - **Inactivité** : sans review ni message de l'aidant, relance à 24 h ; à 72 h, le bouton « Libérer la demande » apparaît pour le demandeur.
 - **Fil de la demande** : dès l'acceptation, le demandeur et l'aidant échangent dans un fil attaché à la demande, sur sa page. Lui seul leur est ouvert : l'aidant n'a pas à rejoindre le projet ni ses canaux, et le fil marche pour une demande sans projet. Chaque message prévient l'autre (notification) et compte comme activité de l'aidant pour l'inactivité. Le fil reste lisible par eux deux après la clôture, sans nouveau message.
 - **Réouverture** : remet la demande en `open` et relance le matching en excluant les aidants déjà sortis.
-- Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`.
+- **Délais rejoués par le serveur** : toutes les 10 minutes, une tâche expire les demandes ouvertes depuis 7 jours, relance une seule fois l'aidant silencieux (24 h) et le demandeur qui ne répond pas (24 h), et ferme en `closed_unconfirmed` une aide restée 7 jours sans réponse. Un désistement ou une libération rouvre la demande pour 7 jours.
+- **Lecture** : tout développeur connecté lit une demande ; le fil n'est lu que par le demandeur et les aidants qu'elle a eus.
+- Entries associées : `HELP_REQUEST_WITHDRAWN`, `HELP_REQUEST_RELEASED`, `HELP_REQUEST_REOPENED`, `HELP_REQUEST_EXPIRED`, `HELP_REQUEST_CANCELLED`, `HELP_REQUEST_DELIVERED`, `HELP_REQUEST_CLOSED` (« pas utile » ou non confirmée), `HELP_MESSAGE_CREATED`.
 
 Seul `completed` produit de la réputation. Un rappel est envoyé au demandeur après 24 h sans confirmation. Les délais sont des valeurs initiales, regroupées dans un fichier de constantes (`api/help-rules.ts`).
 
@@ -684,7 +686,8 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | --- | --- | --- |
 | `NOTIFICATION_CREATED` | userId, notificationId | Le destinataire |
 | `HELP_REQUEST_MATCHED` | userId, helpRequestId | Le développeur matché |
-| `HELP_REQUEST_ACCEPTED`, `REVIEW_SUBMITTED` | userId, helpRequestId, projectId | Le demandeur et les membres du projet |
+| `HELP_REQUEST_ACCEPTED` | userId, helpRequestId, projectId | Le demandeur, les développeurs matchés (la demande est prise) et les membres du projet |
+| `REVIEW_SUBMITTED` | userId, helpRequestId, projectId | Le demandeur et les membres du projet |
 | `REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED` | userId, helpRequestId, projectId | L'aidant et les membres du projet |
 | `BADGE_UNLOCKED` | userId | L'utilisateur |
 | `PROJECT_UPDATED`, `PROJECT_MEMBER_JOINED`, `PR_UPDATED`, `PR_MERGED`, `ISSUE_UPDATED`, `RELEASE_PUBLISHED` | projectId (+ userId) | Membres et abonnés du projet |
@@ -695,7 +698,7 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | `PULSE_READY` | projectId | Membres et abonnés du projet |
 | `USER_LOGIN`, `PROJECT_CREATED`, `ANSWER_ACCEPTED` | userId, projectId ou postId | Personne (journal et réputation uniquement) |
 | PROFILE\_UPDATED, POST\_UPDATED, HELP\_REQUEST\_CREATED | userId, postId ou helpRequestId | Personne en SSE ; lues par le worker de réindexation Meilisearch |
-| HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
+| HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED, HELP\_REQUEST\_CANCELLED, HELP\_REQUEST\_DELIVERED, HELP\_REQUEST\_CLOSED, HELP\_MESSAGE\_CREATED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
 | CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
 
 `userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
@@ -775,7 +778,7 @@ Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `
 
 | Table | Champs | Contraintes |
 | --- | --- | --- |
-| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt?, confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl? | Index (status), (authorId) |
+| `HelpRequest` | helpRequestId, authorId, targetUserId? (collaboration request), projectId?, pullRequestId?, category, title, description, skills (JSON d'ids), expectedLevel?, estimatedMinutes?, status, acceptedBy?, acceptedAt?, deliveredAt? (aide livrée ou review vue sur GitHub), confirmedAt?, expiresAt, source, createdAt, updatedAt, videoUrl?, helperRemindedAt?, confirmRemindedAt? | Index (status), (authorId) |
 | `HelpMatch` | helpMatchId, helpRequestId, userId, score, reasons (JSON), wave, newcomerSlot, notifiedAt?, status (notified / accepted / declined / withdrawn / released) | UNIQUE(helpRequestId, userId) |
 | `HelpMessage` | helpMessageId, helpRequestId, authorId, body (Markdown), createdAt | Index (helpRequestId, createdAt) ; seuls le demandeur et l'aidant accepté écrivent et lisent |
 | `Notification` | notificationId, userId, type, category, entryId?, actorId?, payload (JSON), readAt?, createdAt | Index (userId, readAt, createdAt) |
@@ -827,7 +830,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
-| Aide (suite) | POST/api/help/withdraw · POST/api/help/release · POST/api/help/reopen |
+| Aide (suite) | POST/api/help/withdraw · POST/api/help/release · POST/api/help/reopen · POST/api/help/decline · POST/api/help/message |
 
 ## 16. Sécurité
 

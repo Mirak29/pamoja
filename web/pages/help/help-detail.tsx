@@ -25,7 +25,7 @@ import {
   sendHelpMessage,
 } from '/web/fixtures/help.ts'
 import { match, type Matched, waves } from '/web/fixtures/matching.ts'
-import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
+import { isMe, type Login, me, personOf } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
@@ -44,13 +44,14 @@ import { Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { RichText } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
-import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
+import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { loadHelpDetail, playOnServer, sendOnServer } from '/web/lib/help.ts'
+import { useEvent } from '/web/lib/realtime.ts'
 import { counted } from '/web/lib/plural.ts'
 
-const firstName = (login: keyof typeof people) =>
-  people[login].name.split(' ')[0]
+const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
 const exits: HelpStatus[] = [
   'expired',
@@ -78,9 +79,12 @@ const actionIcons: Record<HelpAction, typeof UserCheck> = {
   decline: Info,
 }
 
-const play = (request: HelpRequest, action: HelpAction) => {
-  const { title, body, tone } = actOnHelp(request, action)
-  notify({ title, body, tone, icon: actionIcons[action] })
+// A demo request plays in the page; a real one on the server (§7.2)
+const play = async (request: HelpRequest, action: HelpAction) => {
+  const { title, body, tone } = request.demo
+    ? actOnHelp(request, action)
+    : await playOnServer(request, action) ?? { title: '', tone: 'muted' }
+  title && notify({ title, body, tone, icon: actionIcons[action] })
 }
 
 /** Open, accepted, review submitted or delivered, completed (§7.2) */
@@ -225,7 +229,9 @@ const promptOf = (
             label: 'Libérer la demande',
             variant: 'secondary',
             action: 'release',
-            disabled: true,
+            // 72 h after the last activity of the helper, said by the server
+            disabled: request.demo || !request.releasableAt ||
+              request.releasableAt > Date.now(),
             hint: 'Possible après 72 h sans activité de l’aidant.',
           },
           { label: 'Annuler', variant: 'danger', action: 'cancel' },
@@ -234,7 +240,16 @@ const promptOf = (
     }
     if (status === 'review_submitted' || status === 'delivered') {
       return ['Cette aide t’a été utile ?', [
-        { label: 'Oui, elle m’a aidé', variant: 'primary', action: 'confirm' },
+        {
+          label: 'Oui, elle m’a aidé',
+          variant: 'primary',
+          action: 'confirm',
+          // The proof of a real help comes with its confirmation (PAM-212)
+          disabled: !request.demo,
+          hint: request.demo
+            ? undefined
+            : 'La confirmation, qui crée la preuve sur son profil, arrive bientôt.',
+        },
         { label: 'Non', variant: 'secondary', action: 'decline' },
       ]]
     }
@@ -346,6 +361,17 @@ const Prompt = (
   { request, notified }: { request: HelpRequest; notified: Matched[] },
 ) => {
   const [confirming, setConfirming] = useState<Action | null>(null)
+  // One action at a time: the button stays busy until the server answers
+  const [busy, setBusy] = useState<HelpAction | null>(null)
+  const run = async (action: HelpAction) => {
+    if (busy) return
+    setBusy(action)
+    try {
+      await play(request, action)
+    } finally {
+      setBusy(null)
+    }
+  }
   // The question takes the place of the buttons: focus its safe answer
   useEffect(() => {
     confirming && document.getElementById('help-confirm-cancel')?.focus()
@@ -362,9 +388,10 @@ const Prompt = (
         <div class='flex flex-wrap items-center gap-3.5 pb-1'>
           <Button
             variant='danger'
-            onClick={() => {
+            aria-busy={busy === confirming.action}
+            onClick={async () => {
+              await run(confirming.action!)
               setConfirming(null)
-              play(request, confirming.action!)
             }}
           >
             {label}
@@ -392,14 +419,13 @@ const Prompt = (
               key={item.label}
               variant={item.variant}
               disabled={item.disabled}
+              aria-busy={!!item.action && busy === item.action}
               href={item.href}
               onClick={item.focus
                 ? () => document.getElementById(item.focus!)?.focus()
                 : item.action &&
                   (() =>
-                    item.confirm
-                      ? setConfirming(item)
-                      : play(request, item.action!))}
+                    item.confirm ? setConfirming(item) : run(item.action!))}
             >
               {item.label}
             </Button>
@@ -434,15 +460,34 @@ const HelpThread = (
   },
 ) => {
   const [draft, setDraft] = useState('')
-  const send = () => {
-    if (!draft.trim()) return
-    sendHelpMessage(request, me.login, draft.trim())
-    setDraft('')
+  const [sending, setSending] = useState(false)
+  const send = async () => {
+    const text = draft.trim()
+    if (!text || sending) return
+    if (request.demo) {
+      sendHelpMessage(request, me.login, text)
+      setDraft('')
+      return
+    }
+    setSending(true)
+    try {
+      await sendOnServer(request, text)
+      setDraft('')
+    } catch {
+      notify({
+        title: 'Message non envoyé',
+        body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
+        icon: Info,
+        tone: 'danger',
+      })
+    } finally {
+      setSending(false)
+    }
   }
   return (
     <section class='slab flex flex-col gap-3.5 p-[22px]'>
       <div class='flex flex-wrap items-baseline justify-between gap-2'>
-        <Eyebrow>Fil avec {people[other].name}</Eyebrow>
+        <Eyebrow>Fil avec {personOf(other).name}</Eyebrow>
         <span class='text-[12px] text-ink-muted'>
           Visible par vous deux seulement
         </span>
@@ -453,14 +498,14 @@ const HelpThread = (
           class='flex animate-enter-fast gap-3'
         >
           <Avatar
-            name={people[message.author].name}
-            src={people[message.author].avatarUrl}
+            name={personOf(message.author).name}
+            src={personOf(message.author).avatarUrl}
             size={30}
           />
           <div class='flex min-w-0 flex-1 flex-col gap-0.5'>
             <span class='flex flex-wrap items-baseline gap-2'>
               <span class='font-display text-[14px] leading-5 font-semibold'>
-                {isMe(message.author) ? 'Toi' : people[message.author].name}
+                {isMe(message.author) ? 'Toi' : personOf(message.author).name}
               </span>
               <span class='text-[12px] text-ink-muted'>{ago(message.at)}</span>
             </span>
@@ -483,7 +528,7 @@ const HelpThread = (
               id='help-thread-input'
               rows={2}
               value={draft}
-              aria-label={t`Message pour ${people[other].name}`}
+              aria-label={t`Message pour ${personOf(other).name}`}
               placeholder={t`Écrire à ${firstName(other)}`}
               onInput={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) =>
@@ -494,7 +539,12 @@ const HelpThread = (
               <span class='text-[12px] text-ink-muted'>
                 Ctrl + Entrée pour envoyer
               </span>
-              <Button size={36} disabled={!draft.trim()} onClick={send}>
+              <Button
+                size={36}
+                disabled={!draft.trim()}
+                aria-busy={sending}
+                onClick={send}
+              >
                 Envoyer
               </Button>
             </div>
@@ -527,7 +577,7 @@ const MatchRow = (
   },
 ) => {
   const [open, setOpen] = useState(initiallyOpen)
-  const person = people[matched.login]
+  const person = personOf(matched.login)
   const status = request.helper === matched.login
     ? 'A accepté'
     : request.withdrawn?.includes(matched.login)
@@ -698,9 +748,46 @@ const Matching = (
 }
 
 /** /aide/:id: lifecycle, actions by role and the matching panel */
+// The entries of a lifecycle: the page reads its request again (§13)
+const lifecycle = [
+  'HELP_REQUEST_ACCEPTED',
+  'HELP_REQUEST_WITHDRAWN',
+  'HELP_REQUEST_RELEASED',
+  'HELP_REQUEST_REOPENED',
+  'HELP_REQUEST_EXPIRED',
+  'HELP_REQUEST_CANCELLED',
+  'HELP_REQUEST_DELIVERED',
+  'HELP_REQUEST_CLOSED',
+  'HELP_MESSAGE_CREATED',
+  'REVIEW_SUBMITTED',
+  'REVIEW_HELP_CONFIRMED',
+  'HELP_CONFIRMED',
+] as const
+
 export const HelpDetail = ({ id }: { id: string }) => {
   helpChanged.value
+  // A real request (its id is a number) is read from the server: when the
+  // page opens, and at each entry of its lifecycle
+  const real = /^\d+$/.test(id)
+  const [state, setState] = useState<'loading' | 'ready' | 'missing'>(
+    real ? 'loading' : 'ready',
+  )
+  const reload = () => {
+    real && loadHelpDetail(id).then(
+      () => setState('ready'),
+      () => setState((now) => now === 'loading' ? 'missing' : now),
+    )
+  }
+  useEffect(reload, [id])
+  useEvent([...lifecycle], reload)
   const request = helpRequests.find((h) => h.id === id)
+  if (!request && state === 'loading') {
+    return (
+      <Page title='Demande d’aide' class='pt-5'>
+        <LoadingState />
+      </Page>
+    )
+  }
   if (!request) {
     return (
       <Page title='Demande introuvable' class='pt-5'>
@@ -758,11 +845,11 @@ export const HelpDetail = ({ id }: { id: string }) => {
               class='flex items-center gap-2 font-semibold text-ink no-underline hover:no-underline'
             >
               <Avatar
-                name={people[request.author].name}
-                src={people[request.author].avatarUrl}
+                name={personOf(request.author).name}
+                src={personOf(request.author).avatarUrl}
                 size={26}
               />
-              {people[request.author].name}
+              {personOf(request.author).name}
             </A>
             <span>
               {ago(request.at)} · {request.level} · {request.duration}

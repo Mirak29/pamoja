@@ -334,7 +334,8 @@ export const Entry = initEntries(entries, relations, {
     projectId: 'project, if any',
     helpRequestId: 'request',
     fields: { source },
-    trigger: (entry, sub) => requester(entry, sub) || member(entry, sub),
+    // The other matched developers learn that it is taken (§7.2)
+    trigger: (entry, sub) => helpParticipant(entry, sub) || member(entry, sub),
   },
   REVIEW_SUBMITTED: {
     userId: 'helper who reviewed',
@@ -388,6 +389,30 @@ export const Entry = initEntries(entries, relations, {
   HELP_REQUEST_EXPIRED: {
     userId: 'requester',
     helpRequestId: 'request expired',
+    fields: { source },
+    trigger: helpParticipant,
+  },
+  HELP_REQUEST_CANCELLED: {
+    userId: 'requester',
+    helpRequestId: 'request cancelled',
+    fields: { source },
+    trigger: helpParticipant,
+  },
+  HELP_REQUEST_DELIVERED: {
+    userId: 'helper who delivered, for a request without a PR',
+    helpRequestId: 'request now delivered',
+    fields: { source },
+    trigger: helpParticipant,
+  },
+  HELP_MESSAGE_CREATED: {
+    userId: 'author of the message',
+    helpRequestId: 'request whose thread got it',
+    fields: { source },
+    trigger: helpParticipant,
+  },
+  HELP_REQUEST_CLOSED: {
+    userId: 'requester',
+    helpRequestId: 'request closed unconfirmed after 7 days',
     fields: { source },
     trigger: helpParticipant,
   },

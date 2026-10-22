@@ -44,6 +44,9 @@ onEvent([
   'HELP_REQUEST_RELEASED',
   'HELP_REQUEST_REOPENED',
   'HELP_REQUEST_EXPIRED',
+  'HELP_REQUEST_CANCELLED',
+  'HELP_REQUEST_DELIVERED',
+  'HELP_REQUEST_CLOSED',
 ], reloadHelp)
 
 // Entries sent while the connection was lost were missed: read them all

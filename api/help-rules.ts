@@ -20,3 +20,5 @@ export const TITLE_MAX = 140
 export const DESCRIPTION_MAX = 8000
 export const SKILLS_MAX = 8
 export const VIDEO_URL_MAX = 500
+/** A message of the thread of a request */
+export const MESSAGE_MAX = 4000
