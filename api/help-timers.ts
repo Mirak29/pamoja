@@ -6,7 +6,9 @@ import {
   CONFIRM_REMINDER_AFTER,
   CONFIRM_WITHIN,
   HELPER_REMINDER_AFTER,
+  NEXT_WAVE_AFTER,
 } from '/api/help-rules.ts'
+import { sendWave } from '/api/matching.ts'
 import { log } from '/api/lib/log.ts'
 import { createNotification } from '/api/notifications.ts'
 
@@ -81,8 +83,22 @@ const setUnconfirmed = sql<undefined, { helpRequestId: number; at: number }>`
     AND status IN ('review_submitted', 'delivered')
 `.run
 
+const listWaiting = sql<{ helpRequestId: number }, number>`
+  SELECT helpRequestId FROM helpRequest
+  WHERE status = 'open' AND targetUserId IS NULL
+    AND coalesce(lastWaveAt, createdAt) <= ?
+`.all
+
 /** One pass over the delays; `at` lets the tests move the clock */
-export const runHelpTimers = (at = now()) =>
+export const runHelpTimers = (at = now()) => {
+  timers(at)
+  // Two hours without an acceptance: the next wave (§7.3)
+  for (const { helpRequestId } of listWaiting(at - NEXT_WAVE_AFTER)) {
+    sendWave(helpRequestId, at)
+  }
+}
+
+const timers = (at: number) =>
   db.transaction(() => {
     for (const { helpRequestId, authorId } of listExpired(at)) {
       if (!setExpired({ helpRequestId, at })) continue

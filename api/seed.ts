@@ -14,7 +14,7 @@ import {
   UserIntent,
 } from '/api/schema.ts'
 import { setDeclaredSkills } from '/api/skills.ts'
-import { countryCodeOf } from '/api/vocabulary.ts'
+import { countryCodeOf, helpCategories, keyOf } from '/api/vocabulary.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { people, type Person } from '/web/fixtures/people.ts'
 import {
@@ -112,6 +112,12 @@ export const seed = (githubIds = new Map<string, number>()) => {
         accent: 'indigo',
         availability: person.available ? 'available' : 'busy',
         matchingMode: 'instant',
+        // The types of help they accept, for the matching (§7.3)
+        matchingFilters: {
+          helpTypes: person.helpTypes
+            .map((label) => keyOf(helpCategories, label))
+            .filter(Boolean),
+        },
         createdAt: at,
         updatedAt: at,
       })

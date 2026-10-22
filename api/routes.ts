@@ -16,10 +16,13 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { listMyProjects } from '/api/projects.ts'
+import { previewWave } from '/api/matching.ts'
+import { skillIdsOf } from '/api/skills.ts'
 import {
   createHelpRequest,
   getHelpRequest,
   listHelpRequests,
+  projectIdOf,
 } from '/api/help.ts'
 import {
   acceptHelp,
@@ -27,6 +30,7 @@ import {
   declineHelp,
   deliverHelp,
   getHelpDetail,
+  listHelpForMe,
   postHelpMessage,
   releaseHelp,
   reopenHelp,
@@ -110,8 +114,41 @@ const helpRequestFields = {
 
 const helpRequest = OBJ(helpRequestFields, 'A help request (§7.1)')
 
+// A criterion of « Pourquoi ce match ? » (§7.3); its fields depend on kind
+const reason = OBJ({
+  kind: LIST(
+    ['skills', 'type', 'confirmed', 'availability', 'affinity', 'newcomer'],
+    'Criterion',
+  ),
+  points: NUM('Points out of 100'),
+  skills: optional(ARR(STR('Skill held'))),
+  of: optional(NUM('Skills asked')),
+  category: optional(STR('Type of help accepted')),
+  count: optional(NUM('Confirmed helps on these skills')),
+  review: optional(BOOL('They are reviews')),
+  available: optional(BOOL('Available this week')),
+  active: optional(BOOL('Active in the last 14 days')),
+  community: optional(STR('Community in common')),
+  follows: optional(BOOL('Follows the project')),
+})
+
+const matchedFields = {
+  login: STR('Developer matched'),
+  score: NUM('Out of 100'),
+  reasons: ARR(reason),
+  newcomer: BOOL('The seat kept for a promising newcomer'),
+}
+
 const helpDetail = OBJ({
   ...helpRequestFields,
+  matches: ARR(
+    OBJ({
+      ...matchedFields,
+      wave: NUM('Wave that notified them'),
+      status: STR('notified, accepted, withdrawn or released'),
+    }),
+    'All of them for the requester, their own one for a matched developer',
+  ),
   releasableAt: NUM(
     'When the requester may release the helper, in seconds, 0 if not accepted',
   ),
@@ -453,6 +490,36 @@ const defs = {
     input: OBJ({ id: STR('Id of the request') }),
     output: helpDetail,
     description: 'A request with its thread and lifecycle',
+  }),
+  'GET/api/help/for-me': route({
+    authorize: withSession,
+    fn: (ctx) => listHelpForMe(ctx.session.userId),
+    output: ARR(
+      OBJ({
+        ...helpRequestFields,
+        score: NUM('My score for it'),
+        reasons: ARR(reason),
+      }),
+      'Best score first',
+    ),
+    description: 'The open requests the developer was matched with',
+  }),
+  'GET/api/help/preview': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      previewWave({
+        authorId: ctx.session.userId,
+        category: input.category,
+        skills: skillIdsOf(input.skills.split(',').filter(Boolean)),
+        projectId: projectIdOf(input.project),
+      }),
+    input: OBJ({
+      category: STR('Type of help, a key of helpCategories'),
+      skills: STR('Skills of the vocabulary, separated by commas'),
+      project: STR('Slug of the project, empty if none'),
+    }),
+    output: ARR(OBJ(matchedFields), 'The first wave, nothing written'),
+    description: 'Who would be notified, while the form is filled',
   }),
   'POST/api/help/accept': transition(
     acceptHelp,

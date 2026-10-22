@@ -1368,6 +1368,15 @@ export const english: Record<string, string> = {
   'La confirmation, qui crée la preuve sur son profil, arrive bientôt.':
     'Confirmation, which adds the proof to their profile, is coming soon.',
   'Message non envoyé': 'Message not sent',
+  'Disponible et actif ces 14 derniers jours':
+    'Available and active in the last 14 days',
+  'Suit le projet': 'Follows the project',
+  'Tu ne fais pas partie des développeurs notifiés pour cette demande.':
+    'You are not one of the developers notified for this request.',
+  'La vague suivante part 2 h après la précédente si personne n’accepte.':
+    'The next wave leaves 2 h after the previous one if nobody accepts.',
+  'Le matching s’arrête tant que la demande n’est pas ouverte.':
+    'Matching stops while the request is not open.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1523,4 +1532,5 @@ export const englishTemplates: Record<string, string> = {
   'Review de {0} détectée sur GitHub': 'Review by {0} detected on GitHub',
   '{0} a confirmé l’aide': '{0} confirmed the help',
   'En attente de la confirmation de {0}.': 'Waiting for {0} to confirm.',
+  'Vague {0} · {1} en tout': 'Wave {0} · {1} in all',
 }

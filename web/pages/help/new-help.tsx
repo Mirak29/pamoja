@@ -9,11 +9,12 @@ import {
   helpTypes,
   minutesOf,
 } from '/web/fixtures/help.ts'
-import { waves } from '/web/fixtures/matching.ts'
-import { isMe, me, people } from '/web/fixtures/people.ts'
+import type { Matched } from '/web/fixtures/matching.ts'
+import { isMe, personOf } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
 import { api } from '/web/lib/api.ts'
+import { matchedOf } from '/web/lib/help.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import {
   helpCategories,
@@ -224,10 +225,29 @@ const Captures = (
   </div>
 )
 
+// The first wave the server would send, read again 300 ms after a change of
+// the type, the skills or the project; nothing is written (§7.3)
 const Preview = ({ form }: { form: Form }) => {
-  const notified = form.skills.length
-    ? waves({ author: me.login, type: form.type, skills: form.skills })[0]
-    : []
+  const [notified, setNotified] = useState<Matched[]>([])
+  const skills = form.skills.join(',')
+  useEffect(() => {
+    if (!skills) return setNotified([])
+    let stale = false
+    const timer = setTimeout(() => {
+      api['GET/api/help/preview'].fetch({
+        category: keyOf(helpCategories, form.type) ?? 'code_review',
+        skills,
+        project: form.project ?? '',
+      }).then(
+        (list) => stale || setNotified(list.map(matchedOf)),
+        () => stale || setNotified([]),
+      )
+    }, 300)
+    return () => {
+      stale = true
+      clearTimeout(timer)
+    }
+  }, [form.type, skills, form.project])
   return (
     <aside class='slab sticky top-24 flex flex-col gap-2.5 p-[22px]'>
       <Eyebrow accent>Matching</Eyebrow>
@@ -244,13 +264,13 @@ const Preview = ({ form }: { form: Form }) => {
           class='flex items-center gap-3 border-t border-line py-3'
         >
           <Avatar
-            name={people[m.login].name}
-            src={people[m.login].avatarUrl}
+            name={personOf(m.login).name}
+            src={personOf(m.login).avatarUrl}
             size={30}
           />
           <span class='flex min-w-0 flex-1 flex-col'>
             <span class='font-display text-[14px] leading-5 font-semibold'>
-              {people[m.login].name}
+              {personOf(m.login).name}
             </span>
             <span class='text-[12px] leading-4 text-ink-muted'>
               {m.criteria.slice(0, 2).map((c) => c.label).join(' · ')}

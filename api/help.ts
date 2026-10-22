@@ -9,6 +9,7 @@ import {
   TITLE_MAX,
   VIDEO_URL_MAX,
 } from '/api/help-rules.ts'
+import { sendWave } from '/api/matching.ts'
 import { HelpRequest } from '/api/schema.ts'
 import { skillIdsOf, skillNamesOf } from '/api/skills.ts'
 import type { HelpCategory, HelpLevel } from '/api/vocabulary.ts'
@@ -32,6 +33,10 @@ const getMemberProject = sql<ProjectRow, { slug: string; userId: number }>`
 const getProjectId = sql<{ projectId: number }, string>`
   SELECT projectId FROM project WHERE slug = ?
 `.get
+
+/** The id of a project by its slug, null if none */
+export const projectIdOf = (slug: string) =>
+  slug ? getProjectId(slug)?.projectId ?? null : null
 
 const getPullRequest = sql<
   { pullRequestId: number; state: string },
@@ -127,7 +132,7 @@ const checked = (input: HelpInput) => {
  */
 export const createHelpRequest = (userId: number, input: HelpInput) => {
   const { title, description, videoUrl, skills } = checked(input)
-  return db.transaction(() => {
+  const helpRequestId = db.transaction(() => {
     const { projectId, pullRequestId } = placeOf(userId, input)
     if (pullRequestId && getActiveOnPullRequest(pullRequestId)) {
       throw new respond.ConflictError({
@@ -161,6 +166,9 @@ export const createHelpRequest = (userId: number, input: HelpInput) => {
     })
     return helpRequestId
   })()
+  // The first wave goes out at once (§7.3)
+  sendWave(helpRequestId)
+  return helpRequestId
 }
 
 type HelpRow = {
