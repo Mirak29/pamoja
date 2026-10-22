@@ -3,7 +3,10 @@ import {
   type HelpAction,
   type HelpRequest,
 } from '/web/fixtures/help.ts'
+import type { Matched } from '/web/fixtures/matching.ts'
 import { type Login, me, personOf } from '/web/fixtures/people.ts'
+import { counted } from '/web/lib/plural.ts'
+import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
 
@@ -44,10 +47,61 @@ const logLine = ({ event, login }: Detail['timeline'][number]) => {
   }
 }
 
+type Reason = Detail['matches'][number]['reasons'][number]
+
+/** A criterion of « Pourquoi ce match ? », in the language of the page */
+export const criterionOf = (reason: Reason) => {
+  switch (reason.kind) {
+    case 'skills':
+      return t`Skills : ${(reason.skills ?? []).join(', ')} · ${
+        reason.skills?.length ?? 0
+      } sur ${reason.of ?? 0}`
+    case 'type':
+      return t`Accepte les demandes « ${
+        translate(
+          helpCategories[reason.category as HelpCategory] ??
+            reason.category ?? '',
+        )
+      } »`
+    case 'confirmed':
+      return reason.review
+        ? counted(reason.count ?? 0, 'review confirmée', 'reviews confirmées')
+        : counted(reason.count ?? 0, 'aide confirmée', 'aides confirmées')
+    case 'availability':
+      return translate(
+        !reason.available
+          ? 'Peu disponible'
+          : reason.active
+          ? 'Disponible et actif ces 14 derniers jours'
+          : 'Disponible cette semaine',
+      )
+    case 'affinity':
+      return reason.community
+        ? t`Communauté ${reason.community} en commun`
+        : translate('Suit le projet')
+    default:
+      return ''
+  }
+}
+
+/** A match of the server as the pages show them */
+export const matchedOf = (
+  m: { login: string; score: number; reasons: Reason[]; newcomer: boolean },
+): Matched => ({
+  login: m.login as Login,
+  score: m.score,
+  criteria: m.reasons
+    .filter((r) => r.kind !== 'newcomer')
+    .map((r) => ({ label: criterionOf(r), points: r.points })),
+  promising: m.newcomer,
+})
+
 /** The answer of the server joins the request of the page */
 const adoptDetail = (detail: Detail) => {
   const [request] = adoptHelpRequests([detail])
   Object.assign(request, {
+    matched: detail.matches.map(matchedOf),
+    wave: Math.max(1, ...detail.matches.map((m) => m.wave)),
     releasableAt: detail.releasableAt * 1000,
     withdrawn: detail.left ? [me.login] : [],
     messages: detail.messages.map((m) => ({

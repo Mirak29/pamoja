@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import { match } from '/web/fixtures/matching.ts'
+import { match, type Matched } from '/web/fixtures/matching.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
@@ -60,6 +60,10 @@ export type HelpRequest = {
   log?: { text: string; at: number; verified?: boolean }[]
   /** A real request: when the requester may release the helper (§7.2) */
   releasableAt?: number
+  /** A real request: its matches as the server shows them to me (§7.3) */
+  matched?: Matched[]
+  /** A real request I was matched with: my score */
+  myScore?: number
   /** The thread between the requester and the helper (§7.2) */
   messages?: HelpMessage[]
   demo: boolean
@@ -162,8 +166,13 @@ export const matchingRequests = (person: Person, min = settings.minScore) =>
       h.status === 'open' && h.author !== person.login &&
       !h.withdrawn?.includes(person.login as Login)
     )
-    .map((h) => ({ request: h, score: match(person, h).total }))
-    .filter((h) => h.score >= min)
+    // A real request reaches me through the matching of the server, which
+    // already applied my minimum score
+    .map((h) => ({
+      request: h,
+      score: h.demo ? match(person, h).total : h.myScore ?? 0,
+    }))
+    .filter((h) => h.request.demo ? h.score >= min : h.score > 0)
     .sort((a, b) => b.score - a.score)
 
 const firstName = (login: Login) => people[login].name.split(' ')[0]

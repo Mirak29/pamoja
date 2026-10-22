@@ -417,6 +417,8 @@ export const HelpRequest = createTable('helpRequest', {
   // Added by migrations/004 (§7.2): each reminder goes out once
   helperRemindedAt: { type: 'REAL', optional: true },
   confirmRemindedAt: { type: 'REAL', optional: true },
+  // Added by migrations/005 (§7.3): the next wave leaves 2 h after this one
+  lastWaveAt: { type: 'REAL', optional: true },
 })
 index('help_request_status', 'helpRequest', 'status')
 index('help_request_author', 'helpRequest', 'authorId')

@@ -5,6 +5,7 @@ import { Entry, maybe } from '/api/entries.ts'
 import { entryNames } from '/api/entry-types.ts'
 import { getHelpRequest } from '/api/help.ts'
 import { MESSAGE_MAX, OPEN_FOR, RELEASE_AFTER } from '/api/help-rules.ts'
+import { explain, matchesFor, sendWave } from '/api/matching.ts'
 import { HelpMessage } from '/api/schema.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
@@ -191,6 +192,8 @@ export const withdrawHelp = (userId: number, helpRequestId: number) =>
       throw conflict('Only an accepted request can be left')
     }
     reopenWithout(row, 'withdrawn')
+    // The matching goes on with the next wave (§7.2)
+    sendWave(helpRequestId)
   })()
 
 export const releaseHelp = (userId: number, helpRequestId: number) =>
@@ -204,6 +207,7 @@ export const releaseHelp = (userId: number, helpRequestId: number) =>
       throw forbidden('Possible 72 h after the last activity of the helper')
     }
     reopenWithout(row, 'released')
+    sendWave(helpRequestId)
   })()
 
 const setStatus = sql<
@@ -264,6 +268,7 @@ export const reopenHelp = (userId: number, helpRequestId: number) =>
       throw conflict('Only an expired or closed request can be reopened')
     }
     Entry.insert.HELP_REQUEST_REOPENED({ userId, helpRequestId, source })
+    sendWave(helpRequestId)
   })()
 
 const setDelivered = sql<undefined, { helpRequestId: number; at: number }>`
@@ -383,6 +388,10 @@ export const getHelpDetail = (userId: number, helpRequestId: number) => {
     messages.some((m) => m.authorId === userId)
   return {
     ...request,
+    matches: matchesFor(helpRequestId, {
+      userId,
+      isAuthor: row.authorId === userId,
+    }),
     releasableAt: releasableAt(row),
     left: hasLeft(helpRequestId, userId),
     messages: inThread
@@ -401,3 +410,27 @@ export const getHelpDetail = (userId: number, helpRequestId: number) => {
       .filter((e) => shownEvents.has(e.event)),
   }
 }
+
+/*
+ * « Pour moi »: the open requests the developer was matched with (§7.3)
+ */
+
+const listForMe = sql<
+  { helpRequestId: number; score: number; reasons: string },
+  number
+>`
+  SELECT helpMatch.helpRequestId, score, reasons FROM helpMatch
+  JOIN helpRequest ON helpRequest.helpRequestId = helpMatch.helpRequestId
+  WHERE helpMatch.userId = ? AND helpMatch.status = 'notified'
+    AND helpRequest.status = 'open'
+  ORDER BY score DESC, helpMatch.helpRequestId DESC
+  LIMIT 100
+`.all
+
+export const listHelpForMe = (userId: number) =>
+  listForMe(userId).flatMap(({ helpRequestId, score, reasons }) => {
+    const request = getHelpRequest(helpRequestId)
+    return request
+      ? [{ ...request, score, reasons: explain(JSON.parse(reasons)) }]
+      : []
+  })

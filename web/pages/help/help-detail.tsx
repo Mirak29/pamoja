@@ -665,7 +665,11 @@ const Matching = (
   // Only the requester sees who was notified and their scores; a developer
   // sees why the request reached them
   if (!isMe(request.author)) {
-    const mine = match(me, request)
+    // A matched developer sees their own score only (§7.3)
+    const real = !request.demo && notified.find((m) => isMe(m.login))
+    const mine = request.demo
+      ? match(me, request)
+      : { total: real ? real.score : 0, criteria: real ? real.criteria : [] }
     return (
       <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
         <Eyebrow accent>Matching</Eyebrow>
@@ -697,7 +701,9 @@ const Matching = (
           )
           : (
             <span class='text-[13px] text-ink-muted'>
-              Aucun de tes skills ne figure dans cette demande.
+              {request.demo
+                ? 'Aucun de tes skills ne figure dans cette demande.'
+                : 'Tu ne fais pas partie des développeurs notifiés pour cette demande.'}
             </span>
           )}
       </aside>
@@ -707,13 +713,21 @@ const Matching = (
     <aside class='slab flex min-w-0 flex-col gap-2 p-[22px]'>
       <Eyebrow accent>Matching</Eyebrow>
       <span class='font-display text-[18px] leading-[25px] font-semibold'>
-        {t`Vague 1 · ${
-          counted(
-            notified.length,
-            'développeur notifié',
-            'développeurs notifiés',
-          )
-        }`}
+        {!request.demo && (request.wave ?? 1) > 1
+          ? t`Vague ${request.wave} · ${
+            counted(
+              notified.length,
+              'développeur notifié',
+              'développeurs notifiés',
+            )
+          } en tout`
+          : t`Vague 1 · ${
+            counted(
+              notified.length,
+              'développeur notifié',
+              'développeurs notifiés',
+            )
+          }`}
       </span>
       {formula}
       <div class='flex flex-col'>
@@ -721,10 +735,19 @@ const Matching = (
           <MatchRow key={m.login} request={request} matched={m} open={!i} />
         ))}
       </div>
-      <span class='border-t border-line pt-3.5'>
-        <Eyebrow>Vague 2</Eyebrow>
-      </span>
-      {secondWave && next.length > 0 && (
+      {!request.demo && (
+        <span class='border-t border-line pt-3.5 text-[13px] text-ink-muted'>
+          {request.status === 'open'
+            ? 'La vague suivante part 2 h après la précédente si personne n’accepte.'
+            : 'Le matching s’arrête tant que la demande n’est pas ouverte.'}
+        </span>
+      )}
+      {request.demo && (
+        <span class='border-t border-line pt-3.5'>
+          <Eyebrow>Vague 2</Eyebrow>
+        </span>
+      )}
+      {request.demo && secondWave && next.length > 0 && (
         <div class='flex flex-col'>
           {byScore(next).map((m) => (
             <MatchRow
@@ -736,7 +759,7 @@ const Matching = (
           ))}
         </div>
       )}
-      {!(secondWave && next.length) && (
+      {request.demo && !(secondWave && next.length) && (
         <span class='text-[13px] text-ink-muted'>
           {secondWave
             ? 'Aucun autre développeur correspondant pour l’instant.'
@@ -801,7 +824,10 @@ export const HelpDetail = ({ id }: { id: string }) => {
       </Page>
     )
   }
-  const [notified, next] = waves(request)
+  // A real request: the matches of the server, every wave so far
+  const [notified, next] = request.demo
+    ? waves(request)
+    : [request.matched ?? [], []]
   const project = request.project && projects[request.project]
   const verified = request.log?.some((entry) => entry.verified)
   return (

@@ -33,9 +33,18 @@ const setUser = (user: User) => {
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
 
-/** The help requests the developer wrote, accepted, or of their projects */
+/**
+ * The help requests the developer wrote, accepted, or of their projects, and
+ * those the matching sent them, with their score (§7.3)
+ */
 export const loadHelpRequests = () =>
-  api['GET/api/help'].fetch().then(adoptHelpRequests, () => {})
+  Promise.all([
+    api['GET/api/help'].fetch().then(adoptHelpRequests),
+    api['GET/api/help/for-me'].fetch().then((list) => {
+      const adopted = adoptHelpRequests(list)
+      adopted.forEach((request, i) => request.myScore = list[i].score)
+    }),
+  ]).catch(() => {})
 
 api['GET/api/user/me'].fetch().then(
   setUser,

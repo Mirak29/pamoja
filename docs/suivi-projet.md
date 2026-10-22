@@ -594,6 +594,13 @@ Chaque transition du §7.2 a sa route et s'applique en une transaction, seulemen
 - **Livrable** : `api/help-lifecycle.ts`, `api/help-timers.ts`, `api/notifications.ts`, `migrations/004-help-lifecycle.js`, routes `GET/api/help/detail` et `POST/api/help/{accept,withdraw,release,cancel,reopen,deliver,decline,message}`, `api/help_lifecycle_test.ts` (8 tests, dont l'acceptation simultanée), `web/lib/help.ts`, détail d'une demande branché sur l'API
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-209 · Matching SQL
+
+Le serveur calcule pour chaque demande un score sur 100 et ses raisons, lues en SQL : skills demandés pondérés par leur source, type d'aide accepté (réglages ou intentions), aides confirmées sur ces skills, disponibilité et activité récente, communauté commune ou projet suivi. La proximité sémantique attend les embeddings (PAM-311). Sont exclus le demandeur, le matching sur Off et les scores sous le seuil choisi. Les vagues de 5 gardent une place pour un profil prometteur ; la première part à la création, la suivante 2 h plus tard sans acceptation ou dès un désistement, une libération ou une réouverture, dans la limite de 10 notifications par jour et par développeur. Le formulaire montre la vague que le serveur enverrait pendant la saisie ; la demande montre tous ses matchs au demandeur et son seul score à un développeur matché ; « Pour moi » liste les demandes reçues du matching. Vérifié dans le navigateur sur les données du seed : une review Go, SQLite, Backend notifie Moussa (54, nouveau profil prometteur tant que ses reviews ne sont pas seedées).
+
+- **Livrable** : `api/matching.ts`, `migrations/005-help-waves.js`, routes `GET/api/help/for-me` et `GET/api/help/preview`, matchs dans `GET/api/help/detail`, vagues dans `api/help-timers.ts`, `api/matching_test.ts` (5 tests : score et raisons, place « nouveau profil », vagues, plafond quotidien, aperçu), types d'aide seedés
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
