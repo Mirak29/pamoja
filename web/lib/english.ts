@@ -1295,6 +1295,7 @@ export const english: Record<string, string> = {
   'commentaires': 'comments',
   'bloqueur': 'blocker',
   'bloqueurs': 'blockers',
+  'en attente de review': 'waiting for review',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1424,4 +1425,6 @@ export const englishTemplates: Record<string, string> = {
   'Voir le passeport de {0}': 'View {0}’s passport',
   'Vague 1 · {0}': 'Wave 1 · {0}',
   'Captures ({0} maximum)': 'Screenshots ({0} maximum)',
+  'ouverte {0}': 'opened {0}',
+  '{0} · ouverte {1} · {2}': '{0} · opened {1} · {2}',
 }

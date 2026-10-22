@@ -152,7 +152,7 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
             </span>
             <span class='text-[13px] leading-5 text-ink-muted'>
               {firstName(pr.author)} · {pr.branch} ·{' '}
-              {pr.state === 'merged' ? 'mergée' : `ouverte ${ago(pr.at)}`}
+              {pr.state === 'merged' ? 'mergée' : t`ouverte ${ago(pr.at)}`}
             </span>
           </span>
           <span class='flex flex-wrap gap-1.5'>

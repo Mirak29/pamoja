@@ -16,6 +16,7 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { counted } from '/web/lib/plural.ts'
 
 const GOOD_FIRST_ISSUE = 'good first issue'
 
@@ -110,10 +111,9 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                 ))}
               </div>
               <span class='text-[13px] leading-5 text-ink-muted'>
-                {nameOf(issue.author).split(' ')[0]} · ouverte {ago(issue.at)} ·
-                {' '}
-                {issue.comments}{' '}
-                {issue.comments > 1 ? 'commentaires' : 'commentaire'}
+                {t`${nameOf(issue.author).split(' ')[0]} · ouverte ${
+                  ago(issue.at)
+                } · ${counted(issue.comments, 'commentaire')}`}
               </span>
             </div>
             <div class='flex flex-col items-end gap-2 pb-1'>
