@@ -690,6 +690,15 @@ Contre le spam, des limites comptées en base, donc tenues après un redémarrag
 - **Livrable** : `api/messages.ts`, 9 routes, tables `Conversation`, `ConversationMember`, `DirectMessage`, `UserBlock`, entries `DIRECT_MESSAGE_CREATED` et `CONVERSATION_UPDATED`, `api/messages_test.ts` (7 tests), audiences ajoutées à `api/entry_triggers_test.ts`, `web/lib/messages.ts`, page `web/pages/messages-page.tsx`, bouton « Écrire » du profil, compteurs, traductions, §10.6 et les sections liées du cahier
 - **Par** : @Mirak29
 
+### 2026-10-23 · PAM-523, PAM-525, PAM-526, PAM-527 · Messages directs comme sur Discord
+
+La messagerie gagne ce qu'on attend d'un Discord. Chacun peut **modifier** son message sur place (Entrée enregistre, Échap annule, ↑ dans un champ vide reprend son dernier message) ; il porte alors « modifié ». **Supprimer** demande une confirmation et laisse « Message supprimé » à sa place, sans texte ni réactions. On **répond** à un message précis : son début s'affiche au-dessus de la réponse et y mène d'un clic. Six **réactions** (👍 ❤️ 😂 🎉 🙏 👀), qu'un second clic retire. À l'ouverture, une ligne **« Nouveaux messages »** marque le premier message reçu depuis la dernière lecture. On peut **marquer comme non lu** à partir d'un message reçu, mettre une conversation en **sourdine** (plus de toast, hors du compteur du menu, son compte en gris) ou l'**archiver** (elle revient au prochain message). Enfin, une **recherche** dans ses messages ouvre la conversation sur le message trouvé, avec un retour aux derniers messages.
+
+Vérifié dans le navigateur à deux comptes, en direct des deux côtés : Moussa écrit à Awa ; elle accepte, réagit ❤️, répond en citant le message (un `<script>` tapé s'affiche en texte), modifie sa réponse avec ↑, supprime un message et en envoie un autre. Chez Moussa, tout arrive sans rafraîchir ; il marque la conversation non lue, la retrouve par la recherche, la met en sourdine puis l'archive, et le message suivant d'Awa la fait revenir avec un compteur gris. L'interface passe en anglais sans toucher aux messages. Corrigé pendant le test : le champ ne prenait pas le focus pour répondre ou modifier.
+
+- **Livrable** : routes `POST/api/conversation/message/edit`, `…/delete`, `…/react`, `POST/api/conversation/unread`, `…/mute`, `…/archive`, `GET/api/conversations/search` ; table `DirectMessageReaction`, colonnes de la migration 007, entry `DIRECT_MESSAGE_UPDATED` ; 4 tests de plus dans `api/messages_test.ts` ; `web/lib/messages.ts`, `web/pages/messages-page.tsx`, traductions ; §10.6
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

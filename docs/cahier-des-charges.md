@@ -582,11 +582,11 @@ Une conversation à deux, comme la messagerie de LinkedIn : on écrit à un dév
 
 À la manière de Discord, la messagerie s'enrichit ensuite, dans cet ordre :
 
-1. **Modifier et supprimer son message** : un message modifié porte « modifié » ; un message supprimé laisse « Message supprimé » à sa place, sans son texte.
+1. **Modifier et supprimer son message** : seul l'auteur, dans une conversation acceptée. Un message modifié porte « modifié » ; un message supprimé laisse « Message supprimé » à sa place, sans son texte ni ses réactions, et ne compte plus comme non lu. Dans la page : modifier sur place (Entrée enregistre, Échap annule, ↑ dans un champ vide modifie son dernier message), supprimer après une confirmation.
 2. **« En train d'écrire… » et statut en ligne** : éphémères, par la présence en mémoire (§13.6), jamais enregistrés.
-3. **Répondre à un message précis** (citation de son début) et **réactions** (quelques emoji).
-4. **Séparateur « Nouveaux messages »**, **marquer comme non lu**, **sourdine** (plus de toast ni de compteur pour la conversation), **archiver** une conversation.
-5. **Recherche** dans ses conversations.
+3. **Répondre à un message précis** de la même conversation, pas à un message supprimé : le début du message cité (120 caractères, en texte simple) s'affiche au-dessus de la réponse et y mène. **Réactions** : six emoji (👍 ❤️ 😂 🎉 🙏 👀), une fois chacun par développeur, un second clic la retire ; au plus 60 réactions par minute.
+4. **Séparateur « Nouveaux messages »** avant le premier message reçu depuis la dernière lecture, qui reste en place tant que la conversation est ouverte. **Marquer comme non lu** à partir d'un message reçu : la conversation se ferme et le compte repart de ce message. **Sourdine** : plus de toast, et la conversation sort du compteur du menu (son propre compte reste, en gris). **Archiver** : la conversation passe dans « Archives », en bas de la liste, jusqu'au prochain message, d'un côté ou de l'autre.
+5. **Recherche** dans ses conversations : de 2 à 100 caractères, sans tenir compte de la casse, dans les messages non supprimés ; les 30 plus récents, avec les mots autour. Un résultat ouvre la conversation sur ce message, avec un retour aux derniers messages. Au plus 30 recherches par minute.
 6. **Images et fichiers** (après l'envoi d'images, §17.3) et **aperçu des liens** (titre et image d'une page, lus par le serveur).
 
 ## 11. IA

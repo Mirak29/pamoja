@@ -1437,6 +1437,27 @@ export const english: Record<string, string> = {
   'Trop de demandes de message': 'Too many message requests',
   'Trop de signalements': 'Too many reports',
   'Tu écris trop vite': 'You are writing too fast',
+  'En sourdine': 'Muted',
+  'Message supprimé': 'Message deleted',
+  'Rechercher dans mes messages': 'Search my messages',
+  'Aucun message ne contient ce texte.': 'No message contains this text.',
+  'Ne plus répondre à ce message': 'Stop replying to this message',
+  'Modifier le message': 'Edit the message',
+  'Entrée pour enregistrer · Échap pour annuler':
+    'Enter to save · Escape to cancel',
+  'Réagir': 'React',
+  'Modifier': 'Edit',
+  'Supprimer': 'Delete',
+  'Supprimer définitivement': 'Delete for good',
+  'Marquer comme non lu': 'Mark as unread',
+  '· modifié': '· edited',
+  'Réactiver les alertes': 'Unmute',
+  'Mettre en sourdine': 'Mute',
+  'Désarchiver': 'Unarchive',
+  'Revenir aux derniers messages': 'Back to the latest messages',
+  'Message trouvé par la recherche.': 'Message found by the search.',
+  'Nouveaux messages': 'New messages',
+  'En réponse à ton message': 'Replying to your message',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1646,4 +1667,9 @@ export const englishTemplates: Record<string, string> = {
   'Tu as écrit à beaucoup de développeurs que tu ne connais pas. Réessaie {0}.':
     'You wrote to many developers you do not know. Try again {0}.',
   'Réessaie {0}. Ton texte est gardé.': 'Try again {0}. Your text is kept.',
+  'Toi, à {0}': 'You, to {0}',
+  'Résultats · {0}': 'Results · {0}',
+  'Archives · {0}': 'Archived · {0}',
+  'En réponse à {0}': 'Replying to {0}',
+  'Réagir {0}': 'React {0}',
 }
