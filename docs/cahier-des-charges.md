@@ -721,11 +721,11 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | --- | --- | --- |
 | `NOTIFICATION_CREATED` | userId, notificationId | Le destinataire |
 | `HELP_REQUEST_MATCHED` | userId, helpRequestId | Le développeur matché |
-| `HELP_REQUEST_ACCEPTED` | userId, helpRequestId, projectId | Le demandeur, les développeurs matchés (la demande est prise) et les membres du projet |
+| `HELP_REQUEST_ACCEPTED` | userId, helpRequestId, projectId | L'aidant, le demandeur, les développeurs matchés (la demande est prise) et les membres du projet |
 | `REVIEW_SUBMITTED` | userId, helpRequestId, projectId | Le demandeur et les membres du projet |
 | `REVIEW_HELP_CONFIRMED`, `HELP_CONFIRMED` | userId, helpRequestId, projectId | L'aidant et les membres du projet |
 | `BADGE_UNLOCKED` | userId | L'utilisateur |
-| `PROJECT_UPDATED`, `PROJECT_MEMBER_JOINED`, `PR_UPDATED`, `PR_MERGED`, `ISSUE_UPDATED`, `RELEASE_PUBLISHED` | projectId (+ userId) | Membres et abonnés du projet |
+| `PROJECT_UPDATED`, `PROJECT_MEMBER_JOINED`, `PR_UPDATED`, `PR_MERGED`, `ISSUE_UPDATED`, `RELEASE_PUBLISHED` | projectId (+ userId) | Membres et abonnés du projet ; pour `PROJECT_MEMBER_JOINED`, le nouveau membre aussi, dont les événements du projet commencent aussitôt |
 | `TASK_UPDATED` | projectId, taskId | Membres du projet |
 | `MESSAGE_CREATED` | projectId, messageId | Membres du projet ; abonnés aussi pour `#annonces` |
 | `PR_OPENED`, `PR_REVIEWED`, `PR_CLOSED`, `CI_FAILED`, `CI_FIXED`, `PR_REVIEW_STALE`, `COMMITS_PUSHED` | projectId, pullRequestId (+ userId) | Membres et abonnés du projet ; alimentent `#suivi` |
@@ -736,7 +736,7 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED, HELP\_REQUEST\_CANCELLED, HELP\_REQUEST\_DELIVERED, HELP\_REQUEST\_CLOSED, HELP\_MESSAGE\_CREATED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
 | CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
 
-`userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
+Chaque ligne est vérifiée par `api/entry_triggers_test.ts`, qui échoue si un type d'entry n'y figure pas. `userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
 
 ### 13.4 Client
 
