@@ -209,6 +209,12 @@ Responsable : _à répartir_
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
 - [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
 - [x] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
+- [ ] **PAM-523** · Messages directs : modifier et supprimer son message (« modifié », « Message supprimé ») (§10.6)
+- [ ] **PAM-524** · Messages directs : « en train d'écrire… » et statut en ligne, par la présence (§10.6, §13.6) — avec PAM-407
+- [ ] **PAM-525** · Messages directs : répondre à un message précis et réactions (§10.6)
+- [ ] **PAM-526** · Messages directs : séparateur « Nouveaux messages », marquer comme non lu, sourdine, archiver (§10.6)
+- [ ] **PAM-527** · Messages directs : recherche dans ses conversations (§10.6)
+- [ ] **PAM-528** · Messages directs : images et fichiers, aperçu des liens (§10.6, §17.3) — après PAM-409
 - [x] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1) — @niangoos
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos

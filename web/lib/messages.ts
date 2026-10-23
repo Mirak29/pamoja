@@ -33,6 +33,37 @@ const failed = () =>
     tone: 'danger',
   })
 
+/** « dans 40 s », « dans 3 min », « dans 5 h »: when to try again */
+export const waitLabel = (seconds: number) =>
+  seconds < 60
+    ? t`dans ${seconds} s`
+    : seconds < 3600
+    ? t`dans ${Math.ceil(seconds / 60)} min`
+    : t`dans ${Math.ceil(seconds / 3600)} h`
+
+/**
+ * A limit of the server (§10.6): told, with when to try again; the text
+ * written stays in its field. False for any other error.
+ */
+export const tellLimit = (err: unknown) => {
+  const data = (err as { data?: { retryAfter?: number } }).data
+  if (!(err instanceof Error) || !data?.retryAfter) return false
+  const wait = waitLabel(data.retryAfter)
+  notify({
+    title: /requests/.test(err.message)
+      ? 'Trop de demandes de message'
+      : /reports/.test(err.message)
+      ? 'Trop de signalements'
+      : 'Tu écris trop vite',
+    body: /requests/.test(err.message)
+      ? t`Tu as écrit à beaucoup de développeurs que tu ne connais pas. Réessaie ${wait}.`
+      : t`Réessaie ${wait}. Ton texte est gardé.`,
+    icon: CircleAlert,
+    tone: 'warning',
+  })
+  return true
+}
+
 const openId = () => {
   const [section, id] = url.relativePath.slice(1).split('/')
   return section === 'messages' && id ? Number(id) : null
@@ -116,6 +147,7 @@ export const sendMessage = async (id: number, body: string) => {
   try {
     await api['POST/api/conversation/message'].fetch({ id, body })
   } catch (err) {
+    if (tellLimit(err)) return false
     err instanceof Error && /Waiting|cannot write/.test(err.message)
       ? await openConversation(id)
       : failed()
@@ -135,6 +167,7 @@ export const startConversation = async (login: string, body: string) => {
     await loadConversations()
     return id
   } catch (err) {
+    if (tellLimit(err)) return
     err instanceof Error && /cannot write|Waiting/.test(err.message)
       ? notify({
         title: 'Message non envoyé',

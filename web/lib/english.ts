@@ -1434,6 +1434,9 @@ export const english: Record<string, string> = {
   'non lus': 'unread',
   'Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu pourras écrire de nouveau une fois la demande acceptée.':
     'If you have never worked together, it arrives as a request: you can write again once it is accepted.',
+  'Trop de demandes de message': 'Too many message requests',
+  'Trop de signalements': 'Too many reports',
+  'Tu écris trop vite': 'You are writing too fast',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1637,4 +1640,10 @@ export const englishTemplates: Record<string, string> = {
     '{0} wants to message you. Accept to reply; if you decline, nobody is told.',
   'En attente : {0} lira ton message une fois ta demande acceptée.':
     'Waiting: {0} will read your message once your request is accepted.',
+  'dans {0} s': 'in {0} s',
+  'dans {0} min': 'in {0} min',
+  'dans {0} h': 'in {0} h',
+  'Tu as écrit à beaucoup de développeurs que tu ne connais pas. Réessaie {0}.':
+    'You wrote to many developers you do not know. Try again {0}.',
+  'Réessaie {0}. Ton texte est gardé.': 'Try again {0}. Your text is kept.',
 }

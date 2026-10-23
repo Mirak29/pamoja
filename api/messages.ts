@@ -24,6 +24,66 @@ const cleanBody = (body: string) => {
 }
 
 /*
+ * Limits (§10.6, §16): counted in the database, so a restart of the server
+ * does not reset them
+ */
+
+const DAY = 24 * 3600
+export const RATE = {
+  // Message requests to strangers: a refused or unanswered one counts
+  requests: { count: 10, per: DAY },
+  messagesPerMinute: { count: 20, per: 60 },
+  messagesPerDay: { count: 1000, per: DAY },
+  reports: { count: 30, per: DAY },
+}
+
+type Window = { n: number; oldest: number | null }
+
+const countRequests = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM conversation
+  WHERE startedBy = :me AND status != 'accepted' AND createdAt > :since
+`.get
+
+const countMessages = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM directMessage
+  WHERE authorId = :me AND createdAt > :since
+`.get
+
+const countReports = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM report
+  WHERE reporterId = :me AND targetType = 'direct_message'
+    AND createdAt > :since
+`.get
+
+/**
+ * A 429 when the window is full, with when to try again: once the oldest
+ * action of the window leaves it
+ */
+const within = (
+  count: (window: { me: number; since: number }) => Window | undefined,
+  limit: { count: number; per: number },
+  me: number,
+  message: string,
+) => {
+  const at = now()
+  const window = count({ me, since: at - limit.per })!
+  if (window.n < limit.count) return
+  const retryAfter = Math.max(
+    1,
+    Math.ceil((window.oldest ?? at) + limit.per - at),
+  )
+  throw new respond.TooManyRequestsError(
+    { message, retryAfter },
+    { 'Retry-After': String(retryAfter) },
+  )
+}
+
+const checkMessages = (me: number) => {
+  within(countMessages, RATE.messagesPerMinute, me, 'Too many messages')
+  within(countMessages, RATE.messagesPerDay, me, 'Too many messages today')
+}
+
+/*
  * Who may write to whom
  */
 
@@ -203,8 +263,10 @@ export const startConversation = db.transaction(
     if (block.byMe || block.byThem) {
       throw forbidden('You cannot write to this developer')
     }
+    checkMessages(me)
     const at = now()
     const together = !!getWorkedTogether({ a: me, b: other })!.yes
+    together || within(countRequests, RATE.requests, me, 'Too many requests')
     insertConversation({
       startedBy: me,
       status: together ? 'accepted' : 'pending',
@@ -230,6 +292,7 @@ const send = (me: number, conversationId: number, body: string) => {
         : 'You cannot write to this developer',
     )
   }
+  checkMessages(me)
   // Answering a request accepts it
   if (rights.incoming) {
     setStatus({ conversationId, status: 'accepted', from: 'pending' })
@@ -453,6 +516,7 @@ export const reportMessage = (
   }
   if (message.authorId === me) throw badRequest('Not your own message')
   if (comment.length > LIMITS.note) throw badRequest('Comment too long')
+  within(countReports, RATE.reports, me, 'Too many reports')
   insertReport({ me, messageId, reason, comment: comment.trim(), at: now() })
   Entry.insert.CONTENT_REPORTED({
     userId: me,

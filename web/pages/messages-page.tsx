@@ -23,6 +23,7 @@ import {
   sendMessage,
   setBlocked,
   startConversation,
+  tellLimit,
   thread,
 } from '/web/lib/messages.ts'
 import { loadProfile } from '/web/lib/profile.ts'
@@ -392,7 +393,8 @@ const ReportMessage = () => {
     if (!reason) return setError('Choisis un motif.')
     try {
       await reportMessage(id, reason, comment.trim())
-    } catch {
+    } catch (err) {
+      if (tellLimit(err)) return close()
       return setError('Le signalement n’a pas pu être envoyé. Réessaie.')
     }
     close()

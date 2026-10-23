@@ -39,7 +39,7 @@ const dev = async (login: string) => {
     call(`${path}?${new URLSearchParams(
       Object.entries(params).map(([k, v]) => [k, String(v)]),
     )}`)
-  return { userId, login, call, get }
+  return { userId, login, call, get, cookie: `session=${session}` }
 }
 
 type Dev = Awaited<ReturnType<typeof dev>>
@@ -254,8 +254,10 @@ Deno.test('messages: 50 at a time, the older ones on demand', async () => {
   const sena = await dev('sena')
   const { id } = (await write(kadi, sena, 'm1')).json
   await sena.call('/api/conversation/accept', { id })
+  // Written over time: within the limit of 20 a minute (§10.6)
   for (let i = 2; i <= 55; i++) {
-    await kadi.call('/api/conversation/message', { id, body: `m${i}` })
+    db.exec(`INSERT INTO directMessage (conversationId, authorId, body,
+      createdAt) VALUES (${id}, ${kadi.userId}, 'm${i}', ${now() - 3600 + i})`)
   }
   const page = (await sena.get('/api/conversation', { id })).json
   assertEquals([page.messages.length, page.more], [50, true])
@@ -279,4 +281,65 @@ Deno.test('messages: the list shows a message as plain text', async () => {
     'Salut, j’ai vu Dakar Transit et la PR. go test passe [code]',
   )
   assertEquals(excerpt('x'.repeat(200)).length, 119)
+})
+
+Deno.test('messages: limits against spam, kept in the database (§10.6)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  // 10 requests to strangers a day; the 11th waits
+  const strangers = await Promise.all(
+    Array.from({ length: 11 }, (_, i) => dev(`stranger${i}`)),
+  )
+  for (const stranger of strangers.slice(0, 10)) {
+    assertEquals((await write(kadi, stranger)).status, 200)
+  }
+  const refused = await request('/api/conversation/start', {
+    body: { username: 'stranger10', body: 'Salut' },
+    cookie: kadi.cookie,
+  })
+  assertEquals(refused.status, 429)
+  const body = await refused.json()
+  assertEquals(body.message, 'Too many requests')
+  assertEquals(body.retryAfter > 23 * 3600, true)
+  assertEquals(refused.headers.get('retry-after'), String(body.retryAfter))
+
+  // 20 messages a minute
+  const sena = await dev('sena')
+  const { id } = (await write(sena, kadi, 'm1')).json
+  await kadi.call('/api/conversation/accept', { id })
+  for (let i = 2; i <= 20; i++) {
+    await sena.call('/api/conversation/message', { id, body: `m${i}` })
+  }
+  assertEquals(
+    (await sena.call('/api/conversation/message', { id, body: 'm21' })).status,
+    429,
+  )
+  // A minute later, it goes again
+  db.exec('UPDATE directMessage SET createdAt = createdAt - 61')
+  assertEquals(
+    (await sena.call('/api/conversation/message', { id, body: 'm21' })).status,
+    200,
+  )
+
+  // 30 reports a day
+  const messages = (await kadi.get('/api/conversation', { id })).json.messages
+  for (const message of messages.slice(0, 20)) {
+    await kadi.call('/api/conversation/report', {
+      message: message.id,
+      reason: 'spam',
+    })
+  }
+  for (let i = 1; i <= 10; i++) {
+    db.exec(`INSERT INTO report (reporterId, targetType, targetId, reason,
+      status, createdAt) VALUES (${kadi.userId}, 'direct_message', ${
+      1000 + i
+    }, 'spam', 'open', ${now()})`)
+  }
+  assertEquals(
+    (await kadi.call('/api/conversation/report', {
+      message: messages[20].id,
+      reason: 'spam',
+    })).status,
+    429,
+  )
 })

@@ -578,6 +578,16 @@ Une conversation à deux, comme la messagerie de LinkedIn : on écrit à un dév
 - **Messages** : même Markdown réduit que le fil (§10.1), 2 000 caractères au plus (§16), jamais traduits, jamais écrits dans les journaux du serveur. Chaque message peut être signalé (§10.5). Les 50 derniers s'affichent, les plus anciens à la demande.
 - **Non lus et temps réel** : chaque conversation compte ses messages non lus depuis la dernière lecture ; le menu affiche le total, demandes comprises. Un message arrive chez l'autre sans rafraîchir (entry `DIRECT_MESSAGE_CREATED`), avec un toast s'il n'a pas la conversation ouverte. Les messages ne créent pas de notification : ils ont leur propre compteur, comme sur LinkedIn.
 - **Confidentialité** : seuls les deux participants lisent une conversation. Un modérateur ne voit que le message signalé.
+- **Limites de débit** (§16) : au plus 10 demandes de message à des inconnus par 24 heures, 20 messages par minute et 1 000 par jour, 30 signalements par jour. Au-delà, le serveur répond 429 et dit quand réessayer ; la page l'explique sans perdre le texte écrit.
+
+À la manière de Discord, la messagerie s'enrichit ensuite, dans cet ordre :
+
+1. **Modifier et supprimer son message** : un message modifié porte « modifié » ; un message supprimé laisse « Message supprimé » à sa place, sans son texte.
+2. **« En train d'écrire… » et statut en ligne** : éphémères, par la présence en mémoire (§13.6), jamais enregistrés.
+3. **Répondre à un message précis** (citation de son début) et **réactions** (quelques emoji).
+4. **Séparateur « Nouveaux messages »**, **marquer comme non lu**, **sourdine** (plus de toast ni de compteur pour la conversation), **archiver** une conversation.
+5. **Recherche** dans ses conversations.
+6. **Images et fichiers** (après l'envoi d'images, §17.3) et **aperçu des liens** (titre et image d'une page, lus par le serveur).
 
 ## 11. IA
 
@@ -900,7 +910,7 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Usurpation d'identité GitHub | Un username libéré puis repris | Identification par `githubId` |
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
 | Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
-| Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
+| Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3). Messages directs : comptés en base, donc tenus après un redémarrage (§10.6) |
 | Message direct non sollicité | Spam ou harcèlement en privé | Demande de message pour un inconnu, un seul message avant acceptation, refus définitif, blocage, signalement (§10.6) |
 | Contenu démesuré | Un texte de 100 000 caractères, ou un mot sans espace, casse le fil et la page | Taille maximale par champ, vérifiée par le serveur et décomptée par la page (`api/limits.ts`, ci-dessous) ; tout mot trop long se coupe dans sa colonne ; un long post se replie |
 | Injection SQL | Lecture ou écriture arbitraire | Paramètres liés uniquement (`?` ou `:nom`) : le tag `sql` de `@01edu/db` recopie ses valeurs dans le texte de la requête, donc aucune valeur venue d'un utilisateur n'y entre (§12.5) |
