@@ -55,8 +55,12 @@ const list = async (who: Dev) =>
     canWrite: boolean
     blockedByMe: boolean
     unread: number
-    last: { excerpt: string; mine: boolean } | null
+    last:
+      | { excerpt: string; deleted: boolean; mine: boolean; at: number }
+      | null
     with: { login: string }
+    muted: boolean
+    archived: boolean
   }[]
 
 Deno.test('messages: a stranger sends a request, one message, never told of a refusal', async () => {
@@ -342,4 +346,187 @@ Deno.test('messages: limits against spam, kept in the database (§10.6)', async 
     })).status,
     429,
   )
+})
+
+const open = async (who: Dev, id: number) =>
+  (await who.get('/api/conversation', { id })).json as {
+    readUpTo: number
+    muted: boolean
+    archived: boolean
+    messages: {
+      id: number
+      body: string
+      edited: boolean
+      deleted: boolean
+      replyTo: { id: number; excerpt: string; deleted: boolean } | null
+      reactions: { emoji: string; count: number; mine: boolean }[]
+    }[]
+  }
+
+/** Kadi and Sena, in an accepted conversation */
+const talking = async () => {
+  restore()
+  const kadi = await dev('kadi')
+  const sena = await dev('sena')
+  const { id } = (await write(kadi, sena, 'Premier **message**')).json
+  await sena.call('/api/conversation/accept', { id })
+  return { kadi, sena, id }
+}
+
+Deno.test("messages: edit and delete one's own message (PAM-523)", async () => {
+  const { kadi, sena, id } = await talking()
+  const [first] = (await open(sena, id)).messages
+  // Only its author
+  assertEquals(
+    (await sena.call('/api/conversation/message/edit', {
+      id: first.id,
+      body: 'x',
+    })).status,
+    404,
+  )
+  await kadi.call('/api/conversation/message/edit', {
+    id: first.id,
+    body: 'Premier message, corrigé',
+  })
+  let message = (await open(sena, id)).messages[0]
+  assertEquals([message.body, message.edited], [
+    'Premier message, corrigé',
+    true,
+  ])
+  await sena.call('/api/conversation/message/react', {
+    id: first.id,
+    emoji: '👍',
+  })
+  assertEquals(
+    (await kadi.call('/api/conversation/message/delete', { id: first.id }))
+      .status,
+    204,
+  )
+  message = (await open(sena, id)).messages[0]
+  // Its place stays, never its text nor its reactions
+  assertEquals(
+    [message.body, message.deleted, message.edited, message.reactions],
+    ['', true, false, []],
+  )
+  const last = (await list(sena))[0].last!
+  assertEquals([last.excerpt, last.deleted, last.mine], ['', true, false])
+  assertEquals(
+    (await kadi.call('/api/conversation/message/edit', {
+      id: first.id,
+      body: 'x',
+    })).status,
+    404,
+  )
+})
+
+Deno.test('messages: reply to a message, react to it (PAM-525)', async () => {
+  const { kadi, sena, id } = await talking()
+  const [first] = (await open(sena, id)).messages
+  await sena.call('/api/conversation/message', {
+    id,
+    body: 'Je réponds',
+    replyTo: first.id,
+  })
+  const answer = (await open(kadi, id)).messages[1]
+  assertEquals(
+    answer.replyTo,
+    {
+      id: first.id,
+      author: 'kadi',
+      excerpt: 'Premier message',
+      deleted: false,
+    } as typeof answer.replyTo,
+  )
+  // A message of another conversation cannot be answered
+  const yao = await dev('yao')
+  const other = (await write(yao, kadi, 'Autre')).json.id
+  const elsewhere = (await open(kadi, other)).messages[0].id
+  assertEquals(
+    (await sena.call('/api/conversation/message', {
+      id,
+      body: 'x',
+      replyTo: elsewhere,
+    })).status,
+    400,
+  )
+  // Reactions: one of the list, toggled, counted
+  const react = (who: Dev, emoji: string) =>
+    who.call('/api/conversation/message/react', { id: first.id, emoji })
+  assertEquals((await react(sena, '🦄')).status, 400)
+  await react(sena, '👍')
+  await react(kadi, '👍')
+  await react(kadi, '🎉')
+  assertEquals((await open(kadi, id)).messages[0].reactions, [
+    { emoji: '👍', count: 2, mine: true },
+    { emoji: '🎉', count: 1, mine: true },
+  ])
+  await react(kadi, '👍')
+  assertEquals((await open(sena, id)).messages[0].reactions, [
+    { emoji: '👍', count: 1, mine: true },
+    { emoji: '🎉', count: 1, mine: false },
+  ])
+  // A third developer reacts to nothing here
+  assertEquals((await react(yao, '👍')).status, 404)
+})
+
+Deno.test('messages: new messages line, unread again, mute, archive (PAM-526)', async () => {
+  const { kadi, sena, id } = await talking()
+  await sena.call('/api/conversation/read', { id })
+  const read = (await open(sena, id)).readUpTo
+  await kadi.call('/api/conversation/message', { id, body: 'Nouveau' })
+  // Sena's reading tells where the new ones start
+  const view = await open(sena, id)
+  assertEquals(view.readUpTo, read)
+  // Read again: unread from a message received
+  await sena.call('/api/conversation/unread', {
+    id,
+    from: view.messages[0].id,
+  })
+  assertEquals((await list(sena))[0].unread, 2)
+  assertEquals(
+    (await sena.call('/api/conversation/unread', {
+      id,
+      from: 999,
+    })).status,
+    400,
+  )
+  // Muted and archived: flags of Sena only
+  await sena.call('/api/conversation/mute', { id, muted: true })
+  await sena.call('/api/conversation/archive', { id, archived: true })
+  const [mine] = await list(sena)
+  assertEquals([mine.muted, mine.archived], [true, true])
+  assertEquals(
+    [(await list(kadi))[0].muted, (await list(kadi))[0].archived],
+    [false, false],
+  )
+  // A new message brings it back from the archives
+  await kadi.call('/api/conversation/message', { id, body: 'Tu es là ?' })
+  assertEquals((await list(sena))[0].archived, false)
+  assertEquals((await list(sena))[0].muted, true)
+})
+
+Deno.test("messages: search one's conversations only (PAM-527)", async () => {
+  const { kadi, sena, id } = await talking()
+  await kadi.call('/api/conversation/message', {
+    id,
+    body: 'Le bug du **ledger** 100% réglé',
+  })
+  const yao = await dev('yao')
+  const other = (await write(yao, sena, 'Le ledger aussi chez moi')).json.id
+  const search = async (who: Dev, q: string) =>
+    (await who.get('/api/conversations/search', { q } as never)).json
+  const found = await search(kadi, 'ledger')
+  assertEquals(found.length, 1)
+  assertEquals(found[0].conversationId, id)
+  assertEquals(found[0].message.snippet, 'Le bug du ledger 100% réglé')
+  // Sena finds both of hers; « % » is a character, not a wildcard
+  assertEquals((await search(sena, 'ledger')).length, 2)
+  assertEquals((await search(sena, '100%')).length, 1)
+  // Wildcards are characters: « %% » is in no message
+  assertEquals((await search(sena, '%%')).length, 0)
+  assertEquals(
+    (await sena.get('/api/conversations/search', { q: 'a' } as never)).status,
+    400,
+  )
+  assertEquals(other > 0, true)
 })

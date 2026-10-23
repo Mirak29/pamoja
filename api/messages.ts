@@ -23,6 +23,19 @@ const cleanBody = (body: string) => {
   return text
 }
 
+const getMessage = sql<
+  {
+    conversationId: number
+    authorId: number
+    createdAt: number
+    deletedAt: number | null
+  },
+  number
+>`
+  SELECT conversationId, authorId, createdAt, deletedAt FROM directMessage
+  WHERE directMessageId = ?
+`.get
+
 /*
  * Limits (§10.6, §16): counted in the database, so a restart of the server
  * does not reset them
@@ -35,7 +48,12 @@ export const RATE = {
   messagesPerMinute: { count: 20, per: 60 },
   messagesPerDay: { count: 1000, per: DAY },
   reports: { count: 30, per: DAY },
+  reactions: { count: 60, per: 60 },
+  searches: { count: 30, per: 60 },
 }
+
+// The reactions offered (§10.6): a short list, like a keyboard row
+export const REACTIONS = ['👍', '❤️', '😂', '🎉', '🙏', '👀'] as const
 
 type Window = { n: number; oldest: number | null }
 
@@ -48,6 +66,19 @@ const countMessages = sql<Window, { me: number; since: number }>`
   SELECT count(*) AS n, min(createdAt) AS oldest FROM directMessage
   WHERE authorId = :me AND createdAt > :since
 `.get
+
+const countReactions = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM directMessageReaction
+  WHERE userId = :me AND createdAt > :since
+`.get
+
+// Searches leave no row: counted in memory, a restart forgets them
+const searches = new Map<number, number[]>()
+const countSearches = ({ me, since }: { me: number; since: number }) => {
+  const times = (searches.get(me) ?? []).filter((at) => at > since)
+  searches.set(me, times)
+  return { n: times.length, oldest: times[0] ?? null }
+}
 
 const countReports = sql<Window, { me: number; since: number }>`
   SELECT count(*) AS n, min(createdAt) AS oldest FROM report
@@ -168,10 +199,22 @@ const insertMember = sql<
 
 const insertMessage = sql<
   undefined,
-  { conversationId: number; authorId: number; body: string; at: number }
+  {
+    conversationId: number
+    authorId: number
+    body: string
+    at: number
+    replyToId: number | null
+  }
 >`
-  INSERT INTO directMessage (conversationId, authorId, body, createdAt)
-  VALUES (:conversationId, :authorId, :body, :at)
+  INSERT INTO directMessage (conversationId, authorId, body, createdAt,
+    replyToId)
+  VALUES (:conversationId, :authorId, :body, :at, :replyToId)
+`.run
+
+// A new message brings an archived conversation back to both lists
+const unarchive = sql<undefined, number>`
+  UPDATE conversationMember SET archivedAt = NULL WHERE conversationId = ?
 `.run
 
 const touch = sql<undefined, { conversationId: number; at: number }>`
@@ -228,10 +271,12 @@ const post = (
   authorId: number,
   body: string,
   at: number,
+  replyToId: number | null = null,
 ) => {
-  insertMessage({ conversationId, authorId, body, at })
+  insertMessage({ conversationId, authorId, body, at, replyToId })
   const directMessageId = db.lastInsertRowId
   touch({ conversationId, at })
+  unarchive(conversationId)
   // The author has read up to their own message
   setRead({ conversationId, userId: authorId, at })
   Entry.insert.DIRECT_MESSAGE_CREATED({
@@ -280,10 +325,24 @@ export const startConversation = db.transaction(
   },
 )
 
-const send = (me: number, conversationId: number, body: string) => {
+const send = (
+  me: number,
+  conversationId: number,
+  body: string,
+  replyTo = 0,
+) => {
   const row = getMine({ conversationId, userId: me })
   if (!row) throw notFound()
   const text = cleanBody(body)
+  // A reply answers a message of this conversation, still there
+  const answered = replyTo ? getMessage(replyTo) : undefined
+  if (
+    replyTo &&
+    (!answered || answered.conversationId !== conversationId ||
+      answered.deletedAt)
+  ) {
+    throw badRequest('No such message to answer')
+  }
   const rights = rightsOf(row, me)
   if (!rights.canWrite) {
     throw forbidden(
@@ -297,7 +356,7 @@ const send = (me: number, conversationId: number, body: string) => {
   if (rights.incoming) {
     setStatus({ conversationId, status: 'accepted', from: 'pending' })
   }
-  return post(conversationId, me, text, now())
+  return post(conversationId, me, text, now(), replyTo || null)
 }
 
 /** A message in a conversation of the developer */
@@ -341,6 +400,9 @@ type ListRow = ConversationRow & {
   lastBody: string | null
   lastAuthor: number | null
   lastAt: number | null
+  lastDeleted: number | null
+  mutedAt: number | null
+  archivedAt: number | null
   unread: number
 }
 
@@ -348,10 +410,11 @@ const listMine = sql<ListRow, number>`
   SELECT conversation.*, other.userId AS other,
     user.githubUsername AS login, profile.displayName AS name, user.avatarUrl,
     last.body AS lastBody, last.authorId AS lastAuthor,
-    last.createdAt AS lastAt,
+    last.createdAt AS lastAt, last.deletedAt AS lastDeleted,
+    me.mutedAt, me.archivedAt,
     (SELECT count(*) FROM directMessage AS unread
       WHERE unread.conversationId = conversation.conversationId
-        AND unread.authorId != me.userId
+        AND unread.authorId != me.userId AND unread.deletedAt IS NULL
         AND unread.createdAt > coalesce(me.lastReadAt, 0)) AS unread
   FROM conversationMember AS me
   JOIN conversation ON conversation.conversationId = me.conversationId
@@ -368,10 +431,9 @@ const listMine = sql<ListRow, number>`
   ORDER BY conversation.updatedAt DESC
 `.all
 
-// What the list shows of a message: its beginning, as plain text, without
-// the marks of its Markdown
-export const excerpt = (body: string) => {
-  const text = body
+// A message as plain text, without the marks of its Markdown
+const plain = (body: string) =>
+  body
     .replace(/```[\s\S]*?(```|$)/g, ' [code] ')
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1')
     .replace(/(\*\*|__|`)/g, '')
@@ -379,6 +441,10 @@ export const excerpt = (body: string) => {
     .replace(/^\s*(?:[-*+]|\d+[.)]|>|#{1,6})\s+/gm, '')
     .replace(/\s+/g, ' ')
     .trim()
+
+// What the list shows of a message: its beginning, as plain text
+export const excerpt = (body: string) => {
+  const text = plain(body)
   return text.length > 120 ? `${text.slice(0, 118)}…` : text
 }
 
@@ -395,37 +461,112 @@ export const listConversations = (me: number) =>
       with: { login: row.login, name: row.name, avatarUrl: row.avatarUrl },
       ...rights,
       updatedAt: row.updatedAt,
-      last: row.lastBody === null ? null : {
-        excerpt: excerpt(row.lastBody),
+      last: row.lastAt === null ? null : {
+        excerpt: row.lastDeleted ? '' : excerpt(row.lastBody ?? ''),
+        deleted: !!row.lastDeleted,
         mine: row.lastAuthor === me,
-        at: row.lastAt!,
+        at: row.lastAt,
       },
       unread: row.unread,
+      muted: !!row.mutedAt,
+      archived: !!row.archivedAt,
     }]
   })
 
 const PAGE = 50
 
+type MessageRow = {
+  directMessageId: number
+  authorId: number
+  login: string
+  body: string
+  createdAt: number
+  editedAt: number | null
+  deletedAt: number | null
+  replyToId: number | null
+  replyLogin: string | null
+  replyBody: string | null
+  replyDeleted: number | null
+  linkPreview: string | null
+}
+
 const listMessages = sql<
-  {
-    directMessageId: number
-    authorId: number
-    login: string
-    body: string
-    createdAt: number
-  },
+  MessageRow,
   { conversationId: number; before: number; limit: number }
 >`
-  SELECT directMessageId, authorId, user.githubUsername AS login, body,
-    directMessage.createdAt
+  SELECT directMessage.directMessageId, directMessage.authorId,
+    user.githubUsername AS login, directMessage.body,
+    directMessage.createdAt, directMessage.editedAt, directMessage.deletedAt,
+    directMessage.replyToId, replyAuthor.githubUsername AS replyLogin,
+    reply.body AS replyBody, reply.deletedAt AS replyDeleted,
+    directMessage.linkPreview
   FROM directMessage
   JOIN user ON user.userId = directMessage.authorId
-  WHERE conversationId = :conversationId AND directMessageId < :before
-  ORDER BY directMessageId DESC
+  LEFT JOIN directMessage AS reply
+    ON reply.directMessageId = directMessage.replyToId
+  LEFT JOIN user AS replyAuthor ON replyAuthor.userId = reply.authorId
+  WHERE directMessage.conversationId = :conversationId
+    AND directMessage.directMessageId < :before
+  ORDER BY directMessage.directMessageId DESC
   LIMIT :limit
 `.all
 
-/** A conversation and its last 50 messages, or 50 before a message */
+const listReactions = sql<
+  { directMessageId: number; emoji: string; count: number; mine: number },
+  { conversationId: number; me: number; from: number; to: number }
+>`
+  SELECT reaction.directMessageId, emoji, count(*) AS count,
+    max(reaction.userId = :me) AS mine
+  FROM directMessageReaction AS reaction
+  JOIN directMessage
+    ON directMessage.directMessageId = reaction.directMessageId
+  WHERE directMessage.conversationId = :conversationId
+    AND reaction.directMessageId BETWEEN :from AND :to
+  GROUP BY reaction.directMessageId, emoji
+  ORDER BY min(reaction.directMessageReactionId)
+`.all
+
+const getMember = sql<
+  { lastReadAt: number | null },
+  { conversationId: number; userId: number }
+>`
+  SELECT lastReadAt FROM conversationMember
+  WHERE conversationId = :conversationId AND userId = :userId
+`.get
+
+type Preview = { url: string; title: string; description: string; site: string }
+
+const shownMessage = (
+  m: MessageRow,
+  me: number,
+  reactions: Map<number, { emoji: string; count: number; mine: boolean }[]>,
+) => ({
+  id: m.directMessageId,
+  author: m.login,
+  mine: m.authorId === me,
+  // A deleted message keeps its place, never its text
+  body: m.deletedAt ? '' : m.body,
+  at: m.createdAt,
+  edited: !!m.editedAt && !m.deletedAt,
+  deleted: !!m.deletedAt,
+  replyTo: m.replyToId
+    ? {
+      id: m.replyToId,
+      author: m.replyLogin ?? '',
+      excerpt: m.replyDeleted ? '' : excerpt(m.replyBody ?? ''),
+      deleted: !!m.replyDeleted,
+    }
+    : null,
+  reactions: m.deletedAt ? [] : reactions.get(m.directMessageId) ?? [],
+  preview: !m.deletedAt && m.linkPreview
+    ? JSON.parse(m.linkPreview) as Preview
+    : null,
+})
+
+/**
+ * A conversation and its last 50 messages, or 50 before a message (a search
+ * result opens with `before` just after the message found)
+ */
 export const getConversation = (
   me: number,
   conversationId: number,
@@ -441,6 +582,26 @@ export const getConversation = (
     limit: PAGE + 1,
   })
   const other = listMine(me).find((r) => r.conversationId === conversationId)!
+  const shown = page.slice(0, PAGE)
+  const reactions = new Map<
+    number,
+    { emoji: string; count: number; mine: boolean }[]
+  >()
+  if (shown.length) {
+    for (
+      const r of listReactions({
+        conversationId,
+        me,
+        from: shown.at(-1)!.directMessageId,
+        to: shown[0].directMessageId,
+      })
+    ) {
+      reactions.set(r.directMessageId, [
+        ...reactions.get(r.directMessageId) ?? [],
+        { emoji: r.emoji, count: r.count, mine: !!r.mine },
+      ])
+    }
+  }
   return {
     id: conversationId,
     with: {
@@ -449,15 +610,241 @@ export const getConversation = (
       avatarUrl: other.avatarUrl,
     },
     ...rightsOf(row, me),
-    messages: page.slice(0, PAGE).reverse().map((m) => ({
-      id: m.directMessageId,
-      author: m.login,
-      mine: m.authorId === me,
-      body: m.body,
-      at: m.createdAt,
-    })),
+    muted: !!other.mutedAt,
+    archived: !!other.archivedAt,
+    // Read up to here before this reading: the « Nouveaux messages » line
+    readUpTo: getMember({ conversationId, userId: me })?.lastReadAt ?? 0,
+    messages: shown.reverse().map((m) => shownMessage(m, me, reactions)),
     more: page.length > PAGE,
   }
+}
+
+/*
+ * Editing, deleting, reacting (§10.6)
+ */
+
+const updated = (conversationId: number, me: number, directMessageId: number) =>
+  Entry.insert.DIRECT_MESSAGE_UPDATED({
+    userId: me,
+    data: { conversationId, directMessageId },
+    source: 'platform',
+  })
+
+/** A message of the developer, in a conversation where both still write */
+const ownMessage = (me: number, messageId: number) => {
+  const message = getMessage(messageId)
+  if (!message || message.authorId !== me || message.deletedAt) {
+    throw new respond.NotFoundError({ message: 'Message not found' })
+  }
+  const row = getMine({ conversationId: message.conversationId, userId: me })!
+  const block = blockOf(me, row.other)
+  if (block.byMe || block.byThem) {
+    throw forbidden('You cannot write to this developer')
+  }
+  return message
+}
+
+const writeEdit = sql<
+  undefined,
+  { directMessageId: number; body: string; at: number }
+>`
+  UPDATE directMessage SET body = :body, editedAt = :at, linkPreview = NULL
+  WHERE directMessageId = :directMessageId
+`.run
+
+const writeDelete = sql<undefined, { directMessageId: number; at: number }>`
+  UPDATE directMessage SET body = '', deletedAt = :at, linkPreview = NULL
+  WHERE directMessageId = :directMessageId
+`.run
+
+const deleteReactions = sql<undefined, number>`
+  DELETE FROM directMessageReaction WHERE directMessageId = ?
+`.run
+
+/** Edits a message of the developer; it then reads « modifié » */
+export const editMessage = db.transaction(
+  (me: number, messageId: number, body: string) => {
+    const message = ownMessage(me, messageId)
+    const text = cleanBody(body)
+    checkMessages(me)
+    writeEdit({ directMessageId: messageId, body: text, at: now() })
+    updated(message.conversationId, me, messageId)
+  },
+)
+
+/** Deletes a message of the developer: its place stays, not its text */
+export const deleteMessage = db.transaction((me: number, messageId: number) => {
+  const message = ownMessage(me, messageId)
+  writeDelete({ directMessageId: messageId, at: now() })
+  deleteReactions(messageId)
+  updated(message.conversationId, me, messageId)
+})
+
+const insertReaction = sql<
+  undefined,
+  { messageId: number; me: number; emoji: string; at: number }
+>`
+  INSERT INTO directMessageReaction (directMessageId, userId, emoji, createdAt)
+  VALUES (:messageId, :me, :emoji, :at)
+`.run
+
+const removeReaction = sql<
+  undefined,
+  { messageId: number; me: number; emoji: string }
+>`
+  DELETE FROM directMessageReaction
+  WHERE directMessageId = :messageId AND userId = :me AND emoji = :emoji
+`.run
+
+/** Adds or takes back a reaction to a message of the conversation */
+export const reactToMessage = db.transaction(
+  (me: number, messageId: number, emoji: string) => {
+    const message = getMessage(messageId)
+    const row = message &&
+      getMine({ conversationId: message.conversationId, userId: me })
+    if (!message || !row || message.deletedAt) {
+      throw new respond.NotFoundError({ message: 'Message not found' })
+    }
+    if (!(REACTIONS as readonly string[]).includes(emoji)) {
+      throw badRequest('Unknown reaction')
+    }
+    const block = blockOf(me, row.other)
+    if (block.byMe || block.byThem || row.status !== 'accepted') {
+      throw forbidden('You cannot react here')
+    }
+    // Taken back when it was there, added otherwise
+    if (!removeReaction({ messageId, me, emoji })) {
+      within(countReactions, RATE.reactions, me, 'Too many reactions')
+      insertReaction({ messageId, me, emoji, at: now() })
+    }
+    updated(message.conversationId, me, messageId)
+  },
+)
+
+/*
+ * Reading state of a conversation: unread, muted, archived (§10.6)
+ */
+
+const setFlag = (column: 'mutedAt' | 'archivedAt') =>
+  sql<undefined, { conversationId: number; userId: number; at: number | null }>`
+    UPDATE conversationMember SET ${column} = :at
+    WHERE conversationId = :conversationId AND userId = :userId
+  `.run
+const setMuted = setFlag('mutedAt')
+const setArchived = setFlag('archivedAt')
+
+const mine = (me: number, conversationId: number) => {
+  const row = getMine({ conversationId, userId: me })
+  if (!row) throw notFound()
+  return row
+}
+
+/** No toast nor count for this conversation, or back to normal */
+export const muteConversation = (
+  me: number,
+  conversationId: number,
+  muted: boolean,
+) => {
+  mine(me, conversationId)
+  setMuted({ conversationId, userId: me, at: muted ? now() : null })
+}
+
+/** Out of the main list until a new message comes, or back in it */
+export const archiveConversation = (
+  me: number,
+  conversationId: number,
+  archived: boolean,
+) => {
+  mine(me, conversationId)
+  setArchived({ conversationId, userId: me, at: archived ? now() : null })
+}
+
+/** Unread again from a message of the other one */
+export const markUnread = (
+  me: number,
+  conversationId: number,
+  from: number,
+) => {
+  mine(me, conversationId)
+  const message = getMessage(from)
+  if (
+    !message || message.conversationId !== conversationId ||
+    message.authorId === me
+  ) {
+    throw badRequest('Not a message received here')
+  }
+  setRead({ conversationId, userId: me, at: message.createdAt - 0.000001 })
+}
+
+/*
+ * Search (§10.6)
+ */
+
+const findMessages = sql<
+  {
+    directMessageId: number
+    conversationId: number
+    authorId: number
+    body: string
+    createdAt: number
+    login: string
+    name: string
+    avatarUrl: string
+  },
+  { me: number; pattern: string }
+>`
+  SELECT directMessage.directMessageId, directMessage.conversationId,
+    directMessage.authorId, directMessage.body, directMessage.createdAt,
+    other.githubUsername AS login, profile.displayName AS name,
+    other.avatarUrl
+  FROM directMessage
+  JOIN conversation
+    ON conversation.conversationId = directMessage.conversationId
+  JOIN conversationMember AS me
+    ON me.conversationId = directMessage.conversationId AND me.userId = :me
+  JOIN conversationMember AS them
+    ON them.conversationId = directMessage.conversationId
+      AND them.userId != :me
+  JOIN user AS other ON other.userId = them.userId
+  JOIN profile ON profile.userId = them.userId
+  WHERE directMessage.deletedAt IS NULL
+    AND directMessage.body LIKE :pattern ESCAPE '!'
+    AND NOT (conversation.startedBy != :me AND conversation.status = 'declined')
+  ORDER BY directMessage.createdAt DESC
+  LIMIT 30
+`.all
+
+/** The words found around a match, as plain text */
+const around = (body: string, query: string) => {
+  const text = plain(body)
+  const at = text.toLowerCase().indexOf(query.toLowerCase())
+  if (at < 0) return excerpt(body)
+  const start = Math.max(0, at - 40)
+  const end = Math.min(text.length, at + query.length + 80)
+  return `${start ? '…' : ''}${text.slice(start, end)}${
+    end < text.length ? '…' : ''
+  }`
+}
+
+/** The messages of the developer's conversations that hold a text */
+export const searchMessages = (me: number, query: string) => {
+  const q = query.trim()
+  if (q.length < 2) throw badRequest('Two characters at least')
+  if (q.length > 100) throw badRequest('Query too long')
+  within(countSearches, RATE.searches, me, 'Too many searches')
+  searches.set(me, [...searches.get(me) ?? [], now()])
+  // `!` escapes the wildcards of LIKE
+  const pattern = `%${q.replace(/[!%_]/g, (c) => `!${c}`)}%`
+  return findMessages({ me, pattern }).map((m) => ({
+    conversationId: m.conversationId,
+    with: { login: m.login, name: m.name, avatarUrl: m.avatarUrl },
+    message: {
+      id: m.directMessageId,
+      mine: m.authorId === me,
+      at: m.createdAt,
+      snippet: around(m.body, q),
+    },
+  }))
 }
 
 /*
@@ -481,13 +868,6 @@ export const setBlocked = (me: number, login: string, blocked: boolean) => {
   blocked ? insertBlock({ me, other, at: now() }) : deleteBlock({ me, other })
   return { login, blocked }
 }
-
-const getMessage = sql<
-  { conversationId: number; authorId: number },
-  number
->`
-  SELECT conversationId, authorId FROM directMessage WHERE directMessageId = ?
-`.get
 
 const insertReport = sql<
   undefined,

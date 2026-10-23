@@ -84,6 +84,7 @@ const audience: Record<EntryTypeName, Role[]> = {
   // Direct messages: the two of the conversation only (§10.6)
   DIRECT_MESSAGE_CREATED: ['actor', 'correspondent'],
   CONVERSATION_UPDATED: ['actor', 'correspondent'],
+  DIRECT_MESSAGE_UPDATED: ['actor', 'correspondent'],
 }
 
 const roles: Role[] = [

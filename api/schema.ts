@@ -610,6 +610,9 @@ export const ConversationMember = createTable('conversationMember', {
   userId: { type: 'INTEGER', join: User },
   // Messages after it are unread
   lastReadAt: { type: 'REAL', optional: true },
+  // Added by migrations/007: no toast nor count; out of the main list
+  mutedAt: { type: 'REAL', optional: true },
+  archivedAt: { type: 'REAL', optional: true },
 })
 unique('conversation_member', 'conversationMember', 'conversationId, userId')
 index('conversation_member_user', 'conversationMember', 'userId')
@@ -620,8 +623,30 @@ export const DirectMessage = createTable('directMessage', {
   authorId: { type: 'INTEGER', join: User },
   body: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
+  // Added by migrations/007. A deleted message keeps its place, not its text
+  editedAt: { type: 'REAL', optional: true },
+  deletedAt: { type: 'REAL', optional: true },
+  // The message it answers, in the same conversation (checked by the code)
+  replyToId: { type: 'INTEGER', optional: true },
+  // Added by migrations/008: title, description and site of the first link,
+  // read by the server
+  linkPreview: { type: 'JSON', optional: true },
 })
 index('direct_message_list', 'directMessage', 'conversationId, createdAt')
+
+// One emoji of a short list per developer and message (§10.6)
+export const DirectMessageReaction = createTable('directMessageReaction', {
+  directMessageReactionId: { type: 'INTEGER', primary: true },
+  directMessageId: { type: 'INTEGER', join: DirectMessage },
+  userId: { type: 'INTEGER', join: User },
+  emoji: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+})
+unique(
+  'direct_message_reaction',
+  'directMessageReaction',
+  'directMessageId, userId, emoji',
+)
 
 export const UserBlock = createTable('userBlock', {
   userBlockId: { type: 'INTEGER', primary: true },

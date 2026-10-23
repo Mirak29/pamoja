@@ -509,6 +509,12 @@ export const Entry = initEntries(entries, relations, {
     fields: { source },
     trigger: conversationMember,
   },
+  DIRECT_MESSAGE_UPDATED: {
+    userId: 'who edited, deleted or reacted',
+    data: 'conversationId and directMessageId, never the text',
+    fields: { source },
+    trigger: conversationMember,
+  },
 })
 
 // The library requires every relation declared on a type, while the column

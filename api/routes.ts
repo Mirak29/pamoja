@@ -22,11 +22,19 @@ import { getPublicProfile } from '/api/profile.ts'
 import { tooLong } from '/api/limits.ts'
 import {
   acceptConversation,
+  archiveConversation,
   declineConversation,
+  deleteMessage,
+  editMessage,
   getConversation,
   listConversations,
+  markUnread,
+  muteConversation,
+  REACTIONS,
+  reactToMessage,
   readConversation,
   reportMessage,
+  searchMessages,
   sendMessage,
   setBlocked,
   startConversation,
@@ -802,12 +810,15 @@ const defs = {
         updatedAt: NUM('Time of the last message'),
         last: optional(
           OBJ({
-            excerpt: STR('Beginning of the last message'),
+            excerpt: STR('Beginning of the last message, as plain text'),
+            deleted: BOOL('The last message was deleted'),
             mine: BOOL('Written by the developer'),
             at: NUM('When'),
           }),
         ),
         unread: NUM('Messages of the other one not read yet'),
+        muted: BOOL('No toast nor count'),
+        archived: BOOL('Out of the main list'),
       }),
       'The conversations, the latest first',
     ),
@@ -827,13 +838,42 @@ const defs = {
       id: NUM('Id of the conversation'),
       with: person,
       ...conversationRights,
+      muted: BOOL('No toast nor count'),
+      archived: BOOL('Out of the main list'),
+      readUpTo: NUM('Read up to this time before this reading'),
       messages: ARR(
         OBJ({
           id: NUM('Id of the message'),
           author: STR('Login of the author'),
           mine: BOOL('Written by the developer'),
-          body: STR('Markdown'),
+          body: STR('Markdown, empty once deleted'),
           at: NUM('When'),
+          edited: BOOL('Edited after it was sent'),
+          deleted: BOOL('Deleted by its author: its place stays'),
+          replyTo: optional(
+            OBJ({
+              id: NUM('Message answered'),
+              author: STR('Its author'),
+              excerpt: STR('Its beginning, as plain text'),
+              deleted: BOOL('Deleted since'),
+            }),
+          ),
+          reactions: ARR(
+            OBJ({
+              emoji: STR('One of the reactions offered'),
+              count: NUM('How many'),
+              mine: BOOL('The developer reacted so'),
+            }),
+            'In the order they first came',
+          ),
+          preview: optional(
+            OBJ({
+              url: STR('The link'),
+              title: STR('Title of the page'),
+              description: STR('Its description'),
+              site: STR('Name of the site'),
+            }),
+          ),
         }),
         'Oldest first',
       ),
@@ -858,15 +898,91 @@ const defs = {
 
   'POST/api/conversation/message': route({
     authorize: withSession,
-    fn: (ctx, { id, body }) => ({
-      id: sendMessage(ctx.session.userId, id, body),
+    fn: (ctx, { id, body, replyTo }) => ({
+      id: sendMessage(ctx.session.userId, id, body, replyTo ?? 0),
     }),
     input: OBJ({
       id: NUM('Id of the conversation'),
       body: STR('Markdown, 2 000 characters at most'),
+      replyTo: optional(NUM('The message answered')),
     }),
     output: OBJ({ id: NUM('Id of the message') }),
     description: 'Send a message in a conversation',
+  }),
+
+  'POST/api/conversation/message/edit': route({
+    authorize: withSession,
+    fn: (ctx, { id, body }) => editMessage(ctx.session.userId, id, body),
+    input: OBJ({
+      id: NUM('Id of the message'),
+      body: STR('Markdown, 2 000 characters at most'),
+    }),
+    description: 'Edit a message of the developer; it then reads as edited',
+  }),
+
+  'POST/api/conversation/message/delete': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => deleteMessage(ctx.session.userId, id),
+    input: OBJ({ id: NUM('Id of the message') }),
+    description: 'Delete a message of the developer; its place stays',
+  }),
+
+  'POST/api/conversation/message/react': route({
+    authorize: withSession,
+    fn: (ctx, { id, emoji }) => reactToMessage(ctx.session.userId, id, emoji),
+    input: OBJ({
+      id: NUM('Id of the message'),
+      emoji: LIST([...REACTIONS], 'One of the reactions offered'),
+    }),
+    description: 'Add a reaction to a message, or take it back',
+  }),
+
+  'POST/api/conversation/unread': route({
+    authorize: withSession,
+    fn: (ctx, { id, from }) => markUnread(ctx.session.userId, id, from),
+    input: OBJ({
+      id: NUM('Id of the conversation'),
+      from: NUM('First message to read again'),
+    }),
+    description: 'Mark a conversation unread from a message received',
+  }),
+
+  'POST/api/conversation/mute': route({
+    authorize: withSession,
+    fn: (ctx, { id, muted }) => muteConversation(ctx.session.userId, id, muted),
+    input: OBJ({ id: NUM('Id of the conversation'), muted: BOOL('Muted') }),
+    description: 'No toast nor count for a conversation, or back to normal',
+  }),
+
+  'POST/api/conversation/archive': route({
+    authorize: withSession,
+    fn: (ctx, { id, archived }) =>
+      archiveConversation(ctx.session.userId, id, archived),
+    input: OBJ({
+      id: NUM('Id of the conversation'),
+      archived: BOOL('Archived'),
+    }),
+    description: 'Out of the main list until a new message, or back',
+  }),
+
+  'GET/api/conversations/search': route({
+    authorize: withSession,
+    fn: (ctx, { q }) => searchMessages(ctx.session.userId, q),
+    input: OBJ({ q: STR('Two to 100 characters') }),
+    output: ARR(
+      OBJ({
+        conversationId: NUM('Conversation of the message'),
+        with: person,
+        message: OBJ({
+          id: NUM('Id of the message'),
+          mine: BOOL('Written by the developer'),
+          at: NUM('When'),
+          snippet: STR('The words around the match, as plain text'),
+        }),
+      }),
+      'The latest 30 messages found',
+    ),
+    description: 'Search the messages of the developer',
   }),
 
   'POST/api/conversation/read': route({
