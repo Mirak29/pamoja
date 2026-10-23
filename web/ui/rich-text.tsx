@@ -23,8 +23,8 @@ const INLINE = new RegExp(
     '(?<url>https?:\\/\\/[^\\s<>"\'`]+|www\\.[^\\s<>"\'`]+)',
     // @login, not the middle of an email
     '(?<![\\w.@])@(?<login>[A-Za-z0-9][A-Za-z0-9-]{0,38})',
-    // #hashtag
-    '(?<![\\w&#])#(?<tag>[\\p{L}\\p{N}_][\\p{L}\\p{N}_-]{0,49})',
+    // #hashtag, from a letter: « PR #8 » stays a number
+    '(?<![\\w&#])#(?<tag>\\p{L}[\\p{L}\\p{N}_-]{0,49})',
   ].join('|'),
   'gu',
 )

@@ -269,3 +269,14 @@ Deno.test('messages: 50 at a time, the older ones on demand', async () => {
     [['m1', 'm2', 'm3', 'm4', 'm5'], false],
   )
 })
+
+Deno.test('messages: the list shows a message as plain text', async () => {
+  const { excerpt } = await import('/api/messages.ts')
+  assertEquals(
+    excerpt(
+      'Salut, j’ai vu **Dakar Transit** et [la PR](https://x.y/1).\n- `go test` passe\n```go\nfmt.Println()\n```',
+    ),
+    'Salut, j’ai vu Dakar Transit et la PR. go test passe [code]',
+  )
+  assertEquals(excerpt('x'.repeat(200)).length, 119)
+})

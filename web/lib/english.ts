@@ -1421,8 +1421,6 @@ export const english: Record<string, string> = {
   'Mes messages': 'My messages',
   'Cette conversation n’existe pas, ou n’est pas la tienne.':
     'This conversation does not exist, or is not yours.',
-  'Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu pourras lui écrire de nouveau quand il l’aura acceptée.':
-    'If you have never worked together, it arrives as a request: you can write again once it is accepted.',
   'Signaler ce message': 'Report this message',
   'Le signalement n’a pas pu être envoyé. Réessaie.':
     'The report could not be sent. Try again.',
@@ -1434,6 +1432,8 @@ export const english: Record<string, string> = {
     'You cannot write to this developer for now.',
   'non lu': 'unread',
   'non lus': 'unread',
+  'Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu pourras écrire de nouveau une fois la demande acceptée.':
+    'If you have never worked together, it arrives as a request: you can write again once it is accepted.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1627,14 +1627,14 @@ export const englishTemplates: Record<string, string> = {
   'Toi : ': 'You: ',
   'Demandes · {0}': 'Requests · {0}',
   '{0} veut t’écrire': '{0} wants to message you',
-  '{0} veut t’écrire. Accepte pour lui répondre ; s’il est refusé, il n’en saura rien.':
-    '{0} wants to message you. Accept to reply; if declined, they will never know.',
   'Tu as bloqué {0} : vous ne pouvez plus vous écrire.':
     'You blocked {0}: you can no longer write to each other.',
-  'En attente : {0} lira ton message s’il accepte ta demande.':
-    'Waiting: {0} will read your message if they accept your request.',
   'Tu ne peux pas écrire à {0} pour l’instant.':
     'You cannot write to {0} for now.',
   'Ton premier message à {0}.': 'Your first message to {0}.',
   'Messages, {0}': 'Messages, {0}',
+  '{0} veut t’écrire. Accepte pour répondre ; si tu refuses, personne n’en sera prévenu.':
+    '{0} wants to message you. Accept to reply; if you decline, nobody is told.',
+  'En attente : {0} lira ton message une fois ta demande acceptée.':
+    'Waiting: {0} will read your message once your request is accepted.',
 }

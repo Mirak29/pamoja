@@ -208,7 +208,7 @@ Responsable : _à répartir_
 - [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
 - [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
-- [ ] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
+- [x] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
 - [x] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1) — @niangoos
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos
@@ -298,3 +298,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-23 · Rafraîchissement GitHub : le serveur cherche chaque minute, dès son démarrage, les repos dus (15 min après leur dernière lecture, 1 h pour un repo live) au lieu d'un minuteur de 15 min qui repartait à zéro à chaque redémarrage · §5.4, §5.6
 - 2026-10-23 · Webhooks manqués : à l'ouverture du tunnel, les livraisons des 3 derniers jours jamais arrivées sont renvoyées, de la plus ancienne à la plus récente · §5.6
 - 2026-10-23 · Temps réel : chaque type d'entry a son audience écrite dans un test qui échoue pour un type nouveau sans audience ; `PROJECT_MEMBER_JOINED` atteint aussi le nouveau membre, `HELP_REQUEST_ACCEPTED` aussi l'aidant · §12.8, §13.3
+- 2026-10-23 · Messages directs ajoutés au périmètre : conversations à deux ; un inconnu passe par une demande de message (un seul message avant acceptation, refus jamais annoncé) ; blocage dans les deux sens, jamais annoncé ; pas de notification, un compteur à part comme sur LinkedIn · §4, §10.6, §13.3, §14.5, §15, §16

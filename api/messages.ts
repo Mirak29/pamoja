@@ -305,9 +305,19 @@ const listMine = sql<ListRow, number>`
   ORDER BY conversation.updatedAt DESC
 `.all
 
-// What the list shows of a message: its beginning
-const excerpt = (body: string) =>
-  body.length > 120 ? `${body.slice(0, 118)}…` : body
+// What the list shows of a message: its beginning, as plain text, without
+// the marks of its Markdown
+export const excerpt = (body: string) => {
+  const text = body
+    .replace(/```[\s\S]*?(```|$)/g, ' [code] ')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1')
+    .replace(/(\*\*|__|`)/g, '')
+    .replace(/(^|\s)[*_]([^*_\s][^*_]*)[*_](?=\s|$|[.,;:!?])/g, '$1$2')
+    .replace(/^\s*(?:[-*+]|\d+[.)]|>|#{1,6})\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text.length > 120 ? `${text.slice(0, 118)}…` : text
+}
 
 /**
  * The conversations of the developer, the latest first. A request they

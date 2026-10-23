@@ -254,7 +254,7 @@ const Open = ({ id }: { id: number }) => {
           </span>
         }
       >
-        {t`${other.name} veut t’écrire. Accepte pour lui répondre ; s’il est refusé, il n’en saura rien.`}
+        {t`${other.name} veut t’écrire. Accepte pour répondre ; si tu refuses, personne n’en sera prévenu.`}
       </Notice>
     )
     : shown.blockedByMe
@@ -277,7 +277,7 @@ const Open = ({ id }: { id: number }) => {
     ? (
       <Notice>
         {shown.status === 'pending'
-          ? t`En attente : ${other.name} lira ton message s’il accepte ta demande.`
+          ? t`En attente : ${other.name} lira ton message une fois ta demande acceptée.`
           : t`Tu ne peux pas écrire à ${other.name} pour l’instant.`}
       </Notice>
     )
@@ -366,7 +366,7 @@ const New = ({ login }: { login: string }) => {
         </span>
         <span>
           Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu
-          pourras lui écrire de nouveau quand il l’aura acceptée.
+          pourras écrire de nouveau une fois la demande acceptée.
         </span>
       </div>
       <Composer
@@ -477,7 +477,7 @@ export const MessagesPage = () => {
     : null
   return (
     <Page title='Messages' heading={false} class='pt-5'>
-      <div class='mr-2 grid items-start gap-6 md:grid-cols-[320px_minmax(0,1fr)]'>
+      <div class='mr-2 grid grid-cols-1 items-start gap-6 md:grid-cols-[320px_minmax(0,1fr)]'>
         <div class={right ? 'hidden md:block' : ''}>
           <List openId={openId} />
         </div>

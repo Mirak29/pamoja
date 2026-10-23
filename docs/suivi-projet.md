@@ -681,6 +681,13 @@ Revue des tests contre le §12.8. Étaient déjà couverts : signature, dédupli
 - **Livrable** : `api/entry_triggers_test.ts` (2 tests), §13.3 complété
 - **Par** : @Mirak29
 
+### 2026-10-23 · PAM-522 · Messages directs
+
+Pamoja n'avait pas de messages directs : seulement le fil d'une demande d'aide et les canaux de projet. On écrit maintenant à un développeur depuis son profil (« Écrire ») et on retrouve ses conversations dans **Messages**, avec un compteur de non lus dans le menu (dans l'en-tête sur téléphone). Deux développeurs qui ont déjà travaillé ensemble (projet en commun, demande d'aide entre eux) s'écrivent directement ; sinon, le premier message arrive en demande : le destinataire accepte, répond (ce qui accepte) ou refuse, et l'expéditeur, qui n'envoie que ce premier message, n'est jamais prévenu d'un refus. Bloquer arrête les messages dans les deux sens, sans prévenir. Chaque message reçu peut être signalé aux modérateurs. Les messages arrivent sans rafraîchir, avec un toast hors de la conversation ; ils suivent le même Markdown sûr que le fil, 2 000 caractères au plus, ne sont jamais traduits ni écrits dans les journaux, et l'événement temps réel ne porte jamais leur texte. Vérifié dans le navigateur à deux comptes : Moussa écrit à Fatou, la demande arrive chez elle en direct, elle accepte et répond, la réponse arrive chez Moussa ; elle signale un message puis bloque Moussa, qui ne peut plus écrire et voit seulement « Tu ne peux pas écrire à Fatou Ndiaye pour l'instant ». Aussi corrigé pendant le test : l'aperçu de la liste en texte simple, « PR #8 » qui devenait un hashtag, une formulation genrée, la liste qui débordait sur mobile.
+
+- **Livrable** : `api/messages.ts`, 9 routes, tables `Conversation`, `ConversationMember`, `DirectMessage`, `UserBlock`, entries `DIRECT_MESSAGE_CREATED` et `CONVERSATION_UPDATED`, `api/messages_test.ts` (7 tests), audiences ajoutées à `api/entry_triggers_test.ts`, `web/lib/messages.ts`, page `web/pages/messages-page.tsx`, bouton « Écrire » du profil, compteurs, traductions, §10.6 et les sections liées du cahier
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
