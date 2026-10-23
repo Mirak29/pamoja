@@ -84,7 +84,7 @@ Toutes les fonctionnalités sont dans le périmètre. Elles sont construites dan
 | 2. Boucle de démo | Profil de base, import niveaux 1 et 2, webhooks, demande d'aide, matching, notifications temps réel, détection de review, confirmation, badges | 1 | J3 – J5 (9 – 11 oct.) |
 | 3. Vitrines | Profil complet et thèmes, Passport, Share Card, OG, Pulse (déterministe + IA), Project DNA, Health, Story, Collaboration Map et Graph | 1, entries du bloc 2 | J6 – J7 (12 – 13 oct.) |
 | 4. Gestion de projet | Needs, Team et candidatures, Board, Roadmap, canaux du projet et `#suivi`, présence, Collaboration Requests | 1 | J8 (14 oct.) |
-| 5. Social et découverte | Accueil en fil social (republications, abonnements, réponses imbriquées), Communities, Explore, Search, Smart Contribution Discovery, préférences et digest | 1 | J9 (15 oct.) |
+| 5. Social et découverte | Accueil en fil social (republications, abonnements, réponses imbriquées), Communities, Explore, Search, Smart Contribution Discovery, messages directs, préférences et digest | 1 | J9 (15 oct.) |
 | Gel | Plus de nouvelles fonctionnalités : seed final, répétitions de la démo en prod, corrections | Tout | J10 (16 oct.) |
 
 Règles d'équipe :
@@ -109,7 +109,7 @@ En cas de retard sur un bloc, ses fonctionnalités restent au niveau *fonctionne
 | 2. Boucle de démo | Import niveau 1 en 3 clics ; une review GitHub réelle fait passer la demande en `review_submitted` en moins de 10 s ; un webhook reçu pendant un redémarrage est traité après la reprise ; deux acceptations simultanées n'en retiennent qu'une ; la confirmation met à jour le badge du profil sans rafraîchir |
 | 3. Vitrines | Un lien `/@username` collé dans WhatsApp et LinkedIn affiche l'aperçu avec la Share Card ; chaque chiffre du profil mène à ses preuves ; le Pulse s'affiche même IA coupée |
 | 4. Gestion de projet | Deux utilisateurs déplacent des cartes en même temps sans perte ; une PR mergée déplace sa carte en Done ; une candidature s'accepte depuis la notification ; une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic |
-| 5. Social et découverte | Recherche tolérante aux fautes (« postgress » trouve PostgreSQL) ; la recherche reste utilisable Meilisearch arrêté ; un contenu signalé puis masqué disparaît pour tous sauf son auteur ; une réponse à une réponse s'affiche imbriquée et se déplie à la demande ; une republication apparaît dans le fil des abonnés |
+| 5. Social et découverte | Recherche tolérante aux fautes (« postgress » trouve PostgreSQL) ; la recherche reste utilisable Meilisearch arrêté ; un contenu signalé puis masqué disparaît pour tous sauf son auteur ; une réponse à une réponse s'affiche imbriquée et se déplie à la demande ; une republication apparaît dans le fil des abonnés ; un message direct arrive chez l'autre sans rafraîchir ; le premier message d'un inconnu arrive en demande, jamais directement |
 
 Hors périmètre : repos privés, GitLab, Bitbucket, voix, vidéo, partage d'écran, curseurs collaboratifs, application mobile native, API publique.
 
@@ -560,7 +560,7 @@ Recherche globale sur développeurs, projets, communautés, publications, demand
 
 ### 10.5 Signalement et modération
 
-Tout contenu publié par un utilisateur peut être signalé : post, réponse, message d'un canal, demande d'aide, profil, projet.
+Tout contenu publié par un utilisateur peut être signalé : post, réponse, message d'un canal, message direct, demande d'aide, profil, projet.
 
 1. **Signaler** : bouton sur chaque contenu, motif (spam, harcèlement, contenu inapproprié, usurpation, triche à la réputation, autre) et commentaire facultatif. Un utilisateur ne signale qu'une fois le même contenu.
 2. **Traiter** : les signalements arrivent dans une file de modération. Un contenu de communauté est traité par ses Moderators ; le reste par les admins de la plateforme.
@@ -568,6 +568,16 @@ Tout contenu publié par un utilisateur peut être signalé : post, réponse, me
 4. **Tracer** : chaque signalement et chaque action produisent une entry et une ligne `ModerationAction` (qui, quoi, pourquoi, quand). L'auteur est notifié de l'action et de son motif.
 
 Un contenu masqué disparaît pour tous sauf les modérateurs et son auteur, qui le voit avec un bandeau indiquant qu'il est masqué et pourquoi. Un compte suspendu ne peut plus écrire ; son profil affiche « compte suspendu ». Au-delà de 3 signalements distincts, un contenu est masqué en attendant la décision d'un modérateur.
+
+### 10.6 Messages directs
+
+Une conversation à deux, comme la messagerie de LinkedIn : on écrit à un développeur depuis son profil (« Écrire »), on retrouve ses conversations dans **Messages**. Les échanges à plusieurs passent par les canaux de projet (§6.8) ; une demande d'aide garde son propre fil (§7.2).
+
+- **Qui écrit à qui** : deux développeurs qui ont déjà travaillé ensemble (un projet en commun, hors Observateur, ou une demande d'aide entre eux) s'écrivent directement. Sinon, le premier message arrive en **demande de message** : le destinataire l'accepte, et la conversation s'ouvre, ou la refuse, et l'expéditeur ne peut plus lui écrire. Tant que la demande attend, l'expéditeur n'envoie que ce premier message. Il n'est pas prévenu d'un refus.
+- **Bloquer** : depuis une conversation ou un profil. Un développeur bloqué ne peut plus écrire à celui qui l'a bloqué ni ouvrir de conversation avec lui ; il n'en est pas prévenu. Débloquer rend la conversation possible à nouveau.
+- **Messages** : même Markdown réduit que le fil (§10.1), 2 000 caractères au plus (§16), jamais traduits, jamais écrits dans les journaux du serveur. Chaque message peut être signalé (§10.5). Les 50 derniers s'affichent, les plus anciens à la demande.
+- **Non lus et temps réel** : chaque conversation compte ses messages non lus depuis la dernière lecture ; le menu affiche le total, demandes comprises. Un message arrive chez l'autre sans rafraîchir (entry `DIRECT_MESSAGE_CREATED`), avec un toast s'il n'a pas la conversation ouverte. Les messages ne créent pas de notification : ils ont leur propre compteur, comme sur LinkedIn.
+- **Confidentialité** : seuls les deux participants lisent une conversation. Un modérateur ne voit que le message signalé.
 
 ## 11. IA
 
@@ -735,6 +745,7 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | PROFILE\_UPDATED, POST\_UPDATED, HELP\_REQUEST\_CREATED | userId, postId ou helpRequestId | Personne en SSE ; lues par le worker de réindexation Meilisearch |
 | HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED, HELP\_REQUEST\_CANCELLED, HELP\_REQUEST\_DELIVERED, HELP\_REQUEST\_CLOSED, HELP\_MESSAGE\_CREATED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
 | CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
+| DIRECT\_MESSAGE\_CREATED, CONVERSATION\_UPDATED | userId (+ data : conversationId) | Les deux participants de la conversation, sauf un participant bloqué |
 
 Chaque ligne est vérifiée par `api/entry_triggers_test.ts`, qui échoue si un type d'entry n'y figure pas. `userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
 
@@ -833,6 +844,10 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 | `Bookmark` | bookmarkId, userId, postId, createdAt | UNIQUE(userId, postId) |
 | Report | reportId, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
 | ModerationAction | moderationActionId, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
+| `Conversation` | conversationId, startedBy, status (pending / accepted / declined), createdAt, updatedAt (dernier message) | Une seule par paire de développeurs |
+| `ConversationMember` | conversationMemberId, conversationId, userId, lastReadAt? | UNIQUE(conversationId, userId) ; index (userId) |
+| `DirectMessage` | directMessageId, conversationId, authorId, body, createdAt | Index (conversationId, createdAt) |
+| `UserBlock` | userBlockId, blockerId, blockedId, createdAt | UNIQUE(blockerId, blockedId) |
 | Media | mediaId, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
 
 ### 14.6 Entries
@@ -862,6 +877,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Aide | `GET/api/help` (filtres) · `GET/api/help/detail` (id) · `POST/api/help/create` · `POST/api/help/accept` · `POST/api/help/deliver` · `POST/api/help/confirm` · `POST/api/help/cancel` · `GET/api/help/for-me` |
 | Notifications | `GET/api/notifications` · `POST/api/notification/read` · `POST/api/notifications/read-all` · `POST/api/notification/preferences` |
 | Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (onglet, curseur) · `POST/api/post/create` · `POST/api/post/reply` · `POST/api/post/repost` · `GET/api/post/thread` (id, profondeur) · `POST/api/post/accept-answer` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
+| Messages | `GET/api/conversations` · `GET/api/conversation` (id, avant) · `POST/api/conversation/start` (username, body) · `POST/api/conversation/message` · `POST/api/conversation/read` · `POST/api/conversation/accept` · `POST/api/conversation/decline` · `POST/api/user/block` (username, blocked) · `POST/api/conversation/report` (message, motif) |
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
@@ -885,6 +901,7 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
 | Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
 | Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
+| Message direct non sollicité | Spam ou harcèlement en privé | Demande de message pour un inconnu, un seul message avant acceptation, refus définitif, blocage, signalement (§10.6) |
 | Contenu démesuré | Un texte de 100 000 caractères, ou un mot sans espace, casse le fil et la page | Taille maximale par champ, vérifiée par le serveur et décomptée par la page (`api/limits.ts`, ci-dessous) ; tout mot trop long se coupe dans sa colonne ; un long post se replie |
 | Injection SQL | Lecture ou écriture arbitraire | Paramètres liés uniquement (`?` ou `:nom`) : le tag `sql` de `@01edu/db` recopie ses valeurs dans le texte de la requête, donc aucune valeur venue d'un utilisateur n'y entre (§12.5) |
 | Outils de dev de `@01edu/api` | Hors production, `POST/api/sql/execute` exécute n'importe quel SQL sans session, depuis le réseau local, le tunnel ou une page piégée | Pamoja ne sert ni `POST/api/sql/execute`, ni `GET/api/sql/metrics`, ni `GET/api/router/metrics`, quel que soit `APP_ENV` (404) ; le serveur de dev n'écoute que sur `127.0.0.1` ; le tunnel de dev ne laisse passer que `POST/api/github/webhook` (§5.6) |

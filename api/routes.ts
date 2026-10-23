@@ -21,6 +21,17 @@ import { proofsOf } from '/api/proofs.ts'
 import { getPublicProfile } from '/api/profile.ts'
 import { tooLong } from '/api/limits.ts'
 import {
+  acceptConversation,
+  declineConversation,
+  getConversation,
+  listConversations,
+  readConversation,
+  reportMessage,
+  sendMessage,
+  setBlocked,
+  startConversation,
+} from '/api/messages.ts'
+import {
   listNotifications,
   readAllNotifications,
   readNotification,
@@ -72,6 +83,8 @@ import {
   type HelpLevel,
   helpLevels,
   intents,
+  type ReportReason,
+  reportReasons,
   skills,
 } from '/api/vocabulary.ts'
 import { getLogin, userIdOfLogin } from '/api/user.ts'
@@ -104,6 +117,20 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+}
+
+// The other developer of a conversation (§10.6)
+const person = OBJ({
+  login: STR('Login'),
+  name: STR('Name shown'),
+  avatarUrl: STR('GitHub avatar'),
+}, 'The other developer')
+
+const conversationRights = {
+  status: STR('pending, accepted; a declined request still reads pending'),
+  incoming: BOOL('A request sent to the developer, to answer'),
+  blockedByMe: BOOL('The developer blocked the other one'),
+  canWrite: BOOL('The developer can send a message now'),
 }
 
 const helpRequestFields = {
@@ -761,6 +788,135 @@ const defs = {
   /*
    * Profile (§6.1, §9)
    */
+  /*
+   * Direct messages (§10.6)
+   */
+  'GET/api/conversations': route({
+    authorize: withSession,
+    fn: (ctx) => listConversations(ctx.session.userId),
+    output: ARR(
+      OBJ({
+        id: NUM('Id of the conversation'),
+        with: person,
+        ...conversationRights,
+        updatedAt: NUM('Time of the last message'),
+        last: optional(
+          OBJ({
+            excerpt: STR('Beginning of the last message'),
+            mine: BOOL('Written by the developer'),
+            at: NUM('When'),
+          }),
+        ),
+        unread: NUM('Messages of the other one not read yet'),
+      }),
+      'The conversations, the latest first',
+    ),
+    description: 'The conversations of the developer, requests included',
+  }),
+
+  'GET/api/conversation': route({
+    authorize: withSession,
+    // A query string carries text: the ids are read as numbers here
+    fn: (ctx, { id, before }) =>
+      getConversation(ctx.session.userId, Number(id), Number(before ?? 0)),
+    input: OBJ({
+      id: STR('Id of the conversation'),
+      before: optional(STR('Older messages than this id')),
+    }),
+    output: OBJ({
+      id: NUM('Id of the conversation'),
+      with: person,
+      ...conversationRights,
+      messages: ARR(
+        OBJ({
+          id: NUM('Id of the message'),
+          author: STR('Login of the author'),
+          mine: BOOL('Written by the developer'),
+          body: STR('Markdown'),
+          at: NUM('When'),
+        }),
+        'Oldest first',
+      ),
+      more: BOOL('Older messages remain'),
+    }, 'A conversation and its last 50 messages'),
+    description: 'A conversation of the developer',
+  }),
+
+  'POST/api/conversation/start': route({
+    authorize: withSession,
+    fn: (ctx, { username, body }) => ({
+      id: startConversation(ctx.session.userId, username, body),
+    }),
+    input: OBJ({
+      username: STR('Login of the developer written to'),
+      body: STR('Markdown, 2 000 characters at most'),
+    }),
+    output: OBJ({ id: NUM('Id of the conversation') }),
+    description:
+      'Write to a developer: in the conversation they share, or a new one',
+  }),
+
+  'POST/api/conversation/message': route({
+    authorize: withSession,
+    fn: (ctx, { id, body }) => ({
+      id: sendMessage(ctx.session.userId, id, body),
+    }),
+    input: OBJ({
+      id: NUM('Id of the conversation'),
+      body: STR('Markdown, 2 000 characters at most'),
+    }),
+    output: OBJ({ id: NUM('Id of the message') }),
+    description: 'Send a message in a conversation',
+  }),
+
+  'POST/api/conversation/read': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => readConversation(ctx.session.userId, id),
+    input: OBJ({ id: NUM('Id of the conversation') }),
+    description: 'Mark the conversation as read',
+  }),
+
+  'POST/api/conversation/accept': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => acceptConversation(ctx.session.userId, id),
+    input: OBJ({ id: NUM('Id of the conversation') }),
+    description: 'Accept a message request',
+  }),
+
+  'POST/api/conversation/decline': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => declineConversation(ctx.session.userId, id),
+    input: OBJ({ id: NUM('Id of the conversation') }),
+    description: 'Decline a message request; the sender is not told',
+  }),
+
+  'POST/api/user/block': route({
+    authorize: withSession,
+    fn: (ctx, { username, blocked }) =>
+      setBlocked(ctx.session.userId, username, blocked),
+    input: OBJ({
+      username: STR('Login of the developer'),
+      blocked: BOOL('True to block, false to unblock'),
+    }),
+    output: OBJ({ login: STR('Login'), blocked: BOOL('Blocked now') }),
+    description: 'Block or unblock a developer; they are never told',
+  }),
+
+  'POST/api/conversation/report': route({
+    authorize: withSession,
+    fn: (ctx, { message, reason, comment }) =>
+      reportMessage(ctx.session.userId, message, reason, comment ?? ''),
+    input: OBJ({
+      message: NUM('Id of the message'),
+      reason: LIST(
+        Object.keys(reportReasons) as ReportReason[],
+        'Why it is reported',
+      ),
+      comment: optional(STR('What is wrong, 1 000 characters at most')),
+    }),
+    description: 'Report a message received, for the moderators',
+  }),
+
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {

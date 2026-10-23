@@ -590,6 +590,47 @@ export const Report = createTable('report', {
 unique('report_target', 'report', 'reporterId, targetType, targetId')
 index('report_queue', 'report', 'status, createdAt')
 
+/*
+ * Direct messages (§10.6): a conversation between two developers
+ */
+
+export const Conversation = createTable('conversation', {
+  conversationId: { type: 'INTEGER', primary: true },
+  startedBy: { type: 'INTEGER', join: User },
+  // pending (a message request), accepted or declined
+  status: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+  // Time of the last message: the list is sorted by it
+  updatedAt: { type: 'REAL' },
+})
+
+export const ConversationMember = createTable('conversationMember', {
+  conversationMemberId: { type: 'INTEGER', primary: true },
+  conversationId: { type: 'INTEGER', join: Conversation },
+  userId: { type: 'INTEGER', join: User },
+  // Messages after it are unread
+  lastReadAt: { type: 'REAL', optional: true },
+})
+unique('conversation_member', 'conversationMember', 'conversationId, userId')
+index('conversation_member_user', 'conversationMember', 'userId')
+
+export const DirectMessage = createTable('directMessage', {
+  directMessageId: { type: 'INTEGER', primary: true },
+  conversationId: { type: 'INTEGER', join: Conversation },
+  authorId: { type: 'INTEGER', join: User },
+  body: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+})
+index('direct_message_list', 'directMessage', 'conversationId, createdAt')
+
+export const UserBlock = createTable('userBlock', {
+  userBlockId: { type: 'INTEGER', primary: true },
+  blockerId: { type: 'INTEGER', join: User },
+  blockedId: { type: 'INTEGER', join: User },
+  createdAt: { type: 'REAL' },
+})
+unique('user_block', 'userBlock', 'blockerId, blockedId')
+
 // Immutable history of the moderation (§10.5)
 export const ModerationAction = createTable('moderationAction', {
   moderationActionId: { type: 'INTEGER', primary: true },

@@ -208,6 +208,7 @@ Responsable : _à répartir_
 - [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
 - [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
+- [ ] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
 - [x] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1) — @niangoos
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos

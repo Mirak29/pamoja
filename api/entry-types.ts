@@ -49,6 +49,8 @@ export const entries = {
   HELP_REQUEST_DELIVERED: 40,
   HELP_MESSAGE_CREATED: 41,
   HELP_REQUEST_CLOSED: 42,
+  DIRECT_MESSAGE_CREATED: 43,
+  CONVERSATION_UPDATED: 44,
 } as const
 
 export type Entries = typeof entries

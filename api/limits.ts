@@ -17,6 +17,8 @@ export const LIMITS = {
   reply: 1250,
   // Project channels (§6.8)
   channelMessage: 2000,
+  // Direct messages (§10.6)
+  directMessage: 2000,
   // Help requests (§7.1, §7.2)
   helpTitle: TITLE_MAX,
   helpDescription: DESCRIPTION_MAX,

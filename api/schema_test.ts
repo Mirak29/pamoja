@@ -51,7 +51,7 @@ Deno.test('schema: every table of §14 exists', () => {
     `SELECT name FROM sqlite_master
       WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`,
   ).all() as { name: string }[]).map((t) => t.name)
-  assertEquals(tables.length, 38)
+  assertEquals(tables.length, 42)
 })
 
 Deno.test('schema: the primary key is named after the table', () => {

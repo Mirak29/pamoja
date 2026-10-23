@@ -1410,6 +1410,30 @@ export const english: Record<string, string> = {
     'A summary every morning at 8 am, by e-mail (coming soon).',
   'pays différent': 'different country',
   'pays différents': 'different countries',
+  'Messages': 'Messages',
+  'Écrire': 'Message',
+  'Pas encore de conversation. Écris à un développeur depuis son profil, avec « Écrire ».':
+    'No conversation yet. Write to a developer from their profile, with “Message”.',
+  'Toutes les conversations': 'All conversations',
+  'Bloquer': 'Block',
+  'Débloquer': 'Unblock',
+  'Afficher les messages précédents': 'Show earlier messages',
+  'Mes messages': 'My messages',
+  'Cette conversation n’existe pas, ou n’est pas la tienne.':
+    'This conversation does not exist, or is not yours.',
+  'Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu pourras lui écrire de nouveau quand il l’aura acceptée.':
+    'If you have never worked together, it arrives as a request: you can write again once it is accepted.',
+  'Signaler ce message': 'Report this message',
+  'Le signalement n’a pas pu être envoyé. Réessaie.':
+    'The report could not be sent. Try again.',
+  'Seul ce message est transmis aux modérateurs. Ton signalement reste anonyme pour son auteur.':
+    'Only this message goes to the moderators. Your report stays anonymous to its author.',
+  'Choisis une conversation, ou écris à un développeur depuis son profil.':
+    'Pick a conversation, or write to a developer from their profile.',
+  'Tu ne peux pas écrire à ce développeur pour l’instant.':
+    'You cannot write to this developer for now.',
+  'non lu': 'unread',
+  'non lus': 'unread',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1600,4 +1624,17 @@ export const englishTemplates: Record<string, string> = {
   '{0} caractères au plus.': '{0} characters at most.',
   'Audit sécurité de la PR #{0}': 'Security audit of PR #{0}',
   'Post de {0}': 'Post by {0}',
+  'Toi : ': 'You: ',
+  'Demandes · {0}': 'Requests · {0}',
+  '{0} veut t’écrire': '{0} wants to message you',
+  '{0} veut t’écrire. Accepte pour lui répondre ; s’il est refusé, il n’en saura rien.':
+    '{0} wants to message you. Accept to reply; if declined, they will never know.',
+  'Tu as bloqué {0} : vous ne pouvez plus vous écrire.':
+    'You blocked {0}: you can no longer write to each other.',
+  'En attente : {0} lira ton message s’il accepte ta demande.':
+    'Waiting: {0} will read your message if they accept your request.',
+  'Tu ne peux pas écrire à {0} pour l’instant.':
+    'You cannot write to {0} for now.',
+  'Ton premier message à {0}.': 'Your first message to {0}.',
+  'Messages, {0}': 'Messages, {0}',
 }
