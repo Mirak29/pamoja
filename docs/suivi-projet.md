@@ -674,6 +674,13 @@ Les événements GitHub envoyés pendant que le tunnel était fermé étaient pe
 - **Livrable** : `api/webhook-replay.ts`, appel dans `task-tunnel.ts`, `api/webhook_replay_test.ts` (2 tests), précision au §5.6
 - **Par** : @Mirak29
 
+### 2026-10-23 · PAM-214 · Tests de ce qui casserait la démo ou la réputation
+
+Revue des tests contre le §12.8. Étaient déjà couverts : signature, déduplication et reprise de la file de webhooks ; cycle de vie d'une demande (acceptation simultanée, désistement, réouverture) et les cinq conditions d'une review ; anti-abus et badges à partir des seules preuves éligibles ; score de matching et ses raisons ; les trois contrôles d'installation. Manquait « qui reçoit quoi » pour chaque type d'entry : seuls quelques types étaient testés. Un nouveau test le vérifie pour les 42 types, face à dix rôles (l'auteur, un membre, un abonné du projet, le demandeur, l'aidant, un développeur matché, un membre et un modérateur de la communauté, un abonné de l'auteur, un inconnu) : chacun reçoit exactement ce que dit le §13.3, l'inconnu ne reçoit rien, et un type ajouté sans son audience fait échouer le test. Vérifié qu'une audience fausse le fait bien échouer. Le §13.3 précise deux destinataires que le code servait déjà : le nouveau membre d'un projet et l'aidant qui accepte. Trois critères d'acceptation du bloc 2 sont cochés : webhook traité après un redémarrage, deux acceptations simultanées, badge à jour sans rafraîchir (vérifié dans le navigateur avec PAM-303). Restent ceux qui demandent de vrais comptes GitHub (import en 3 clics, review réelle en moins de 10 s : PAM-905).
+
+- **Livrable** : `api/entry_triggers_test.ts` (2 tests), §13.3 complété
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

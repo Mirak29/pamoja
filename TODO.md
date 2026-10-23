@@ -111,7 +111,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-211** · Vérification d'une review : les 5 conditions → `review_submitted` (§7.5)
 - [x] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [x] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
-- [ ] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
+- [x] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
 - [ ] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4)
 - [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
 - [x] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]` — @niangoos
@@ -126,9 +126,9 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 
 - [ ] Import niveau 1 en 3 clics
 - [ ] Une review GitHub réelle fait passer la demande en `review_submitted` en moins de 10 s
-- [ ] Un webhook reçu pendant un redémarrage est traité après la reprise
-- [ ] Deux acceptations simultanées n'en retiennent qu'une
-- [ ] La confirmation met à jour le badge du profil sans rafraîchir
+- [x] Un webhook reçu pendant un redémarrage est traité après la reprise
+- [x] Deux acceptations simultanées n'en retiennent qu'une
+- [x] La confirmation met à jour le badge du profil sans rafraîchir
 
 ## Bloc 3 — Vitrines (J6 – J7 · 12 – 13 oct.)
 
@@ -296,3 +296,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-22 · Logins : un login par compte (index unique sans casse) ; un compte de démo relié à un vrai compte garde son login de démo, le login GitHub gardé à part (`githubLogin`, migration 006) ; la connexion simulée entre dans l'Abdou seedé · §14
 - 2026-10-23 · Rafraîchissement GitHub : le serveur cherche chaque minute, dès son démarrage, les repos dus (15 min après leur dernière lecture, 1 h pour un repo live) au lieu d'un minuteur de 15 min qui repartait à zéro à chaque redémarrage · §5.4, §5.6
 - 2026-10-23 · Webhooks manqués : à l'ouverture du tunnel, les livraisons des 3 derniers jours jamais arrivées sont renvoyées, de la plus ancienne à la plus récente · §5.6
+- 2026-10-23 · Temps réel : chaque type d'entry a son audience écrite dans un test qui échoue pour un type nouveau sans audience ; `PROJECT_MEMBER_JOINED` atteint aussi le nouveau membre, `HELP_REQUEST_ACCEPTED` aussi l'aidant · §12.8, §13.3
