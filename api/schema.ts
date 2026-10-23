@@ -38,6 +38,7 @@ export const User = createTable('user', {
   userId: { type: 'INTEGER', primary: true },
   // Never the username, which can change on GitHub
   githubId: { type: 'INTEGER' },
+  // The login of Pamoja, the address /@login: one account per login
   githubUsername: { type: 'TEXT' },
   avatarUrl: { type: 'TEXT' },
   email: { type: 'TEXT', optional: true },
@@ -45,8 +46,12 @@ export const User = createTable('user', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/006: the login on GitHub, which a demo account
+  // reached by a real one does not take as its Pamoja login (§14)
+  githubLogin: { type: 'TEXT', optional: true },
 })
 unique('user_github_id', 'user', 'githubId')
+unique('user_login', 'user', 'githubUsername COLLATE NOCASE')
 
 export const Profile = createTable('profile', {
   profileId: { type: 'INTEGER', primary: true },

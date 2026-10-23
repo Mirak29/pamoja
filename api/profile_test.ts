@@ -141,3 +141,31 @@ Deno.test('profile: writing needs a session', async () => {
     401,
   )
 })
+
+Deno.test('profile: each field has a size, the server refuses more (§16)', async () => {
+  restore()
+  const cookie = await login()
+  const save = (changes: Partial<typeof profile>) =>
+    call('/api/user/profile/update', {
+      body: { ...profile, ...changes },
+      cookie,
+    })
+  // At the limit: saved; one more: refused, nothing saved
+  assertEquals((await save({ headline: 'h'.repeat(220) })).status, 200)
+  const refused = await save({ bio: 'b'.repeat(2601) })
+  assertEquals([refused.status, refused.json.message], [400, 'bio too long'])
+  for (
+    const [field, size] of [
+      ['displayName', 71],
+      ['headline', 221],
+      ['city', 81],
+      ['country', 81],
+      ['website', 201],
+    ] as const
+  ) {
+    assertEquals((await save({ [field]: 'x'.repeat(size) })).status, 400, field)
+  }
+  const { json } = await call('/api/user/me', { cookie })
+  assertEquals(json.headline.length, 220)
+  assertEquals(json.bio, '')
+})

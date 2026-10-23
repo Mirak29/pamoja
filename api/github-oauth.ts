@@ -28,10 +28,16 @@ export type GithubUser = {
 }
 
 // Without a GitHub App in dev, the login is simulated: the demo account of
-// the fixtures, never in production (§5.3)
+// the fixtures, never in production (§5.3). On a seeded database it is the
+// seeded Abdou, by the githubId SEED_GITHUB_IDS gives him, not a second
+// « abdou » (QA-26).
 export const isSimulated = !GITHUB_CLIENT_ID && APP_ENV !== 'prod'
+const seededAbdou = Number(
+  Deno.env.get('SEED_GITHUB_IDS')?.match(/(?:^|,)\s*abdou\s*:\s*(\d+)/)?.[1] ??
+    0,
+)
 const demoUser: GithubUser = {
-  id: 0,
+  id: seededAbdou,
   login: 'abdou',
   avatar_url: 'https://avatars.githubusercontent.com/u/0',
   name: 'Abdou Sow',

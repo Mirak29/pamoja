@@ -12,6 +12,7 @@ import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Input, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const types: CommunityType[] = ['Technologie', 'Pays', 'Domaine']
 
@@ -50,6 +51,7 @@ const NewCommunity = () => {
         <Input
           {...control('name')}
           value={name}
+          limit={LIMITS.communityName}
           placeholder='Rust, Mali Developers, Fintech…'
           onInput={(event) => {
             setName(event.currentTarget.value)
@@ -87,6 +89,7 @@ const NewCommunity = () => {
         <Textarea
           rows={3}
           value={description}
+          limit={LIMITS.communityDescription}
           placeholder='De quoi on parle ici, et pour qui'
           onInput={(event) => setDescription(event.currentTarget.value)}
         />

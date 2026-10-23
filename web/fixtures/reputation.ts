@@ -8,6 +8,7 @@ import {
   projectsShownOf,
 } from '/web/fixtures/projects.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
+import { plural } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 // Reputation is computed from frozen proofs only (cahier des charges §8).
@@ -48,19 +49,21 @@ export type Proof = {
   url?: string
 }
 
+// A title written by the platform is a function: read in the language of
+// the page each time it shows (QA-29)
 const proof = (
   who: Login,
   dimension: Dimension,
-  title: string,
+  title: string | (() => string),
   project: ProjectSlug,
   extra: Partial<Proof> = {},
 ): Proof => {
   const owner = projects[project].owner
-  return {
+  const made: Proof = {
     id: '',
     who,
     dimension,
-    title,
+    title: '',
     project,
     by: owner === who ? undefined : owner,
     at: 0,
@@ -68,12 +71,16 @@ const proof = (
     demo: true,
     ...extra,
   }
+  return Object.defineProperty(made, 'title', {
+    get: typeof title === 'string' ? () => title : title,
+    enumerable: true,
+  })
 }
 
 const reviews = (
   who: Login,
   list: [ProjectSlug, number][],
-  title = (pr: number) => `Review de la PR #${pr}`,
+  title = (pr: number) => () => t`Review de la PR #${pr}`,
 ) =>
   list.map(([project, pr]) =>
     proof(who, 'review', title(pr), project, {
@@ -87,7 +94,7 @@ const merged = (who: Login, list: [ProjectSlug, number][]) =>
     proof(
       who,
       'oss',
-      `PR #${pr} mergée chez ${projects[project].name}`,
+      () => t`PR #${pr} mergée chez ${projects[project].name}`,
       project,
       { pullRequest: pr },
     )
@@ -127,14 +134,19 @@ export const proofs: Proof[] = [
   proof('moussa', 'mentor', 'Mentorat Go pour Yao', 'dakar-transit', {
     by: 'yao',
   }),
-  proof('abdou', 'build', 'A créé OpenPay Africa', 'openpay-africa'),
+  proof(
+    'abdou',
+    'build',
+    () => t`A créé ${'OpenPay Africa'}`,
+    'openpay-africa',
+  ),
   ...reviews('abdou', [
     ['senegal-maps', 18],
     ['dakar-transit', 5],
     ['africommerce', 9],
   ]),
   proof('abdou', 'help', 'Aide sur Deno KV', 'senegal-maps'),
-  proof('awa', 'build', 'A créé Senegal Maps', 'senegal-maps'),
+  proof('awa', 'build', () => t`A créé ${'Senegal Maps'}`, 'senegal-maps'),
   ...reviews('awa', [
     ['openpay-africa', 50],
     ['openpay-africa', 60],
@@ -147,14 +159,14 @@ export const proofs: Proof[] = [
     ['dakar-transit', 21],
     ['africommerce', 22],
   ]),
-  proof('fatou', 'build', 'A créé Dakar Transit', 'dakar-transit'),
+  proof('fatou', 'build', () => t`A créé ${'Dakar Transit'}`, 'dakar-transit'),
   ...reviews('fatou', [
     ['openpay-africa', 66],
     ['senegal-maps', 24],
     ['africommerce', 10],
     ['openpay-africa', 71],
   ]),
-  proof('kofi', 'build', 'A créé AfriCommerce', 'africommerce'),
+  proof('kofi', 'build', () => t`A créé ${'AfriCommerce'}`, 'africommerce'),
   proof('kofi', 'help', 'Aide sur la navigation Flutter', 'senegal-maps'),
   ...reviews(
     'zeinab',
@@ -166,7 +178,7 @@ export const proofs: Proof[] = [
       ['openpay-africa', 68],
       ['senegal-maps', 30],
     ],
-    (pr) => `Audit sécurité de la PR #${pr}`,
+    (pr) => () => t`Audit sécurité de la PR #${pr}`,
   ),
   ...([
     'openpay-africa',
@@ -178,7 +190,9 @@ export const proofs: Proof[] = [
       proof('zeinab', 'help', 'Revue des secrets et des tokens', project)
     ),
   proof('amina', 'help', 'Pipeline CI pour Senegal Maps', 'senegal-maps'),
-].map((p, i) => ({ ...p, id: `p${i + 1}`, at: daysAgo((i + 1) * 2 + 3) }))
+].map((p, i) =>
+  Object.assign(p, { id: `p${i + 1}`, at: daysAgo((i + 1) * 2 + 3) })
+)
 
 // A component that reads the proofs follows them: a confirmed help shows
 // on the profile without a refresh
@@ -264,7 +278,7 @@ const crossBorder: BadgeDefinition = {
   key: 'cross_border',
   name: 'Bâtisseur sans frontières',
   thresholds: [2, 3, 5, 8],
-  unit: ['pays', 'pays'],
+  unit: ['pays différent', 'pays différents'],
 }
 
 // Badges only the server computes: they need the GitHub activity and the
@@ -309,7 +323,7 @@ const nextLabel = (badge: BadgeDefinition, count: number, next: number) => {
     return t`Aide des personnes plus variées pour le niveau ${level}`
   }
   return t`${missing} ${
-    translate(badge.unit[missing > 1 ? 1 : 0])
+    plural(missing, badge.unit[0], badge.unit[1])
   } avant le niveau ${level}`
 }
 

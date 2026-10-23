@@ -30,6 +30,7 @@ import { Field, Input, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const levels: string[] = Object.values(helpLevels)
 const durations = helpDurations.map(durationLabel)
@@ -420,6 +421,7 @@ export const NewHelp = () => {
               aria-invalid={errors.title ? true : undefined}
               aria-describedby={errors.title ? 'help-title-error' : undefined}
               value={form.title}
+              limit={LIMITS.helpTitle}
               onInput={(event) => update({ title: event.currentTarget.value })}
               placeholder='Ce dont tu as besoin, en une phrase'
             />
@@ -428,6 +430,7 @@ export const NewHelp = () => {
             <Textarea
               rows={4}
               value={form.description}
+              limit={LIMITS.helpDescription}
               onInput={(event) =>
                 update({ description: event.currentTarget.value })}
               placeholder='Contexte, ce que tu as essayé, ce que tu attends'

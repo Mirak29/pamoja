@@ -9,6 +9,7 @@ import { skillNamesOf, skillsOf } from '/api/skills.ts'
 type ProfileRow = {
   userId: number
   login: string
+  githubLogin: string | null
   avatarUrl: string
   displayName: string
   headline: string | null
@@ -21,7 +22,8 @@ type ProfileRow = {
 }
 
 const getProfile = sql<ProfileRow, string>`
-  SELECT user.userId, githubUsername AS login, avatarUrl, displayName,
+  SELECT user.userId, githubUsername AS login, githubLogin, avatarUrl,
+    displayName,
     headline, bio, country, city, website, availability, matchingFilters
   FROM user
   JOIN profile ON profile.userId = user.userId
@@ -82,6 +84,7 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
   const { skills, domains } = skillsOf(row.userId)
   return {
     login: row.login,
+    githubLogin: row.githubLogin ?? row.login,
     displayName: row.displayName,
     avatarUrl: row.avatarUrl,
     headline: row.headline ?? '',

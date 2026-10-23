@@ -35,6 +35,8 @@ export type Person = {
   follows?: string[]
   /** GitHub photo; without it, the initials (§17.3) */
   avatarUrl?: string
+  /** Login on GitHub when it differs from the one of Pamoja (§14) */
+  github?: string
 }
 
 const fixturePeople = {
@@ -186,6 +188,7 @@ type ApiPerson =
   & Pick<
     ApiOutput['GET/api/user/me'],
     | 'login'
+    | 'githubLogin'
     | 'displayName'
     | 'avatarUrl'
     | 'headline'
@@ -220,7 +223,8 @@ const adoptPerson = (user: ApiPerson) => {
         ? user.country
         : '',
       city: user.city,
-      role: user.domains[0] ?? 'Développeur',
+      // Without a domain on the server, the role the pages know (QA-28)
+      role: user.domains[0] ?? known?.role ?? 'Développeur',
       skills: user.skills.map((skill) => skill.name),
       headline: user.headline,
       bio: user.bio,
@@ -228,6 +232,7 @@ const adoptPerson = (user: ApiPerson) => {
       domains: user.domains,
       intents: user.intents,
       avatarUrl: user.avatarUrl,
+      github: user.githubLogin,
     },
     user.available === undefined ? {} : { available: user.available },
     user.helpTypes

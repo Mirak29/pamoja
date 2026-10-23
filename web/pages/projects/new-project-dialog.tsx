@@ -22,6 +22,7 @@ import { Progress } from '/web/ui/progress.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { counted, plural } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
+import { LIMITS } from '/api/limits.ts'
 
 type Step = 'choose' | 'repos' | 'preview' | 'scratch'
 
@@ -443,6 +444,7 @@ const FromScratch = ({ back }: { back: () => void }) => {
         <Input
           {...control('name')}
           value={name}
+          limit={LIMITS.projectName}
           placeholder='Le nom de ton projet'
           onInput={(event) => {
             setName(event.currentTarget.value)
@@ -454,6 +456,7 @@ const FromScratch = ({ back }: { back: () => void }) => {
         <Textarea
           rows={2}
           value={description}
+          limit={LIMITS.projectDescription}
           placeholder='Ce que fait le projet, en une ou deux phrases'
           onInput={(event) => setDescription(event.currentTarget.value)}
         />
@@ -462,6 +465,7 @@ const FromScratch = ({ back }: { back: () => void }) => {
         <Textarea
           rows={2}
           value={vision}
+          limit={LIMITS.projectVision}
           placeholder='Où il va'
           onInput={(event) => setVision(event.currentTarget.value)}
         />

@@ -84,8 +84,15 @@ const dimensionIcons = {
 
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
-/** The login written in the address /@login */
-const addressLogin = () => url.relativePath.slice(2).split('/')[0]
+/** The login written in the address /@login, decoded (QA-30) */
+const addressLogin = () => {
+  const written = url.relativePath.slice(2).split('/')[0]
+  try {
+    return decodeURIComponent(written)
+  } catch {
+    return written
+  }
+}
 
 /**
  * The profile of the address, read from the server (§9.1); a demo person
@@ -168,7 +175,10 @@ const Hero = ({ login }: { login: Login }) => {
         <div class='sm:hidden'>
           <Actions login={login} />
         </div>
-        <p class='max-w-[680px] text-[18px] leading-[27px] text-pretty'>
+        <p
+          translate={false}
+          class='wrap-anywhere max-w-[680px] text-[18px] leading-[27px] text-pretty'
+        >
           {person.headline}
         </p>
         <div class='flex flex-wrap gap-1.5'>
@@ -176,14 +186,19 @@ const Hero = ({ login }: { login: Login }) => {
             <SkillChip key={skill}>{skill}</SkillChip>
           ))}
         </div>
-        <p class='max-w-[680px] text-pretty text-ink-muted'>{person.bio}</p>
+        <p
+          translate={false}
+          class='wrap-anywhere max-w-[680px] whitespace-pre-line text-pretty text-ink-muted'
+        >
+          {person.bio}
+        </p>
         <div class='flex flex-wrap items-center gap-4 text-[13px]'>
           <a
-            href={`https://github.com/${login}`}
+            href={`https://github.com/${person.github ?? login}`}
             class='inline-flex items-center gap-1.5 font-mono text-ink-muted'
           >
             <Github class='size-3.5' />
-            github.com/{login}
+            github.com/{person.github ?? login}
           </a>
           {person.website && (
             <a
@@ -313,7 +328,10 @@ const Building = ({ login }: { login: Login }) => {
                 </span>
                 <span class='text-[12px] text-ink-muted'>{project.role}</span>
               </span>
-              <span class='text-[14px] text-pretty text-ink-muted'>
+              <span
+                translate={false}
+                class='wrap-anywhere text-[14px] text-pretty text-ink-muted'
+              >
                 {project.description}
               </span>
               <span class='font-mono text-[12px] leading-4 text-ink-muted'>

@@ -17,6 +17,7 @@ import { notify } from '/web/ui/toast.tsx'
 import { importableRepos, linkRepo } from '/web/fixtures/repos.ts'
 import { MemberRows } from '/web/pages/project/team-tab.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 type Draft = Pick<Project, 'name' | 'description' | 'needs'> & {
   vision: string
@@ -65,6 +66,7 @@ const Information = ({ project }: { project: Project }) => {
       <Field label='Nom'>
         <Input
           value={draft.name}
+          limit={LIMITS.projectName}
           onInput={(event) => update({ name: event.currentTarget.value })}
         />
       </Field>
@@ -72,6 +74,7 @@ const Information = ({ project }: { project: Project }) => {
         <Textarea
           rows={3}
           value={draft.description}
+          limit={LIMITS.projectDescription}
           onInput={(event) =>
             update({ description: event.currentTarget.value })}
         />
@@ -80,6 +83,7 @@ const Information = ({ project }: { project: Project }) => {
         <Textarea
           rows={2}
           value={draft.vision}
+          limit={LIMITS.projectVision}
           placeholder='Où va le projet, en une phrase'
           onInput={(event) => update({ vision: event.currentTarget.value })}
         />

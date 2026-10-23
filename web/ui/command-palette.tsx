@@ -26,6 +26,13 @@ export const paletteOpen = signal(false)
 const query = signal('')
 const active = signal(0)
 
+/** Opens the search on a text: a #hashtag of a post */
+export const openSearch = (text: string) => {
+  query.value = text
+  active.value = 0
+  paletteOpen.value = true
+}
+
 addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
     event.preventDefault()

@@ -535,7 +535,7 @@ Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'a
 
 ### 10.1 Feed
 
-Le fil est l'Accueil (§6.2). Types de publication : Discussion, Question, Mise à jour de projet, Vitrine, Ressource, Opportunité, Release (une demande d'aide passe par son formulaire, §7.1). Contenu en Markdown avec blocs de code, jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. **Une réponse est un post** rattaché à un autre, avec les mêmes actions (réagir, republier, répondre, signaler). Imbrication sans limite, avec des lignes de rattachement ; à l'ouverture, seules les réponses directes s'affichent, les suivantes se déplient à la demande. Interactions : réactions (dont « Utile »), republication, bookmark, partage par lien, abonnement à une personne, un projet ou une communauté. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
+Le fil est l'Accueil (§6.2). Types de publication : Discussion, Question, Mise à jour de projet, Vitrine, Ressource, Opportunité, Release (une demande d'aide passe par son formulaire, §7.1). Contenu en Markdown avec blocs de code (sous-ensemble lu en éléments, jamais en HTML : gras, italique, `code`, liens `http`/`https`, listes, citations, titres, blocs de code ; les liens nus, `@login` et `#hashtag` deviennent cliquables ; les retours à la ligne sont gardés ; au-delà de 600 caractères ou 8 lignes, un post se replie dans le fil avec « … voir plus »), jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. **Une réponse est un post** rattaché à un autre, avec les mêmes actions (réagir, republier, répondre, signaler). Imbrication sans limite, avec des lignes de rattachement ; à l'ouverture, seules les réponses directes s'affichent, les suivantes se déplient à la demande. Interactions : réactions (dont « Utile »), republication, bookmark, partage par lien, abonnement à une personne, un projet ou une communauté. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
 
 ### 10.2 Communautés
 
@@ -762,7 +762,7 @@ Conventions : clé primaire `INTEGER` nommée d'après la table (`userId`, `help
 
 **Données de démonstration.** Toute entry et toute ligne racine créées par le seed portent `source = demo`. Les lignes racines sont `User`, `Project`, `Repository`, `PullRequest`, `Issue`, `Review`, `ProjectMessage`, `HelpRequest`, `Community`, `Post` et `Media` ; leur colonne `source` vaut `demo`, `github` (synchronisée) ou `platform` (écrite sur Pamoja). Une ligne qui en dépend (profil, membre, tâche, match…) suit la source de son parent. `UserSkill.source` et `CiRun.source` gardent leur sens propre, décrit dans leur ligne.
 
-**Seed.** `deno task seed` recrée la base de zéro puis la remplit (`task-db-seed.ts`, `api/seed.ts`) : il est donc rejouable avant chaque répétition. Il exige le serveur arrêté, qui garde la base ouverte, et refuse de tourner en production sans `--prod`. Ses données sont celles des fixtures du web (développeurs, communautés, projets, rôles, besoins, jalons, abonnements), pour que les écrans montrent le même monde une fois branchés sur l'API ; les entries sont antidatées. Un développeur fictif reçoit un `githubId` négatif, qu'aucun compte GitHub ne porte. `SEED_GITHUB_IDS` (`login:githubId`) relie les développeurs de la démo à leurs vrais comptes : à la connexion, le compte retrouve le profil seedé par son `githubId` (§5.3). L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
+**Seed.** `deno task seed` recrée la base de zéro puis la remplit (`task-db-seed.ts`, `api/seed.ts`) : il est donc rejouable avant chaque répétition. Il exige le serveur arrêté, qui garde la base ouverte, et refuse de tourner en production sans `--prod`. Ses données sont celles des fixtures du web (développeurs, communautés, projets, rôles, besoins, jalons, abonnements), pour que les écrans montrent le même monde une fois branchés sur l'API ; les entries sont antidatées. Un développeur fictif reçoit un `githubId` négatif, qu'aucun compte GitHub ne porte. `SEED_GITHUB_IDS` (`login:githubId`) relie les développeurs de la démo à leurs vrais comptes : à la connexion, le compte retrouve le profil seedé par son `githubId` (§5.3). Ce compte garde le login de la démo (son adresse `/@login`) ; son login GitHub réel est gardé à part (`User.githubLogin`), pour le lien vers GitHub et la lecture de ses repos. Un login ne désigne qu'un compte, sans tenir compte de la casse : un compte GitHub qui prend un login tenu par un autre (renommé ou libéré sur GitHub) le reçoit, l'ancien devient `login~githubId` jusqu'à sa prochaine connexion. En dev, la connexion simulée entre dans le compte seedé « abdou ». L'interface les affiche avec la mention « donnée de démonstration » ; seules les preuves issues d'une action GitHub réelle portent « vérifié par GitHub ». Les deux ne sont jamais confondues.
 
 ### 14.1 Identité et profil
 
@@ -885,12 +885,27 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
 | Contournement de rôle | Actions d'Owner par un Contributor | `authorize` + vérification du rôle dans chaque route d'écriture |
 | Spam et abus | Flood de demandes, de messages ou de matching | Limite de débit par utilisateur sur les routes d'écriture ; plafonds de matching (§7.3) |
+| Contenu démesuré | Un texte de 100 000 caractères, ou un mot sans espace, casse le fil et la page | Taille maximale par champ, vérifiée par le serveur et décomptée par la page (`api/limits.ts`, ci-dessous) ; tout mot trop long se coupe dans sa colonne ; un long post se replie |
 | Injection SQL | Lecture ou écriture arbitraire | Paramètres liés uniquement (`?` ou `:nom`) : le tag `sql` de `@01edu/db` recopie ses valeurs dans le texte de la requête, donc aucune valeur venue d'un utilisateur n'y entre (§12.5) |
 | Outils de dev de `@01edu/api` | Hors production, `POST/api/sql/execute` exécute n'importe quel SQL sans session, depuis le réseau local, le tunnel ou une page piégée | Pamoja ne sert ni `POST/api/sql/execute`, ni `GET/api/sql/metrics`, ni `GET/api/router/metrics`, quel que soit `APP_ENV` (404) ; le serveur de dev n'écoute que sur `127.0.0.1` ; le tunnel de dev ne laisse passer que `POST/api/github/webhook` (§5.6) |
 | Détournement de l'IA | Sortie manipulée par un README | Contenu encadré comme donnée, sortie JSON validée (§11) |
 | Meilisearch exposé | Lecture ou modification de l'index par n'importe qui | Conteneur joignable uniquement depuis l'app, clé maître côté serveur, aucun contenu non public indexé |
 | Photo publiée avec sa position GPS | Fuite du lieu de vie d'un utilisateur | Réencodage dans le navigateur avant l'envoi, qui supprime les métadonnées EXIF (§17.3) |
 | Iframe vidéo malveillante | Contenu tiers arbitraire dans la page | Liste fermée de fournisseurs, URL du lecteur construite par le serveur, \`frame-src\` limité à ces domaines |
+
+**Taille de ce qu'un membre écrit** (`api/limits.ts`, en caractères, proche de LinkedIn). Le serveur refuse au-delà avec un message clair ; la page bloque la saisie à la limite et affiche un compteur à l'approche.
+
+| Champ | Limite |
+| --- | --- |
+| Nom affiché · accroche · bio · ville · pays écrit à la main · site | 70 · 220 · 2 600 · 80 · 80 · 200 |
+| Post : titre · texte · réponse | 150 · 3 000 · 1 250 |
+| Message d'un canal de projet | 2 000 |
+| Demande d'aide : titre · description · message du fil | 140 · 8 000 · 4 000 |
+| Projet : nom · description · vision | 80 · 300 · 1 000 |
+| Communauté : nom · description | 60 · 500 |
+| Signalement, proposition de collaboration, candidature, note de modération | 1 000 |
+
+Les journaux du serveur ne gardent ni le texte des messages, ni les bios et descriptions, ni le `code` et le `state` de la connexion GitHub (`sensitiveKeys` du routeur).
 
 ## 17. Pages publiques, médias, déploiement et sauvegardes
 

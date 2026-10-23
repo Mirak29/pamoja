@@ -36,10 +36,12 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { Input } from '/web/ui/input.tsx'
-import { RichText } from '/web/ui/rich-text.tsx'
+import { Textarea } from '/web/ui/input.tsx'
+import { Markdown } from '/web/ui/rich-text.tsx'
 import { counted } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
+import { overLimit } from '/web/lib/limits.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -183,7 +185,7 @@ const MessageRow = (
           {message.demo && <DemoBadge />}
         </div>
         <div class='text-[15px] leading-6 text-pretty'>
-          <RichText text={message.text} />
+          <Markdown text={message.text} class='gap-1.5' />
         </div>
         {action && (
           <Button
@@ -243,14 +245,18 @@ const Composer = (
 ) => {
   const [draft, setDraft] = useState('')
   const send = () => {
-    if (!draft.trim()) return
+    if (!draft.trim() || overLimit(draft, 'channelMessage')) return
     onSend(draft.trim())
     setDraft('')
   }
   return (
     <>
-      <Input
+      {/* Enter sends, Shift + Enter goes to the next line (QA-25) */}
+      <Textarea
+        rows={1}
         value={draft}
+        limit={LIMITS.channelMessage}
+        wrap='min-w-0 flex-1'
         onInput={(event) => setDraft(event.currentTarget.value)}
         onKeyDown={(event) => {
           if (event.key !== 'Enter' || event.shiftKey) return
@@ -259,7 +265,7 @@ const Composer = (
         }}
         placeholder={placeholder}
         aria-label={label}
-        class='min-w-0 flex-1'
+        class='max-h-40 min-h-10 resize-none [field-sizing:content]'
       />
       {square
         ? (
@@ -307,9 +313,9 @@ const Thread = (
           {ago(message.at)}
         </span>
       </span>
-      <span class='text-[14px] leading-[22px]'>
-        <RichText text={message.text} />
-      </span>
+      <div class='text-[14px] leading-[22px]'>
+        <Markdown text={message.text} class='gap-1.5' />
+      </div>
     </div>
     <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
       {repliesOf(message).map((reply) => (
@@ -326,9 +332,9 @@ const Thread = (
                 {ago(reply.at)}
               </span>
             </span>
-            <span class='text-[14px] leading-[22px]'>
-              <RichText text={reply.text} />
-            </span>
+            <div class='text-[14px] leading-[22px]'>
+              <Markdown text={reply.text} class='gap-1.5' />
+            </div>
             {reply.demo && <DemoBadge />}
           </div>
         </div>

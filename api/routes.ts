@@ -19,6 +19,7 @@ import { listMyProjects } from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
 import { getPublicProfile } from '/api/profile.ts'
+import { tooLong } from '/api/limits.ts'
 import {
   listNotifications,
   readAllNotifications,
@@ -82,7 +83,8 @@ const matchingMode = LIST(
 
 const currentUser = {
   userId: NUM('Id of the developer'),
-  login: STR('GitHub login'),
+  login: STR('Login of Pamoja, the address /@login'),
+  githubLogin: STR('Login on GitHub'),
   displayName: STR('Name shown on the profile'),
   avatarUrl: STR('GitHub avatar'),
   headline: STR('One line under the name, empty if none'),
@@ -290,7 +292,8 @@ const defs = {
         respond.NotFound({ message: 'No such developer' }),
     input: OBJ({ username: STR('GitHub login') }),
     output: OBJ({
-      login: STR('GitHub login, as GitHub writes it'),
+      login: STR('Login of Pamoja, the address /@login'),
+      githubLogin: STR('Login on GitHub'),
       displayName: STR('Name shown on the profile'),
       avatarUrl: STR('GitHub avatar'),
       headline: STR('One line under the name, empty if none'),
@@ -761,6 +764,11 @@ const defs = {
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {
+      const { matchingMode: _, ...texts } = fields
+      const field = tooLong(texts)
+      if (field) {
+        throw new respond.BadRequestError({ message: `${field} too long` })
+      }
       updateProfile(ctx.session.userId, fields)
       return getCurrentUser(ctx.session.userId)!
     },
@@ -826,4 +834,20 @@ export const routeHandler = makeRouter({
   'POST/api/sql/execute': notServed,
   'GET/api/sql/metrics': notServed,
   'GET/api/router/metrics': notServed,
-}, { log })
+}, {
+  log,
+  // Never in the logs: what members write to each other or about
+  // themselves, and the one-time code of the GitHub login (§16, QA-33)
+  sensitiveKeys: [
+    'password',
+    'confPassword',
+    'currentPassword',
+    'newPassword',
+    'code',
+    'state',
+    'body',
+    'bio',
+    'headline',
+    'description',
+  ],
+})

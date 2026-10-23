@@ -28,6 +28,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
 import { t, translate } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const toggle = <T,>(list: T[], value: T) =>
   list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
@@ -308,6 +309,7 @@ export const ProfileEditPage = () => {
           <Field label='Accroche'>
             <Input
               value={draft.headline}
+              limit={LIMITS.headline}
               onInput={(event) =>
                 update({ headline: event.currentTarget.value })}
             />
@@ -316,12 +318,14 @@ export const ProfileEditPage = () => {
             <Textarea
               rows={3}
               value={draft.bio}
+              limit={LIMITS.bio}
               onInput={(event) => update({ bio: event.currentTarget.value })}
             />
           </Field>
           <Field label='Site web'>
             <Input
               value={draft.website}
+              limit={LIMITS.website}
               placeholder='ton-site.dev'
               onInput={(event) =>
                 update({ website: event.currentTarget.value })}

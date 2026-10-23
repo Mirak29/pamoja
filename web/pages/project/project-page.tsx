@@ -200,7 +200,10 @@ const Header = (
               {project.demo && <DemoBadge />}
             </div>
           </div>
-          <p class='max-w-[680px] text-pretty text-ink-muted'>
+          <p
+            translate={false}
+            class='wrap-anywhere max-w-[680px] text-pretty text-ink-muted'
+          >
             {project.description}
           </p>
         </div>

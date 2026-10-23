@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
 import { Play } from '/web/assets/icons.tsx'
-import { personOf } from '/web/fixtures/people.ts'
+import { isMe, personOf } from '/web/fixtures/people.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
@@ -138,13 +138,30 @@ const Needs = ({ project }: { project: Project }) => (
         {need}
       </span>
     ))}
-    <Button
-      size={36}
-      href={`projet/${project.slug}/canaux/aide`}
-      class='mt-1 self-start'
-    >
-      Proposer mon aide
-    </Button>
+    {
+      /* The team does not offer its help to itself: the owner edits the
+        needs instead (QA-32) */
+    }
+    {isMe(project.owner)
+      ? (
+        <Button
+          size={36}
+          variant='secondary'
+          href={`projet/${project.slug}/reglages`}
+          class='mt-1 self-start'
+        >
+          Modifier les besoins
+        </Button>
+      )
+      : !project.members.some((member) => isMe(member.login)) && (
+        <Button
+          size={36}
+          href={`projet/${project.slug}/canaux/aide`}
+          class='mt-1 self-start'
+        >
+          Proposer mon aide
+        </Button>
+      )}
   </section>
 )
 

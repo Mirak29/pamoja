@@ -12,6 +12,7 @@ import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Textarea } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { LIMITS } from '/api/limits.ts'
 
 const close = () => navigate({ params: { dialog: null, report: null } })
 
@@ -73,6 +74,7 @@ const ReportForm = ({ kind, id }: { kind: ReportKind; id: string }) => {
         <Textarea
           rows={3}
           value={comment}
+          limit={LIMITS.note}
           placeholder='Ce qui pose problème'
           onInput={(event) => setComment(event.currentTarget.value)}
         />

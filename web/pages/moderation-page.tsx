@@ -19,6 +19,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { LIMITS } from '/api/limits.ts'
 
 const actionLabel = (action: ModerationAction) =>
   moderationActions.find(([key]) => key === action)![1]
@@ -89,6 +90,7 @@ const OpenReport = ({ report }: { report: Report }) => {
             <Textarea
               rows={2}
               value={motif}
+              limit={LIMITS.note}
               onInput={(event) => setMotif(event.currentTarget.value)}
             />
           </Field>
