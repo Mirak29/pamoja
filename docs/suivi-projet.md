@@ -667,6 +667,13 @@ Les événements GitHub d'un projet en synchro par rafraîchissement n'arrivaien
 - **Livrable** : `api/sync.ts`, `api/sync_refresh_test.ts`, précision au §5.4
 - **Par** : @Mirak29
 
+### 2026-10-23 · Webhooks manqués renvoyés à l'ouverture du tunnel
+
+Les événements GitHub envoyés pendant que le tunnel était fermé étaient perdus : GitHub ne renvoie pas de lui-même un webhook qui a échoué. Le journal de l'app en comptait 14 (push, CI, issues, ajout d'un repo à l'installation), tous en « failed to connect to host ». À l'ouverture, le tunnel attend maintenant que lui-même et le serveur de dev répondent, puis demande à GitHub de renvoyer les livraisons des 3 derniers jours qui ne sont jamais arrivées, de la plus ancienne à la plus récente. Une livraison déjà reçue, ou refusée par Pamoja elle-même, n'est pas renvoyée. Les identifiants de livraison dépassent la précision d'un nombre JavaScript : lus comme des nombres, ils désignaient une autre livraison ; ils sont lus comme du texte. Vérifié à blanc sur le journal réel de l'app : les 14 livraisons manquées sont retrouvées, dans l'ordre.
+
+- **Livrable** : `api/webhook-replay.ts`, appel dans `task-tunnel.ts`, `api/webhook_replay_test.ts` (2 tests), précision au §5.6
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
