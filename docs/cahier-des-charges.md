@@ -755,7 +755,7 @@ Quand l'utilisateur rejoint ou quitte un projet, son listener est mis à jour en
 | PROFILE\_UPDATED, POST\_UPDATED, HELP\_REQUEST\_CREATED | userId, postId ou helpRequestId | Personne en SSE ; lues par le worker de réindexation Meilisearch |
 | HELP\_REQUEST\_WITHDRAWN, HELP\_REQUEST\_RELEASED, HELP\_REQUEST\_REOPENED, HELP\_REQUEST\_EXPIRED, HELP\_REQUEST\_CANCELLED, HELP\_REQUEST\_DELIVERED, HELP\_REQUEST\_CLOSED, HELP\_MESSAGE\_CREATED | userId, helpRequestId | Le demandeur, l'aidant concerné et les développeurs matchés |
 | CONTENT\_REPORTED, MODERATION\_ACTION | userId, communityId ou postId | Les modérateurs concernés ; l'auteur pour une action le visant |
-| DIRECT\_MESSAGE\_CREATED, CONVERSATION\_UPDATED | userId (+ data : conversationId) | Les deux participants de la conversation, sauf un participant bloqué |
+| DIRECT\_MESSAGE\_CREATED, CONVERSATION\_UPDATED, DIRECT\_MESSAGE\_UPDATED (modifié, supprimé, réaction, aperçu de lien) | userId (+ data : conversationId) | Les deux participants de la conversation, sauf un participant bloqué |
 
 Chaque ligne est vérifiée par `api/entry_triggers_test.ts`, qui échoue si un type d'entry n'y figure pas. `userId` désigne le développeur dont parle l'entry : l'auteur de l'action, ou le propriétaire de la preuve pour une entry de réputation (l'aidant, l'auteur de la PR). Les autres destinataires viennent des ensembles du listener ou d'une vérification SQL (`sqlCheck`, comme Tournament) : le demandeur et les développeurs matchés d'une demande d'aide, le canal d'un message.
 
@@ -855,8 +855,9 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 | Report | reportId, reporterId, targetType, targetId, reason, comment?, status (open / resolved / dismissed), createdAt, resolvedAt? | UNIQUE(reporterId, targetType, targetId) ; index (status, createdAt) |
 | ModerationAction | moderationActionId, moderatorId, reportId?, targetType, targetId, action (dismiss / hide / warn / suspend / revoke\_evidence), reason, until?, createdAt | Historique immuable |
 | `Conversation` | conversationId, startedBy, status (pending / accepted / declined), createdAt, updatedAt (dernier message) | Une seule par paire de développeurs |
-| `ConversationMember` | conversationMemberId, conversationId, userId, lastReadAt? | UNIQUE(conversationId, userId) ; index (userId) |
-| `DirectMessage` | directMessageId, conversationId, authorId, body, createdAt | Index (conversationId, createdAt) |
+| `ConversationMember` | conversationMemberId, conversationId, userId, lastReadAt?, mutedAt?, archivedAt? | UNIQUE(conversationId, userId) ; index (userId) |
+| `DirectMessage` | directMessageId, conversationId, authorId, body (vide une fois supprimé), createdAt, editedAt?, deletedAt?, replyToId?, linkPreview? (JSON : url, title, description, site) | Index (conversationId, createdAt) |
+| `DirectMessageReaction` | directMessageReactionId, directMessageId, userId, emoji, createdAt | UNIQUE(directMessageId, userId, emoji) |
 | `UserBlock` | userBlockId, blockerId, blockedId, createdAt | UNIQUE(blockerId, blockedId) |
 | Media | mediaId, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
 
@@ -887,7 +888,7 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Aide | `GET/api/help` (filtres) · `GET/api/help/detail` (id) · `POST/api/help/create` · `POST/api/help/accept` · `POST/api/help/deliver` · `POST/api/help/confirm` · `POST/api/help/cancel` · `GET/api/help/for-me` |
 | Notifications | `GET/api/notifications` · `POST/api/notification/read` · `POST/api/notifications/read-all` · `POST/api/notification/preferences` |
 | Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (onglet, curseur) · `POST/api/post/create` · `POST/api/post/reply` · `POST/api/post/repost` · `GET/api/post/thread` (id, profondeur) · `POST/api/post/accept-answer` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
-| Messages | `GET/api/conversations` · `GET/api/conversation` (id, avant) · `POST/api/conversation/start` (username, body) · `POST/api/conversation/message` · `POST/api/conversation/read` · `POST/api/conversation/accept` · `POST/api/conversation/decline` · `POST/api/user/block` (username, blocked) · `POST/api/conversation/report` (message, motif) |
+| Messages | `GET/api/conversations` · `GET/api/conversation` (id, avant) · `POST/api/conversation/start` (username, body) · `POST/api/conversation/message` (réponse facultative) · `POST/api/conversation/message/edit` · `POST/api/conversation/message/delete` · `POST/api/conversation/message/react` (emoji) · `POST/api/conversation/read` · `POST/api/conversation/unread` (à partir d'un message) · `POST/api/conversation/mute` · `POST/api/conversation/archive` · `GET/api/conversations/search` (q) · `POST/api/conversation/accept` · `POST/api/conversation/decline` · `POST/api/user/block` (username, blocked) · `POST/api/conversation/report` (message, motif) |
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
