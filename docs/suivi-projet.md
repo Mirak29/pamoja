@@ -567,6 +567,13 @@ Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (
 - **Livrable** : `api/help.ts`, `api/help-rules.ts`, `api/pull-skills.ts`, `migrations/003-help-request-fields.js`, routes `GET/api/help` et `POST/api/help/create`, `api/help_test.ts` (8 tests), formulaire `web/pages/help/new-help.tsx` branché sur l'API, `web/lib/live-data.ts`
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-316 · Vitrine du profil : badges, réputation, Collaboration Map et Graph
+
+Les badges deviennent des médaillons à la manière des succès GitHub : un emblème par badge (y compris Mainteneur et Pilier de communauté, calculés par le serveur), un anneau dans la teinte métal du niveau (douze tokens ajoutés au thème), une pastille « x2 » à « x4 », un arc indigo en route vers le Bronze ; la section met en avant le prochain palier avec l'action qui le fait grandir sur son propre profil, et montre les badges à découvrir. La réputation passe des barres à cinq colonnes isométriques. La Collaboration Map devient un globe qu'on fait tourner, aux couleurs de Pamoja, avec un arc par pays relié et un vol vers un pays de la liste ; le Graph devient une étoile à deux niveaux qui met les projets en avant : le développeur, ses cinq lieux principaux, puis les personnes près du lieu qu'elles partagent le plus, nommées avec leur nombre de liens, et un panneau de détail à côté (survol, clic ou clavier) ; le panneau « Réseau de travail » montre tout avec une recherche, et le mobile garde un classement en barres. Des colonnes, des orbites et un simple classement ont été essayés sur le profil chargé avant ce choix. Un profil de démo chargé, Wanjiru Kamau (260 preuves, 70 collaborateurs, 14 pays, généré avec une graine fixe), sert à le vérifier sans l'API. Le badge Cross-border compte, dans les fixtures, les mêmes pays que la carte. Vérifié dans le navigateur en clair, en sombre et sur mobile, avec la connexion simulée.
+
+- **Livrable** : `web/pages/profile/reputation.tsx`, `web/pages/profile/collaboration-map.tsx` (globe), `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/land.ts`, `web/fixtures/reputation.ts` et `web/fixtures/people.ts` (profil chargé), `docs/identite/tokens.json` et `web/assets/styles/theme.css` (teintes métal), `web/lib/english.ts`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -142,13 +142,14 @@ Responsable : _à répartir_
 - [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
 - [ ] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]`
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
-- [ ] **PAM-309** · Collaboration Map (une colonne par pays sur grille isométrique, sans contour de l'Afrique, pays du profil exclu des pays reliés) et Collaboration Graph (§9.3, §12.7) `[démo]`
+- [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
 - [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 - [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
 - [x] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2) — @niangoos
 - [x] **PAM-315** · Profil, passeport et partage (QA du 10 oct.) : chaque preuve mène à la PR sur GitHub ; mêmes chiffres partout (aides confirmées, Entraide, reviews du badge) ; les stats nulles ne sont pas mises en avant sur le passeport ni la carte ; « Copier le lien » dans le partage ; une proposition de collaboration demande un message, et la PR quand on propose une review ; sur mobile, le nom passe avant les actions (§7.6, §9.1, §17.1) `[démo]` — @Mirak29
+- [x] **PAM-316** · Vitrine du profil : badges en médaillons façon succès GitHub (teinte métal par niveau, prochain palier mis en avant, badges à découvrir), réputation en colonnes isométriques, Collaboration Map en globe manipulable, Collaboration Graph en étoile à deux niveaux, projets en avant (projets puis personnes, panneau Réseau de travail, période ; classement sur mobile), badge Cross-border aligné sur les pays de la carte, profil de démo chargé (Wanjiru) (§8.1, §8.2, §9.3, §12.7) `[démo]` — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -297,3 +298,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-23 · Rafraîchissement GitHub : le serveur cherche chaque minute, dès son démarrage, les repos dus (15 min après leur dernière lecture, 1 h pour un repo live) au lieu d'un minuteur de 15 min qui repartait à zéro à chaque redémarrage · §5.4, §5.6
 - 2026-10-23 · Webhooks manqués : à l'ouverture du tunnel, les livraisons des 3 derniers jours jamais arrivées sont renvoyées, de la plus ancienne à la plus récente · §5.6
 - 2026-10-23 · Temps réel : chaque type d'entry a son audience écrite dans un test qui échoue pour un type nouveau sans audience ; `PROJECT_MEMBER_JOINED` atteint aussi le nouveau membre, `HELP_REQUEST_ACCEPTED` aussi l'aidant · §12.8, §13.3
+- 2026-10-23 · Vitrine du profil (PAM-316) : badges en médaillons avec teintes métal par niveau, seule exception à l'indigo ; réputation en colonnes ; Collaboration Map en globe avec les terres (Natural Earth 1:110m), exception à « pas d'illustration » ; Collaboration Graph en étoile à deux niveaux (projets, puis les personnes qui y ont travaillé), limitée aux 5 lieux et 14 personnes les plus liés pour rester lisible ; le reste du réseau dans un panneau ; les fixtures comptent les pays du badge Cross-border comme la carte, dans les deux sens · §8.1, §8.2, §9.3, §12.7

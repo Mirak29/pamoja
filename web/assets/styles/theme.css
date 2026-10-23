@@ -26,6 +26,18 @@
   --warning-soft: #fbf0dc;
   --danger: #b42318;
   --danger-soft: #fce8e6;
+  --metal-bronze: #b87648;
+  --metal-bronze-soft: #f6e7da;
+  --metal-bronze-edge: #7e4e2c;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #eef1f5;
+  --metal-silver-edge: #626b79;
+  --metal-gold: #cf9f1e;
+  --metal-gold-soft: #fbf1d2;
+  --metal-gold-edge: #8c6a0e;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #e7f2f5;
+  --metal-platinum-edge: #4e7482;
   --pop: 0 14px 32px rgba(29, 29, 37, 0.12);
 }
 
@@ -55,6 +67,18 @@
     --warning-soft: #33270f;
     --danger: #ff7b6e;
     --danger-soft: #3a1715;
+    --metal-bronze: #b5774a;
+    --metal-bronze-soft: #3a2a1e;
+    --metal-bronze-edge: #e0a97e;
+    --metal-silver: #9aa3b1;
+    --metal-silver-soft: #2a2e36;
+    --metal-silver-edge: #d3d9e2;
+    --metal-gold: #c99a1e;
+    --metal-gold-soft: #3a3218;
+    --metal-gold-edge: #f0cd66;
+    --metal-platinum: #7fa9b8;
+    --metal-platinum-soft: #22313a;
+    --metal-platinum-edge: #bfe0ea;
     --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
   }
 }
@@ -84,6 +108,18 @@
   --warning-soft: #33270f;
   --danger: #ff7b6e;
   --danger-soft: #3a1715;
+  --metal-bronze: #b5774a;
+  --metal-bronze-soft: #3a2a1e;
+  --metal-bronze-edge: #e0a97e;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #2a2e36;
+  --metal-silver-edge: #d3d9e2;
+  --metal-gold: #c99a1e;
+  --metal-gold-soft: #3a3218;
+  --metal-gold-edge: #f0cd66;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #22313a;
+  --metal-platinum-edge: #bfe0ea;
   --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
 }
 
@@ -119,6 +155,18 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-metal-bronze: var(--metal-bronze);
+  --color-metal-bronze-soft: var(--metal-bronze-soft);
+  --color-metal-bronze-edge: var(--metal-bronze-edge);
+  --color-metal-silver: var(--metal-silver);
+  --color-metal-silver-soft: var(--metal-silver-soft);
+  --color-metal-silver-edge: var(--metal-silver-edge);
+  --color-metal-gold: var(--metal-gold);
+  --color-metal-gold-soft: var(--metal-gold-soft);
+  --color-metal-gold-edge: var(--metal-gold-edge);
+  --color-metal-platinum: var(--metal-platinum);
+  --color-metal-platinum-soft: var(--metal-platinum-soft);
+  --color-metal-platinum-edge: var(--metal-platinum-edge);
 
   --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
@@ -316,6 +364,18 @@
   --warning-soft: #33270f;
   --danger: #ff7b6e;
   --danger-soft: #3a1715;
+  --metal-bronze: #b5774a;
+  --metal-bronze-soft: #3a2a1e;
+  --metal-bronze-edge: #e0a97e;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #2a2e36;
+  --metal-silver-edge: #d3d9e2;
+  --metal-gold: #c99a1e;
+  --metal-gold-soft: #3a3218;
+  --metal-gold-edge: #f0cd66;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #22313a;
+  --metal-platinum-edge: #bfe0ea;
   --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
 }
 
@@ -349,6 +409,18 @@
   --warning-soft: #33270f;
   --danger: #ff7b6e;
   --danger-soft: #3a1715;
+  --metal-bronze: #b5774a;
+  --metal-bronze-soft: #3a2a1e;
+  --metal-bronze-edge: #e0a97e;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #2a2e36;
+  --metal-silver-edge: #d3d9e2;
+  --metal-gold: #c99a1e;
+  --metal-gold-soft: #3a3218;
+  --metal-gold-edge: #f0cd66;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #22313a;
+  --metal-platinum-edge: #bfe0ea;
   --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
 }
 
@@ -377,6 +449,18 @@
   --warning-soft: #fbf0dc;
   --danger: #b42318;
   --danger-soft: #fce8e6;
+  --metal-bronze: #b87648;
+  --metal-bronze-soft: #f6e7da;
+  --metal-bronze-edge: #7e4e2c;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #eef1f5;
+  --metal-silver-edge: #626b79;
+  --metal-gold: #cf9f1e;
+  --metal-gold-soft: #fbf1d2;
+  --metal-gold-edge: #8c6a0e;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #e7f2f5;
+  --metal-platinum-edge: #4e7482;
   --pop: 0 14px 32px rgba(29, 29, 37, 0.12);
 }
 
@@ -405,6 +489,18 @@
   --warning-soft: #33270f;
   --danger: #ff7b6e;
   --danger-soft: #3a1715;
+  --metal-bronze: #b5774a;
+  --metal-bronze-soft: #3a2a1e;
+  --metal-bronze-edge: #e0a97e;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #2a2e36;
+  --metal-silver-edge: #d3d9e2;
+  --metal-gold: #c99a1e;
+  --metal-gold-soft: #3a3218;
+  --metal-gold-edge: #f0cd66;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #22313a;
+  --metal-platinum-edge: #bfe0ea;
   --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
 }
 

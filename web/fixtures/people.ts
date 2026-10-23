@@ -173,6 +173,24 @@ const fixturePeople = {
     communities: ['go'],
     intents: ['Faire des reviews', 'Mentorer'],
   },
+  // A very active developer, to see the profile at the scale of a social
+  // network (her proofs are generated in web/fixtures/reputation.ts)
+  wanjiru: {
+    login: 'wanjiru',
+    name: 'Wanjiru Kamau',
+    country: 'Kenya',
+    countryCode: 'KE',
+    city: 'Nairobi',
+    role: 'Backend & DevOps',
+    skills: ['Go', 'Kubernetes', 'PostgreSQL'],
+    headline: 'Backend et DevOps, je relis du code dans tout le continent.',
+    bio:
+      'Backend et DevOps à Nairobi. Mainteneuse de plusieurs projets open source, je fais des reviews et du mentorat chaque semaine.',
+    helpTypes: ['Review de code', 'Debug', 'Mentorat'],
+    available: true,
+    communities: ['go', 'devops', 'open-source', 'code-review'],
+    intents: ['Faire des reviews', 'Mentorer', 'Contribuer en open source'],
+  },
 } satisfies Record<string, Person>
 
 export type Login = keyof typeof fixturePeople

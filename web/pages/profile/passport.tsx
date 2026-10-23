@@ -10,7 +10,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
 import { proofMeta, ProofSource } from '/web/pages/profile/proofs-drawer.tsx'
-import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
+import { BadgeList, DimensionColumns } from '/web/pages/profile/reputation.tsx'
 import { t } from '/web/lib/language.ts'
 
 // A visitor sees what someone did: a figure at zero is left out
@@ -122,14 +122,14 @@ export const Passport = ({ login }: { login: Login }) => {
         <div class='mr-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] gap-7'>
           <section class='slab flex flex-col gap-3 p-[22px]'>
             <Eyebrow>Réputation</Eyebrow>
-            <DimensionBars login={login} readOnly />
+            <DimensionColumns login={login} readOnly />
           </section>
           <div class='flex flex-col gap-7'>
             {/* A visitor sees what someone did: an empty section is left out */}
             {badgesOf(login).length > 0 && (
               <section class='slab flex flex-col gap-3 p-[22px]'>
                 <Eyebrow>Badges</Eyebrow>
-                <BadgeList login={login} compact />
+                <BadgeList login={login} />
               </section>
             )}
             {recent.length > 0 && (
