@@ -38,6 +38,7 @@ import {
   sendMessage,
   setBlocked,
   startConversation,
+  typing,
 } from '/api/messages.ts'
 import {
   listNotifications,
@@ -819,6 +820,7 @@ const defs = {
         unread: NUM('Messages of the other one not read yet'),
         muted: BOOL('No toast nor count'),
         archived: BOOL('Out of the main list'),
+        online: BOOL('The other one has Pamoja open'),
       }),
       'The conversations, the latest first',
     ),
@@ -935,6 +937,13 @@ const defs = {
       emoji: LIST([...REACTIONS], 'One of the reactions offered'),
     }),
     description: 'Add a reaction to a message, or take it back',
+  }),
+
+  'POST/api/conversation/typing': route({
+    authorize: withSession,
+    fn: (ctx, { id }) => typing(ctx.session.userId, id),
+    input: OBJ({ id: NUM('Id of the conversation') }),
+    description: 'Tell the other one the developer is typing, for a moment',
   }),
 
   'POST/api/conversation/unread': route({

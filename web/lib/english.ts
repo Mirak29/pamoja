@@ -1458,6 +1458,9 @@ export const english: Record<string, string> = {
   'Message trouvé par la recherche.': 'Message found by the search.',
   'Nouveaux messages': 'New messages',
   'En réponse à ton message': 'Replying to your message',
+  'écrit…': 'typing…',
+  '· en ligne': '· online',
+  'En ligne': 'Online',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1672,4 +1675,5 @@ export const englishTemplates: Record<string, string> = {
   'Archives · {0}': 'Archived · {0}',
   'En réponse à {0}': 'Replying to {0}',
   'Réagir {0}': 'React {0}',
+  '{0} écrit…': '{0} is typing…',
 }

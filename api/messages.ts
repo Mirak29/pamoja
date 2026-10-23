@@ -3,6 +3,7 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { LIMITS } from '/api/limits.ts'
+import { isOnline, sendTo } from '/api/presence.ts'
 import { userIdOfLogin } from '/api/user.ts'
 
 // Direct messages (§10.6): a conversation between two developers. Two who
@@ -470,8 +471,27 @@ export const listConversations = (me: number) =>
       unread: row.unread,
       muted: !!row.mutedAt,
       archived: !!row.archivedAt,
+      // Seen only in an accepted conversation with no block (§10.6)
+      online: row.status === 'accepted' && rights.canWrite &&
+        isOnline(row.other),
     }]
   })
+
+// « En train d'écrire… » (§10.6): sent to the other one at once, never
+// stored, at most once every 2 s by conversation
+const TYPING_EVERY = 2_000
+const typingAt = new Map<string, number>()
+
+export const typing = (me: number, conversationId: number) => {
+  const row = getMine({ conversationId, userId: me })
+  if (!row) throw notFound()
+  if (row.status !== 'accepted' || !rightsOf(row, me).canWrite) return
+  const key = `${me}:${conversationId}`
+  const at = Date.now()
+  if (at - (typingAt.get(key) ?? 0) < TYPING_EVERY) return
+  typingAt.set(key, at)
+  sendTo(row.other, 'typing', { conversationId })
+}
 
 const PAGE = 50
 

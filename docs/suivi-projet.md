@@ -699,6 +699,15 @@ Vérifié dans le navigateur à deux comptes, en direct des deux côtés : Mouss
 - **Livrable** : routes `POST/api/conversation/message/edit`, `…/delete`, `…/react`, `POST/api/conversation/unread`, `…/mute`, `…/archive`, `GET/api/conversations/search` ; table `DirectMessageReaction`, colonnes de la migration 007, entry `DIRECT_MESSAGE_UPDATED` ; 4 tests de plus dans `api/messages_test.ts` ; `web/lib/messages.ts`, `web/pages/messages-page.tsx`, traductions ; §10.6
 - **Par** : @Mirak29
 
+### 2026-10-23 · PAM-524 · « En train d'écrire… » et statut en ligne
+
+Dans une conversation, on voit maintenant si l'autre est là : un point vert sur son avatar, dans la liste et en tête de la conversation, et « en ligne » sous son nom. Quand il tape, « Awa Diop écrit… » s'affiche sous les messages et « écrit… » remplace l'aperçu dans la liste ; l'indication s'efface 6 secondes après la dernière frappe ou à l'arrivée du message. Rien n'est enregistré : le serveur tient la présence en mémoire, par connexion temps réel, et envoie des événements éphémères qui ne portent jamais le texte. Seul l'autre participant d'une conversation acceptée, sans blocage, voit ces signaux : ni une demande de message ni un développeur bloqué. Un rechargement de page ne fait pas clignoter le statut : on passe hors ligne 10 secondes après avoir fermé son dernier onglet. Ces fonctions servent de base à la présence des projets (PAM-407).
+
+Vérifié dans le navigateur à deux comptes : Awa tape sans envoyer, Moussa voit « écrit… » dans la liste et sous les messages, puis l'indication disparaît ; Awa ferme son onglet et le point vert s'éteint chez Moussa après le délai.
+
+- **Livrable** : `api/presence.ts`, connexions suivies dans `api/events.ts`, `POST/api/conversation/typing`, `online` dans `GET/api/conversations`, 1 test de plus dans `api/messages_test.ts` ; `onSignal` dans `web/lib/realtime.ts`, `web/lib/messages.ts`, `web/pages/messages-page.tsx`, traductions ; §10.6, §13.6
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -4,6 +4,7 @@ import { now } from '@01edu/time'
 import { entries } from '/api/entry-types.ts'
 import { Profile, Project, User } from '/api/schema.ts'
 import { createSession } from '/api/session.ts'
+import server from '/api/server.ts'
 import { request } from '/api/testing.ts'
 
 // Direct messages (§10.6)
@@ -61,6 +62,7 @@ const list = async (who: Dev) =>
     with: { login: string }
     muted: boolean
     archived: boolean
+    online: boolean
   }[]
 
 Deno.test('messages: a stranger sends a request, one message, never told of a refusal', async () => {
@@ -529,4 +531,77 @@ Deno.test("messages: search one's conversations only (PAM-527)", async () => {
     400,
   )
   assertEquals(other > 0, true)
+})
+
+// The event stream of a developer, read as text until it is quiet
+const stream = async (who: Dev) => {
+  const res = await server.fetch(
+    new Request('http://localhost/api/events', {
+      headers: { Accept: 'text/event-stream', Cookie: who.cookie },
+    }),
+  )
+  const reader = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let pending: ReturnType<typeof reader.read> | undefined
+  const read = async (wait = 50) => {
+    let text = ''
+    while (true) {
+      pending ??= reader.read()
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const chunk = await Promise.race([
+        pending,
+        new Promise<undefined>((resolve) => timer = setTimeout(resolve, wait)),
+      ])
+      clearTimeout(timer)
+      if (!chunk || chunk.done) return text
+      pending = undefined
+      text += decoder.decode(chunk.value)
+    }
+  }
+  return { read, close: () => reader.cancel() }
+}
+
+Deno.test('messages: online and typing, in memory, to the other one only (PAM-524)', async () => {
+  const { kadi, sena, id } = await talking()
+  const online = async (who: Dev) => (await list(who))[0].online
+  assertEquals(await online(kadi), false)
+  const kadiEvents = await stream(kadi)
+  await kadiEvents.read()
+  // Sena opens Pamoja: Kadi is told, and sees her online
+  const senaEvents = await stream(sena)
+  await senaEvents.read()
+  assertEquals(
+    await kadiEvents.read(),
+    'event: presence\ndata: {"login":"sena","online":true}\n\n',
+  )
+  assertEquals([await online(kadi), await online(sena)], [true, true])
+  // Sena types: Kadi is told which conversation, never the text; once
+  // every 2 s at most
+  assertEquals(
+    (await sena.call('/api/conversation/typing', { id })).status,
+    204,
+  )
+  await sena.call('/api/conversation/typing', { id })
+  assertEquals(
+    await kadiEvents.read(),
+    `event: typing\ndata: {"conversationId":${id}}\n\n`,
+  )
+  assertEquals(await senaEvents.read(), '')
+  // A stranger's request: no presence, no typing
+  const yao = await dev('yao')
+  const request = (await write(yao, sena, 'Bonjour')).json.id
+  assertEquals((await list(yao))[0].online, false)
+  await sena.call('/api/conversation/typing', { id: request })
+  assertEquals(
+    (await yao.call('/api/conversation/typing', { id })).status,
+    404,
+  )
+  // A block hides it both ways
+  await sena.call('/api/user/block', { username: 'kadi', blocked: true })
+  assertEquals([await online(kadi), await online(sena)], [false, false])
+  await sena.call('/api/user/block', { username: 'kadi', blocked: false })
+  // Sena closes her tab: offline at once for a new reading
+  await senaEvents.close()
+  assertEquals(await online(kadi), false)
+  await kadiEvents.close()
 })

@@ -4,7 +4,7 @@ import { CircleAlert, MessageSquare } from '/web/assets/icons.tsx'
 import type { ReportReason } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t } from '/web/lib/language.ts'
-import { onEvent, onReconnect } from '/web/lib/realtime.ts'
+import { onEvent, onReconnect, onSignal } from '/web/lib/realtime.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { notify } from '/web/ui/toast.tsx'
 
@@ -104,10 +104,63 @@ const announce = (before: Conversation[], after: Conversation[]) => {
 
 export const loadConversations = () =>
   api['GET/api/conversations'].fetch().then((list) => {
-    announce(conversations.peek(), list)
+    const before = conversations.peek()
+    announce(before, list)
+    // Their message arrived: they stopped typing
+    for (const c of list) {
+      const was = before.find((b) => b.id === c.id)?.last?.at
+      c.last && !c.last.mine && c.last.at !== was && stopTyping(c.id)
+    }
     conversations.value = list
+    online.value = new Set(
+      list.filter((c) => c.online).map((c) => c.with.login),
+    )
     conversationsLoaded.value = true
   }, () => {})
+
+/*
+ * Presence (§10.6, §13.6): in memory on the server, never stored
+ */
+
+/** Logins of the correspondents who have Pamoja open */
+export const online = signal(new Set<string>())
+
+onSignal('presence', ({ login, online: on }) => {
+  const next = new Set(online.peek())
+  on ? next.add(login) : next.delete(login)
+  online.value = next
+})
+
+/** The conversations where the other one is typing, until when */
+export const typingIn = signal(new Map<number, number>())
+// The server is told at most every 3 s while one types: shown 6 s
+const TYPING_SHOWN = 6_000
+const TELL_EVERY = 3_000
+
+const stopTyping = (id: number) => {
+  if (!typingIn.peek().has(id)) return
+  const next = new Map(typingIn.peek())
+  next.delete(id)
+  typingIn.value = next
+}
+
+onSignal('typing', ({ conversationId }) => {
+  const until = Date.now() + TYPING_SHOWN
+  typingIn.value = new Map(typingIn.peek()).set(conversationId, until)
+  setTimeout(() => {
+    typingIn.peek().get(conversationId) === until && stopTyping(conversationId)
+  }, TYPING_SHOWN)
+})
+
+let told = { id: 0, at: 0 }
+
+/** Tells the other one the developer is typing; never the text */
+export const tellTyping = (id: number) => {
+  const at = Date.now()
+  if (told.id === id && at - told.at < TELL_EVERY) return
+  told = { id, at }
+  api['POST/api/conversation/typing'].fetch({ id }).catch(() => {})
+}
 
 const markRead = (id: number) => {
   conversations.value = conversations.peek().map((c) =>
@@ -179,6 +232,8 @@ export const sendMessage = async (id: number, body: string, replyTo = 0) => {
       : failed()
     return false
   }
+  // Sent: the next words typed are told at once
+  told = { id: 0, at: 0 }
   await Promise.all([openConversation(id), loadConversations()])
   return true
 }

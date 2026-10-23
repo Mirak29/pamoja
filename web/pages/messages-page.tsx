@@ -34,6 +34,7 @@ import {
   loadOlder,
   markUnread,
   type Message,
+  online,
   openAt,
   openConversation,
   react,
@@ -47,7 +48,9 @@ import {
   setMuted,
   startConversation,
   tellLimit,
+  tellTyping,
   thread,
+  typingIn,
 } from '/web/lib/messages.ts'
 import { loadProfile } from '/web/lib/profile.ts'
 import { ago } from '/web/lib/time.ts'
@@ -73,6 +76,25 @@ const idOfAddress = () => {
  * The list
  */
 
+/** The avatar, with a dot while the developer has Pamoja open */
+const Present = ({ login, name, src, size }: {
+  login: string
+  name: string
+  src?: string
+  size: 38 | 42
+}) => (
+  <span class='relative flex-none'>
+    <Avatar name={name} src={src} size={size} />
+    {online.value.has(login) && (
+      <span
+        role='img'
+        aria-label='En ligne'
+        class='absolute right-0 bottom-0 size-3 rounded-full border-2 border-surface-100 bg-verified'
+      />
+    )}
+  </span>
+)
+
 const Row = ({ conversation, active }: {
   conversation: Conversation
   active: boolean
@@ -84,7 +106,8 @@ const Row = ({ conversation, active }: {
       active ? 'bg-indigo-soft' : ''
     }`}
   >
-    <Avatar
+    <Present
+      login={conversation.with.login}
       name={conversation.with.name}
       src={conversation.with.avatarUrl}
       size={42}
@@ -116,10 +139,20 @@ const Row = ({ conversation, active }: {
               : 'text-ink-muted'
           }`}
         >
-          {conversation.last?.mine && <span>{t`Toi : `}</span>}
-          {conversation.last?.deleted
-            ? <em>Message supprimé</em>
-            : <span translate={false}>{conversation.last?.excerpt}</span>}
+          {typingIn.value.has(conversation.id)
+            ? <em class='text-indigo'>écrit…</em>
+            : (
+              <>
+                {conversation.last?.mine && <span>{t`Toi : `}</span>}
+                {conversation.last?.deleted
+                  ? <em>Message supprimé</em>
+                  : (
+                    <span translate={false}>
+                      {conversation.last?.excerpt}
+                    </span>
+                  )}
+              </>
+            )}
         </span>
         {conversation.unread > 0 && (
           <span
@@ -271,8 +304,17 @@ const List = ({ openId }: { openId: number | null }) => {
 
 /** Enter sends, Shift + Enter goes to the next line, ↑ edits the last one */
 const Composer = (
-  { placeholder, replying, withName, onCancelReply, onEditLast, onSend }: {
+  {
+    placeholder,
+    replying,
+    withName,
+    onCancelReply,
+    onEditLast,
+    onTyping,
+    onSend,
+  }: {
     placeholder: string
+    onTyping?: () => void
     replying?: Message | null
     withName?: string
     onCancelReply?: () => void
@@ -326,7 +368,10 @@ const Composer = (
           disabled={busy}
           aria-label={placeholder}
           placeholder={placeholder}
-          onInput={(event) => setDraft(event.currentTarget.value)}
+          onInput={(event) => {
+            setDraft(event.currentTarget.value)
+            event.currentTarget.value.trim() && onTyping?.()
+          }}
           onKeyDown={(event) => {
             if (event.key === 'ArrowUp' && !draft && onEditLast) {
               event.preventDefault()
@@ -376,10 +421,13 @@ const Header = ({ login, name, avatarUrl, actions }: {
       href={`@${login}`}
       class='flex min-w-0 flex-1 items-center gap-3 text-ink no-underline hover:no-underline'
     >
-      <Avatar name={name} src={avatarUrl} size={38} />
+      <Present login={login} name={name} src={avatarUrl} size={38} />
       <span class='flex min-w-0 flex-col'>
         <span translate={false} class='truncate font-semibold'>{name}</span>
-        <span class='font-mono text-[12px] text-ink-muted'>@{login}</span>
+        <span class='font-mono text-[12px] text-ink-muted'>
+          @{login}
+          {online.value.has(login) && <span class='ml-1'>· en ligne</span>}
+        </span>
       </span>
     </A>
     {actions}
@@ -834,6 +882,14 @@ const Open = ({ id }: { id: number }) => {
         ))}
         <div ref={end} />
       </div>
+      {typingIn.value.has(id) && (
+        <p
+          aria-live='polite'
+          class='-mt-1 px-4 pb-2 text-[13px] text-ink-muted italic'
+        >
+          {t`${other.name} écrit…`}
+        </p>
+      )}
       {notice}
       {shown.canWrite && !shown.jumpedTo && (
         <Composer
@@ -844,6 +900,7 @@ const Open = ({ id }: { id: number }) => {
           onEditLast={canAct && lastMine
             ? () => setEditing(lastMine.id)
             : undefined}
+          onTyping={canAct ? () => tellTyping(id) : undefined}
           onSend={async (text) => {
             const sent = await sendMessage(id, text, replying?.id ?? 0)
             sent && setReplying(null)
