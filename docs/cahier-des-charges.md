@@ -587,7 +587,7 @@ Une conversation à deux, comme la messagerie de LinkedIn : on écrit à un dév
 3. **Répondre à un message précis** de la même conversation, pas à un message supprimé : le début du message cité (120 caractères, en texte simple) s'affiche au-dessus de la réponse et y mène. **Réactions** : six emoji (👍 ❤️ 😂 🎉 🙏 👀), une fois chacun par développeur, un second clic la retire ; au plus 60 réactions par minute.
 4. **Séparateur « Nouveaux messages »** avant le premier message reçu depuis la dernière lecture, qui reste en place tant que la conversation est ouverte. **Marquer comme non lu** à partir d'un message reçu : la conversation se ferme et le compte repart de ce message. **Sourdine** : plus de toast, et la conversation sort du compteur du menu (son propre compte reste, en gris). **Archiver** : la conversation passe dans « Archives », en bas de la liste, jusqu'au prochain message, d'un côté ou de l'autre.
 5. **Recherche** dans ses conversations : de 2 à 100 caractères, sans tenir compte de la casse, dans les messages non supprimés ; les 30 plus récents, avec les mots autour. Un résultat ouvre la conversation sur ce message, avec un retour aux derniers messages. Au plus 30 recherches par minute.
-6. **Images et fichiers** (après l'envoi d'images, §17.3) et **aperçu des liens** (titre et image d'une page, lus par le serveur).
+6. **Images et fichiers** (envoi décrit au §17.3) : jusqu'à 4 par message, images JPEG, PNG ou WebP (2 Mo) et PDF (5 Mo), choisis ou collés dans le champ (une capture d'écran collée part comme une image). Un message peut n'être que des fichiers. Seuls les deux participants les ouvrent ; un PDF se télécharge, jamais affiché dans la page. Supprimer le message supprime ses fichiers. **Aperçu des liens** : après l'envoi, le serveur lit la page du premier lien du message et garde son titre, sa description et son site, **jamais son image** (rien d'un tiers ne se charge chez le lecteur) ; modifier le message relit l'aperçu. Lecture prudente : voir « Requête vers une adresse choisie par un membre » au §16. Une demande de message reste du texte : ni fichier ni aperçu avant l'acceptation.
 
 ## 11. IA
 
@@ -861,7 +861,7 @@ Les badges sont définis dans le code (constantes, §8.2), pas en base.
 | `DirectMessage` | directMessageId, conversationId, authorId, body (vide une fois supprimé), createdAt, editedAt?, deletedAt?, replyToId?, linkPreview? (JSON : url, title, description, site) | Index (conversationId, createdAt) |
 | `DirectMessageReaction` | directMessageReactionId, directMessageId, userId, emoji, createdAt | UNIQUE(directMessageId, userId, emoji) |
 | `UserBlock` | userBlockId, blockerId, blockedId, createdAt | UNIQUE(blockerId, blockedId) |
-| Media | mediaId, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
+| Media | mediaId, ownerId, storageKey, mime, width, height, bytes, targetType? (profile\_cover / project\_gallery / post / help\_request / message), targetId?, position, hiddenAt?, source, createdAt, fileName? (nom d'un PDF) | Index (targetType, targetId) ; sans cible après 24 h → supprimée. Les vidéos intégrées sont stockées en JSON dans le contenu qui les porte (provider, videoId, url, title, thumbnailUrl) |
 
 ### 14.6 Entries
 
@@ -890,7 +890,8 @@ Format `@01edu/api` : clé `'METHODE/chemin'` sans paramètre de chemin ; identi
 | Aide | `GET/api/help` (filtres) · `GET/api/help/detail` (id) · `POST/api/help/create` · `POST/api/help/accept` · `POST/api/help/deliver` · `POST/api/help/confirm` · `POST/api/help/cancel` · `GET/api/help/for-me` |
 | Notifications | `GET/api/notifications` · `POST/api/notification/read` · `POST/api/notifications/read-all` · `POST/api/notification/preferences` |
 | Communautés, feed | `GET/api/communities` · `GET/api/community` (slug) · `POST/api/community/create` · `POST/api/community/join` · `GET/api/feed` (onglet, curseur) · `POST/api/post/create` · `POST/api/post/reply` · `POST/api/post/repost` · `GET/api/post/thread` (id, profondeur) · `POST/api/post/accept-answer` · `POST/api/reaction/toggle` · `POST/api/bookmark/toggle` · `POST/api/follow/toggle` |
-| Messages | `GET/api/conversations` · `GET/api/conversation` (id, avant) · `POST/api/conversation/start` (username, body) · `POST/api/conversation/message` (réponse facultative) · `POST/api/conversation/message/edit` · `POST/api/conversation/message/delete` · `POST/api/conversation/message/react` (emoji) · `POST/api/conversation/read` · `POST/api/conversation/typing` · `POST/api/conversation/unread` (à partir d'un message) · `POST/api/conversation/mute` · `POST/api/conversation/archive` · `GET/api/conversations/search` (q) · `POST/api/conversation/accept` · `POST/api/conversation/decline` · `POST/api/user/block` (username, blocked) · `POST/api/conversation/report` (message, motif) |
+| Messages | `GET/api/conversations` · `GET/api/conversation` (id, avant) · `POST/api/conversation/start` (username, body) · `POST/api/conversation/message` (réponse et fichiers facultatifs) · `POST/api/conversation/message/edit` · `POST/api/conversation/message/delete` · `POST/api/conversation/message/react` (emoji) · `POST/api/conversation/read` · `POST/api/conversation/typing` · `POST/api/conversation/unread` (à partir d'un message) · `POST/api/conversation/mute` · `POST/api/conversation/archive` · `GET/api/conversations/search` (q) · `POST/api/conversation/accept` · `POST/api/conversation/decline` · `POST/api/user/block` (username, blocked) · `POST/api/conversation/report` (message, motif) |
+| Images et fichiers | `POST/api/media/upload` (formulaire, champ `file`) · `GET/api/media` (clé) |
 | Découverte | `GET/api/explore/developers` · `GET/api/explore/projects` · `GET/api/explore/work` · `GET/api/search` |
 | Temps réel | `GET/api/events` |
 | Modération | POST/api/report/create · GET/api/moderation/queue · POST/api/moderation/action · GET/api/moderation/history |
@@ -920,6 +921,8 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | Outils de dev de `@01edu/api` | Hors production, `POST/api/sql/execute` exécute n'importe quel SQL sans session, depuis le réseau local, le tunnel ou une page piégée | Pamoja ne sert ni `POST/api/sql/execute`, ni `GET/api/sql/metrics`, ni `GET/api/router/metrics`, quel que soit `APP_ENV` (404) ; le serveur de dev n'écoute que sur `127.0.0.1` ; le tunnel de dev ne laisse passer que `POST/api/github/webhook` (§5.6) |
 | Détournement de l'IA | Sortie manipulée par un README | Contenu encadré comme donnée, sortie JSON validée (§11) |
 | Meilisearch exposé | Lecture ou modification de l'index par n'importe qui | Conteneur joignable uniquement depuis l'app, clé maître côté serveur, aucun contenu non public indexé |
+| Requête vers une adresse choisie par un membre (SSRF) | L'aperçu d'un lien fait lire au serveur une adresse de son réseau (métadonnées du cloud, services internes) | `http` ou `https` sur leurs ports habituels, sans identifiants dans l'URL ; nom résolu, toutes ses adresses publiques (jamais privées, locales, réservées, ni une IPv6 qui cache une IPv4) ; chaque redirection revérifiée, 3 au plus ; 5 s et 512 Ko au plus ; page HTML seulement ; titre, description et site gardés en texte, sans image (`api/link-preview.ts`). Reste possible : un nom qui change d'adresse entre la vérification et la lecture (DNS rebinding), d'où les autres limites |
+| Fichier piégé | Un script déguisé en image, ou un PDF ouvert dans la page | Type lu sur les premiers octets, jamais sur le nom ; servi avec son vrai type, `nosniff`, `Content-Security-Policy: sandbox` ; PDF en téléchargement seulement ; nom de fichier nettoyé (§17.3) |
 | Photo publiée avec sa position GPS | Fuite du lieu de vie d'un utilisateur | Réencodage dans le navigateur avant l'envoi, qui supprime les métadonnées EXIF (§17.3) |
 | Iframe vidéo malveillante | Contenu tiers arbitraire dans la page | Liste fermée de fournisseurs, URL du lecteur construite par le serveur, \`frame-src\` limité à ces domaines |
 
@@ -965,14 +968,16 @@ Les images sont uploadées et hébergées par la plateforme. Les vidéos ne le s
 | Post du feed | 4 |
 | Demande d'aide (capture d'une erreur, d'un écran) | 4 |
 | Message d'un canal | 1 |
+| Message direct | 4, images ou PDF (§10.6) |
 | Share Card et images OG | Générées par le serveur (§17.2) |
 
 Les avatars restent ceux de GitHub.
 
 - **Préparation dans le navigateur** : avant l'envoi, l'image est redimensionnée (2 000 px maximum sur le plus grand côté) et réencodée en WebP ou JPEG via un canvas. L'upload est plus léger et les métadonnées EXIF disparaissent, dont les **coordonnées GPS** que contiennent souvent les photos prises au téléphone.
 - **Upload** : route `POST/api/media/upload`, déclarée sans `input` (lecture du `FormData` dans le handler). Formats JPEG, PNG, WebP ; type vérifié sur les premiers octets du fichier, pas sur l'extension ; 2 Mo maximum ; 20 uploads par utilisateur et par heure.
-- **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande ou au projet à l'enregistrement. Une image jamais rattachée est supprimée au bout de 24 h.
-- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire. Les images sont servies avec leur vrai type MIME et un cache long.
+- **Fichiers** : seuls les messages directs acceptent aussi un PDF, 5 Mo au plus, gardé avec son nom nettoyé (sans chemin ni caractère de contrôle) et servi en téléchargement (`Content-Disposition: attachment`), jamais ouvert dans la page.
+- **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande, au projet ou au message à l'enregistrement, par son propriétaire et une seule fois. Une image jamais rattachée est supprimée au bout de 24 h (vérifié chaque heure par le serveur).
+- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement. Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
 - **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
 
 **Vidéos intégrées par lien**

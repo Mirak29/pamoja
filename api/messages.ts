@@ -2,7 +2,16 @@ import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
-import { LIMITS } from '/api/limits.ts'
+import { LIMITS, MAX_ATTACHMENTS } from '/api/limits.ts'
+import { APP_ENV } from '/api/lib/env.ts'
+import {
+  type Fetch,
+  fetchPreview,
+  firstLink,
+  type Preview,
+} from '/api/link-preview.ts'
+import { attach, mediaOf, removeMediaOf } from '/api/media.ts'
+import { type Window, within } from '/api/lib/rate.ts'
 import { isOnline, sendTo } from '/api/presence.ts'
 import { userIdOfLogin } from '/api/user.ts'
 
@@ -56,8 +65,6 @@ export const RATE = {
 // The reactions offered (§10.6): a short list, like a keyboard row
 export const REACTIONS = ['👍', '❤️', '😂', '🎉', '🙏', '👀'] as const
 
-type Window = { n: number; oldest: number | null }
-
 const countRequests = sql<Window, { me: number; since: number }>`
   SELECT count(*) AS n, min(createdAt) AS oldest FROM conversation
   WHERE startedBy = :me AND status != 'accepted' AND createdAt > :since
@@ -86,29 +93,6 @@ const countReports = sql<Window, { me: number; since: number }>`
   WHERE reporterId = :me AND targetType = 'direct_message'
     AND createdAt > :since
 `.get
-
-/**
- * A 429 when the window is full, with when to try again: once the oldest
- * action of the window leaves it
- */
-const within = (
-  count: (window: { me: number; since: number }) => Window | undefined,
-  limit: { count: number; per: number },
-  me: number,
-  message: string,
-) => {
-  const at = now()
-  const window = count({ me, since: at - limit.per })!
-  if (window.n < limit.count) return
-  const retryAfter = Math.max(
-    1,
-    Math.ceil((window.oldest ?? at) + limit.per - at),
-  )
-  throw new respond.TooManyRequestsError(
-    { message, retryAfter },
-    { 'Retry-After': String(retryAfter) },
-  )
-}
 
 const checkMessages = (me: number) => {
   within(countMessages, RATE.messagesPerMinute, me, 'Too many messages')
@@ -273,9 +257,11 @@ const post = (
   body: string,
   at: number,
   replyToId: number | null = null,
+  attachments: number[] = [],
 ) => {
   insertMessage({ conversationId, authorId, body, at, replyToId })
   const directMessageId = db.lastInsertRowId
+  attach(authorId, attachments, 'message', directMessageId)
   touch({ conversationId, at })
   unarchive(conversationId)
   // The author has read up to their own message
@@ -331,10 +317,14 @@ const send = (
   conversationId: number,
   body: string,
   replyTo = 0,
+  attachments: number[] = [],
 ) => {
   const row = getMine({ conversationId, userId: me })
   if (!row) throw notFound()
-  const text = cleanBody(body)
+  // Files alone make a message too
+  const text = attachments.length ? body.trim() : cleanBody(body)
+  if (text.length > LIMITS.directMessage) throw badRequest('Message too long')
+  if (attachments.length > MAX_ATTACHMENTS) throw badRequest('Too many files')
   // A reply answers a message of this conversation, still there
   const answered = replyTo ? getMessage(replyTo) : undefined
   if (
@@ -352,16 +342,104 @@ const send = (
         : 'You cannot write to this developer',
     )
   }
+  // A request stays text: no file from a stranger
+  if (attachments.length && row.status !== 'accepted' && !rights.incoming) {
+    throw forbidden('Files wait for the request to be accepted')
+  }
   checkMessages(me)
   // Answering a request accepts it
   if (rights.incoming) {
     setStatus({ conversationId, status: 'accepted', from: 'pending' })
   }
-  return post(conversationId, me, text, now(), replyTo || null)
+  return post(conversationId, me, text, now(), replyTo || null, attachments)
 }
 
-/** A message in a conversation of the developer */
-export const sendMessage = db.transaction(send)
+/** A message in a conversation of the developer, then its link preview */
+export const sendMessage = (
+  me: number,
+  conversationId: number,
+  body: string,
+  replyTo = 0,
+  attachments: number[] = [],
+) => {
+  const id = db.transaction(send)(
+    me,
+    conversationId,
+    body,
+    replyTo,
+    attachments,
+  )
+  previewLater(id)
+  return id
+}
+
+/*
+ * Link previews (§10.6): read by the server after the message is sent
+ */
+
+const getForPreview = sql<
+  {
+    conversationId: number
+    authorId: number
+    body: string
+    deletedAt: number | null
+    status: string
+  },
+  number
+>`
+  SELECT directMessage.conversationId, directMessage.authorId,
+    directMessage.body, directMessage.deletedAt, conversation.status
+  FROM directMessage
+  JOIN conversation USING (conversationId)
+  WHERE directMessageId = ?
+`.get
+
+const writePreview = sql<
+  undefined,
+  { directMessageId: number; body: string; preview: string }
+>`
+  UPDATE directMessage SET linkPreview = :preview
+  WHERE directMessageId = :directMessageId AND body = :body
+    AND deletedAt IS NULL
+`.run
+
+// The same link in many messages is read once an hour
+const previews = new Map<string, { preview?: Preview; at: number }>()
+const PREVIEW_KEPT = 3600_000
+
+/**
+ * Reads the preview of the first link of a message, in an accepted
+ * conversation, and keeps it if the message did not change meanwhile
+ */
+export const previewMessage = async (
+  directMessageId: number,
+  deps?: { resolve?: (host: string) => Promise<string[]>; fetch?: Fetch },
+) => {
+  const message = getForPreview(directMessageId)
+  if (!message || message.deletedAt || message.status !== 'accepted') return
+  const link = firstLink(message.body)
+  if (!link) return
+  let cached = previews.get(link)
+  if (!cached || Date.now() - cached.at > PREVIEW_KEPT) {
+    cached = { preview: await fetchPreview(link, deps), at: Date.now() }
+    if (previews.size > 500) previews.clear()
+    previews.set(link, cached)
+  }
+  if (!cached.preview) return
+  const written = writePreview({
+    directMessageId,
+    body: message.body,
+    preview: JSON.stringify(cached.preview),
+  })
+  if (!written) return
+  updated(message.conversationId, message.authorId, directMessageId)
+}
+
+// Never during the tests, which call previewMessage with a fake network
+const previewLater = (directMessageId: number) => {
+  if (APP_ENV === 'test') return
+  setTimeout(() => previewMessage(directMessageId).catch(() => {}), 0)
+}
 
 const decide = (me: number, conversationId: number, status: string) => {
   const row = getMine({ conversationId, userId: me })
@@ -554,12 +632,11 @@ const getMember = sql<
   WHERE conversationId = :conversationId AND userId = :userId
 `.get
 
-type Preview = { url: string; title: string; description: string; site: string }
-
 const shownMessage = (
   m: MessageRow,
   me: number,
   reactions: Map<number, { emoji: string; count: number; mine: boolean }[]>,
+  attachments: ReturnType<typeof mediaOf>,
 ) => ({
   id: m.directMessageId,
   author: m.login,
@@ -578,6 +655,7 @@ const shownMessage = (
     }
     : null,
   reactions: m.deletedAt ? [] : reactions.get(m.directMessageId) ?? [],
+  attachments: m.deletedAt ? [] : attachments.get(m.directMessageId) ?? [],
   preview: !m.deletedAt && m.linkPreview
     ? JSON.parse(m.linkPreview) as Preview
     : null,
@@ -622,6 +700,7 @@ export const getConversation = (
       ])
     }
   }
+  const files = mediaOf('message', shown.map((m) => m.directMessageId))
   return {
     id: conversationId,
     with: {
@@ -634,7 +713,7 @@ export const getConversation = (
     archived: !!other.archivedAt,
     // Read up to here before this reading: the « Nouveaux messages » line
     readUpTo: getMember({ conversationId, userId: me })?.lastReadAt ?? 0,
-    messages: shown.reverse().map((m) => shownMessage(m, me, reactions)),
+    messages: shown.reverse().map((m) => shownMessage(m, me, reactions, files)),
     more: page.length > PAGE,
   }
 }
@@ -685,10 +764,14 @@ const deleteReactions = sql<undefined, number>`
 export const editMessage = db.transaction(
   (me: number, messageId: number, body: string) => {
     const message = ownMessage(me, messageId)
-    const text = cleanBody(body)
+    // A message of files alone may lose its text
+    const files = mediaOf('message', [messageId]).size > 0
+    const text = files ? body.trim() : cleanBody(body)
+    if (text.length > LIMITS.directMessage) throw badRequest('Message too long')
     checkMessages(me)
     writeEdit({ directMessageId: messageId, body: text, at: now() })
     updated(message.conversationId, me, messageId)
+    previewLater(messageId)
   },
 )
 
@@ -697,6 +780,7 @@ export const deleteMessage = db.transaction((me: number, messageId: number) => {
   const message = ownMessage(me, messageId)
   writeDelete({ directMessageId: messageId, at: now() })
   deleteReactions(messageId)
+  removeMediaOf('message', messageId)
   updated(message.conversationId, me, messageId)
 })
 

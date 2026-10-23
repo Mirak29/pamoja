@@ -11,7 +11,11 @@ import {
   CircleDot,
   CircleSlash,
   CornerDownRight,
+  Download,
+  FileText,
   Flag,
+  Image,
+  Loader,
   MessageSquare,
   PenLine,
   Plus,
@@ -19,11 +23,12 @@ import {
   SendHorizontal,
   X,
 } from '/web/assets/icons.tsx'
-import { LIMITS } from '/api/limits.ts'
+import { LIMITS, MAX_ATTACHMENTS } from '/api/limits.ts'
 import { type ReportReason, reportReasons } from '/api/vocabulary.ts'
 import { personOf } from '/web/fixtures/people.ts'
 import { t, translate } from '/web/lib/language.ts'
 import {
+  ACCEPTED,
   answerRequest,
   type Conversation,
   conversations,
@@ -33,6 +38,8 @@ import {
   editMessage,
   loadOlder,
   markUnread,
+  type Media,
+  mediaUrl,
   type Message,
   online,
   openAt,
@@ -46,11 +53,13 @@ import {
   setArchived,
   setBlocked,
   setMuted,
+  sizeLabel,
   startConversation,
   tellLimit,
   tellTyping,
   thread,
   typingIn,
+  uploadMedia,
 } from '/web/lib/messages.ts'
 import { loadProfile } from '/web/lib/profile.ts'
 import { ago } from '/web/lib/time.ts'
@@ -146,6 +155,8 @@ const Row = ({ conversation, active }: {
                 {conversation.last?.mine && <span>{t`Toi : `}</span>}
                 {conversation.last?.deleted
                   ? <em>Message supprimé</em>
+                  : conversation.last && !conversation.last.excerpt
+                  ? <em>Pièce jointe</em>
                   : (
                     <span translate={false}>
                       {conversation.last?.excerpt}
@@ -302,6 +313,9 @@ const List = ({ openId }: { openId: number | null }) => {
  * Writing
  */
 
+/** A file picked, while it uploads, then sent */
+type Pending = { local: string; name: string; shown?: string; media?: Media }
+
 /** Enter sends, Shift + Enter goes to the next line, ↑ edits the last one */
 const Composer = (
   {
@@ -312,6 +326,7 @@ const Composer = (
     onEditLast,
     onTyping,
     onSend,
+    files,
   }: {
     placeholder: string
     onTyping?: () => void
@@ -319,23 +334,62 @@ const Composer = (
     withName?: string
     onCancelReply?: () => void
     onEditLast?: () => void
-    onSend: (text: string) => Promise<boolean>
+    onSend: (text: string, attachments: number[]) => Promise<boolean>
+    /** Images and files allowed: an accepted conversation */
+    files?: boolean
   },
 ) => {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState<Pending[]>([])
   const box = useRef<HTMLDivElement>(null)
+  const picker = useRef<HTMLInputElement>(null)
+  const uploading = pending.some((p) => !p.media)
+  const add = (picked: File[]) => {
+    const room = MAX_ATTACHMENTS - pending.length
+    if (picked.length > room) {
+      notify({
+        title: t`${MAX_ATTACHMENTS} fichiers au plus`,
+        body: 'Envoie les autres dans un message suivant.',
+        icon: CircleAlert,
+        tone: 'warning',
+      })
+    }
+    for (const file of picked.slice(0, Math.max(0, room))) {
+      const local = crypto.randomUUID()
+      const shown = file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : undefined
+      setPending((list) => [...list, { local, name: file.name, shown }])
+      uploadMedia(file).then((media) =>
+        setPending((list) =>
+          media
+            ? list.map((p) => p.local === local ? { ...p, media } : p)
+            : list.filter((p) => p.local !== local)
+        )
+      )
+    }
+  }
+  const remove = (local: string) =>
+    setPending((list) => {
+      const gone = list.find((p) => p.local === local)
+      gone?.shown && URL.revokeObjectURL(gone.shown)
+      return list.filter((p) => p.local !== local)
+    })
   useEffect(() => {
     replying && box.current?.querySelector('textarea')?.focus()
   }, [replying?.id])
   const send = async () => {
     const text = draft.trim()
-    if (!text || busy) return
+    if ((!text && !pending.length) || busy || uploading) return
     if (text.length > LIMITS.directMessage) return
     setBusy(true)
-    const sent = await onSend(text)
+    const sent = await onSend(text, pending.map((p) => p.media!.id))
     setBusy(false)
-    sent && setDraft('')
+    if (!sent) return
+    setDraft('')
+    for (const p of pending) p.shown && URL.revokeObjectURL(p.shown)
+    setPending([])
   }
   return (
     <div ref={box} class='flex flex-col border-t border-line'>
@@ -359,7 +413,67 @@ const Composer = (
           </button>
         </div>
       )}
+      {pending.length > 0 && (
+        <div class='flex flex-wrap gap-2 px-3 pt-3'>
+          {pending.map((p) => (
+            <div
+              key={p.local}
+              class='relative flex h-16 max-w-[220px] items-center gap-2 overflow-hidden rounded-md border border-line-strong bg-surface-000'
+            >
+              {p.shown
+                ? <img src={p.shown} alt='' class='size-16 object-cover' />
+                : (
+                  <span
+                    translate={false}
+                    class='flex min-w-0 items-center gap-2 px-3 text-[13px]'
+                  >
+                    <FileText class='size-4 flex-none' />
+                    <span class='truncate'>{p.name}</span>
+                  </span>
+                )}
+              {!p.media && (
+                <span class='absolute inset-0 flex items-center justify-center bg-surface-100/70'>
+                  <Loader class='size-4 animate-spin' aria-label='Envoi…' />
+                </span>
+              )}
+              <button
+                type='button'
+                aria-label='Retirer ce fichier'
+                onClick={() => remove(p.local)}
+                class='absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-md bg-surface-100 text-ink-muted shadow-tile hover:text-danger'
+              >
+                <X class='size-3' />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div class='flex items-end gap-2.5 p-3'>
+        {files && (
+          <>
+            <input
+              ref={picker}
+              type='file'
+              multiple
+              accept={ACCEPTED}
+              class='hidden'
+              onChange={(event) => {
+                add([...event.currentTarget.files ?? []])
+                event.currentTarget.value = ''
+              }}
+            />
+            <button
+              type='button'
+              title='Joindre une image ou un PDF'
+              aria-label='Joindre une image ou un PDF'
+              disabled={busy || pending.length >= MAX_ATTACHMENTS}
+              onClick={() => picker.current?.click()}
+              class='flex size-10 flex-none cursor-pointer items-center justify-center rounded-md border border-line-control text-ink-muted hover:border-line-strong hover:text-indigo disabled:cursor-default disabled:opacity-50'
+            >
+              <Image class='size-4' />
+            </button>
+          </>
+        )}
         <Textarea
           rows={1}
           value={draft}
@@ -371,6 +485,13 @@ const Composer = (
           onInput={(event) => {
             setDraft(event.currentTarget.value)
             event.currentTarget.value.trim() && onTyping?.()
+          }}
+          onPaste={(event) => {
+            // A screenshot pasted, like on Discord
+            const pasted = [...event.clipboardData?.files ?? []]
+            if (!files || !pasted.length) return
+            event.preventDefault()
+            add(pasted)
           }}
           onKeyDown={(event) => {
             if (event.key === 'ArrowUp' && !draft && onEditLast) {
@@ -384,7 +505,11 @@ const Composer = (
           }}
           class='max-h-48 min-h-10 resize-none [field-sizing:content]'
         />
-        <Button size={40} onClick={send} disabled={busy || !draft.trim()}>
+        <Button
+          size={40}
+          onClick={send}
+          disabled={busy || uploading || (!draft.trim() && !pending.length)}
+        >
           <SendHorizontal />
           Envoyer
         </Button>
@@ -452,6 +577,81 @@ const Act = ({ label, onClick, children, danger }: {
   >
     {children}
   </button>
+)
+
+/** 320 × 288 px at most, in its proportions */
+const shownSize = (m: Media) => {
+  const scale = Math.min(1, 320 / m.width, 288 / m.height)
+  return {
+    width: `${Math.round(m.width * scale)}px`,
+    aspectRatio: `${m.width} / ${m.height}`,
+  }
+}
+
+/** The images of a message, then its files, to download */
+const Attachments = ({ items, mine }: { items: Media[]; mine: boolean }) => (
+  <div class={`flex flex-col gap-1.5 ${mine ? 'items-end' : 'items-start'}`}>
+    <div class='flex flex-wrap gap-1.5'>
+      {items.filter((m) => m.image).map((m) => (
+        <a
+          key={m.id}
+          href={mediaUrl(m.key)}
+          target='_blank'
+          rel='noopener'
+          class='block overflow-hidden rounded-lg border border-line-strong bg-surface-000'
+        >
+          <img
+            src={mediaUrl(m.key)}
+            loading='lazy'
+            alt='Image jointe'
+            // Its place is kept before it loads: the conversation does not jump
+            style={shownSize(m)}
+            class='block max-w-full object-contain'
+          />
+        </a>
+      ))}
+    </div>
+    {items.filter((m) => !m.image).map((m) => (
+      <a
+        key={m.id}
+        href={mediaUrl(m.key)}
+        download={m.name}
+        class='flex max-w-[280px] items-center gap-2.5 rounded-lg border border-line-strong bg-surface-000 px-3 py-2 text-ink no-underline hover:border-indigo hover:no-underline'
+      >
+        <FileText class='size-5 flex-none text-ink-muted' />
+        <span class='flex min-w-0 flex-col'>
+          <span translate={false} class='truncate text-[14px] font-semibold'>
+            {m.name}
+          </span>
+          <span class='text-[12px] text-ink-muted'>
+            {t`PDF · ${sizeLabel(m.bytes)}`}
+          </span>
+        </span>
+        <Download class='size-4 flex-none text-ink-muted' />
+      </a>
+    ))}
+  </div>
+)
+
+/** The preview of the first link, read by the server: text only */
+const LinkCard = (
+  { preview }: { preview: NonNullable<Message['preview']> },
+) => (
+  <a
+    href={preview.url}
+    target='_blank'
+    rel='noopener noreferrer nofollow ugc'
+    translate={false}
+    class='flex max-w-[360px] flex-col gap-0.5 rounded-lg border border-line-strong border-l-4 border-l-indigo bg-surface-000 px-3 py-2 text-ink no-underline hover:no-underline'
+  >
+    <span class='text-[12px] text-ink-muted'>{preview.site}</span>
+    <span class='text-[14px] font-semibold text-indigo'>{preview.title}</span>
+    {preview.description && (
+      <span class='line-clamp-2 text-[13px] text-ink-muted'>
+        {preview.description}
+      </span>
+    )}
+  </a>
 )
 
 /** Edits a message in place: Enter saves, Escape leaves it as it was */
@@ -564,7 +764,7 @@ const Bubble = (
             }}
           />
         )
-        : (
+        : message.body && (
           <div
             class={`rounded-lg border px-3.5 py-2.5 text-[15px] leading-6 ${
               message.mine
@@ -575,6 +775,10 @@ const Bubble = (
             <Markdown text={message.body} class='gap-1.5' />
           </div>
         )}
+      {message.attachments.length > 0 && (
+        <Attachments items={message.attachments} mine={message.mine} />
+      )}
+      {message.preview && <LinkCard preview={message.preview} />}
       {message.reactions.length > 0 && (
         <div class='flex flex-wrap gap-1'>
           {message.reactions.map((r) => (
@@ -694,7 +898,23 @@ const Open = ({ id }: { id: number }) => {
   const [missing, setMissing] = useState(false)
   const [replying, setReplying] = useState<Message | null>(null)
   const [editing, setEditing] = useState<number | null>(null)
-  const end = useRef<HTMLDivElement>(null)
+  const scroller = useRef<HTMLDivElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  // At the bottom, the conversation stays there while an image loads or a
+  // preview arrives; read higher up, it does not move
+  const stick = useRef(true)
+  const ready = shown?.id === id
+  useEffect(() => {
+    if (!content.current) return
+    const observer = new ResizeObserver(() => {
+      const box = scroller.current
+      if (box && stick.current && !thread.peek()?.jumpedTo) {
+        box.scrollTop = box.scrollHeight
+      }
+    })
+    observer.observe(content.current)
+    return () => observer.disconnect()
+  }, [ready])
   useEffect(() => {
     setMissing(false)
     setReplying(null)
@@ -708,7 +928,10 @@ const Open = ({ id }: { id: number }) => {
     if (shown?.jumpedTo) {
       document.getElementById(`message-${shown.jumpedTo}`)
         ?.scrollIntoView({ block: 'center' })
-    } else end.current?.scrollIntoView({ block: 'end' })
+    } else if (scroller.current) {
+      stick.current = true
+      scroller.current.scrollTop = scroller.current.scrollHeight
+    }
   }, [last, shown?.jumpedTo])
   if (missing) {
     return (
@@ -846,41 +1069,50 @@ const Open = ({ id }: { id: number }) => {
           Message trouvé par la recherche.
         </Notice>
       )}
-      <div class='flex max-h-[62vh] min-h-[260px] flex-col gap-3 overflow-y-auto px-4 py-4'>
-        {shown.more && !shown.jumpedTo && (
-          <button
-            type='button'
-            onClick={() => loadOlder()}
-            class='cursor-pointer self-center text-[13px] font-semibold text-indigo'
-          >
-            Afficher les messages précédents
-          </button>
-        )}
-        {shown.messages.map((message) => (
-          <Fragment key={message.id}>
-            {message.id === firstNew && (
-              <div
-                role='separator'
-                class='flex items-center gap-2 font-mono text-label text-danger uppercase'
-              >
-                <span class='h-px flex-1 bg-danger' />
-                Nouveaux messages
-                <span class='h-px flex-1 bg-danger' />
-              </div>
-            )}
-            <Bubble
-              message={message}
-              conversationId={id}
-              nameOf={nameOf}
-              canAct={canAct}
-              onReply={setReplying}
-              editing={editing === message.id}
-              setEditing={setEditing}
-              jumped={message.id === shown.jumpedTo}
-            />
-          </Fragment>
-        ))}
-        <div ref={end} />
+      <div
+        ref={scroller}
+        onScroll={(event) => {
+          const box = event.currentTarget
+          stick.current =
+            box.scrollHeight - box.scrollTop - box.clientHeight < 80
+        }}
+        class='max-h-[62vh] min-h-[260px] overflow-y-auto px-4 py-4'
+      >
+        <div ref={content} class='flex flex-col gap-3'>
+          {shown.more && !shown.jumpedTo && (
+            <button
+              type='button'
+              onClick={() => loadOlder()}
+              class='cursor-pointer self-center text-[13px] font-semibold text-indigo'
+            >
+              Afficher les messages précédents
+            </button>
+          )}
+          {shown.messages.map((message) => (
+            <Fragment key={message.id}>
+              {message.id === firstNew && (
+                <div
+                  role='separator'
+                  class='flex items-center gap-2 font-mono text-label text-danger uppercase'
+                >
+                  <span class='h-px flex-1 bg-danger' />
+                  Nouveaux messages
+                  <span class='h-px flex-1 bg-danger' />
+                </div>
+              )}
+              <Bubble
+                message={message}
+                conversationId={id}
+                nameOf={nameOf}
+                canAct={canAct}
+                onReply={setReplying}
+                editing={editing === message.id}
+                setEditing={setEditing}
+                jumped={message.id === shown.jumpedTo}
+              />
+            </Fragment>
+          ))}
+        </div>
       </div>
       {typingIn.value.has(id) && (
         <p
@@ -901,8 +1133,14 @@ const Open = ({ id }: { id: number }) => {
             ? () => setEditing(lastMine.id)
             : undefined}
           onTyping={canAct ? () => tellTyping(id) : undefined}
-          onSend={async (text) => {
-            const sent = await sendMessage(id, text, replying?.id ?? 0)
+          files={canAct}
+          onSend={async (text, attachments) => {
+            const sent = await sendMessage(
+              id,
+              text,
+              replying?.id ?? 0,
+              attachments,
+            )
             sent && setReplying(null)
             return sent
           }}

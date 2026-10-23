@@ -686,5 +686,8 @@ export const Media = createTable('media', {
   hiddenAt: { type: 'REAL', optional: true },
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
+  // Added by migrations/009, so last: the name of a file (a PDF), none for an
+  // image
+  fileName: { type: 'TEXT', optional: true },
 })
 index('media_target', 'media', 'targetType, targetId')

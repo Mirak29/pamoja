@@ -2,7 +2,9 @@ import { assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { entries } from '/api/entry-types.ts'
-import { Profile, Project, User } from '/api/schema.ts'
+import { cleanMedia, MEDIA_DIR } from '/api/media.ts'
+import { previewMessage } from '/api/messages.ts'
+import { Media, Profile, Project, User } from '/api/schema.ts'
 import { createSession } from '/api/session.ts'
 import server from '/api/server.ts'
 import { request } from '/api/testing.ts'
@@ -362,6 +364,8 @@ const open = async (who: Dev, id: number) =>
       deleted: boolean
       replyTo: { id: number; excerpt: string; deleted: boolean } | null
       reactions: { emoji: string; count: number; mine: boolean }[]
+      attachments: { key: string; image: boolean; name: string }[]
+      preview: Record<string, string> | null
     }[]
   }
 
@@ -604,4 +608,201 @@ Deno.test('messages: online and typing, in memory, to the other one only (PAM-52
   await senaEvents.close()
   assertEquals(await online(kadi), false)
   await kadiEvents.close()
+})
+
+/*
+ * Images, files and link previews (PAM-409, PAM-528)
+ */
+
+// A PNG header is all the server reads: the type, then the size
+const png = (width = 800, height = 600, pad = 0) => {
+  const bytes = new Uint8Array(33 + pad)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12)
+  const view = new DataView(bytes.buffer)
+  view.setUint32(16, width)
+  view.setUint32(20, height)
+  return bytes
+}
+const pdf = () => new TextEncoder().encode('%PDF-1.4\n%fake\n')
+
+const uploadFile = async (
+  who: Dev,
+  bytes: Uint8Array<ArrayBuffer> | null,
+  name = 'capture.png',
+) => {
+  const form = new FormData()
+  bytes && form.append('file', new File([bytes], name))
+  const res = await server.fetch(
+    new Request('http://localhost/api/media/upload', {
+      method: 'POST',
+      body: form,
+      headers: { Cookie: who.cookie },
+    }),
+  )
+  return { status: res.status, json: await res.json().catch(() => null) }
+}
+
+const fetchMedia = (who: Dev, key: string) =>
+  server.fetch(
+    new Request(`http://localhost/api/media?key=${key}`, {
+      headers: { Cookie: who.cookie },
+    }),
+  )
+
+Deno.test('uploads: the type on the bytes, sizes, owner only, 24 h, 20 an hour (PAM-409)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  const sena = await dev('sena')
+  const image = await uploadFile(kadi, png())
+  assertEquals(image.status, 200)
+  assertEquals(
+    [image.json.mime, image.json.image, image.json.width, image.json.height],
+    ['image/png', true, 800, 600],
+  )
+  // A name says nothing: text or a GIF named .png are refused
+  const text = new TextEncoder().encode('<script>alert(1)</script>')
+  assertEquals((await uploadFile(kadi, text)).status, 415)
+  const gif = new TextEncoder().encode('GIF89a\u0001\u0000\u0001\u0000')
+  assertEquals((await uploadFile(kadi, gif, 'a.png')).status, 415)
+  assertEquals(
+    (await uploadFile(kadi, png(800, 600, 2 * 1024 * 1024))).status,
+    413,
+  )
+  assertEquals((await uploadFile(kadi, png(5000, 10))).status, 400)
+  assertEquals((await uploadFile(kadi, null)).status, 400)
+  // A PDF keeps a clean name, never a path
+  const file = await uploadFile(kadi, pdf(), '../../etc/"plan".pdf')
+  assertEquals([file.json.image, file.json.name], [false, 'plan.pdf'])
+  // Not attached: its owner only
+  const own = await fetchMedia(kadi, image.json.key)
+  assertEquals(own.status, 200)
+  assertEquals(own.headers.get('content-type'), 'image/png')
+  assertEquals(own.headers.get('x-content-type-options'), 'nosniff')
+  await own.body?.cancel()
+  assertEquals((await fetchMedia(sena, image.json.key)).status, 404)
+  assertEquals((await fetchMedia(kadi, '../pamoja.db')).status, 404)
+  // Never attached after 24 h: gone, file included
+  assertEquals(cleanMedia(now() + 25 * 3600), 2)
+  assertEquals((await fetchMedia(kadi, image.json.key)).status, 404)
+  // 20 an hour
+  for (let i = 0; i < 20; i++) {
+    Media.insert({
+      ownerId: sena.userId,
+      storageKey: `${i}`,
+      mime: 'image/png',
+      width: 1,
+      height: 1,
+      bytes: 1,
+      fileName: null,
+      targetType: null,
+      targetId: null,
+      position: 0,
+      hiddenAt: null,
+      source: 'platform',
+      createdAt: now(),
+    })
+  }
+  assertEquals((await uploadFile(sena, png())).status, 429)
+})
+
+Deno.test('messages: images and files, for the two of the conversation only (PAM-528)', async () => {
+  const { kadi, sena, id } = await talking()
+  const image = (await uploadFile(kadi, png())).json
+  const file = (await uploadFile(kadi, pdf(), 'plan.pdf')).json
+  // Files alone make a message; nothing at all does not
+  const sent = await kadi.call('/api/conversation/message', {
+    id,
+    body: '',
+    attachments: [image.id, file.id],
+  })
+  assertEquals(sent.status, 200)
+  assertEquals(
+    (await kadi.call('/api/conversation/message', { id, body: ' ' })).status,
+    400,
+  )
+  const [, message] = (await open(sena, id)).messages
+  assertEquals(
+    message.attachments.map((a) => [a.image, a.name]),
+    [[true, ''], [false, 'plan.pdf']],
+  )
+  // Both read them; a third one never
+  const shown = await fetchMedia(sena, image.key)
+  assertEquals(shown.status, 200)
+  await shown.body?.cancel()
+  const download = await fetchMedia(sena, file.key)
+  assertEquals(
+    download.headers.get('content-disposition'),
+    "attachment; filename*=UTF-8''plan.pdf",
+  )
+  await download.body?.cancel()
+  const yao = await dev('yao')
+  assertEquals((await fetchMedia(yao, image.key)).status, 404)
+  // An upload is attached once, by its owner, four at most
+  const again = (body: string, attachments: number[], who = kadi) =>
+    who.call('/api/conversation/message', { id, body, attachments })
+  assertEquals((await again('Encore', [image.id])).status, 400)
+  const senaImage = (await uploadFile(sena, png())).json
+  assertEquals((await again('Le sien', [senaImage.id])).status, 400)
+  const five = []
+  for (let i = 0; i < 5; i++) five.push((await uploadFile(kadi, png())).json.id)
+  assertEquals((await again('Cinq', five)).status, 400)
+  // A message of files alone may lose its text
+  assertEquals(
+    (await kadi.call('/api/conversation/message/edit', {
+      id: sent.json.id,
+      body: '',
+    })).status,
+    204,
+  )
+  // Deleted: the files go with it
+  await kadi.call('/api/conversation/message/delete', { id: sent.json.id })
+  assertEquals((await fetchMedia(sena, image.key)).status, 404)
+  let onDisk = true
+  try {
+    Deno.statSync(`${MEDIA_DIR}/${image.key}`)
+  } catch {
+    onDisk = false
+  }
+  assertEquals(onDisk, false)
+})
+
+Deno.test('messages: the preview of the first link, in an accepted conversation (PAM-528)', async () => {
+  const { kadi, sena, id } = await talking()
+  const page =
+    '<title>Kora</title><meta name="description" content="Un ledger">'
+  const deps = {
+    resolve: () => Promise.resolve(['93.184.216.34']),
+    fetch: () =>
+      Promise.resolve(
+        new Response(page, { headers: { 'Content-Type': 'text/html' } }),
+      ),
+  }
+  const { json } = await kadi.call('/api/conversation/message', {
+    id,
+    body: 'Regarde https://kora.dev/docs.',
+  })
+  await previewMessage(json.id, deps)
+  const last = async () => (await open(sena, id)).messages.at(-1)!
+  assertEquals((await last()).preview, {
+    url: 'https://kora.dev/docs',
+    title: 'Kora',
+    description: 'Un ledger',
+    site: 'kora.dev',
+  })
+  // Edited: the preview goes; the new text has no link
+  await kadi.call('/api/conversation/message/edit', {
+    id: json.id,
+    body: 'Sans lien finalement',
+  })
+  assertEquals((await last()).preview, null)
+  await previewMessage(json.id, deps)
+  assertEquals((await last()).preview, null)
+  // A request stays text
+  const yao = await dev('yao')
+  const request = (await write(yao, sena, 'Vu sur https://kora.dev/docs')).json
+    .id
+  const [first] = (await open(sena, request)).messages
+  await previewMessage(first.id, deps)
+  assertEquals((await open(sena, request)).messages[0].preview, null)
 })

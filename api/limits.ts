@@ -35,6 +35,9 @@ export const LIMITS = {
 
 export type Limited = keyof typeof LIMITS
 
+/** Images and files of a direct message (§10.6) */
+export const MAX_ATTACHMENTS = 4
+
 /** The first field longer than its limit, if any: for a 400 of the server */
 export const tooLong = <K extends Limited>(
   fields: Partial<Record<K, string>>,

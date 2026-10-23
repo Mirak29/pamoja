@@ -19,6 +19,7 @@ export type Thread = ApiOutput['GET/api/conversation'] & {
 }
 export type Message = Thread['messages'][number]
 export type SearchResult = ApiOutput['GET/api/conversations/search'][number]
+export type Media = Message['attachments'][number]
 
 export const conversations = signal<Conversation[]>([])
 export const conversationsLoaded = signal(false)
@@ -217,13 +218,19 @@ export const loadOlder = async () => {
   }
 }
 
-/** Sends a message, maybe an answer to another one */
-export const sendMessage = async (id: number, body: string, replyTo = 0) => {
+/** Sends a message, maybe an answer to another one, maybe with files */
+export const sendMessage = async (
+  id: number,
+  body: string,
+  replyTo = 0,
+  attachments: number[] = [],
+) => {
   try {
     await api['POST/api/conversation/message'].fetch({
       id,
       body,
       replyTo: replyTo || null,
+      attachments: attachments.length ? attachments : null,
     })
   } catch (err) {
     if (tellLimit(err)) return false
@@ -346,6 +353,97 @@ export const setArchived = async (
 /** The messages that hold a text, in the developer's conversations */
 export const searchMessages = (q: string) =>
   api['GET/api/conversations/search'].fetch({ q })
+
+/*
+ * Images and files (§17.3)
+ */
+
+/** Where the browser reads a file: the server checks who asks */
+export const mediaUrl = (key: string) =>
+  `api/media?key=${encodeURIComponent(key)}`
+
+const IMAGES = ['image/jpeg', 'image/png', 'image/webp']
+export const ACCEPTED = [...IMAGES, 'application/pdf'].join(',')
+const MAX_SIDE = 2000
+
+const toBlob = (canvas: HTMLCanvasElement, type: string) =>
+  new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.86))
+
+/**
+ * An image made smaller (2 000 px at most) and encoded again by a canvas:
+ * lighter, and without its metadata, the GPS position of a phone photo
+ * included (§17.3)
+ */
+const prepareImage = async (file: File) => {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  // WebP where the browser writes it, otherwise what keeps transparency
+  let blob = await toBlob(canvas, 'image/webp')
+  if (blob?.type !== 'image/webp') {
+    blob = await toBlob(
+      canvas,
+      file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+    )
+  }
+  if (!blob) throw new Error('Unreadable image')
+  return new File([blob], 'image', { type: blob.type })
+}
+
+const refused = (title: string, body: string) =>
+  notify({ title, body, icon: CircleAlert, tone: 'warning' })
+
+/** Uploads an image or a PDF; undefined, and told, when it is refused */
+export const uploadMedia = async (file: File): Promise<Media | undefined> => {
+  if (![...IMAGES, 'application/pdf'].includes(file.type)) {
+    refused(
+      'Format non accepté',
+      'Envoie une image JPEG, PNG ou WebP, ou un PDF.',
+    )
+    return
+  }
+  let ready = file
+  try {
+    if (IMAGES.includes(file.type)) ready = await prepareImage(file)
+  } catch {
+    refused('Image illisible', 'Cette image n’a pas pu être lue.')
+    return
+  }
+  const form = new FormData()
+  form.append('file', ready, file.name)
+  const res = await fetch(new URL('api/media/upload', document.baseURI), {
+    method: 'POST',
+    body: form,
+  }).catch(() => undefined)
+  if (res?.ok) return await res.json() as Media
+  const retryAfter = Number(res?.headers.get('Retry-After'))
+  if (res?.status === 429) {
+    refused(
+      'Trop de fichiers envoyés',
+      t`Réessaie ${waitLabel(retryAfter || 60)}.`,
+    )
+  } else if (res?.status === 413) {
+    refused(
+      'Fichier trop lourd',
+      'Une image fait 2 Mo au plus, un PDF 5 Mo.',
+    )
+  } else if (res?.status === 415) {
+    refused(
+      'Format non accepté',
+      'Envoie une image JPEG, PNG ou WebP, ou un PDF.',
+    )
+  } else failed()
+}
+
+/** « 340 ko », « 1,2 Mo » */
+export const sizeLabel = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? t`${Math.max(1, Math.round(bytes / 1024))} ko`
+    : t`${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} Mo`
 
 /** The conversation with a developer, if there is one */
 export const conversationWith = (login: string) =>

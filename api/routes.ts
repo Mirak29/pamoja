@@ -97,6 +97,7 @@ import {
   skills,
 } from '/api/vocabulary.ts'
 import { getLogin, userIdOfLogin } from '/api/user.ts'
+import { serveMedia, upload } from '/api/media.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -134,6 +135,18 @@ const person = OBJ({
   name: STR('Name shown'),
   avatarUrl: STR('GitHub avatar'),
 }, 'The other developer')
+
+// An uploaded image or file (§17.3): read at GET/api/media?key=
+const media = OBJ({
+  id: NUM('Id of the media'),
+  key: STR('Random key of the file'),
+  mime: STR('image/jpeg, image/png, image/webp or application/pdf'),
+  image: BOOL('An image, shown; a file otherwise, downloaded'),
+  width: NUM('Width in pixels, 0 for a file'),
+  height: NUM('Height in pixels, 0 for a file'),
+  bytes: NUM('Size'),
+  name: STR('Name of a file, empty for an image'),
+}, 'An image or a file')
 
 const conversationRights = {
   status: STR('pending, accepted; a declined request still reads pending'),
@@ -868,6 +881,7 @@ const defs = {
             }),
             'In the order they first came',
           ),
+          attachments: ARR(media, 'Images and files, in their order'),
           preview: optional(
             OBJ({
               url: STR('The link'),
@@ -900,16 +914,44 @@ const defs = {
 
   'POST/api/conversation/message': route({
     authorize: withSession,
-    fn: (ctx, { id, body, replyTo }) => ({
-      id: sendMessage(ctx.session.userId, id, body, replyTo ?? 0),
+    fn: (ctx, { id, body, replyTo, attachments }) => ({
+      id: sendMessage(
+        ctx.session.userId,
+        id,
+        body,
+        replyTo ?? 0,
+        attachments ?? [],
+      ),
     }),
     input: OBJ({
       id: NUM('Id of the conversation'),
-      body: STR('Markdown, 2 000 characters at most'),
+      body: STR('Markdown, 2 000 characters at most; may be empty with files'),
       replyTo: optional(NUM('The message answered')),
+      attachments: optional(
+        ARR(NUM('Id of an upload'), 'Four images or files at most'),
+      ),
     }),
     output: OBJ({ id: NUM('Id of the message') }),
     description: 'Send a message in a conversation',
+  }),
+
+  /*
+   * Images and files (§17.3)
+   */
+  'POST/api/media/upload': route({
+    authorize: withSession,
+    // No input: the handler reads the form, with the file in « file »
+    fn: (ctx) => upload(ctx.session.userId, ctx.req),
+    output: media,
+    description:
+      'Upload a JPEG, PNG or WebP image (2 MB) or a PDF (5 MB), to attach',
+  }),
+
+  'GET/api/media': route({
+    authorize: withSession,
+    fn: (ctx, { key }) => serveMedia(ctx.session.userId, key),
+    input: OBJ({ key: STR('Random key of the file') }),
+    description: 'The file of a media, to whom may see it',
   }),
 
   'POST/api/conversation/message/edit': route({

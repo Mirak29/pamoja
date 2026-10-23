@@ -168,7 +168,7 @@ Responsable : _à répartir_
 - [ ] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8)
 - [ ] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6)
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
-- [ ] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
+- [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
 - [ ] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3)
 - [ ] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]`
 - [ ] **PAM-412** · Non lus et notifications par canal (`ChannelState`), « seulement mes PRs » par défaut sur `#suivi` (§6.8)
@@ -214,7 +214,7 @@ Responsable : _à répartir_
 - [x] **PAM-525** · Messages directs : répondre à un message précis et réactions (§10.6)
 - [x] **PAM-526** · Messages directs : séparateur « Nouveaux messages », marquer comme non lu, sourdine, archiver (§10.6)
 - [x] **PAM-527** · Messages directs : recherche dans ses conversations (§10.6)
-- [ ] **PAM-528** · Messages directs : images et fichiers, aperçu des liens (§10.6, §17.3) — après PAM-409
+- [x] **PAM-528** · Messages directs : images et fichiers, aperçu des liens (§10.6, §17.3) — après PAM-409
 - [x] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1) — @niangoos
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos
@@ -308,3 +308,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-23 · Limites des messages directs, comptées en base (tenues après un redémarrage) : 10 demandes à des inconnus par 24 h, 20 messages par minute et 1 000 par jour, 30 signalements par jour ; 429 avec le délai ; la suite de la messagerie découpée en PAM-523 à PAM-528 · §10.6, §16
 - 2026-10-23 · Messages directs à la manière de Discord : modifier et supprimer son message (seul l'auteur ; « Message supprimé » garde la place, sans texte ni réactions), répondre à un message de la même conversation, six réactions (60 par minute), séparateur « Nouveaux messages », non lu à partir d'un message reçu, sourdine hors du compteur du menu, archives jusqu'au prochain message, recherche de 2 à 100 caractères (30 résultats, 30 recherches par minute) · §10.6
 - 2026-10-23 · Présence des messages directs, en mémoire, jamais enregistrée : en ligne tant qu'un onglet garde le flux SSE ouvert, hors ligne 10 s après le dernier ; vue seulement par l'autre participant d'une conversation acceptée sans blocage ; « écrit… » signalé au plus toutes les 3 s, sans le texte ; événements SSE nommés `presence` et `typing`, base réutilisable pour PAM-407 · §10.6, §13.6
+- 2026-10-23 · Upload d'images (PAM-409) : redimensionnement à 2 000 px et réencodage dans le navigateur, `POST/api/media/upload` sans input, type lu sur les octets, 2 Mo (PDF 5 Mo, messages directs seulement), 20 par heure, fichiers sur disque sous un nom aléatoire (`MEDIA_DIR`), servis par `GET/api/media` à qui peut les voir, supprimés après 24 h sans rattachement · §17.3
+- 2026-10-23 · Messages directs : 4 images ou PDF par message, collage d'une capture, fichiers lisibles par les deux participants seulement et supprimés avec le message ; aperçu du premier lien lu par le serveur (titre, description, site, sans image) avec des garde-fous contre le SSRF ; une demande reste du texte · §10.6, §16

@@ -708,6 +708,17 @@ Vérifié dans le navigateur à deux comptes : Awa tape sans envoyer, Moussa voi
 - **Livrable** : `api/presence.ts`, connexions suivies dans `api/events.ts`, `POST/api/conversation/typing`, `online` dans `GET/api/conversations`, 1 test de plus dans `api/messages_test.ts` ; `onSignal` dans `web/lib/realtime.ts`, `web/lib/messages.ts`, `web/pages/messages-page.tsx`, traductions ; §10.6, §13.6
 - **Par** : @Mirak29
 
+### 2026-10-23 · PAM-409, PAM-528 · Images, fichiers et aperçus de liens
+
+Pamoja sait maintenant recevoir des images (PAM-409), et la messagerie s'en sert. Une image choisie ou collée dans le champ (une capture d'écran, comme sur Discord) est réduite à 2 000 px et réencodée par le navigateur avant l'envoi : plus légère, et sans ses métadonnées, dont la position GPS d'une photo prise au téléphone. Le serveur lit le type sur les premiers octets, jamais sur le nom (un script nommé `.png` est refusé), limite une image à 2 Mo et un PDF à 5 Mo, 20 envois par heure, et range le fichier sur disque sous un nom aléatoire, jamais dans SQLite. Un envoi jamais rattaché disparaît au bout de 24 heures. Dans une conversation acceptée, un message porte jusqu'à 4 images ou PDF, avec ou sans texte. Seuls les deux participants les ouvrent (404 pour tout autre, 401 sans session) ; un PDF se télécharge, jamais affiché dans la page, et supprimer le message supprime ses fichiers.
+
+Le premier lien d'un message reçoit un aperçu : le serveur lit la page et garde son titre, sa description et son site, sans image. Comme un membre choisit l'adresse, la lecture est prudente : http ou https sur leurs ports habituels, uniquement des adresses publiques (jamais la machine, son réseau ni les métadonnées du cloud), chaque redirection revérifiée, 5 secondes et 512 Ko au plus, une page HTML seulement. Une demande de message d'un inconnu reste du texte.
+
+Vérifié dans le navigateur à deux comptes : Moussa joint une image de 3 000 px (arrivée en WebP de 2 000 px, 21 ko) et un PDF à un message avec un lien ; Awa voit l'image, télécharge le PDF sous son nom, et l'aperçu « example.com · Example Domain » s'affiche. Awa colle une capture, qui arrive en direct chez Moussa (« Pièce jointe » dans la liste). Fatou, hors de la conversation, reçoit 404 sur l'image ; un GIF est refusé avec un message. Corrigé pendant le test : la conversation ne restait pas en bas quand une image se chargeait ou qu'un aperçu arrivait. Corrigé aussi avant le commit : la colonne ajoutée par la migration 009 doit être déclarée en dernier dans le schéma, sinon le serveur refuse de démarrer.
+
+- **Livrable** : `api/media.ts`, `api/link-preview.ts`, `api/lib/rate.ts` (limite partagée), migration 009 (`media.fileName`), `POST/api/media/upload`, `GET/api/media`, fichiers et aperçus dans `api/messages.ts`, nettoyage horaire dans `api/server.ts`, `api/link-preview_test.ts` (4 tests) et 3 tests de plus dans `api/messages_test.ts` ; `web/lib/messages.ts` (préparation et envoi), `web/pages/messages-page.tsx`, icône `FileText`, traductions ; `media/` ignoré par git ; §10.6, §15, §16, §17.3
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

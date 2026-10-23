@@ -1461,6 +1461,22 @@ export const english: Record<string, string> = {
   'écrit…': 'typing…',
   '· en ligne': '· online',
   'En ligne': 'Online',
+  'Pièce jointe': 'Attachment',
+  'Retirer ce fichier': 'Remove this file',
+  'Envoi…': 'Uploading…',
+  'Joindre une image ou un PDF': 'Attach an image or a PDF',
+  'Image jointe': 'Attached image',
+  'Format non accepté': 'Format not accepted',
+  'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
+    'Send a JPEG, PNG or WebP image, or a PDF.',
+  'Image illisible': 'Unreadable image',
+  'Cette image n’a pas pu être lue.': 'This image could not be read.',
+  'Trop de fichiers envoyés': 'Too many files sent',
+  'Fichier trop lourd': 'File too large',
+  'Une image fait 2 Mo au plus, un PDF 5 Mo.':
+    'An image is 2 MB at most, a PDF 5 MB.',
+  'Envoie les autres dans un message suivant.':
+    'Send the others in another message.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1676,4 +1692,9 @@ export const englishTemplates: Record<string, string> = {
   'En réponse à {0}': 'Replying to {0}',
   'Réagir {0}': 'React {0}',
   '{0} écrit…': '{0} is typing…',
+  '{0} fichiers au plus': '{0} files at most',
+  'Réessaie {0}.': 'Try again {0}.',
+  'PDF · {0}': 'PDF · {0}',
+  '{0} ko': '{0} KB',
+  '{0} Mo': '{0} MB',
 }
