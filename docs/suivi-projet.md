@@ -660,6 +660,13 @@ Les quinze défauts sont corrigés et la passe a été rejouée sur une copie de
 - **Livrable** : `docs/qa/2026-10-22/rapport-qa-consolidation.md` ; `api/limits.ts`, Markdown sûr dans `web/ui/rich-text.tsx`, « voir plus », zone de texte des canaux, `migrations/006-github-login.js`, règles de login dans `api/user.ts`, journaux masqués ; tests `api/profile_test.ts`, `api/user_login_test.ts`, `web/ui/rich-text_test.ts`
 - **Par** : @Mirak29
 
+### 2026-10-23 · Rafraîchissement GitHub après un redémarrage
+
+Les événements GitHub d'un projet en synchro par rafraîchissement n'arrivaient plus. La lecture du repo attendait un minuteur de 15 minutes lancé au démarrage du serveur, et `deno task dev` redémarre le serveur à chaque fichier modifié : pendant qu'on code, le minuteur n'arrivait jamais au bout. Dans la base de dev, le repo n'avait plus été lu depuis près de deux heures, alors qu'une lecture faite à la main répondait en une seconde avec des nouveautés. Désormais, le serveur regarde chaque minute, dès son démarrage, quels repos sont dus : 15 minutes après leur dernière lecture, une heure pour un repo live, le plus ancien d'abord, une lecture à la fois. La synchro live (webhooks) n'était pas en cause ; elle demande le tunnel en dev et l'activation de la synchro live sur le projet.
+
+- **Livrable** : `api/sync.ts`, `api/sync_refresh_test.ts`, précision au §5.4
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

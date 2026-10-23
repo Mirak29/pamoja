@@ -203,19 +203,27 @@ export const refreshRepository = async (repositoryId: number) => {
   return changed
 }
 
-// Live repos get their webhooks (PAM-204); GitHub does not promise them, so
-// they are read again every hour all the same (§5.6)
-const listToRefresh = sql<{ repositoryId: number }, number>`
+// A polled repo is read 15 min after its last read; a live one gets its
+// webhooks (PAM-204), but GitHub does not promise them, so it is read again
+// after an hour all the same (§5.6). Due by the time of its last read, not
+// by a timer: a restart of the server does not put it off.
+export const POLL_EVERY = 15 * 60
+export const LIVE_CHECK_EVERY = 3600
+
+const listToRefresh = sql<
+  { repositoryId: number },
+  { at: number; poll: number; live: number }
+>`
   SELECT repositoryId FROM repository
-  WHERE syncMode = 'poll'
-    OR (syncMode = 'live' AND coalesce(lastSyncedAt, 0) < ?)
+  WHERE (syncMode = 'poll' AND coalesce(lastSyncedAt, 0) <= :at - :poll)
+    OR (syncMode = 'live' AND coalesce(lastSyncedAt, 0) <= :at - :live)
+  ORDER BY coalesce(lastSyncedAt, 0)
 `.all
 
-export const REFRESH_EVERY = 15 * 60 * 1000
-
-/** Refreshes every polled repo, one after the other, never failing the loop */
-export const refreshAll = async () => {
-  for (const { repositoryId } of listToRefresh(now() - 3600)) {
+/** Refreshes the repos that are due, one after the other, never failing */
+export const refreshAll = async (at = now()) => {
+  const due = listToRefresh({ at, poll: POLL_EVERY, live: LIVE_CHECK_EVERY })
+  for (const { repositoryId } of due) {
     try {
       await refreshRepository(repositoryId)
     } catch (err) {
@@ -229,5 +237,22 @@ export const refreshAll = async () => {
   await readPullRequestSkills()
 }
 
-/** Started by the server, every 15 minutes (§5.4) */
-export const startRefresh = () => setInterval(refreshAll, REFRESH_EVERY)
+// The due repos are looked for every minute, and a few seconds after the
+// server starts; one run at a time, however long GitHub takes
+const CHECK_EVERY = 60 * 1000
+let running = false
+const check = async () => {
+  if (running) return
+  running = true
+  try {
+    await refreshAll()
+  } finally {
+    running = false
+  }
+}
+
+/** Started by the server (§5.4) */
+export const startRefresh = () => {
+  setTimeout(check, 5000)
+  return setInterval(check, CHECK_EVERY)
+}
