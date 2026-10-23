@@ -660,6 +660,20 @@ Les quinze défauts sont corrigés et la passe a été rejouée sur une copie de
 - **Livrable** : `docs/qa/2026-10-22/rapport-qa-consolidation.md` ; `api/limits.ts`, Markdown sûr dans `web/ui/rich-text.tsx`, « voir plus », zone de texte des canaux, `migrations/006-github-login.js`, règles de login dans `api/user.ts`, journaux masqués ; tests `api/profile_test.ts`, `api/user_login_test.ts`, `web/ui/rich-text_test.ts`
 - **Par** : @Mirak29
 
+### 2026-10-23 · Rafraîchissement GitHub après un redémarrage
+
+Les événements GitHub d'un projet en synchro par rafraîchissement n'arrivaient plus. La lecture du repo attendait un minuteur de 15 minutes lancé au démarrage du serveur, et `deno task dev` redémarre le serveur à chaque fichier modifié : pendant qu'on code, le minuteur n'arrivait jamais au bout. Dans la base de dev, le repo n'avait plus été lu depuis près de deux heures, alors qu'une lecture faite à la main répondait en une seconde avec des nouveautés. Désormais, le serveur regarde chaque minute, dès son démarrage, quels repos sont dus : 15 minutes après leur dernière lecture, une heure pour un repo live, le plus ancien d'abord, une lecture à la fois. La synchro live (webhooks) n'était pas en cause ; elle demande le tunnel en dev et l'activation de la synchro live sur le projet.
+
+- **Livrable** : `api/sync.ts`, `api/sync_refresh_test.ts`, précision au §5.4
+- **Par** : @Mirak29
+
+### 2026-10-23 · Webhooks manqués renvoyés à l'ouverture du tunnel
+
+Les événements GitHub envoyés pendant que le tunnel était fermé étaient perdus : GitHub ne renvoie pas de lui-même un webhook qui a échoué. Le journal de l'app en comptait 14 (push, CI, issues, ajout d'un repo à l'installation), tous en « failed to connect to host ». À l'ouverture, le tunnel attend maintenant que lui-même et le serveur de dev répondent, puis demande à GitHub de renvoyer les livraisons des 3 derniers jours qui ne sont jamais arrivées, de la plus ancienne à la plus récente. Une livraison déjà reçue, ou refusée par Pamoja elle-même, n'est pas renvoyée. Les identifiants de livraison dépassent la précision d'un nombre JavaScript : lus comme des nombres, ils désignaient une autre livraison ; ils sont lus comme du texte. Vérifié à blanc sur le journal réel de l'app : les 14 livraisons manquées sont retrouvées, dans l'ordre.
+
+- **Livrable** : `api/webhook-replay.ts`, appel dans `task-tunnel.ts`, `api/webhook_replay_test.ts` (2 tests), précision au §5.6
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

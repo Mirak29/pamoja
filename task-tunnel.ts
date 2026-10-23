@@ -5,6 +5,7 @@
 // shared: whoever starts a tunnel last receives the webhooks. Dev only.
 import { appConfigured, appJwt } from '/api/github-app.ts'
 import { APP_ENV, GITHUB_WEBHOOK_SECRET } from '/api/lib/env.ts'
+import { replayMissed } from '/api/webhook-replay.ts'
 
 const PORT = Deno.env.get('PORT') ?? '8800'
 
@@ -104,6 +105,58 @@ if (!address) {
   Deno.exit(1)
 }
 
+/** Answers within the time given, or not */
+const answers = async (url: string, seconds: number) => {
+  for (let i = 0; i < seconds; i++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(2000) })
+      await res.body?.cancel()
+      if (res.status < 500) return true
+    } catch {
+      // not yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+  return false
+}
+
+/**
+ * The events sent while no tunnel was open never arrived, and GitHub does
+ * not send them again by itself (§5.6): they are sent again now, once the
+ * tunnel and the dev server both answer
+ */
+async function replay(address: string) {
+  if (!await answers(`http://127.0.0.1:${PORT}/api/health`, 15)) {
+    console.log(
+      'Le serveur de dev ne répond pas : lance `deno task dev`, puis relance le tunnel pour recevoir les événements manqués.',
+    )
+    return
+  }
+  // A new quick tunnel takes a few seconds to be reachable
+  if (!await answers(`${address}${WEBHOOK}`, 30)) {
+    console.log(
+      'Le tunnel ne répond pas encore : relance-le pour recevoir les événements manqués.',
+    )
+    return
+  }
+  try {
+    const { sent, refused } = await replayMissed()
+    console.log(
+      sent || refused
+        ? `${sent} événement(s) GitHub manqué(s) renvoyé(s)${
+          refused ? `, ${refused} refusé(s) par GitHub` : ''
+        }.`
+        : 'Aucun événement GitHub manqué.',
+    )
+  } catch (err) {
+    console.error(
+      `Événements manqués non renvoyés : ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    )
+  }
+}
+
 const webhook = `${address}/api/github/webhook`
 console.log(
   `Tunnel ouvert : ${address}${WEBHOOK} → http://127.0.0.1:${PORT}${WEBHOOK} (le reste de l’app reste local)`,
@@ -137,6 +190,7 @@ if (!appConfigured() || !GITHUB_WEBHOOK_SECRET) {
     console.log(
       'GitHub envoie maintenant les événements ici, tant que le tunnel reste ouvert.',
     )
+    await replay(address)
   } else {
     console.error(
       `GitHub a refusé la mise à jour du webhook (${res.status}) : ${await res
