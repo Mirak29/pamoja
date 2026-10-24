@@ -47,7 +47,7 @@ export const useEvent = (
 // Presence (§13.6) comes as named events, not entries: gone once sent
 type Signals = {
   presence: { login: string; online: boolean }
-  typing: { conversationId: number }
+  typing: { conversationId: string }
 }
 type SignalName = keyof Signals
 const signalHandlers = new Set<

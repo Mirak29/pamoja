@@ -73,7 +73,7 @@ const Article = ({ post }: { post: Post }) => {
         {post.demo && <DemoBadge />}
         {community && (
           <A
-            href={`communaute/${community.slug}`}
+            href={`community/${community.slug}`}
             class='text-[13px] font-semibold'
           >
             {community.name}
@@ -121,7 +121,7 @@ const Article = ({ post }: { post: Post }) => {
       )}
       {project && (
         <A
-          href={`projet/${project.slug}`}
+          href={`project/${project.slug}`}
           class='mr-1 flex items-center gap-3 rounded-[8px] border border-figure-edge p-3 text-ink no-underline shadow-tile hover:bg-surface-000 hover:no-underline'
         >
           <Cube size={30} />
@@ -276,7 +276,7 @@ export const PostPage = () => {
         )}
         {community && (
           <A
-            href={`communaute/${community.slug}`}
+            href={`community/${community.slug}`}
             class='slab slab-lift flex flex-col gap-1.5 p-5 text-ink no-underline hover:no-underline'
           >
             <Eyebrow>Communauté</Eyebrow>

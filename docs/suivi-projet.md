@@ -794,6 +794,18 @@ L'en-tête ne chevauche plus la recherche sur téléphone : le thème et la lang
 - **Livrable** : `api/entries.ts`, `api/messages.ts`, `api/media.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/import.ts`, `api/lib/production.ts`, index dans `api/schema.ts`, `deno.json` (`prod:local`), `web/ui/header.tsx`, messages de limite dans les pages ; 5 tests de plus ; cahier des charges §10.6, §12.2, §16 ; rapport `docs/qa/2026-10-24/rapport-revue-code.md`
 - **Par** : @Mirak29
 
+### 2026-10-24 · PAM-125 · Adresses en anglais, ids opaques pour le privé
+
+Les adresses de l'app sont en anglais, chemins et paramètres : `/help/new`, `/project/openpay-africa/channels/updates`, `/community/go/about`, `/settings`, `?filter=`… Le texte de l'interface reste en français. Les anciennes adresses françaises, déjà partagées ou en favoris, mènent à leur équivalent anglais sans étape dans l'historique. Ce qui est public reste lisible (`/@login`, slugs). Ce qui est privé ne se devine plus :
+
+- **Conversation** : un identifiant public aléatoire de 12 caractères (`/messages/BxU3vH1Jqaqt`), comme les ids d'Instagram ; le numéro en base ne sort plus du serveur, et un inconnu reçoit 404 même avec un identifiant valide.
+- **Premier message** : par l'identifiant GitHub de la personne (`/messages/new/84472218`), qui ne change pas avec le login ; le lien `?avec=<login>` disparaît et l'ancien mène au même endroit.
+
+GitHub renvoie maintenant vers `/login/github` ; `/connexion/github` y est redirigée tant que les GitHub Apps de dev et de prod n'ont pas changé leur Callback URL. Vérifié dans le navigateur : 30 pages et dialogues, les onglets, aucun lien en français, un ancien lien redirigé, « Écrire » vers une conversation existante et vers un premier message (envoyé, l'adresse devient celle de la conversation), un identifiant GitHub inconnu, un vieux lien numérique, le retour de connexion. Corrigé pendant ce test : le client de l'API écrivait `username=null` dans la requête d'un profil lu par id GitHub, et « Écrire » ne suivait pas le profil une fois lu. Corrigé au passage, présent depuis PAM-526 : après un désarchivage, le bouton de la conversation ouverte restait sur « Désarchiver » ; il suit maintenant, comme la sourdine.
+
+- **Livrable** : `migrations/010-conversation-public-id.js`, `api/lib/ids.ts`, `api/messages.ts`, `api/routes.ts`, `api/profile.ts`, `api/github-oauth.ts`, `api/installation.ts` ; `web/lib/addresses.ts`, `web/app.tsx`, `web/lib/messages.ts`, `web/lib/profile.ts`, `web/pages/messages-page.tsx`, liens de toutes les pages ; tests `web/lib/addresses_test.ts` et 1 de plus dans `api/messages_test.ts` ; cahier des charges §5.3, §10.6, §12.2, §14.5, §16
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

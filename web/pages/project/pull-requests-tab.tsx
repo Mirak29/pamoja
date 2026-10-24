@@ -73,7 +73,7 @@ const PullRequestDetail = (
       </dl>
       {help && (
         <A
-          href={`aide/${help.id}`}
+          href={`help/${help.id}`}
           class='tile flex items-center gap-2.5 p-3 text-[14px] font-semibold text-ink no-underline hover:no-underline'
         >
           <span class='text-indigo'>
@@ -87,7 +87,7 @@ const PullRequestDetail = (
         <div class='flex flex-col gap-2'>
           <Button
             size={42}
-            href='aide/nouvelle'
+            href='help/new'
             params={{ project: pr.project, pr: pr.number }}
           >
             Demander une review

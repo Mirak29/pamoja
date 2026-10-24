@@ -39,12 +39,12 @@ type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
 // URL key, category and label of each tab (§7.4)
 const categories: [string, NotificationCategory | null, string][] = [
-  ['toutes', null, 'Toutes'],
-  ['pour-toi', 'for-you', 'Pour toi'],
-  ['projets', 'projects', 'Projets'],
-  ['communautes', 'communities', 'Communautés'],
+  ['all', null, 'Toutes'],
+  ['for-you', 'for-you', 'Pour toi'],
+  ['projects', 'projects', 'Projets'],
+  ['communities', 'communities', 'Communautés'],
   ['social', 'social', 'Social'],
-  ['systeme', 'system', 'Système'],
+  ['system', 'system', 'Système'],
 ]
 
 const categoryLabels = Object.fromEntries(
@@ -146,7 +146,7 @@ export const NotificationsPage = () => {
   applicationsChanged.value
   const mine = notifications.filter((n) => n.to === me.login)
     .sort((a, b) => b.at - a.at)
-  const current = categories.find(([key]) => key === url.params.categorie) ??
+  const current = categories.find(([key]) => key === url.params.category) ??
     categories[0]
   const list = mine.filter((n) => !current[1] || n.category === current[1])
   const unread = mine.filter((n) => !n.read).length
@@ -168,7 +168,7 @@ export const NotificationsPage = () => {
         tabs={categories.map(([key, category, label], i) => ({
           key,
           label,
-          params: { categorie: i ? key : null },
+          params: { category: i ? key : null },
           unread:
             mine.filter((n) =>
               !n.read && (!category || n.category === category)

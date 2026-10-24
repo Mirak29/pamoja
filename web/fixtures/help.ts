@@ -253,7 +253,7 @@ export const sendHelpMessage = (
       kind: 'help',
       title: t`${firstName(author)} t’a écrit`,
       body: text.length > 90 ? `${text.slice(0, 88)}…` : text,
-      href: `aide/${request.id}`,
+      href: `help/${request.id}`,
     })
   }
   helpChanged.value++
@@ -349,7 +349,7 @@ export const actOnHelp = (
             kind: 'help',
             title: t`${firstName(helper!)} s’est désisté`,
             body: t`« ${request.title} » repasse en Ouverte.`,
-            href: `aide/${request.id}`,
+            href: `help/${request.id}`,
           })
           return {
             title: 'Tu t’es désisté',

@@ -62,18 +62,18 @@ type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
 // URL key and label of each feed tab (§6.2)
 const feedTabs = [
-  ['pour-toi', 'Pour toi'],
-  ['abonnements', 'Abonnements'],
-  ['communautes', 'Communautés'],
+  ['for-you', 'Pour toi'],
+  ['following', 'Abonnements'],
+  ['communities', 'Communautés'],
   ['questions', 'Questions'],
 ] as const
 
 type FeedTab = typeof feedTabs[number][0]
 
 const emptyTexts: Record<FeedTab, string> = {
-  'pour-toi': 'Rien pour l’instant.',
-  abonnements: 'Suis des développeurs et des projets pour remplir ce fil.',
-  communautes: 'Rejoins des communautés pour voir leurs discussions ici.',
+  'for-you': 'Rien pour l’instant.',
+  following: 'Suis des développeurs et des projets pour remplir ce fil.',
+  communities: 'Rejoins des communautés pour voir leurs discussions ici.',
   questions: 'Rien pour l’instant.',
 }
 
@@ -131,7 +131,7 @@ const GithubEvent = (
         <span class='text-[14px] leading-[21px] text-pretty'>{text}</span>
         <span class='text-[12px] text-ink-muted'>
           <A
-            href={`projet/${project.slug}/canaux/suivi`}
+            href={`project/${project.slug}/channels/updates`}
             class='font-semibold'
           >
             {project.name}
@@ -155,7 +155,7 @@ const HelpInsert = (
       </span>
     </div>
     <A
-      href={`aide/${request.id}`}
+      href={`help/${request.id}`}
       class='font-display text-[18px] leading-[25px] font-semibold text-pretty text-ink hover:text-indigo hover:no-underline'
     >
       <span translate={false} class='wrap-anywhere'>{request.title}</span>
@@ -175,7 +175,7 @@ const HelpInsert = (
       ))}
     </div>
     <div class='flex flex-wrap gap-3 py-1'>
-      <Button size={36} href={`aide/${request.id}`}>Voir la demande</Button>
+      <Button size={36} href={`help/${request.id}`}>Voir la demande</Button>
       <Button
         variant='secondary'
         size={36}
@@ -203,11 +203,11 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
     const fol = followed.includes(post.author) || isMe(post.author) ||
       (!!post.link && slugs.includes(post.link))
     if (
-      tab === 'pour-toi' || (tab === 'abonnements' && fol) ||
-      (tab === 'communautes' && community) ||
+      tab === 'for-you' || (tab === 'following' && fol) ||
+      (tab === 'communities' && community) ||
       (tab === 'questions' && post.type === 'Question')
     ) entries.push({ at: post.at, post, fol })
-    if (tab !== 'pour-toi' && tab !== 'abonnements') continue
+    if (tab !== 'for-you' && tab !== 'following') continue
     for (const repost of post.reposts) {
       if (followed.includes(repost.by) || isMe(repost.by)) {
         entries.push({ at: repost.at, post, repostBy: repost.by, fol: true })
@@ -228,7 +228,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
       key: post.id,
       node: <PostCard key={post.id} post={post} repostBy={repostBy} />,
     }))
-  if (tab === 'pour-toi' || tab === 'abonnements') {
+  if (tab === 'for-you' || tab === 'following') {
     const events = mine.flatMap((project) =>
       recentActivityOf(project)
         .filter((entry) =>
@@ -250,7 +250,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
     items = [...items, ...events].sort((a, b) => b.at - a.at)
   }
   items = items.slice(0, 30)
-  if (tab === 'pour-toi') {
+  if (tab === 'for-you') {
     const top = matchingRequests(me).find(({ request }) =>
       !dismissedHelp.value.includes(request.id)
     )
@@ -285,7 +285,7 @@ const Composer = () => {
     )
     setText('')
     setImages(0)
-    navigate({ params: { fil: null } })
+    navigate({ params: { feed: null } })
     field.current?.focus()
     const name = communities.find((c) => c.slug === community)?.name
     notify({
@@ -471,7 +471,7 @@ const Rail = () => {
         {matches.slice(0, 3).map(({ request, score }) => (
           <A
             key={request.id}
-            href={`aide/${request.id}`}
+            href={`help/${request.id}`}
             class='flex items-start gap-2.5 border-b border-line py-2.5 text-ink no-underline hover:no-underline'
           >
             <span class='tile flex h-[26px] min-w-[38px] flex-none items-center justify-center rounded-[5px] px-[5px] font-mono text-[13px] leading-none font-medium'>
@@ -491,7 +491,7 @@ const Rail = () => {
             </span>
           </A>
         ))}
-        <A href='aide' class='pt-2.5 text-[13px] font-semibold'>
+        <A href='help' class='pt-2.5 text-[13px] font-semibold'>
           Voir l’aide
         </A>
       </RailSection>
@@ -499,7 +499,7 @@ const Rail = () => {
         {waiting.slice(0, 4).map((pr) => (
           <A
             key={`${pr.project}-${pr.number}`}
-            href={`projet/${pr.project}/prs`}
+            href={`project/${pr.project}/prs`}
             params={{ dialog: `pr-${pr.number}` }}
             class='flex flex-col border-b border-line py-2.5 text-ink no-underline hover:no-underline'
           >
@@ -549,7 +549,7 @@ const Rail = () => {
             </button>
           </div>
         ))}
-        <A href='explorer' class='pt-2.5 text-[13px] font-semibold'>
+        <A href='explore' class='pt-2.5 text-[13px] font-semibold'>
           Explorer les développeurs
         </A>
       </RailSection>
@@ -557,7 +557,7 @@ const Rail = () => {
         {seeking.map((project) => (
           <A
             key={project.slug}
-            href={`projet/${project.slug}`}
+            href={`project/${project.slug}`}
             class='flex flex-col border-b border-line py-2.5 text-ink no-underline hover:no-underline'
           >
             <span class='font-display text-[14px] leading-5 font-semibold'>
@@ -579,8 +579,8 @@ export const HomePage = () => {
   peopleChanged.value
   projectsChanged.value
   dismissedHelp.value
-  const current = feedTabs.find(([key]) => key === url.params.fil)?.[0] ??
-    'pour-toi'
+  const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
+    'for-you'
   const items = feedItems(current)
   const { matches, waiting } = homeData()
   return (
@@ -591,13 +591,13 @@ export const HomePage = () => {
       <div class='flex w-full max-w-[720px] min-w-0 flex-col gap-5'>
         {/* Short labels: the rail says the long ones on wide screens */}
         <div class='flex flex-wrap gap-3 pb-1 min-[1100px]:hidden'>
-          <Button href='aide'>
+          <Button href='help'>
             <LifeBuoy />
             {counted(matches.length, 'demande pour toi', 'demandes pour toi')}
           </Button>
           <Button
             variant='secondary'
-            href={waiting[0] ? `projet/${waiting[0].project}/prs` : 'projets'}
+            href={waiting[0] ? `project/${waiting[0].project}/prs` : 'projects'}
           >
             {counted(waiting.length, 'PR à relire', 'PRs à relire')}
           </Button>
@@ -610,7 +610,7 @@ export const HomePage = () => {
           tabs={feedTabs.map(([key, label], i) => ({
             key,
             label,
-            params: { fil: i ? key : null },
+            params: { feed: i ? key : null },
           }))}
         />
         {items.map((item) => <div key={item.key}>{item.node}</div>)}

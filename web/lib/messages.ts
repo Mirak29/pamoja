@@ -74,9 +74,11 @@ export const tellLimit = (err: unknown) => {
   return true
 }
 
+// The public id of the open conversation (PAM-125), null on the list or a
+// new conversation (/messages/new/<githubId>)
 const openId = () => {
   const [section, id] = url.relativePath.slice(1).split('/')
-  return section === 'messages' && id ? Number(id) : null
+  return section === 'messages' && id && id !== 'new' ? id : null
 }
 
 /** Tells of a message that arrived elsewhere than the conversation open */
@@ -133,12 +135,12 @@ onSignal('presence', ({ login, online: on }) => {
 })
 
 /** The conversations where the other one is typing, until when */
-export const typingIn = signal(new Map<number, number>())
+export const typingIn = signal(new Map<string, number>())
 // The server is told at most every 3 s while one types: shown 6 s
 const TYPING_SHOWN = 6_000
 const TELL_EVERY = 3_000
 
-const stopTyping = (id: number) => {
+const stopTyping = (id: string) => {
   if (!typingIn.peek().has(id)) return
   const next = new Map(typingIn.peek())
   next.delete(id)
@@ -153,17 +155,17 @@ onSignal('typing', ({ conversationId }) => {
   }, TYPING_SHOWN)
 })
 
-let told = { id: 0, at: 0 }
+let told = { id: '', at: 0 }
 
 /** Tells the other one the developer is typing; never the text */
-export const tellTyping = (id: number) => {
+export const tellTyping = (id: string) => {
   const at = Date.now()
   if (told.id === id && at - told.at < TELL_EVERY) return
   told = { id, at }
   api['POST/api/conversation/typing'].fetch({ id }).catch(() => {})
 }
 
-const markRead = (id: number) => {
+const markRead = (id: string) => {
   conversations.value = conversations.peek().map((c) =>
     c.id === id ? { ...c, unread: 0 } : c
   )
@@ -174,11 +176,8 @@ const markRead = (id: number) => {
  * Reads a conversation, its last 50 messages; the older ones already shown
  * stay. Read once open.
  */
-export const openConversation = async (id: number) => {
-  const fresh = await api['GET/api/conversation'].fetch({
-    id: String(id),
-    before: '',
-  })
+export const openConversation = async (id: string) => {
+  const fresh = await api['GET/api/conversation'].fetch({ id, before: '' })
   const shown = thread.peek()
   const same = shown?.id === id && !shown.jumpedTo
   const older = same
@@ -196,9 +195,9 @@ export const openConversation = async (id: number) => {
 }
 
 /** Opens a conversation on a message found by the search */
-export const openAt = async (id: number, messageId: number) => {
+export const openAt = async (id: string, messageId: number) => {
   const page = await api['GET/api/conversation'].fetch({
-    id: String(id),
+    id,
     before: String(messageId + 1),
   })
   thread.value = { ...page, jumpedTo: messageId }
@@ -208,7 +207,7 @@ export const loadOlder = async () => {
   const shown = thread.peek()
   if (!shown?.more || !shown.messages.length) return
   const page = await api['GET/api/conversation'].fetch({
-    id: String(shown.id),
+    id: shown.id,
     before: String(shown.messages[0].id),
   })
   thread.value = {
@@ -220,7 +219,7 @@ export const loadOlder = async () => {
 
 /** Sends a message, maybe an answer to another one, maybe with files */
 export const sendMessage = async (
-  id: number,
+  id: string,
   body: string,
   replyTo = 0,
   attachments: number[] = [],
@@ -240,16 +239,19 @@ export const sendMessage = async (
     return false
   }
   // Sent: the next words typed are told at once
-  told = { id: 0, at: 0 }
+  told = { id: '', at: 0 }
   await Promise.all([openConversation(id), loadConversations()])
   return true
 }
 
-/** Writes to a developer from their profile; the conversation, or nothing */
-export const startConversation = async (login: string, body: string) => {
+/**
+ * Writes to a developer, known by their GitHub account (PAM-125); the
+ * public id of the conversation, or nothing
+ */
+export const startConversation = async (githubId: number, body: string) => {
   try {
     const { id } = await api['POST/api/conversation/start'].fetch({
-      username: login,
+      githubId,
       body,
     })
     await loadConversations()
@@ -267,7 +269,7 @@ export const startConversation = async (login: string, body: string) => {
   }
 }
 
-export const answerRequest = async (id: number, accept: boolean) => {
+export const answerRequest = async (id: string, accept: boolean) => {
   await api[
     accept ? 'POST/api/conversation/accept' : 'POST/api/conversation/decline'
   ].fetch({ id })
@@ -289,13 +291,13 @@ export const reportMessage = (
   comment: string,
 ) => api['POST/api/conversation/report'].fetch({ message, reason, comment })
 
-const refresh = async (id: number) => {
+const refresh = async (id: string) => {
   await Promise.all([openConversation(id), loadConversations()])
 }
 
 /** Edits a message of the developer; false when it failed */
 export const editMessage = async (
-  conversationId: number,
+  conversationId: string,
   id: number,
   body: string,
 ) => {
@@ -309,13 +311,13 @@ export const editMessage = async (
   return true
 }
 
-export const deleteMessage = async (conversationId: number, id: number) => {
+export const deleteMessage = async (conversationId: string, id: number) => {
   await api['POST/api/conversation/message/delete'].fetch({ id }).catch(failed)
   await refresh(conversationId)
 }
 
 export const react = async (
-  conversationId: number,
+  conversationId: string,
   id: number,
   emoji: (typeof reactions)[number],
 ) => {
@@ -328,26 +330,27 @@ export const react = async (
 export const reactions = ['👍', '❤️', '😂', '🎉', '🙏', '👀'] as const
 
 /** Unread again from a message received; the conversation closes */
-export const markUnread = async (conversationId: number, from: number) => {
+export const markUnread = async (conversationId: string, from: number) => {
   await api['POST/api/conversation/unread'].fetch({ id: conversationId, from })
   thread.value = null
   await loadConversations()
 }
 
-export const setMuted = async (conversationId: number, muted: boolean) => {
+export const setMuted = async (conversationId: string, muted: boolean) => {
   await api['POST/api/conversation/mute'].fetch({ id: conversationId, muted })
   await refresh(conversationId)
 }
 
 export const setArchived = async (
-  conversationId: number,
+  conversationId: string,
   archived: boolean,
 ) => {
   await api['POST/api/conversation/archive'].fetch({
     id: conversationId,
     archived,
   })
-  await loadConversations()
+  // The open conversation too, like the mute: its button reads it
+  await refresh(conversationId)
 }
 
 /** The messages that hold a text, in the developer's conversations */

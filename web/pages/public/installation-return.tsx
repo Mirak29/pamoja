@@ -41,7 +41,7 @@ const fixes = {
 } as const
 
 /**
- * /connexion/github with an installation_id: GitHub sends the developer back
+ * /login/github with an installation_id: GitHub sends the developer back
  * here after installing the app (§5.4). The server runs its three checks;
  * the page shows each one, and the live sync is on only if all pass.
  */
@@ -188,14 +188,14 @@ export const InstallationReturn = () => {
             <Button
               size={40}
               onClick={() =>
-                navigate({ href: `projet/${result.slug}`, replace: true })}
+                navigate({ href: `project/${result.slug}`, replace: true })}
             >
               {result.live ? <Zap /> : <RotateCw />}
               {result.live ? 'Ouvrir le projet' : 'Retour au projet'}
             </Button>
           )}
           {(error || setup_action === 'request') && (
-            <A href='projets' class='text-[14px] font-semibold'>
+            <A href='projects' class='text-[14px] font-semibold'>
               Mes projets
             </A>
           )}

@@ -50,7 +50,7 @@ export const notifications: Notification[] = [
       'Frontend et Tests, 4 h par semaine : « J’aimerais contribuer au projet. »',
     at: hoursAgo(1),
     read: true,
-    href: 'projet/openpay-africa/equipe',
+    href: 'project/openpay-africa/equipe',
     application: 'a1',
     demo: true,
   },
@@ -64,7 +64,7 @@ export const notifications: Notification[] = [
       '« Idempotency keys for webhooks » sur OpenPay Africa attend une review.',
     at: hoursAgo(50),
     read: true,
-    href: 'projet/openpay-africa/prs?dialog=pr-80',
+    href: 'project/openpay-africa/prs?dialog=pr-80',
     demo: true,
   },
   {
@@ -77,7 +77,7 @@ export const notifications: Notification[] = [
       'Kofi demande une review de code Go : « Relire l’API Go de paiement à la livraison ». Environ 30 min.',
     at: hoursAgo(5),
     read: false,
-    href: 'aide/h1',
+    href: 'help/h1',
     demo: true,
   },
   {
@@ -90,7 +90,7 @@ export const notifications: Notification[] = [
       'Fatou cherche un avis d’architecture Go et SQL : « Choisir l’architecture du backend des horaires ». Environ 45 min.',
     at: hoursAgo(20),
     read: true,
-    href: 'aide/h2',
+    href: 'help/h2',
     demo: true,
   },
   {
@@ -114,7 +114,7 @@ export const notifications: Notification[] = [
     body: 'Les PRs, reviews et CI arrivent en temps réel dans #suivi.',
     at: daysAgo(3),
     read: true,
-    href: 'projet/openpay-africa/canaux/suivi',
+    href: 'project/openpay-africa/channels/updates',
     demo: true,
   },
   {
@@ -127,7 +127,7 @@ export const notifications: Notification[] = [
       'Go, SQLite, Backend : AfriCommerce, Dakar Transit et OpenPay Africa.',
     at: hoursAgo(2),
     read: false,
-    href: 'aide',
+    href: 'help',
     demo: true,
   },
   {
@@ -139,7 +139,7 @@ export const notifications: Notification[] = [
     body: 'Zeinab : « Vos patterns pour les transactions SQLite en Go ? »',
     at: hoursAgo(9),
     read: true,
-    href: 'communaute/go',
+    href: 'community/go',
     demo: true,
   },
   {
@@ -151,7 +151,7 @@ export const notifications: Notification[] = [
     body: '« Tile cache for offline mode » sur Senegal Maps.',
     at: hoursAgo(20),
     read: false,
-    href: 'projet/senegal-maps/prs',
+    href: 'project/senegal-maps/prs',
     demo: true,
   },
   {
@@ -176,7 +176,7 @@ export const notifications: Notification[] = [
       'Une place par vague de matching est réservée aux nouveaux profils bien alignés.',
     at: daysAgo(1),
     read: false,
-    href: 'aide',
+    href: 'help',
     demo: true,
   },
 ]

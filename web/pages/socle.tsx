@@ -127,11 +127,11 @@ export const SoclePage = () => {
           />
           <Tabs
             label='Exemple d’onglets'
-            current='pour-moi'
+            current='for-me'
             tabs={[
-              { key: 'pour-moi', label: 'Pour moi', href: 'dev/socle' },
-              { key: 'mes-demandes', label: 'Mes demandes', href: 'dev/socle' },
-              { key: 'acceptees', label: 'Acceptées', href: 'dev/socle' },
+              { key: 'for-me', label: 'Pour moi', href: 'dev/socle' },
+              { key: 'mine', label: 'Mes demandes', href: 'dev/socle' },
+              { key: 'accepted', label: 'Acceptées', href: 'dev/socle' },
             ]}
           />
           <Progress value={14} max={20} label='Exemple de progression' />
@@ -219,7 +219,7 @@ export const SoclePage = () => {
                 body:
                   'OpenPay Africa · PR #81 · Relire la gestion des transactions',
                 icon: LifeBuoy,
-                href: 'aide/h3',
+                href: 'help/h3',
                 match: {
                   skills: ['Go', 'SQLite'],
                   score: 93,
@@ -235,7 +235,7 @@ export const SoclePage = () => {
         <Eyebrow>États vide et fantôme</Eyebrow>
         <GhostSlab>
           <EmptyState
-            action={<Button href='aide/nouvelle'>Demander de l’aide</Button>}
+            action={<Button href='help/new'>Demander de l’aide</Button>}
           >
             Aucune demande pour l’instant. Une demande précise trouve plus vite
             la bonne personne.

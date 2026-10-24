@@ -301,7 +301,7 @@ const Preview = ({ form }: { form: Form }) => {
   )
 }
 
-/** /aide/nouvelle, pre-filled from a PR or a CI alert */
+/** /help/new, pre-filled from a PR or a CI alert */
 export const NewHelp = () => {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState<Errors>({})
@@ -381,7 +381,7 @@ export const NewHelp = () => {
       const [request] = adoptHelpRequests([created])
       // Kept on this page until the upload of images (PAM-409)
       Object.assign(request, { captures: form.captures, job: form.job })
-      navigate({ href: `aide/${request.id}` })
+      navigate({ href: `help/${request.id}` })
       notify({
         title: 'Demande publiée',
         body: 'Elle est ouverte 7 jours, le temps qu’un développeur l’accepte.',

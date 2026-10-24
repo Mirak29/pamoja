@@ -7,7 +7,9 @@ import '/web/lib/live-data.ts'
 import '/web/lib/notifications.ts'
 // Direct messages, their counter and their toast (§10.6)
 import '/web/lib/messages.ts'
-import { url } from '@01edu/signal-router'
+import { effect } from '@preact/signals'
+import { navigate, url } from '@01edu/signal-router'
+import { englishAddress } from '/web/lib/addresses.ts'
 import { CommunitiesPage } from '/web/pages/communities/communities-page.tsx'
 import { CommunityPage } from '/web/pages/communities/community-page.tsx'
 import { ExplorePage } from '/web/pages/explore/explore-page.tsx'
@@ -36,28 +38,36 @@ import { AppLayout } from '/web/ui/layout.tsx'
 
 Object.assign(globalThis, { h, Fragment })
 
+// An old French address (a shared link, a bookmark) is replaced by its
+// English one before any page shows, without a step in the history (PAM-125)
+effect(() => {
+  const to = englishAddress(`${url.relativePath}${url.value.search}`)
+  to && navigate({ href: to.slice(1), replace: true })
+})
+
 // Pages by first path segment; each page reads the rest of its path
-// (/projet/openpay-africa/pulse). A profile lives at /@login. A page with
-// a single address is listed by its full path.
+// (/project/openpay-africa/pulse). A profile lives at /@login. A page with
+// a single address is listed by its full path. Addresses are in English;
+// the French ones of the first versions are redirected (PAM-125).
 const routes: Record<string, () => JSX.Element | null> = {
   '': HomePage,
   '@': ProfilePage,
-  aide: HelpPage,
-  communaute: CommunityPage,
-  communautes: CommunitiesPage,
-  enregistres: SavedPage,
+  help: HelpPage,
+  community: CommunityPage,
+  communities: CommunitiesPage,
+  saved: SavedPage,
   dev: SoclePage,
-  explorer: ExplorePage,
+  explore: ExplorePage,
   onboarding: OnboardingPage,
   moderation: ModerationPage,
   messages: MessagesPage,
   notifications: NotificationsPage,
   post: PostPage,
-  'profil/modifier': ProfileEditPage,
-  projet: ProjectPage,
-  projets: ProjectsPage,
-  recherche: SearchPage,
-  reglages: SettingsPage,
+  'profile/edit': ProfileEditPage,
+  project: ProjectPage,
+  projects: ProjectsPage,
+  search: SearchPage,
+  settings: SettingsPage,
 }
 
 const routeOf = (key: string) =>
@@ -67,13 +77,13 @@ const Pages = () => {
   const path = url.relativePath.slice(1)
   const section = path.startsWith('@') ? '@' : path.split('/')[0]
   const Route = routeOf(section) ?? routeOf(path)
-  // GitHub returns to /connexion/github after a login, or after the
+  // GitHub returns to /login/github after a login, or after the
   // installation of the app (§5.4), with an installation_id
   if (
-    section === 'connexion' &&
+    section === 'login' &&
     (url.params.installation_id || url.params.setup_action)
   ) return <InstallationReturn />
-  if (section === 'connexion') return <ConnexionPage />
+  if (section === 'login') return <ConnexionPage />
   // Until the server says who is signed in, neither the landing nor the app
   if (currentUser.value === undefined) return null
   if (!signedIn.value) {
@@ -84,7 +94,7 @@ const Pages = () => {
     return Route ? <ConnexionPage /> : <NotFoundPage />
   }
   // The passport is the profile seen without a session: no app shell
-  if (section === '@' && url.params.vue === 'publique') return <PassportPage />
+  if (section === '@' && url.params.view === 'public') return <PassportPage />
   if (section === 'onboarding') return <OnboardingPage />
   if (!Route) return <NotFoundPage />
   return (

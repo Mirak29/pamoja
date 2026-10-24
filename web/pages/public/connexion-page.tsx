@@ -34,13 +34,13 @@ const failureOf = (err: unknown) => {
 }
 
 /**
- * /connexion, and any app page seen without a session: sends the browser to
- * GitHub (§5.3). /connexion/github is the page GitHub sends back to, with
+ * /login, and any app page seen without a session: sends the browser to
+ * GitHub (§5.3). /login/github is the page GitHub sends back to, with
  * `code` and `state`: the first login goes on to the onboarding, the next
  * ones to the page asked for.
  */
 export const ConnexionPage = () => {
-  const callback = url.relativePath === '/connexion/github'
+  const callback = url.relativePath === '/login/github'
   const [loading, setLoading] = useState(false)
   // Back from GitHub, the session opening: a state of its own, without action
   const [finishing, setFinishing] = useState(callback)
@@ -85,10 +85,10 @@ export const ConnexionPage = () => {
     if (loading) return
     setLoading(true)
     setError('')
-    // /connexion?retour=… comes from a link; another page asked for itself.
+    // /login?next=… comes from a link; another page asked for itself.
     // After a failed callback, the page kept from the first attempt stays.
-    const back = url.relativePath === '/connexion'
-      ? (url.params.retour ?? '')
+    const back = url.relativePath === '/login'
+      ? (url.params.next ?? '')
       : callback
       ? `/${takeBack()}`
       : `${url.relativePath}${location.search}`

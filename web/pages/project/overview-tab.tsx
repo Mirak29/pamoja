@@ -119,7 +119,7 @@ const CurrentMilestone = ({ project }: { project: Project }) => {
         : (
           <span class='text-[14px] text-ink-muted'>
             Aucune milestone en cours.{' '}
-            <A href={`projet/${project.slug}/roadmap`}>Voir la roadmap</A>
+            <A href={`project/${project.slug}/roadmap`}>Voir la roadmap</A>
           </span>
         )}
     </Card>
@@ -147,7 +147,7 @@ const Needs = ({ project }: { project: Project }) => (
         <Button
           size={36}
           variant='secondary'
-          href={`projet/${project.slug}/reglages`}
+          href={`project/${project.slug}/settings`}
           class='mt-1 self-start'
         >
           Modifier les besoins
@@ -156,7 +156,7 @@ const Needs = ({ project }: { project: Project }) => (
       : !project.members.some((member) => isMe(member.login)) && (
         <Button
           size={36}
-          href={`projet/${project.slug}/canaux/aide`}
+          href={`project/${project.slug}/channels/help`}
           class='mt-1 self-start'
         >
           Proposer mon aide

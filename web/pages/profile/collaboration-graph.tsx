@@ -359,8 +359,10 @@ const kindsLine = (mate: Mate) =>
 // The page of a place: a project, or a community
 const hrefOf = (key: string) => {
   const [kind, slug] = key.split(':')
-  if (kind === 'project') return slug in projects ? `projet/${slug}` : undefined
-  if (kind === 'community') return `communaute/${slug}`
+  if (kind === 'project') {
+    return slug in projects ? `project/${slug}` : undefined
+  }
+  if (kind === 'community') return `community/${slug}`
 }
 
 /** Hover or focus to look, click or Enter to keep the selection */
@@ -551,7 +553,7 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
               <Button
                 variant='secondary'
                 size={34}
-                params={{ dialog: 'reseau' }}
+                params={{ dialog: 'network' }}
               >
                 {left
                   ? t`Voir tout le réseau (+${left})`
@@ -821,7 +823,7 @@ const Detail = (
           </Button>
         )}
         {place.key === OTHERS && (
-          <Button params={{ dialog: 'reseau' }} variant='secondary' size={32}>
+          <Button params={{ dialog: 'network' }} variant='secondary' size={32}>
             Voir tout le réseau
           </Button>
         )}
@@ -900,7 +902,7 @@ export const NetworkDrawer = ({ login }: { login: Login }) => {
     days: null,
   })
   const [query, setQuery] = useState('')
-  if (url.params.dialog !== 'reseau') return null
+  if (url.params.dialog !== 'network') return null
   const network = networkOf(login, filter)
   const words = query.trim().toLowerCase()
   const match = (name: string) => !words || name.toLowerCase().includes(words)
@@ -914,7 +916,7 @@ export const NetworkDrawer = ({ login }: { login: Login }) => {
   const max = Math.max(1, ...network.mates.map((mate) => mate.count))
   return (
     <Drawer
-      id='reseau'
+      id='network'
       label='Réseau de travail'
       width={480}
       header={<Eyebrow>Réseau de travail · {people[login].name}</Eyebrow>}

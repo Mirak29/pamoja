@@ -14,7 +14,8 @@ import {
 import { attach, mediaOf, removeMediaOf } from '/api/media.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import { isOnline, sendTo } from '/api/presence.ts'
-import { userIdOfLogin } from '/api/user.ts'
+import { userIdOfGithubId, userIdOfLogin } from '/api/user.ts'
+import { isPublicId, publicId } from '/api/lib/ids.ts'
 
 // Direct messages (§10.6): a conversation between two developers. Two who
 // worked together write to each other at once; otherwise the first message
@@ -151,6 +152,8 @@ const blockOf = (me: number, other: number) => {
 
 type ConversationRow = {
   conversationId: number
+  /** Its address (PAM-125): the number never leaves the server */
+  publicId: string
   startedBy: number
   status: 'pending' | 'accepted' | 'declined'
   createdAt: number
@@ -178,6 +181,20 @@ const getMine = sql<
   WHERE conversation.conversationId = :conversationId
 `.get
 
+const getByPublicId = sql<{ conversationId: number }, string>`
+  SELECT conversationId FROM conversation WHERE publicId = ?
+`.get
+
+/**
+ * The conversation behind a public id, or a 404; whose it is is checked
+ * after, as for any conversation
+ */
+export const conversationIdOf = (id: string) => {
+  const row = isPublicId(id) ? getByPublicId(id) : undefined
+  if (!row) throw notFound()
+  return row.conversationId
+}
+
 /** A conversation of the developer, or a 404 */
 const mine = (me: number, conversationId: number) => {
   const row = getMine({ conversationId, userId: me })
@@ -187,10 +204,10 @@ const mine = (me: number, conversationId: number) => {
 
 const insertConversation = sql<
   undefined,
-  { startedBy: number; status: string; at: number }
+  { startedBy: number; status: string; at: number; publicId: string }
 >`
-  INSERT INTO conversation (startedBy, status, createdAt, updatedAt)
-  VALUES (:startedBy, :status, :at, :at)
+  INSERT INTO conversation (startedBy, status, createdAt, updatedAt, publicId)
+  VALUES (:startedBy, :status, :at, :at, :publicId)
 `.run
 
 const insertMember = sql<
@@ -294,12 +311,13 @@ const post = (
 }
 
 /**
- * Writes to a developer: in the conversation they already share, or in a
- * new one, open at once if they worked together, a request otherwise
+ * Writes to a developer, known by their GitHub account (PAM-125): in the
+ * conversation they already share, or in a new one, open at once if they
+ * worked together, a request otherwise. Its public id comes back.
  */
 export const startConversation = db.transaction(
-  (me: number, login: string, body: string) => {
-    const other = userIdOfLogin(login)
+  (me: number, githubId: number, body: string) => {
+    const other = userIdOfGithubId(githubId)
     if (!other) {
       throw new respond.NotFoundError({ message: 'No such developer' })
     }
@@ -308,7 +326,7 @@ export const startConversation = db.transaction(
     const existing = getBetween({ a: me, b: other })
     if (existing) {
       send(me, existing.conversationId, text)
-      return existing.conversationId
+      return existing.publicId
     }
     const block = blockOf(me, other)
     if (block.byMe || block.byThem) {
@@ -318,16 +336,18 @@ export const startConversation = db.transaction(
     const at = now()
     const together = !!getWorkedTogether({ a: me, b: other })!.yes
     together || within(countRequests, RATE.requests, me, 'Too many requests')
+    const id = publicId()
     insertConversation({
       startedBy: me,
       status: together ? 'accepted' : 'pending',
       at,
+      publicId: id,
     })
     const conversationId = db.lastInsertRowId
     insertMember({ conversationId, userId: me, lastReadAt: at })
     insertMember({ conversationId, userId: other, lastReadAt: null })
     post(conversationId, me, text, at)
-    return conversationId
+    return id
   },
 )
 
@@ -551,7 +571,7 @@ export const listConversations = (me: number) =>
     if (row.startedBy !== me && row.status === 'declined') return []
     const rights = rightsOf(row, me)
     return [{
-      id: row.conversationId,
+      id: row.publicId,
       with: { login: row.login, name: row.name, avatarUrl: row.avatarUrl },
       ...rights,
       updatedAt: row.updatedAt,
@@ -582,7 +602,7 @@ export const typing = (me: number, conversationId: number) => {
   const at = Date.now()
   if (at - (typingAt.get(key) ?? 0) < TYPING_EVERY) return
   typingAt.set(key, at)
-  sendTo(row.other, 'typing', { conversationId })
+  sendTo(row.other, 'typing', { conversationId: row.publicId })
 }
 
 const PAGE = 50
@@ -729,7 +749,7 @@ export const getConversation = (
   }
   const files = mediaOf('message', shown.map((m) => m.directMessageId))
   return {
-    id: conversationId,
+    id: row.publicId,
     with: {
       login: other.login,
       name: other.name,
@@ -906,7 +926,7 @@ export const markUnread = (
 const findMessages = sql<
   {
     directMessageId: number
-    conversationId: number
+    publicId: string
     authorId: number
     body: string
     createdAt: number
@@ -916,7 +936,7 @@ const findMessages = sql<
   },
   { me: number; pattern: string }
 >`
-  SELECT directMessage.directMessageId, directMessage.conversationId,
+  SELECT directMessage.directMessageId, conversation.publicId,
     directMessage.authorId, directMessage.body, directMessage.createdAt,
     other.githubUsername AS login, profile.displayName AS name,
     other.avatarUrl
@@ -959,7 +979,7 @@ export const searchMessages = (me: number, query: string) => {
   // `!` escapes the wildcards of LIKE
   const pattern = `%${q.replace(/[!%_]/g, (c) => `!${c}`)}%`
   return findMessages({ me, pattern }).map((m) => ({
-    conversationId: m.conversationId,
+    conversationId: m.publicId,
     with: { login: m.login, name: m.name, avatarUrl: m.avatarUrl },
     message: {
       id: m.directMessageId,

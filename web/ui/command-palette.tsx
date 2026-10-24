@@ -89,7 +89,7 @@ export const search = (query: string, limit: number) => {
         .map((p) => ({
           title: p.name,
           sub: `${p.stack.join(', ')} · ${p.description}`,
-          href: `projet/${p.slug}`,
+          href: `project/${p.slug}`,
           lead: <FolderGit2 class='size-3.5' />,
         })),
     ],
@@ -100,7 +100,7 @@ export const search = (query: string, limit: number) => {
         .map((c) => ({
           title: c.name,
           sub: `${c.type} · ${counted(c.members, 'membre')}`,
-          href: `communaute/${c.slug}`,
+          href: `community/${c.slug}`,
           lead: <Users class='size-3.5' />,
         })),
     ],
@@ -134,7 +134,7 @@ export const search = (query: string, limit: number) => {
           sub: `${help.type}${
             help.project ? ` · ${projects[help.project].name}` : ''
           }`,
-          href: `aide/${help.id}`,
+          href: `help/${help.id}`,
           lead: <LifeBuoy class='size-3.5' />,
         })),
     ],
@@ -145,7 +145,7 @@ export const search = (query: string, limit: number) => {
         .map((skill) => ({
           title: skill,
           sub: t`Développeurs et projets en ${skill}`,
-          href: `explorer?skill=${encodeURIComponent(skill)}`,
+          href: `explore?skill=${encodeURIComponent(skill)}`,
           lead: <Tag class='size-3.5' />,
         })),
     ],
@@ -293,7 +293,7 @@ export const CommandPalette = () => {
             <span>Tolère les fautes : essaie « postgress »</span>
             {q.trim() && (
               <A
-                href='recherche'
+                href='search'
                 params={{ q }}
                 onClick={close}
                 class='ml-auto font-semibold'

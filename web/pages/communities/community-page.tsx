@@ -39,10 +39,10 @@ import { t } from '/web/lib/language.ts'
 
 const tabs = [
   ['', 'Fil'],
-  ['membres', 'Membres'],
-  ['projets', 'Projets'],
-  ['aide', 'Demandes d’aide'],
-  ['apropos', 'À propos'],
+  ['members', 'Membres'],
+  ['projects', 'Projets'],
+  ['help', 'Demandes d’aide'],
+  ['about', 'À propos'],
 ] as const
 
 const FENCE = '`'.repeat(3)
@@ -116,7 +116,7 @@ const PostRow = ({ post, community }: { post: Post; community: Community }) => (
 
 const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
   <A
-    href={`aide/${request.id}`}
+    href={`help/${request.id}`}
     class='flex items-start gap-4 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline'
   >
     <span class='tile flex h-[50px] w-[58px] flex-none flex-col items-center justify-center gap-0.5'>
@@ -223,7 +223,7 @@ const NotFound = ({ slug }: { slug: string }) => (
   <Page title='Communauté introuvable' class='pt-5'>
     <GhostSlab>
       <EmptyState
-        action={<Button href='communautes'>Voir les communautés</Button>}
+        action={<Button href='communities'>Voir les communautés</Button>}
       >
         {t`La communauté « ${slug} » n’existe pas.`}
       </EmptyState>
@@ -231,7 +231,7 @@ const NotFound = ({ slug }: { slug: string }) => (
   </Page>
 )
 
-/** /communaute/:slug/:tab (§10.2) */
+/** /community/:slug/:tab (§10.2) */
 export const CommunityPage = () => {
   communitiesChanged.value
   postsChanged.value
@@ -287,7 +287,7 @@ export const CommunityPage = () => {
         tabs={tabs.map(([key, label]) => ({
           key,
           label,
-          href: key ? `communaute/${slug}/${key}` : `communaute/${slug}`,
+          href: key ? `community/${slug}/${key}` : `community/${slug}`,
         }))}
       />
       {current === '' && (
@@ -310,21 +310,21 @@ export const CommunityPage = () => {
           )}
         </section>
       )}
-      {current === 'membres' && (
+      {current === 'members' && (
         <span class='-mb-2 text-[13px] text-ink-muted'>
           {counted(members.length, 'membre affiché', 'membres affichés')} sur
           {' '}
           {community.members}, les plus actifs d’abord.
         </span>
       )}
-      {current === 'membres' && (
+      {current === 'members' && (
         <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
           {members.map((person) => (
             <DeveloperCard key={person.login} person={person} />
           ))}
         </div>
       )}
-      {current === 'projets' && (
+      {current === 'projects' && (
         <>
           <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'>
             {projectList.map((project) => (
@@ -336,7 +336,7 @@ export const CommunityPage = () => {
           )}
         </>
       )}
-      {current === 'aide' && (
+      {current === 'help' && (
         <section class='slab mr-2 overflow-hidden'>
           <div class='-mt-px'>
             {help.map((request) => (
@@ -350,7 +350,7 @@ export const CommunityPage = () => {
           )}
         </section>
       )}
-      {current === 'apropos' && <About community={community} />}
+      {current === 'about' && <About community={community} />}
       <NewPostDialog community={community.slug} type='Question' />
     </Page>
   )

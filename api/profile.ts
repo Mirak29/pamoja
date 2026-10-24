@@ -8,6 +8,7 @@ import { skillNamesOf, skillsOf } from '/api/skills.ts'
 
 type ProfileRow = {
   userId: number
+  githubId: number
   login: string
   githubLogin: string | null
   avatarUrl: string
@@ -22,7 +23,8 @@ type ProfileRow = {
 }
 
 const getProfile = sql<ProfileRow, string>`
-  SELECT user.userId, githubUsername AS login, githubLogin, avatarUrl,
+  SELECT user.userId, user.githubId, githubUsername AS login, githubLogin,
+    avatarUrl,
     displayName,
     headline, bio, country, city, website, availability, matchingFilters
   FROM user
@@ -83,6 +85,7 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
   if (!row) return
   const { skills, domains } = skillsOf(row.userId)
   return {
+    githubId: row.githubId,
     login: row.login,
     githubLogin: row.githubLogin ?? row.login,
     displayName: row.displayName,
@@ -109,4 +112,17 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     })),
     activity: signedIn ? listHelpActivity(row.userId) : [],
   }
+}
+
+const getLoginOfGithubId = sql<{ login: string }, number>`
+  SELECT githubUsername AS login FROM user WHERE githubId = ?
+`.get
+
+/** The public profile of a GitHub account, for a link to write to them */
+export const getPublicProfileOfGithubId = (
+  githubId: number,
+  signedIn: boolean,
+) => {
+  const row = getLoginOfGithubId(githubId)
+  return row && getPublicProfile(row.login, signedIn)
 }

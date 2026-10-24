@@ -5,7 +5,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { PostCard } from '/web/ui/post.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 
-/** /enregistres: the posts kept with « Enregistrer », newest first (§6.2) */
+/** /saved: the posts kept with « Enregistrer », newest first (§6.2) */
 export const SavedPage = () => {
   postsChanged.value
   const saved = posts
