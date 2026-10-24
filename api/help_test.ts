@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert@^1.0.13'
+import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { languageOfFile, skillsOfFiles } from '/api/pull-skills.ts'
@@ -125,6 +125,25 @@ Deno.test('help: a request from a PR is published, open for 7 days', async () =>
   )
   const list = await call('/api/help', session)
   assertEquals(list.json.map((h: { id: number }) => h.id), [created.json.id])
+})
+
+Deno.test('help: ten requests a day at most (§16)', async () => {
+  const { session } = await setup()
+  const alone = { ...form, project: '', pullRequest: 0 }
+  for (let i = 0; i < 10; i++) {
+    const res = await call('/api/help/create', session, {
+      ...alone,
+      title: `Demande ${i}`,
+    })
+    assertEquals(res.status, 200)
+  }
+  const res = await request('/api/help/create', {
+    body: alone,
+    cookie: `session=${session}`,
+  })
+  assertEquals(res.status, 429)
+  // When to try again: once the first of the day is a day old
+  assert(Number(res.headers.get('Retry-After')) > 86_000)
 })
 
 Deno.test('help: one request at a time on a PR', async () => {

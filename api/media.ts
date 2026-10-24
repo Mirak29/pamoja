@@ -1,6 +1,7 @@
 import { sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
+import { every } from '/api/lib/background.ts'
 import { APP_ENV } from '/api/lib/env.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import { Media } from '/api/schema.ts'
@@ -169,6 +170,24 @@ const getMedia = sql<MediaRow, number>`
   SELECT * FROM media WHERE mediaId = ?
 `.get
 
+/** The body of a request, refused as soon as it passes `max` bytes */
+const readCapped = async (req: Request, max: number) => {
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for await (const chunk of req.body ?? []) {
+    size += chunk.length
+    if (size > max) throw tooLarge()
+    chunks.push(chunk)
+  }
+  const all = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    all.set(chunk, offset)
+    offset += chunk.length
+  }
+  return all
+}
+
 /**
  * An image (JPEG, PNG, WebP, 2 MB) or a PDF (5 MB), read from the form of
  * the request (§17.3); 20 uploads by hour
@@ -179,8 +198,11 @@ export const upload = async (me: number, req: Request) => {
   within(countUploads, MEDIA_LIMITS.uploads, me, 'Too many uploads')
   let form: FormData
   try {
-    form = await req.formData()
-  } catch {
+    // Read with its limit: a body sent in chunks has no Content-Length
+    const body = await readCapped(req, MAX_REQUEST)
+    form = await new Response(body, { headers: req.headers }).formData()
+  } catch (err) {
+    if (err instanceof respond.ContentTooLargeError) throw err
     throw badRequest('A file is required')
   }
   const file = form.get('file')
@@ -271,21 +293,21 @@ const deleteRow = sql<undefined, number>`
   DELETE FROM media WHERE mediaId = ?
 `.run
 
-const removeFile = (storageKey: string) => {
-  try {
-    Deno.removeSync(`${MEDIA_DIR}/${storageKey}`)
-  } catch {
-    // Already gone
+/** Deletes media: their rows and their files */
+const remove = (media: MediaRow[]) => {
+  for (const m of media) {
+    deleteRow(m.mediaId)
+    try {
+      Deno.removeSync(`${MEDIA_DIR}/${m.storageKey}`)
+    } catch {
+      // Already gone
+    }
   }
 }
 
 /** Deletes the media of a content: rows and files */
-export const removeMediaOf = (targetType: string, targetId: number) => {
-  for (const m of listOf({ targetType, ids: JSON.stringify([targetId]) })) {
-    deleteRow(m.mediaId)
-    removeFile(m.storageKey)
-  }
-}
+export const removeMediaOf = (targetType: string, targetId: number) =>
+  remove(listOf({ targetType, ids: JSON.stringify([targetId]) }))
 
 const listStale = sql<MediaRow, number>`
   SELECT * FROM media WHERE targetType IS NULL AND createdAt < ?
@@ -294,18 +316,13 @@ const listStale = sql<MediaRow, number>`
 /** Uploads never attached after 24 h: deleted (§17.3) */
 export const cleanMedia = (at = now()) => {
   const stale = listStale(at - 24 * 3600)
-  for (const m of stale) {
-    deleteRow(m.mediaId)
-    removeFile(m.storageKey)
-  }
+  remove(stale)
   return stale.length
 }
 
 /** Every hour, from the start of the server */
-export const startMediaCleanup = () => {
-  cleanMedia()
-  setInterval(() => cleanMedia(), 3600_000)
-}
+export const startMediaCleanup = () =>
+  every('media-cleanup-error', 3600_000, () => cleanMedia())
 
 const getReadable = sql<
   MediaRow & { conversationId: number | null; messageDeleted: number | null },

@@ -127,7 +127,8 @@ const listIntents = UserIntent.sql<'intent', number>`
   SELECT intent FROM userIntent WHERE userId = ? ORDER BY userIntentId
 `.all
 
-const matchingFiltersOf = (stored: string | null) => {
+/** The filters of the matching a developer chose, with their defaults */
+export const matchingFiltersOf = (stored: string | null) => {
   const filters = stored
     ? JSON.parse(stored) as { minScore?: number; helpTypes?: string[] }
     : {}
@@ -264,3 +265,7 @@ const getUserIdByLogin = sql<{ userId: number }, string>`
 
 /** The developer of a login, undefined if not on Pamoja */
 export const userIdOfLogin = (login: string) => getUserIdByLogin(login)?.userId
+
+/** The developer of a GitHub account, undefined if not on Pamoja */
+export const userIdOfGithubId = (githubId: number) =>
+  getUserIdByGithubId(githubId)?.userId

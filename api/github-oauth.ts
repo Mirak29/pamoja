@@ -7,6 +7,7 @@ import {
   GITHUB_CLIENT_SECRET,
 } from '/api/lib/env.ts'
 import { deleteCookie, setCookie } from 'jsr:@std/http@^1.0.20/cookie'
+import { githubHeaders } from '/api/github.ts'
 import { log } from '/api/lib/log.ts'
 import { signText, verifyText } from '/api/lib/sign.ts'
 
@@ -175,12 +176,7 @@ export const exchangeCode = async (code: string): Promise<Read> => {
   }
   return (path: string) =>
     fetch(`https://api.github.com${path}`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token.access_token}`,
-        'User-Agent': 'Pamoja',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
+      headers: githubHeaders(token.access_token),
     })
 }
 

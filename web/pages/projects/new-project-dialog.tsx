@@ -4,7 +4,14 @@ import { A, navigate } from '@01edu/signal-router'
 import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
 import { createProject, readmeSummary } from '/web/fixtures/repos.ts'
-import { api, type ApiOutput, isQuotaError } from '/web/lib/api.ts'
+import {
+  api,
+  type ApiOutput,
+  isQuotaError,
+  retryAfterOf,
+} from '/web/lib/api.ts'
+import { waitLabel } from '/web/lib/messages.ts'
+import { t } from '/web/lib/language.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { ago } from '/web/lib/time.ts'
 import { skills } from '/web/fixtures/skills.ts'
@@ -280,7 +287,11 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
       setCreating(false)
       notify({
         title: 'Import impossible',
-        body: isQuotaError(err)
+        body: retryAfterOf(err)
+          ? t`Tu as importé beaucoup de projets cette heure-ci. Réessaie ${
+            waitLabel(retryAfterOf(err)!)
+          }.`
+          : isQuotaError(err)
           ? 'GitHub limite le nombre de lectures par heure et la limite est atteinte. Réessaie dans quelques minutes.'
           : 'Pamoja n’a pas pu créer le projet. Vérifie que le repo est bien à toi, puis réessaie.',
         icon: FolderGit2,

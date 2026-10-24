@@ -277,8 +277,11 @@ export const levelOf = (thresholds: number[], measure: Measure) => {
   return level
 }
 
-const getProgress = sql<{ badge: string; level: number }, number>`
-  SELECT badge, level FROM badgeProgress WHERE userId = ?
+const listBadges = sql<
+  { badge: string; level: number; count: number },
+  number
+>`
+  SELECT badge, level, count FROM badgeProgress WHERE userId = ?
 `.all
 
 const writeProgress = sql<undefined, Record<string, string | number>>`
@@ -295,7 +298,7 @@ const writeProgress = sql<undefined, Record<string, string | number>>`
  * inside the transaction of the proof.
  */
 export const evaluateBadges = (userId: number, at = now()) => {
-  const before = new Map(getProgress(userId).map((p) => [p.badge, p.level]))
+  const before = new Map(listBadges(userId).map((p) => [p.badge, p.level]))
   for (const badge of Object.keys(BADGES) as BadgeKey[]) {
     const measure = measures[badge](userId)
     const level = levelOf(BADGES[badge], measure)
@@ -316,13 +319,6 @@ export const evaluateBadges = (userId: number, at = now()) => {
     })
   }
 }
-
-const listBadges = sql<
-  { badge: string; level: number; count: number },
-  number
->`
-  SELECT badge, level, count FROM badgeProgress WHERE userId = ?
-`.all
 
 /** Every badge of a developer, with what the next level asks (§8.2) */
 export const badgesOf = (userId: number) => {

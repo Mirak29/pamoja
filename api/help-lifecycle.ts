@@ -10,6 +10,7 @@ import { createNotification } from '/api/notifications.ts'
 import { evaluateBadges } from '/api/badges.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { HelpMessage } from '/api/schema.ts'
+import { type Window, within } from '/api/lib/rate.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
 // transaction whose UPDATE only applies from the expected state: two helpers
@@ -441,6 +442,17 @@ export const declineHelp = (userId: number, helpRequestId: number) =>
 
 const TALKING = ['accepted', 'review_submitted', 'delivered']
 
+// The thread keeps the pace of the direct messages (§10.6, §16)
+export const HELP_MESSAGE_RATE = {
+  perMinute: { count: 20, per: 60 },
+  perDay: { count: 1000, per: 24 * 3600 },
+}
+
+const countMessages = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM helpMessage
+  WHERE authorId = :me AND createdAt > :since
+`.get
+
 export const postHelpMessage = (
   userId: number,
   helpRequestId: number,
@@ -459,6 +471,18 @@ export const postHelpMessage = (
     if (!TALKING.includes(row.status)) {
       throw conflict('The thread is closed')
     }
+    within(
+      countMessages,
+      HELP_MESSAGE_RATE.perMinute,
+      userId,
+      'Too many messages',
+    )
+    within(
+      countMessages,
+      HELP_MESSAGE_RATE.perDay,
+      userId,
+      'Too many messages today',
+    )
     HelpMessage.insert({
       helpRequestId,
       authorId: userId,

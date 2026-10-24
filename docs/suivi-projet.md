@@ -749,6 +749,51 @@ Vérifié en local : les quatre commandes passent, et un fichier mal formaté et
 - **Livrable** : `.github/workflows/ci.yml`, `exclude` dans `deno.json`
 - **Par** : @Mirak29
 
+### 2026-10-24 · Revue de code complète, sécurité et simplification
+
+Revue de tout le serveur sur `master` après PAM-522 : app lancée sur la base seedée, revue de sécurité (chaque faille candidate vérifiée à part), puis `/simplify` sous quatre angles. Aucune faille exploitable. Six défauts corrigés (REV-01 à REV-06) :
+
+- une erreur dans une tâche de fond arrêtait tout le serveur ;
+- deux Preact se trouvaient dans le bundle de dev ;
+- esbuild et `@std` n'étaient pas épinglés ;
+- la recherche dans les messages privés partait dans les logs ;
+- l'import n'avait pas de limite de taille ;
+- un appel GitHub sans réponse bloquait le rafraîchissement.
+
+Les duplications relevées sont retirées et 13 index ajoutés. Sept points relevés hors correction (R-01 à R-07) : R-05 et R-07 sont corrigés depuis (entrées ci-dessous), les cinq autres restent à décider par l'équipe, par exemple le refus d'une demande de message qui se devine, ou l'absence de limite de débit sur les demandes d'aide. Voir le [rapport](qa/2026-10-24/rapport-revue-code.md).
+
+- **Livrable** : `docs/qa/2026-10-24/rapport-revue-code.md` ; `api/lib/background.ts`, en-têtes et délai GitHub dans `api/github.ts`, `api/installation.ts`, `api/messages.ts`, `api/routes.ts`, index dans `api/schema.ts`, imports épinglés ; tests `api/background_test.ts` et 1 de plus dans `api/import_test.ts`
+- **Par** : @Mirak29
+
+### 2026-10-24 · Test de la langue rendu déterministe (R-07)
+
+`web/lib/language_test.ts` échouait parfois (2 fois sur 7 lancements de toute la suite, serveur de dev allumé) : il attendait les rendus de Preact avec un délai fixe de 50 ms, trop court quand la machine est chargée, et voyait alors l'ancien texte. Le test récupère maintenant les rendus en attente par `options.debounceRendering` et les exécute lui-même avant chaque vérification, sans minuteur ; il restaure l'option à la fin. Les vérifications sont inchangées. Contrôlé : sans exécuter ces rendus, le test échoue bien ; la suite complète passe 6 fois de suite.
+
+- **Livrable** : `web/lib/language_test.ts` ; point R-07 de la revue de code du 2026-10-24
+- **Par** : @Mirak29
+
+### 2026-10-24 · Installation réactivée : les repos repassent en direct
+
+Relevé par la revue de code du 24 octobre (R-05). Une installation suspendue renvoyait bien ses repos au rafraîchissement toutes les 15 minutes, mais sa réactivation (`unsuspend`) n'était pas traitée : les repos restaient en mode poll jusqu'à une réinstallation. La documentation de GitHub confirme que l'événement `unsuspend` porte la liste `repositories` de l'installation ; il est maintenant traité comme `created`. Un repo personnel dont le propriétaire possède aussi le projet Pamoja repasse en direct ; tout autre repo attend encore les trois contrôles du §5.4. Vérifié que le nouveau test échoue sans la correction.
+
+- **Livrable** : `api/github-events.ts`, cas suspendu puis réactivé ajouté à `api/github-events_test.ts`
+- **Par** : @Mirak29
+
+### 2026-10-24 · Suites de la revue de code et en-tête mobile
+
+Les cinq points de la revue laissés à l'équipe sont corrigés :
+
+- **R-01** : un refus de demande de message n'arrive plus en temps réel chez l'expéditeur.
+- **R-02** : seule une aide livrée ouvre une conversation directe ; accepter une demande puis se désister ne suffit plus.
+- **R-03** : un envoi de fichier est lu avec sa limite, même sans `Content-Length`.
+- **R-04** : demandes d'aide, messages du fil d'une demande et imports de projet ont leur limite, comptée en base, et les pages disent quand réessayer.
+- **R-06** : le serveur de production refuse de démarrer sans `APP_ENV=prod`.
+
+L'en-tête ne chevauche plus la recherche sur téléphone : le thème et la langue passent dans le menu du compte. Vérifié dans le navigateur à 375 px et sur ordinateur.
+
+- **Livrable** : `api/entries.ts`, `api/messages.ts`, `api/media.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/import.ts`, `api/lib/production.ts`, index dans `api/schema.ts`, `deno.json` (`prod:local`), `web/ui/header.tsx`, messages de limite dans les pages ; 5 tests de plus ; cahier des charges §10.6, §12.2, §16 ; rapport `docs/qa/2026-10-24/rapport-revue-code.md`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

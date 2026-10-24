@@ -2,14 +2,10 @@ import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
-import {
-  DAILY_MATCHES,
-  DEFAULT_MIN_SCORE,
-  NEWCOMER_BELOW,
-  WAVE_SIZE,
-} from '/api/help-rules.ts'
+import { DAILY_MATCHES, NEWCOMER_BELOW, WAVE_SIZE } from '/api/help-rules.ts'
 import { createNotification } from '/api/notifications.ts'
 import { skillNamesOf } from '/api/skills.ts'
+import { matchingFiltersOf } from '/api/user.ts'
 
 // The matching (§7.3): deterministic, read in SQL, explainable. Each
 // developer gets a score out of 100 and the reasons behind it, shown in
@@ -199,10 +195,7 @@ export const rank = (
   const ranked: Candidate[] = []
   for (const profile of listProfiles(users)) {
     if (profile.matchingMode === 'off') continue
-    const filters = json<{ minScore?: number; helpTypes?: string[] }>(
-      profile.matchingFilters,
-      {},
-    )
+    const filters = matchingFiltersOf(profile.matchingFilters)
     const held = weights.get(profile.userId)!
     const reasons: Reason[] = []
     const skillWeight = [...held.values()].reduce((sum, w) => sum + w, 0)
@@ -213,7 +206,7 @@ export const rank = (
       of: need.skills.length,
     })
     if (
-      filters.helpTypes?.includes(need.category) ||
+      filters.helpTypes.includes(need.category) ||
       intentsOf(need.category).some((i) =>
         intents.get(profile.userId)?.includes(i)
       )
@@ -243,7 +236,7 @@ export const rank = (
       reasons.push({ kind: 'affinity', points: 5, follows: true })
     }
     const score = Math.min(100, reasons.reduce((sum, r) => sum + r.points, 0))
-    if (score < (filters.minScore ?? DEFAULT_MIN_SCORE)) continue
+    if (score < filters.minScore) continue
     ranked.push({
       userId: profile.userId,
       login: profile.login,
@@ -392,24 +385,25 @@ export const sendWave = (helpRequestId: number, at = now()) =>
     return chosen
   })()
 
+// Every field a reason may have, null when it does not apply; in the order
+// the API sends them
+const noReason = {
+  kind: '',
+  points: 0,
+  skills: null as string[] | null,
+  of: null as number | null,
+  category: null as string | null,
+  count: null as number | null,
+  review: null as boolean | null,
+  available: null as boolean | null,
+  active: null as boolean | null,
+  community: null as string | null,
+  follows: null as boolean | null,
+}
+
 /** A reason as the API sends it: every field, null when it does not apply */
 export const explain = (reasons: Reason[]) =>
-  reasons.map((r) => {
-    const any = r as Partial<Record<string, unknown>>
-    return {
-      kind: r.kind,
-      points: r.points,
-      skills: (any.skills as string[] | undefined) ?? null,
-      of: (any.of as number | undefined) ?? null,
-      category: (any.category as string | undefined) ?? null,
-      count: (any.count as number | undefined) ?? null,
-      review: (any.review as boolean | undefined) ?? null,
-      available: (any.available as boolean | undefined) ?? null,
-      active: (any.active as boolean | undefined) ?? null,
-      community: (any.community as string | undefined) ?? null,
-      follows: (any.follows as boolean | undefined) ?? null,
-    }
-  })
+  reasons.map((r) => ({ ...noReason, ...r }))
 
 /*
  * What the pages read

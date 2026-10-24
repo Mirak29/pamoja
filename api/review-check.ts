@@ -2,8 +2,10 @@ import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { github, seconds } from '/api/github.ts'
-import { log } from '/api/lib/log.ts'
+import { later } from '/api/lib/background.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 import { createNotification } from '/api/notifications.ts'
+import { userIdOfGithubId } from '/api/user.ts'
 
 // The review of a help request is done on GitHub (§7.5). It validates the
 // request when all five hold:
@@ -23,10 +25,6 @@ export type GithubReview = {
   submitted_at: string | null
 }
 
-const getUserId = sql<{ userId: number }, number>`
-  SELECT userId FROM user WHERE githubId = ?
-`.get
-
 // The exact count of comments is read later: never lower it
 const writeReview = sql<undefined, Record<string, string | number | null>>`
   INSERT INTO review (pullRequestId, githubReviewId, reviewerGithubId,
@@ -45,7 +43,7 @@ const writeReview = sql<undefined, Record<string, string | number | null>>`
  */
 export const upsertReview = (pullRequestId: number, review: GithubReview) => {
   const reviewerUserId = review.user
-    ? getUserId(review.user.id)?.userId ?? null
+    ? userIdOfGithubId(review.user.id) ?? null
     : null
   writeReview({
     pullRequestId,
@@ -195,7 +193,7 @@ export const countReviewComments = async (pullRequestId: number) => {
     } catch (err) {
       log.warn('github-review-comments-error', {
         path,
-        message: err instanceof Error ? err.message : String(err),
+        message: errorMessage(err),
       })
     }
   }
@@ -204,7 +202,10 @@ export const countReviewComments = async (pullRequestId: number) => {
 
 /** After the webhook: GitHub is never called inside its transaction (§5.5) */
 export const scheduleCommentCount = (pullRequestId: number) =>
-  setTimeout(() => countReviewComments(pullRequestId), 0)
+  later(
+    'github-review-comments-error',
+    () => countReviewComments(pullRequestId),
+  )
 
 /*
  * The resync: a lost webhook does not lose a review (§5.6, §7.5)

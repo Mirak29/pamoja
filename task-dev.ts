@@ -1,5 +1,5 @@
 import { config } from './build-config.ts'
-import { context } from 'npm:esbuild'
+import { context } from 'npm:esbuild@0.25.5'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
 

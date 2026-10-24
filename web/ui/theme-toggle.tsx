@@ -41,7 +41,7 @@ export const setThemePreference = (preference: ThemePreference) => {
   }
 }
 
-const toggle = () =>
+export const toggleTheme = () =>
   setThemePreference(themeSignal.peek() === 'dark' ? 'light' : 'dark')
 
 export const ThemeToggle = () => {
@@ -54,7 +54,7 @@ export const ThemeToggle = () => {
       square
       aria-label={label}
       title={label}
-      onClick={toggle}
+      onClick={toggleTheme}
     >
       {dark ? <Sun class='size-[18px]' /> : <Moon class='size-[18px]' />}
     </Button>

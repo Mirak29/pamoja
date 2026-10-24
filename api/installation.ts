@@ -27,19 +27,24 @@ type ProjectRepo = {
   syncMode: string
 }
 
-const getProjectRepo = sql<ProjectRepo, Record<string, string | number>>`
+// Interpolated in the two queries below: a constant, never a value
+const projectRepoSelect = `
   SELECT project.projectId, slug, ownerId, repositoryId, fullName, syncMode
   FROM project
   JOIN repository ON repository.projectId = project.projectId
-  WHERE slug = :slug OR project.projectId = :projectId
+`
+
+const getProjectRepoBySlug = sql<ProjectRepo, string>`${projectRepoSelect}
+  WHERE slug = ?
 `.get
 
-const projectOf = (where: { slug?: string; projectId?: number }) =>
-  getProjectRepo({ slug: where.slug ?? '', projectId: where.projectId ?? 0 })
+const getProjectRepoById = sql<ProjectRepo, number>`${projectRepoSelect}
+  WHERE project.projectId = ?
+`.get
 
 /** The installation page of the app, or the callback page in dev (§5.3) */
 export const installationUrl = async (userId: number, slug: string) => {
-  const project = projectOf({ slug })
+  const project = getProjectRepoBySlug(slug)
   if (!project) {
     throw new respond.NotFoundError({
       message: 'Project with a repository not found',
@@ -169,8 +174,23 @@ const getInstallationRow = sql<{ installationId: number }, number>`
   SELECT installationId FROM githubInstallation WHERE githubInstallationId = ?
 `.get
 
-const goLive = sql<undefined, Record<string, number>>`
-  UPDATE repository SET syncMode = 'live', installationId = :installationId
+/** Records an installation of the app; its id in Pamoja */
+export const recordInstallation = (installation: {
+  githubInstallationId: number
+  accountLogin: string
+  accountType: string
+  installedByUserId: number | null
+}) => {
+  saveInstallation({ ...installation, at: now() })
+  return getInstallationRow(installation.githubInstallationId)!.installationId
+}
+
+/** Live with its installation, or back to the 15 min refresh without one */
+export const setSyncMode = sql<
+  undefined,
+  { repositoryId: number; syncMode: string; installationId: number | null }
+>`
+  UPDATE repository SET syncMode = :syncMode, installationId = :installationId
   WHERE repositoryId = :repositoryId
 `.run
 
@@ -188,15 +208,17 @@ export const linkInstallation = db.transaction((
     repositoryId: number
   },
 ) => {
-  saveInstallation({
+  const installationId = recordInstallation({
     githubInstallationId: link.githubInstallationId,
     accountLogin: link.accountLogin,
     accountType: link.accountType,
     installedByUserId: link.userId,
-    at: now(),
   })
-  const { installationId } = getInstallationRow(link.githubInstallationId)!
-  goLive({ installationId, repositoryId: link.repositoryId })
+  setSyncMode({
+    repositoryId: link.repositoryId,
+    syncMode: 'live',
+    installationId,
+  })
   Entry.insert.PROJECT_UPDATED({
     userId: maybe(link.userId),
     projectId: link.projectId,
@@ -219,7 +241,7 @@ export const confirmInstallation = async (
   const { payload } = checked
   // Started by another developer of this browser: not theirs to confirm
   if (payload.userId !== userId) throw refuseState('browser')
-  const project = projectOf({ projectId: Number(payload.projectId) })
+  const project = getProjectRepoById(Number(payload.projectId))
   if (!project) {
     throw new respond.NotFoundError({ message: 'Project not found' })
   }

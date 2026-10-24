@@ -1,4 +1,6 @@
-import 'npm:preact/debug'
+// The Preact of the app: an unversioned npm:preact/debug pulled in a
+// second, newer Preact that the debug checks hooked into instead
+import 'preact/debug'
 
 const es = new EventSource('/esbuild')
 es.addEventListener('error', () => location.reload())
