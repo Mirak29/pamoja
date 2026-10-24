@@ -1,12 +1,18 @@
 import { A } from '@01edu/signal-router'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import {
   countries,
   type Login,
   people,
+  peopleChanged,
   personOf,
 } from '/web/fixtures/people.ts'
-import { badgesOf, linksOf, lockedBadgesOf } from '/web/fixtures/reputation.ts'
+import {
+  badgesOf,
+  linksOf,
+  lockedBadgesOf,
+  reputationChanged,
+} from '/web/fixtures/reputation.ts'
 import { Minus, Plus, RotateCcw } from '/web/assets/icons.tsx'
 import { initials } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
@@ -356,7 +362,11 @@ type Node = {
  * where developers of Pamoja live, not linked yet, are dotted. The profile
  * country is never counted.
  */
-export const CollaborationMap = ({ login }: { login: Login }) => {
+/**
+ * What the globe shows, whatever the angle: computed once per profile, not
+ * at each frame of a drag
+ */
+const mapOf = (login: Login) => {
   const person = people[login]
   const home = person.countryCode
   const ranked = linkedCountries(login)
@@ -386,6 +396,37 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
     { ...frame(nodes.map((node) => node.at)), radius: 165 },
     15,
   )
+  const cross = badgesOf(login).find((b) => b.key === 'cross_border')
+  const crossLocked = lockedBadgesOf(login).find((b) =>
+    b.key === 'cross_border'
+  )
+  return {
+    person,
+    ranked,
+    max,
+    toLink,
+    homeAt,
+    nodes,
+    framing,
+    cross,
+    crossLocked,
+  }
+}
+
+export const CollaborationMap = ({ login }: { login: Login }) => {
+  // New proofs or people (the API answered) compute it again
+  const version = `${reputationChanged.value}:${peopleChanged.value}`
+  const {
+    person,
+    ranked,
+    max,
+    toLink,
+    homeAt,
+    nodes,
+    framing,
+    cross,
+    crossLocked,
+  } = useMemo(() => mapOf(login), [login, version])
 
   const [hovered, setHovered] = useState<string | null>(null)
   const [allCountries, setAllCountries] = useState(false)
@@ -402,6 +443,25 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   current.current = view
   const motion = useRef(0)
   const drag = useRef<{ x: number; y: number; from: View } | null>(null)
+  // The fingers on the globe: one turns it, two pinch to zoom
+  const fingers = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{ distance: number; radius: number } | null>(null)
+  const spread = () => {
+    const [a, b] = [...fingers.current.values()]
+    return Math.hypot(a.x - b.x, a.y - b.y) || 1
+  }
+  const radiusWithin = (radius: number) =>
+    Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, radius))
+  // A drag starts again from where the fingers are, without a jump
+  const grab = (x: number, y: number) =>
+    drag.current = { x, y, from: current.current }
+  const release = (event: PointerEvent) => {
+    fingers.current.delete(event.pointerId)
+    pinch.current = null
+    const [left] = [...fingers.current.values()]
+    drag.current = null
+    if (left) grab(left.x, left.y)
+  }
 
   const flyTo = (target: View) => {
     cancelAnimationFrame(motion.current)
@@ -454,10 +514,6 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   const dim = (code: string) => hovered !== null && hovered !== code
   const hover = (code: string | null) => () => setHovered(code)
   const [cx, cy] = [W / 2, H / 2]
-  const cross = badgesOf(login).find((b) => b.key === 'cross_border')
-  const crossLocked = lockedBadgesOf(login).find((b) =>
-    b.key === 'cross_border'
-  )
 
   return (
     <section class='slab flex flex-col gap-3 p-[22px]'>
@@ -480,14 +536,36 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
             aria-label='Globe des collaborations. Flèches pour le tourner, plus et moins pour zoomer.'
             onPointerDown={(event) => {
               cancelAnimationFrame(motion.current)
-              drag.current = {
+              fingers.current.set(event.pointerId, {
                 x: event.clientX,
                 y: event.clientY,
-                from: current.current,
+              })
+              if (fingers.current.size === 2) {
+                drag.current = null
+                pinch.current = {
+                  distance: spread(),
+                  radius: current.current.radius,
+                }
+              } else grab(event.clientX, event.clientY)
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId)
+              } catch {
+                // A pointer already gone: nothing to follow
               }
-              event.currentTarget.setPointerCapture(event.pointerId)
             }}
             onPointerMove={(event) => {
+              if (!fingers.current.has(event.pointerId)) return
+              fingers.current.set(event.pointerId, {
+                x: event.clientX,
+                y: event.clientY,
+              })
+              if (pinch.current && fingers.current.size >= 2) {
+                const { distance, radius } = pinch.current
+                return setView({
+                  ...current.current,
+                  radius: radiusWithin(radius * spread() / distance),
+                })
+              }
               const start = drag.current
               if (!start) return
               const scale = W /
@@ -505,8 +583,22 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
                 ),
               })
             }}
-            onPointerUp={() => drag.current = null}
-            onPointerCancel={() => drag.current = null}
+            onPointerUp={release}
+            onPointerCancel={release}
+            // The wheel alone scrolls the page; with Ctrl or Cmd, which is
+            // also what a pinch on a trackpad sends, it zooms the globe
+            onWheel={(event) => {
+              if (!event.ctrlKey && !event.metaKey) return
+              event.preventDefault()
+              cancelAnimationFrame(motion.current)
+              const step = Math.max(-60, Math.min(60, event.deltaY))
+              setView({
+                ...current.current,
+                radius: radiusWithin(
+                  current.current.radius * Math.exp(-step / 200),
+                ),
+              })
+            }}
             onKeyDown={(event) => {
               const shift: Record<string, [number, number]> = {
                 ArrowLeft: [-8, 0],
@@ -776,7 +868,8 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
             </Button>
           </div>
           <span class='text-[12px] text-ink-muted'>
-            Glisse pour faire tourner le globe. Un pays de la liste t’y emmène.
+            Glisse pour faire tourner le globe, pince ou Ctrl + molette pour
+            zoomer. Un pays de la liste t’y emmène.
           </span>
         </div>
         <div class='flex flex-col gap-1.5'>

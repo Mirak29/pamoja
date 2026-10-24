@@ -1459,8 +1459,8 @@ export const english: Record<string, string> = {
   'Recentrer': 'Recenter',
   'Globe des collaborations. Flèches pour le tourner, plus et moins pour zoomer.':
     'Collaboration globe. Arrow keys turn it, plus and minus zoom.',
-  'Glisse pour faire tourner le globe. Un pays de la liste t’y emmène.':
-    'Drag to turn the globe. A country in the list takes you there.',
+  'Glisse pour faire tourner le globe, pince ou Ctrl + molette pour zoomer. Un pays de la liste t’y emmène.':
+    'Drag to turn the globe, pinch or Ctrl + scroll to zoom. A country in the list takes you there.',
   'Messages': 'Messages',
   'Écrire': 'Message',
   'Pas encore de conversation. Écris à un développeur depuis son profil, avec « Écrire ».':

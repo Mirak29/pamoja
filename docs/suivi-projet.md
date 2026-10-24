@@ -581,6 +581,9 @@ Corrigé après la relecture du 24 octobre :
 - Le panneau de détail n'est lu par les lecteurs d'écran qu'une fois gardé, plus à chaque survol.
 - Les terres du globe (53 Ko) sont chargées au premier globe affiché, plus avec chaque page, grâce au découpage du bundle par esbuild (§12.2).
 - « personnes » est traduit en anglais.
+- Le globe zoome aussi en pinçant (écran tactile ou trackpad) et avec Ctrl ou Cmd + molette ; la molette seule fait toujours défiler la page.
+- Pendant un glisser, il ne recalcule plus les pays reliés ni les badges : 3,4 ms par image au lieu de 7,1 ms en médiane.
+- Wanjiru a son premier projet, Nairobi Pay : son profil ne dit plus « 0 projet », et le graphe montre son cube plein.
 
 - **Livrable** : `web/pages/profile/reputation.tsx`, `web/pages/profile/collaboration-map.tsx` (globe), `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/land.ts`, `web/fixtures/reputation.ts` et `web/fixtures/people.ts` (profil chargé), `docs/identite/tokens.json` et `web/assets/styles/theme.css` (teintes métal), `web/lib/english.ts` ; après relecture, `build-config.ts` (`splitting`)
 - **Par** : @niangoos, relecture @Mirak29
