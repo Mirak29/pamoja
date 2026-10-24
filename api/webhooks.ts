@@ -2,7 +2,9 @@ import { respond } from '@01edu/api/response'
 import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { GITHUB_WEBHOOK_SECRET } from '/api/lib/env.ts'
-import { log } from '/api/lib/log.ts'
+import { every, later } from '/api/lib/background.ts'
+import { hmacKey } from '/api/lib/sign.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 
 // GitHub webhooks (§5.5). The route only checks the signature, keeps the
 // delivery and answers 202: GitHub waits 10 seconds at most. A worker then
@@ -42,13 +44,7 @@ export const registerHandler = (event: string, handler: Handler) =>
  */
 
 const key = GITHUB_WEBHOOK_SECRET
-  ? await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(GITHUB_WEBHOOK_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['verify'],
-  )
+  ? await hmacKey(GITHUB_WEBHOOK_SECRET, ['verify'])
   : undefined
 
 /** X-Hub-Signature-256 of the raw body, compared in constant time */
@@ -107,7 +103,7 @@ export const receiveWebhook = async (req: Request) => {
     payload: body,
     receivedAt: now(),
   })
-  queueMicrotask(processDeliveries)
+  later('github-webhook-worker-error', processDeliveries)
   return new Response(null, { status: 202 })
 }
 
@@ -189,7 +185,7 @@ export const processDeliveries = () => {
       } catch (err) {
         const attempts = delivery.attempts + 1
         const failed = attempts >= MAX_ATTEMPTS
-        const lastError = err instanceof Error ? err.message : String(err)
+        const lastError = errorMessage(err)
         markFailed({
           deliveryId: delivery.deliveryId,
           status: failed ? 'failed' : 'received',
@@ -213,7 +209,5 @@ export const processDeliveries = () => {
 }
 
 /** Started by the server: picks up what a restart left, then every 5 s */
-export const startWorker = () => {
-  processDeliveries()
-  return setInterval(processDeliveries, 5_000)
-}
+export const startWorker = () =>
+  every('github-webhook-worker-error', 5_000, processDeliveries)

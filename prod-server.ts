@@ -1,5 +1,5 @@
 import api from './api/server.ts'
-import { serveDir } from 'jsr:@std/http/file-server'
+import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import { BASE_URL } from '/api/lib/env.ts'
 
 const html = Deno.readTextFileSync(import.meta.dirname + '/dist/index.html')

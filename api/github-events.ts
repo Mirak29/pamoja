@@ -17,6 +17,8 @@ import {
   upsertIssue,
   upsertPullRequest,
 } from '/api/sync.ts'
+import { recordInstallation, setSyncMode } from '/api/installation.ts'
+import { userIdOfGithubId } from '/api/user.ts'
 import { registerHandler } from '/api/webhooks.ts'
 
 // What each GitHub event changes in Pamoja (§5.5, §6.8, §14.2): the tables
@@ -56,13 +58,9 @@ const repoOf = (payload: Payload) => {
   return repository?.id ? getRepo(repository.id) : undefined
 }
 
-const getUserId = sql<{ userId: number }, number>`
-  SELECT userId FROM user WHERE githubId = ?
-`.get
-
 /** The developer of a GitHub account, when they are on Pamoja */
 const userOf = (user: GithubUser | null | undefined) =>
-  user ? getUserId(user.id)?.userId : undefined
+  user ? userIdOfGithubId(user.id) : undefined
 
 const getPullRequestId = sql<
   { pullRequestId: number },
@@ -437,27 +435,6 @@ type Installation = {
   account: { id: number; login: string; type: 'User' | 'Organization' }
 }
 
-const saveInstallation = sql<undefined, Record<string, string | number | null>>`
-  INSERT INTO githubInstallation (githubInstallationId, accountLogin,
-    accountType, installedByUserId, createdAt, updatedAt)
-  VALUES (:githubInstallationId, :accountLogin, :accountType,
-    :installedByUserId, :at, :at)
-  ON CONFLICT (githubInstallationId) DO UPDATE SET
-    accountLogin = excluded.accountLogin,
-    accountType = excluded.accountType,
-    installedByUserId = coalesce(installedByUserId, excluded.installedByUserId),
-    updatedAt = excluded.updatedAt
-`.run
-
-const getInstallationRow = sql<{ installationId: number }, number>`
-  SELECT installationId FROM githubInstallation WHERE githubInstallationId = ?
-`.get
-
-const setSyncMode = sql<undefined, Record<string, string | number | null>>`
-  UPDATE repository SET syncMode = :syncMode, installationId = :installationId
-  WHERE repositoryId = :repositoryId
-`.run
-
 const listByInstallation = sql<
   { repositoryId: number; projectId: number },
   number
@@ -477,15 +454,13 @@ const updated = (projectId: number) =>
  * of the installation flow (§5.4).
  */
 const covered = (installation: Installation, repos: { id: number }[]) => {
-  saveInstallation({
+  const installationId = recordInstallation({
     githubInstallationId: installation.id,
     accountLogin: installation.account.login,
     accountType: installation.account.type,
     installedByUserId: null,
-    at: now(),
   })
   if (installation.account.type !== 'User') return
-  const { installationId } = getInstallationRow(installation.id)!
   for (const { id } of repos) {
     const repo = getRepo(id)
     if (!repo || repo.ownerGithubId !== installation.account.id) continue
@@ -513,7 +488,8 @@ const uncovered = (repos: { repositoryId: number; projectId: number }[]) => {
 registerHandler('installation', (payload) => {
   const installation = payload.installation as Installation
   const action = payload.action as string
-  if (action === 'created') {
+  // unsuspend lists the repos it covers again, like created
+  if (action === 'created' || action === 'unsuspend') {
     covered(installation, (payload.repositories ?? []) as { id: number }[])
   } else if (action === 'deleted' || action === 'suspend') {
     uncovered(listByInstallation(installation.id))

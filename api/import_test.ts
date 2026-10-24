@@ -223,6 +223,44 @@ Deno.test('import: refused for a repo of someone else, an org, or twice', async 
   )
 })
 
+Deno.test('import: the texts of the project keep their size (§16)', async () => {
+  restore()
+  github()
+  const cookie = await login()
+  const projects = () => db.prepare('SELECT count(*) n FROM project').get()
+  const before = projects()
+  const refused = async (body: Record<string, unknown>) => {
+    const { status, json } = await call('/api/project/import', {
+      body: { ...project, ...body },
+      cookie,
+    })
+    assertEquals(status, 400)
+    return json.message
+  }
+  assertEquals(
+    await refused({ title: 'x'.repeat(81) }),
+    'projectName too long',
+  )
+  assertEquals(
+    await refused({ description: 'x'.repeat(301) }),
+    'projectDescription too long',
+  )
+  assertEquals(
+    await refused({ vision: 'x'.repeat(1001) }),
+    'projectVision too long',
+  )
+  assertEquals(
+    await refused({ needs: ['x'.repeat(81)] }),
+    'projectNeed too long',
+  )
+  assertEquals(
+    await refused({ needs: Array.from({ length: 11 }, (_, i) => `n${i}`) }),
+    'Too many needs',
+  )
+  // Refused before anything is written
+  assertEquals(projects(), before)
+})
+
 Deno.test('import: the refresh applies changes, then a 304 changes nothing', async () => {
   restore()
   github()

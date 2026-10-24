@@ -1,4 +1,4 @@
-import { appJwt } from '/api/github-app.ts'
+import { appHeaders } from '/api/github-app.ts'
 
 // GitHub does not send a failed webhook again by itself (§5.6). In dev, every
 // event sent while no tunnel was open is lost: GitHub could not reach the
@@ -57,20 +57,13 @@ export const parseDeliveries = (text: string) =>
       key === 'id' && context?.source ? context.source : value,
   ) as Delivery[]
 
-const headers = async () => ({
-  Accept: 'application/vnd.github+json',
-  Authorization: `Bearer ${await appJwt()}`,
-  'User-Agent': 'Pamoja',
-  'X-GitHub-Api-Version': '2022-11-28',
-})
-
 /** The deliveries of the last 3 days, newest first, at most 1 000 */
 const listDeliveries = async () => {
   const list: Delivery[] = []
   let url: string | undefined =
     'https://api.github.com/app/hook/deliveries?per_page=100'
   for (let page = 0; url && page < 10; page++) {
-    const res: Response = await fetch(url, { headers: await headers() })
+    const res: Response = await fetch(url, { headers: await appHeaders() })
     if (!res.ok) {
       await res.body?.cancel()
       throw new Error(`GitHub answered ${res.status} for the deliveries`)
@@ -97,7 +90,7 @@ export const replayMissed = async () => {
   for (const delivery of missed) {
     const res = await fetch(
       `https://api.github.com/app/hook/deliveries/${delivery.id}/attempts`,
-      { method: 'POST', headers: await headers() },
+      { method: 'POST', headers: await appHeaders() },
     )
     await res.body?.cancel()
     res.ok ? sent++ : refused++

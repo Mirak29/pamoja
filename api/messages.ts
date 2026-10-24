@@ -3,6 +3,7 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { LIMITS, MAX_ATTACHMENTS } from '/api/limits.ts'
+import { later } from '/api/lib/background.ts'
 import { APP_ENV } from '/api/lib/env.ts'
 import {
   type Fetch,
@@ -25,10 +26,11 @@ const notFound = () =>
 const forbidden = (message: string) => new respond.ForbiddenError({ message })
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 
-// The text a member sends: trimmed, not empty, within its size (§16)
-const cleanBody = (body: string) => {
+// The text a member sends: trimmed, not empty unless files come with it,
+// within its size (§16)
+const cleanBody = (body: string, withFiles = false) => {
   const text = body.trim()
-  if (!text) throw badRequest('A message is required')
+  if (!text && !withFiles) throw badRequest('A message is required')
   if (text.length > LIMITS.directMessage) throw badRequest('Message too long')
   return text
 }
@@ -165,6 +167,13 @@ const getMine = sql<
       AND other.userId != :userId
   WHERE conversation.conversationId = :conversationId
 `.get
+
+/** A conversation of the developer, or a 404 */
+const mine = (me: number, conversationId: number) => {
+  const row = getMine({ conversationId, userId: me })
+  if (!row) throw notFound()
+  return row
+}
 
 const insertConversation = sql<
   undefined,
@@ -319,11 +328,9 @@ const send = (
   replyTo = 0,
   attachments: number[] = [],
 ) => {
-  const row = getMine({ conversationId, userId: me })
-  if (!row) throw notFound()
+  const row = mine(me, conversationId)
   // Files alone make a message too
-  const text = attachments.length ? body.trim() : cleanBody(body)
-  if (text.length > LIMITS.directMessage) throw badRequest('Message too long')
+  const text = cleanBody(body, attachments.length > 0)
   if (attachments.length > MAX_ATTACHMENTS) throw badRequest('Too many files')
   // A reply answers a message of this conversation, still there
   const answered = replyTo ? getMessage(replyTo) : undefined
@@ -436,14 +443,12 @@ export const previewMessage = async (
 }
 
 // Never during the tests, which call previewMessage with a fake network
-const previewLater = (directMessageId: number) => {
-  if (APP_ENV === 'test') return
-  setTimeout(() => previewMessage(directMessageId).catch(() => {}), 0)
-}
+const previewLater = (directMessageId: number) =>
+  APP_ENV === 'test' ||
+  later('link-preview-error', () => previewMessage(directMessageId))
 
 const decide = (me: number, conversationId: number, status: string) => {
-  const row = getMine({ conversationId, userId: me })
-  if (!row) throw notFound()
+  const row = mine(me, conversationId)
   if (row.startedBy === me || row.status !== 'pending') {
     throw new respond.ConflictError({ message: 'No request to answer' })
   }
@@ -463,7 +468,7 @@ export const declineConversation = (me: number, conversationId: number) =>
   decide(me, conversationId, 'declined')
 
 export const readConversation = (me: number, conversationId: number) => {
-  if (!getMine({ conversationId, userId: me })) throw notFound()
+  mine(me, conversationId)
   setRead({ conversationId, userId: me, at: now() })
 }
 
@@ -561,8 +566,7 @@ const TYPING_EVERY = 2_000
 const typingAt = new Map<string, number>()
 
 export const typing = (me: number, conversationId: number) => {
-  const row = getMine({ conversationId, userId: me })
-  if (!row) throw notFound()
+  const row = mine(me, conversationId)
   if (row.status !== 'accepted' || !rightsOf(row, me).canWrite) return
   const key = `${me}:${conversationId}`
   const at = Date.now()
@@ -624,12 +628,26 @@ const listReactions = sql<
   ORDER BY min(reaction.directMessageReactionId)
 `.all
 
-const getMember = sql<
-  { lastReadAt: number | null },
+// The other one of a conversation, and where the developer stands in it
+const getPeer = sql<
+  {
+    login: string
+    name: string
+    avatarUrl: string
+    mutedAt: number | null
+    archivedAt: number | null
+    lastReadAt: number | null
+  },
   { conversationId: number; userId: number }
 >`
-  SELECT lastReadAt FROM conversationMember
-  WHERE conversationId = :conversationId AND userId = :userId
+  SELECT user.githubUsername AS login, profile.displayName AS name,
+    user.avatarUrl, me.mutedAt, me.archivedAt, me.lastReadAt
+  FROM conversationMember AS me
+  JOIN conversationMember AS other
+    ON other.conversationId = me.conversationId AND other.userId != me.userId
+  JOIN user ON user.userId = other.userId
+  JOIN profile ON profile.userId = other.userId
+  WHERE me.conversationId = :conversationId AND me.userId = :userId
 `.get
 
 const shownMessage = (
@@ -670,8 +688,7 @@ export const getConversation = (
   conversationId: number,
   before = 0,
 ) => {
-  const row = getMine({ conversationId, userId: me })
-  if (!row) throw notFound()
+  const row = mine(me, conversationId)
   // A request I declined is closed for me
   if (row.startedBy !== me && row.status === 'declined') throw notFound()
   const page = listMessages({
@@ -679,7 +696,7 @@ export const getConversation = (
     before: before || Number.MAX_SAFE_INTEGER,
     limit: PAGE + 1,
   })
-  const other = listMine(me).find((r) => r.conversationId === conversationId)!
+  const other = getPeer({ conversationId, userId: me })!
   const shown = page.slice(0, PAGE)
   const reactions = new Map<
     number,
@@ -712,7 +729,7 @@ export const getConversation = (
     muted: !!other.mutedAt,
     archived: !!other.archivedAt,
     // Read up to here before this reading: the « Nouveaux messages » line
-    readUpTo: getMember({ conversationId, userId: me })?.lastReadAt ?? 0,
+    readUpTo: other.lastReadAt ?? 0,
     messages: shown.reverse().map((m) => shownMessage(m, me, reactions, files)),
     more: page.length > PAGE,
   }
@@ -765,9 +782,7 @@ export const editMessage = db.transaction(
   (me: number, messageId: number, body: string) => {
     const message = ownMessage(me, messageId)
     // A message of files alone may lose its text
-    const files = mediaOf('message', [messageId]).size > 0
-    const text = files ? body.trim() : cleanBody(body)
-    if (text.length > LIMITS.directMessage) throw badRequest('Message too long')
+    const text = cleanBody(body, mediaOf('message', [messageId]).size > 0)
     checkMessages(me)
     writeEdit({ directMessageId: messageId, body: text, at: now() })
     updated(message.conversationId, me, messageId)
@@ -836,12 +851,6 @@ const setFlag = (column: 'mutedAt' | 'archivedAt') =>
   `.run
 const setMuted = setFlag('mutedAt')
 const setArchived = setFlag('archivedAt')
-
-const mine = (me: number, conversationId: number) => {
-  const row = getMine({ conversationId, userId: me })
-  if (!row) throw notFound()
-  return row
-}
 
 /** No toast nor count for this conversation, or back to normal */
 export const muteConversation = (

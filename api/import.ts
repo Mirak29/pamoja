@@ -146,16 +146,13 @@ export const importRepository = async (
     throw new respond.ConflictError({ message: 'Repository already imported' })
   }
   const path = `/repos/${repo.full_name}`
-  const [issues, pulls] = await Promise.all([
+  const [issues, pulls, installation] = await Promise.all([
     read<GithubIssue[]>(`${path}/issues?state=open&per_page=100`),
     read<GithubPull[]>(`${path}/pulls?state=open&per_page=100`),
+    // Already covered by an installation of the app: the import goes live
+    // at once, the importer owning this personal repo (§5.4)
+    installationOf(repo.full_name).catch(() => undefined),
   ])
-
-  // Already covered by an installation of the app: the import goes live at
-  // once, the importer owning this personal repo (§5.4)
-  const installation = await installationOf(repo.full_name).catch(() =>
-    undefined
-  )
 
   const at = now()
   const created = db.transaction(() => {

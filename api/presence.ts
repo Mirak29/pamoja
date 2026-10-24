@@ -1,12 +1,12 @@
 import { sql } from '@01edu/db'
-import { Entry, type EntryListener } from '/api/entries.ts'
+import { listeners } from '/api/entries.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 
 // Presence (§13.6): who is online, who is typing. Held in memory, by event
 // stream, never written: a restart forgets it, the connections that come
 // back tell it again. A developer is online while one of their tabs holds
 // an event stream open.
 
-const listeners = Entry.insertListeners as unknown as Set<EntryListener>
 const encoder = new TextEncoder()
 
 /** At least one open event stream */
@@ -80,7 +80,11 @@ export const connectionOpened = (userId: number) => {
 export const connectionClosed = (userId: number) => {
   const timer = setTimeout(() => {
     if (isOnline(userId) || !announced.delete(userId)) return
-    announce(userId, false)
+    try {
+      announce(userId, false)
+    } catch (err) {
+      log.error('presence-error', { message: errorMessage(err) })
+    }
   }, GRACE)
   Deno.unrefTimer(timer)
 }

@@ -27,6 +27,7 @@ export const LIMITS = {
   projectName: 80,
   projectDescription: 300,
   projectVision: 1000,
+  projectNeed: 80,
   communityName: 60,
   communityDescription: 500,
   // A report, a collaboration proposal, a request to join, a moderation note
@@ -37,6 +38,9 @@ export type Limited = keyof typeof LIMITS
 
 /** Images and files of a direct message (§10.6) */
 export const MAX_ATTACHMENTS = 4
+
+/** What a project looks for, chosen at its import */
+export const MAX_NEEDS = 10
 
 /** The first field longer than its limit, if any: for a 400 of the server */
 export const tooLong = <K extends Limited>(

@@ -1,5 +1,5 @@
 import { sql } from '@01edu/db'
-import { Entry, type EntryListener } from '/api/entries.ts'
+import { type EntryListener, listeners } from '/api/entries.ts'
 import { connectionClosed, connectionOpened } from '/api/presence.ts'
 
 // Server-Sent Events (§13.2): the client never chooses what it receives, the
@@ -29,8 +29,6 @@ const subscriptionsOf = (userId: number) => ({
   moderatedCommunityIds: ids(moderatedCommunities(userId)),
   followedUserIds: ids(followed({ userId, targetType: 'user' })),
 })
-
-const listeners = Entry.insertListeners as unknown as Set<EntryListener>
 
 /**
  * To call after a change of membership, follow or role: every open

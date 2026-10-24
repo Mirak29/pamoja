@@ -356,6 +356,28 @@ Deno.test('events: installations turn repos live, and back', async () => {
   await deliver('installation', { action: 'deleted', installation })
   assertEquals(syncMode(), 'poll')
 
+  // Suspended, then reactivated: live again without a reinstall
+  await deliver('installation', {
+    action: 'created',
+    installation,
+    repositories: [{ id: REPO.id }],
+  })
+  assertEquals(syncMode(), 'live')
+  await deliver('installation', {
+    action: 'suspend',
+    installation,
+    repositories: [{ id: REPO.id }],
+  })
+  assertEquals(syncMode(), 'poll')
+  await deliver('installation', {
+    action: 'unsuspend',
+    installation,
+    repositories: [{ id: REPO.id }],
+  })
+  assertEquals(syncMode(), 'live')
+  await deliver('installation', { action: 'deleted', installation })
+  assertEquals(syncMode(), 'poll')
+
   // Someone else's account covering the repo proves nothing (§5.4)
   await deliver('installation', {
     action: 'created',

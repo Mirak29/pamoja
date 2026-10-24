@@ -522,5 +522,5 @@ export const Entry = initEntries(entries, relations, {
 // id is stored as NULL.
 export const maybe = (id: number | null | undefined) => (id ?? null) as number
 
-export const entryInsertListeners = Entry.insertListeners
-export const archiveEntry = Entry.archive
+/** The open event streams, typed as events.ts fills them */
+export const listeners = Entry.insertListeners as unknown as Set<EntryListener>

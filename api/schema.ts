@@ -101,6 +101,8 @@ export const UserSkill = createTable('userSkill', {
   createdAt: { type: 'REAL' },
 })
 unique('user_skill', 'userSkill', 'userId, skillId, source')
+// The matching reads who holds a skill (§7.3)
+index('user_skill_skill', 'userSkill', 'skillId')
 
 export const UserIntent = createTable('userIntent', {
   userIntentId: { type: 'INTEGER', primary: true },
@@ -118,6 +120,7 @@ export const Follow = createTable('follow', {
   createdAt: { type: 'REAL' },
 })
 unique('follow_target', 'follow', 'followerId, targetType, targetId')
+index('follow_target_lookup', 'follow', 'targetType, targetId')
 
 /*
  * Projects (§14.3), before GitHub: a repository belongs to a project
@@ -280,6 +283,8 @@ export const ProjectMember = createTable('projectMember', {
   joinedAt: { type: 'REAL' },
 })
 unique('project_member', 'projectMember', 'projectId, userId')
+// The projects of a developer: event streams, profile, lists
+index('project_member_user', 'projectMember', 'userId')
 
 export const JoinRequest = createTable('joinRequest', {
   joinRequestId: { type: 'INTEGER', primary: true },
@@ -427,6 +432,7 @@ export const HelpRequest = createTable('helpRequest', {
 })
 index('help_request_status', 'helpRequest', 'status')
 index('help_request_author', 'helpRequest', 'authorId')
+index('help_request_pull', 'helpRequest', 'pullRequestId')
 
 export const Review = createTable('review', {
   reviewId: { type: 'INTEGER', primary: true },
@@ -442,6 +448,7 @@ export const Review = createTable('review', {
   source: { type: 'TEXT' },
 })
 unique('review_github', 'review', 'githubReviewId')
+index('review_pull_request', 'review', 'pullRequestId')
 
 export const HelpMatch = createTable('helpMatch', {
   helpMatchId: { type: 'INTEGER', primary: true },
@@ -458,6 +465,9 @@ export const HelpMatch = createTable('helpMatch', {
   status: { type: 'TEXT' },
 })
 unique('help_match', 'helpMatch', 'helpRequestId, userId')
+// « Pour moi », and the daily cap of matching notifications (§7.3)
+index('help_match_user', 'helpMatch', 'userId, status')
+index('help_match_notified', 'helpMatch', 'notifiedAt')
 
 // Only the requester and the accepted helper read and write it (§7.2)
 export const HelpMessage = createTable('helpMessage', {
@@ -532,6 +542,7 @@ export const CommunityMember = createTable('communityMember', {
   joinedAt: { type: 'REAL' },
 })
 unique('community_member', 'communityMember', 'communityId, userId')
+index('community_member_user', 'communityMember', 'userId, role')
 
 // A reply is a post; a repost points at its original (§10.1)
 export const Post = createTable('post', {
@@ -603,6 +614,8 @@ export const Conversation = createTable('conversation', {
   // Time of the last message: the list is sorted by it
   updatedAt: { type: 'REAL' },
 })
+// The limit of message requests counts those a developer started (§10.6)
+index('conversation_started_by', 'conversation', 'startedBy, createdAt')
 
 export const ConversationMember = createTable('conversationMember', {
   conversationMemberId: { type: 'INTEGER', primary: true },
@@ -633,6 +646,8 @@ export const DirectMessage = createTable('directMessage', {
   linkPreview: { type: 'JSON', optional: true },
 })
 index('direct_message_list', 'directMessage', 'conversationId, createdAt')
+// The limits count what a developer sent lately (§16)
+index('direct_message_author', 'directMessage', 'authorId, createdAt')
 
 // One emoji of a short list per developer and message (§10.6)
 export const DirectMessageReaction = createTable('directMessageReaction', {
@@ -646,6 +661,11 @@ unique(
   'direct_message_reaction',
   'directMessageReaction',
   'directMessageId, userId, emoji',
+)
+index(
+  'direct_message_reaction_user',
+  'directMessageReaction',
+  'userId, createdAt',
 )
 
 export const UserBlock = createTable('userBlock', {
@@ -691,3 +711,6 @@ export const Media = createTable('media', {
   fileName: { type: 'TEXT', optional: true },
 })
 index('media_target', 'media', 'targetType, targetId')
+index('media_owner', 'media', 'ownerId, createdAt')
+// Each file served is found by its key
+index('media_storage_key', 'media', 'storageKey')

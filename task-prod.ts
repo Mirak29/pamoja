@@ -1,5 +1,5 @@
 import { config } from './build-config.ts'
-import { build } from 'npm:esbuild'
+import { build } from 'npm:esbuild@0.25.5'
 
 await build({ ...config, sourcemap: false, minify: true })
 
