@@ -2,6 +2,7 @@ import { respond } from '@01edu/api/response'
 import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
+import { type Window, within } from '/api/lib/rate.ts'
 import { countOf, read, readOptional, seconds } from '/api/github.ts'
 import { installationOf } from '/api/github-app.ts'
 import { linkInstallation } from '/api/installation.ts'
@@ -136,26 +137,33 @@ export type ImportInput = {
   needs: string[]
 }
 
+// Each import reads GitHub several times: 10 an hour (§16), counted in the
+// database
+export const IMPORT_RATE = { count: 10, per: 3600 }
+
+const countImports = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM project
+  WHERE ownerId = :me AND source = 'github' AND createdAt > :since
+`.get
+
 /** Creates the project of a public repo; the developer becomes its owner */
 export const importRepository = async (
   user: { userId: number; login: string },
   input: ImportInput,
 ) => {
+  within(countImports, IMPORT_RATE, user.userId, 'Too many imports')
   const { repo, readme, stats } = await fetchRepository(user.login, input.name)
   if (getProjectOfRepo(repo.id)) {
     throw new respond.ConflictError({ message: 'Repository already imported' })
   }
   const path = `/repos/${repo.full_name}`
-  const [issues, pulls] = await Promise.all([
+  const [issues, pulls, installation] = await Promise.all([
     read<GithubIssue[]>(`${path}/issues?state=open&per_page=100`),
     read<GithubPull[]>(`${path}/pulls?state=open&per_page=100`),
+    // Already covered by an installation of the app: the import goes live
+    // at once, the importer owning this personal repo (§5.4)
+    installationOf(repo.full_name).catch(() => undefined),
   ])
-
-  // Already covered by an installation of the app: the import goes live at
-  // once, the importer owning this personal repo (§5.4)
-  const installation = await installationOf(repo.full_name).catch(() =>
-    undefined
-  )
 
   const at = now()
   const created = db.transaction(() => {

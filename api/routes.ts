@@ -19,7 +19,7 @@ import { listMyProjects } from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
 import { getPublicProfile } from '/api/profile.ts'
-import { tooLong } from '/api/limits.ts'
+import { MAX_NEEDS, tooLong } from '/api/limits.ts'
 import {
   acceptConversation,
   archiveConversation,
@@ -79,10 +79,12 @@ import {
 import {
   findOrCreateGithubUser,
   getCurrentUser,
+  getLogin,
   updateIntents,
   updateMatching,
   updateProfile,
   updateSkills,
+  userIdOfLogin,
 } from '/api/user.ts'
 import {
   domains,
@@ -96,7 +98,6 @@ import {
   reportReasons,
   skills,
 } from '/api/vocabulary.ts'
-import { getLogin, userIdOfLogin } from '/api/user.ts'
 import { serveMedia, upload } from '/api/media.ts'
 
 const matchingMode = LIST(
@@ -104,8 +105,8 @@ const matchingMode = LIST(
   'How help requests reach the developer (§7.4)',
 )
 
-const currentUser = {
-  userId: NUM('Id of the developer'),
+// What anyone sees of a developer, and the developer of themselves
+const identity = {
   login: STR('Login of Pamoja, the address /@login'),
   githubLogin: STR('Login on GitHub'),
   displayName: STR('Name shown on the profile'),
@@ -115,6 +116,11 @@ const currentUser = {
   country: STR('ISO code of an African country, or as written'),
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
+}
+
+const currentUser = {
+  userId: NUM('Id of the developer'),
+  ...identity,
   matchingMode,
   minScore: NUM('Score under which a help request does not reach them'),
   helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
@@ -127,6 +133,15 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+}
+
+const profileSaved = OBJ(currentUser, 'The profile saved')
+
+/** The developer of a login, or a 404 */
+const developerOf = (login: string) => {
+  const userId = userIdOfLogin(login)
+  if (!userId) throw new respond.NotFoundError({ message: 'No such developer' })
+  return userId
 }
 
 // The other developer of a conversation (§10.6)
@@ -252,6 +267,14 @@ const transition = (
     description,
   })
 
+// What a member writes stays within its size (§16): a 400 names the field
+const assertFits = (fields: Parameters<typeof tooLong>[0]) => {
+  const field = tooLong(fields)
+  if (field) {
+    throw new respond.BadRequestError({ message: `${field} too long` })
+  }
+}
+
 // Only names of the vocabulary are saved: a developer never creates one
 const assertKnown = (names: string[], known: string[], what: string) => {
   const unknown = names.filter((name) => !known.includes(name))
@@ -314,13 +337,7 @@ const defs = {
 
   'GET/api/user/badges': route({
     authorize: withOptionalSession,
-    fn: (_ctx, { username }) => {
-      const userId = userIdOfLogin(username)
-      if (!userId) {
-        throw new respond.NotFoundError({ message: 'No such developer' })
-      }
-      return badgesOf(userId)
-    },
+    fn: (_ctx, { username }) => badgesOf(developerOf(username)),
     input: OBJ({ username: STR('GitHub login') }),
     output: ARR(
       OBJ({
@@ -341,17 +358,9 @@ const defs = {
         respond.NotFound({ message: 'No such developer' }),
     input: OBJ({ username: STR('GitHub login') }),
     output: OBJ({
-      login: STR('Login of Pamoja, the address /@login'),
-      githubLogin: STR('Login on GitHub'),
-      displayName: STR('Name shown on the profile'),
-      avatarUrl: STR('GitHub avatar'),
-      headline: STR('One line under the name, empty if none'),
-      bio: STR('Bio, empty if none'),
-      country: STR('ISO code of an African country, or as written'),
-      city: STR('City, empty if none'),
-      website: STR('Website, empty if none'),
+      ...identity,
       available: BOOL('Available to help'),
-      helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+      helpTypes: currentUser.helpTypes,
       skills: currentUser.skills,
       domains: currentUser.domains,
       intents: currentUser.intents,
@@ -378,13 +387,7 @@ const defs = {
 
   'GET/api/user/proofs': route({
     authorize: withOptionalSession,
-    fn: (_ctx, { username }) => {
-      const userId = userIdOfLogin(username)
-      if (!userId) {
-        throw new respond.NotFoundError({ message: 'No such developer' })
-      }
-      return proofsOf(userId)
-    },
+    fn: (_ctx, { username }) => proofsOf(developerOf(username)),
     input: OBJ({ username: STR('GitHub login') }),
     output: ARR(
       OBJ({
@@ -476,6 +479,15 @@ const defs = {
     authorize: withSession,
     fn: async (ctx, input) => {
       assertKnown(input.skills, skills, 'skills')
+      assertFits({
+        projectName: input.title,
+        projectDescription: input.description,
+        projectVision: input.vision,
+      })
+      if (input.needs.length > MAX_NEEDS) {
+        throw new respond.BadRequestError({ message: 'Too many needs' })
+      }
+      for (const projectNeed of input.needs) assertFits({ projectNeed })
       const userId = ctx.session.userId
       const created = await importRepository(
         { userId, login: getLogin(userId) },
@@ -787,7 +799,7 @@ const defs = {
       minScore: NUM('0 to 100'),
       helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
     }, 'How help requests reach the developer'),
-    output: OBJ(currentUser, 'The profile saved'),
+    output: profileSaved,
     description: 'Save the matching preferences',
   }),
 
@@ -807,9 +819,6 @@ const defs = {
     description: 'Entries as they happen, and an ack every 15 seconds',
   }),
 
-  /*
-   * Profile (§6.1, §9)
-   */
   /*
    * Direct messages (§10.6)
    */
@@ -1084,14 +1093,14 @@ const defs = {
     description: 'Report a message received, for the moderators',
   }),
 
+  /*
+   * Profile (§6.1, §9)
+   */
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {
       const { matchingMode: _, ...texts } = fields
-      const field = tooLong(texts)
-      if (field) {
-        throw new respond.BadRequestError({ message: `${field} too long` })
-      }
+      assertFits(texts)
       updateProfile(ctx.session.userId, fields)
       return getCurrentUser(ctx.session.userId)!
     },
@@ -1104,7 +1113,7 @@ const defs = {
       website: STR('Website'),
       matchingMode,
     }, 'The whole editable profile: an empty field is emptied'),
-    output: OBJ(currentUser, 'The profile saved'),
+    output: profileSaved,
     description: 'Save the profile',
   }),
 
@@ -1120,7 +1129,7 @@ const defs = {
       skills: ARR(STR('Technology of the vocabulary'), 'Declared technologies'),
       domains: ARR(STR('Domain of the vocabulary'), 'Declared domains'),
     }, 'Replace the declared skills; those from GitHub stay'),
-    output: OBJ(currentUser, 'The profile saved'),
+    output: profileSaved,
     description: 'Save the declared skills and domains',
   }),
 
@@ -1134,7 +1143,7 @@ const defs = {
     input: OBJ({
       intents: ARR(STR('Intent of the vocabulary'), 'All the intents'),
     }),
-    output: OBJ(currentUser, 'The profile saved'),
+    output: profileSaved,
     description: 'Save the intents, used by the matching',
   }),
 }
@@ -1160,7 +1169,8 @@ export const routeHandler = makeRouter({
 }, {
   log,
   // Never in the logs: what members write to each other or about
-  // themselves, and the one-time code of the GitHub login (§16, QA-33)
+  // themselves, what they search in their messages, and the one-time code
+  // of the GitHub login (§16, QA-33)
   sensitiveKeys: [
     'password',
     'confPassword',
@@ -1172,5 +1182,7 @@ export const routeHandler = makeRouter({
     'bio',
     'headline',
     'description',
+    'comment',
+    'q',
   ],
 })

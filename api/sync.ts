@@ -1,8 +1,9 @@
-import { sql } from '@01edu/db'
+import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { github, seconds } from '/api/github.ts'
-import { log } from '/api/lib/log.ts'
+import { every } from '/api/lib/background.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 import { readPullRequestSkills } from '/api/pull-skills.ts'
 import { resyncReviews } from '/api/review-check.ts'
 import { Repository } from '/api/schema.ts'
@@ -171,16 +172,19 @@ export const refreshRepository = async (repositoryId: number) => {
       pushedAt: seconds(repo.data.pushed_at),
     }
   }
-  if (issues.status === 200) {
-    etags[issuesPath] = issues.etag ?? ''
-    for (const issue of issues.data) {
-      issue.pull_request || upsertIssue(repositoryId, issue)
+  // Up to 200 rows: one transaction, not one commit each
+  db.transaction(() => {
+    if (issues.status === 200) {
+      etags[issuesPath] = issues.etag ?? ''
+      for (const issue of issues.data) {
+        issue.pull_request || upsertIssue(repositoryId, issue)
+      }
     }
-  }
-  if (pulls.status === 200) {
-    etags[pullsPath] = pulls.etag ?? ''
-    for (const pull of pulls.data) upsertPullRequest(repositoryId, pull)
-  }
+    if (pulls.status === 200) {
+      etags[pullsPath] = pulls.etag ?? ''
+      for (const pull of pulls.data) upsertPullRequest(repositoryId, pull)
+    }
+  })()
   // The reviews of the PRs a helper accepted: a lost webhook does not lose
   // one (§7.5)
   await resyncReviews(repositoryId, repository.fullName)
@@ -229,7 +233,7 @@ export const refreshAll = async (at = now()) => {
     } catch (err) {
       log.warn('github-refresh-error', {
         repositoryId,
-        message: err instanceof Error ? err.message : String(err),
+        message: errorMessage(err),
       })
     }
   }
@@ -240,19 +244,7 @@ export const refreshAll = async (at = now()) => {
 // The due repos are looked for every minute, and a few seconds after the
 // server starts; one run at a time, however long GitHub takes
 const CHECK_EVERY = 60 * 1000
-let running = false
-const check = async () => {
-  if (running) return
-  running = true
-  try {
-    await refreshAll()
-  } finally {
-    running = false
-  }
-}
 
 /** Started by the server (§5.4) */
-export const startRefresh = () => {
-  setTimeout(check, 5000)
-  return setInterval(check, CHECK_EVERY)
-}
+export const startRefresh = () =>
+  every('github-refresh-error', CHECK_EVERY, () => refreshAll(), 5000)

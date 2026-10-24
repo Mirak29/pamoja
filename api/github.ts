@@ -1,6 +1,6 @@
 import { respond } from '@01edu/api/response'
 import { GITHUB_BOT_TOKEN } from '/api/lib/env.ts'
-import { log } from '/api/lib/log.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 
 // Server reads of the GitHub REST API with the bot token (§5.2): public
 // repos only, never during the display of a page (§5.6). A known ETag makes
@@ -24,21 +24,43 @@ const githubFailure = (status: number, path: string, quotaLeft?: string) =>
       path,
     })
 
+/** The headers of every call to the REST API, with a token when given */
+export const githubHeaders = (
+  token?: string,
+  accept = 'application/vnd.github+json',
+) => ({
+  Accept: accept,
+  'User-Agent': 'Pamoja',
+  'X-GitHub-Api-Version': '2022-11-28',
+  ...token && { Authorization: `Bearer ${token}` },
+})
+
+// A read that hangs would hold the 15 min refresh forever: it is cut short
+const TIMEOUT = 30_000
+
 export const github = async <T>(
   path: string,
   { etag, raw }: { etag?: string; raw?: boolean } = {},
 ): Promise<GithubAnswer<T>> => {
-  const res = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      Accept: raw
-        ? 'application/vnd.github.raw+json'
-        : 'application/vnd.github+json',
-      'User-Agent': 'Pamoja',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...GITHUB_BOT_TOKEN && { Authorization: `Bearer ${GITHUB_BOT_TOKEN}` },
-      ...etag && { 'If-None-Match': etag },
-    },
-  })
+  let res: Response
+  try {
+    res = await fetch(`https://api.github.com${path}`, {
+      headers: {
+        ...githubHeaders(
+          GITHUB_BOT_TOKEN,
+          raw ? 'application/vnd.github.raw+json' : undefined,
+        ),
+        ...etag && { 'If-None-Match': etag },
+      },
+      signal: AbortSignal.timeout(TIMEOUT),
+    })
+  } catch (err) {
+    log.warn('github-read-error', { path, message: errorMessage(err) })
+    throw new respond.BadGatewayError({
+      message: 'GitHub did not answer',
+      path,
+    })
+  }
   if (res.status === 304) return { status: 304 }
   if (res.status === 404) {
     await res.body?.cancel()

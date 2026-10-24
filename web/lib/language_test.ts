@@ -17,11 +17,21 @@ Deno.test('language: English render, switching, member content and screens fed b
   }
   const originals = Object.getOwnPropertyDescriptors(globalThis)
   const previousVNode = options.vnode
+  const previousDebounce = options.debounceRendering
   for (const [key, value] of Object.entries(replacements)) {
     Object.defineProperty(globalThis, key, { value, configurable: true })
   }
   const root = document.querySelector('main')!
-  const flush = () => new Promise((resolve) => setTimeout(resolve, 50))
+  // Preact hands its pending renders here instead of a timer.
+  // flush runs them at once, so no wait depends on the machine load.
+  const pending: (() => void)[] = []
+  options.debounceRendering = (callback) => {
+    pending.push(callback)
+  }
+  const flush = () => {
+    while (pending.length) pending.shift()!()
+    return Promise.resolve()
+  }
   try {
     const { language, setLanguagePreference, t, translate } = await import(
       './language.ts'
@@ -109,6 +119,7 @@ Deno.test('language: English render, switching, member content and screens fed b
   } finally {
     render(null, root)
     options.vnode = previousVNode
+    options.debounceRendering = previousDebounce
     for (const key of Object.keys(replacements)) {
       if (originals[key]) Object.defineProperty(globalThis, key, originals[key])
       else Reflect.deleteProperty(globalThis, key)

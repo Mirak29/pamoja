@@ -1,6 +1,6 @@
 import { optimize } from 'npm:svgo'
 import { DOMParser } from 'npm:linkedom'
-import { walk } from 'jsr:@std/fs/walk'
+import { walk } from 'jsr:@std/fs@^1.0.24/walk'
 
 // Same Lucide version as the prototype (docs/prototype/pamoja-v2.dc.html)
 const LUCIDE_VERSION = '0.460.0'

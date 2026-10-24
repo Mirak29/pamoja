@@ -1,5 +1,6 @@
 import { b64url } from '/api/lib/encoding.ts'
 import { GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY } from '/api/lib/env.ts'
+import { githubHeaders } from '/api/github.ts'
 import { log } from '/api/lib/log.ts'
 
 // The GitHub App speaking for itself (§5.2): a JWT signed with its private
@@ -77,6 +78,9 @@ export const appJwt = async (
   return `${unsigned}.${new Uint8Array(signature).toBase64(b64url)}`
 }
 
+/** The headers of a call the app makes in its own name */
+export const appHeaders = async () => githubHeaders(await appJwt())
+
 /**
  * The installation of the app that covers this repo, if any: lets an import
  * go live at once (§5.4). Undefined without the app configured.
@@ -85,14 +89,7 @@ export const installationOf = async (fullName: string) => {
   if (!appConfigured()) return
   const res = await fetch(
     `https://api.github.com/repos/${fullName}/installation`,
-    {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${await appJwt()}`,
-        'User-Agent': 'Pamoja',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    },
+    { headers: await appHeaders() },
   )
   if (res.status === 404) {
     await res.body?.cancel()

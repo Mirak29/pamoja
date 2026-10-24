@@ -3,7 +3,7 @@
 // send its webhooks there (§5.6). The address changes at each start: the
 // script updates the webhook URL of the app itself, with its JWT. The app is
 // shared: whoever starts a tunnel last receives the webhooks. Dev only.
-import { appConfigured, appJwt } from '/api/github-app.ts'
+import { appConfigured, appHeaders } from '/api/github-app.ts'
 import { APP_ENV, GITHUB_WEBHOOK_SECRET } from '/api/lib/env.ts'
 import { replayMissed } from '/api/webhook-replay.ts'
 
@@ -171,12 +171,7 @@ if (!appConfigured() || !GITHUB_WEBHOOK_SECRET) {
 } else {
   const res = await fetch('https://api.github.com/app/hook/config', {
     method: 'PATCH',
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${await appJwt()}`,
-      'User-Agent': 'Pamoja',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
+    headers: await appHeaders(),
     body: JSON.stringify({
       url: webhook,
       content_type: 'json',

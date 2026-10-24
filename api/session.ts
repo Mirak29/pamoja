@@ -4,7 +4,8 @@ import type { RequestContext } from '@01edu/api/context'
 import { now } from '@01edu/time'
 import { entries, Entry } from '/api/entries.ts'
 import { b64url } from '/api/lib/encoding.ts'
-import { BASE_URL, SESSION_SECRET } from '/api/lib/env.ts'
+import { BASE_URL } from '/api/lib/env.ts'
+import { sessionKey } from '/api/lib/sign.ts'
 
 // A session is a USER_LOGIN entry, like in Tournament. The cookie holds its
 // id, signed with SESSION_SECRET: Tournament signs with the password salt,
@@ -15,14 +16,6 @@ export type Session = { entryId: number; userId: number; createdAt: number }
 // 30 days in seconds, the unit of `now()` and of the cookie Max-Age; checked
 // on the server from the entry, not only by the cookie expiry
 const MAX_AGE = 30 * 24 * 60 * 60
-
-const key = await crypto.subtle.importKey(
-  'raw',
-  new TextEncoder().encode(SESSION_SECRET),
-  { name: 'HMAC', hash: 'SHA-256' },
-  false,
-  ['sign', 'verify'],
-)
 
 const encodeId = (entryId: number) =>
   new Uint8Array(new Float64Array([entryId]).buffer)
@@ -39,7 +32,7 @@ export const createSession = async (
 ) => {
   const entryId = Entry.insert.USER_LOGIN({ userId, source })
   const data = encodeId(entryId)
-  const signature = await crypto.subtle.sign('HMAC', key, data)
+  const signature = await crypto.subtle.sign('HMAC', sessionKey, data)
   return `${data.toBase64(b64url)}:${
     new Uint8Array(signature).toBase64(b64url)
   }`
@@ -59,7 +52,7 @@ export const decodeSession = async (
   }
   if (bytes.byteLength !== 8) return
   // verify compares in constant time
-  if (!await crypto.subtle.verify('HMAC', key, hash, bytes)) return
+  if (!await crypto.subtle.verify('HMAC', sessionKey, hash, bytes)) return
   const [entryId] = new Float64Array(bytes.buffer)
   // An archived entry (logout) is no longer in the `entry` view
   const login = getLogin(entryId)

@@ -7,10 +7,12 @@ import {
   CircleUser,
   LogOut,
   MessageSquare,
+  Moon,
   Plus,
   Search,
   Settings,
   ShieldCheck,
+  Sun,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
 import { signOut } from '/web/lib/session.ts'
@@ -21,8 +23,9 @@ import { LogoMark } from '/web/ui/logo.tsx'
 import { Menu } from '/web/ui/menu.tsx'
 import { unread } from '/web/ui/navigation.tsx'
 import { unreadMessages } from '/web/lib/messages.ts'
-import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
+import { themeSignal, ThemeToggle, toggleTheme } from '/web/ui/theme-toggle.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
+import { language, setLanguagePreference } from '/web/lib/language.ts'
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
@@ -37,6 +40,9 @@ const accountItems = () => [
   { label: 'Se déconnecter', icon: LogOut, href: '.', onClick: signOut },
 ]
 
+const itemClass =
+  'flex h-[38px] items-center gap-2.5 rounded-md px-2.5 text-[14px] text-ink no-underline hover:bg-surface-200 hover:no-underline'
+
 const AccountMenu = () => (
   <Menu id='account-menu' label='Compte' class='top-[68px] right-6 w-[252px]'>
     <div class='mb-1.5 flex items-center gap-2.5 border-b border-line px-2.5 pt-2 pb-3'>
@@ -50,13 +56,43 @@ const AccountMenu = () => (
         </span>
       </span>
     </div>
+    {
+      /* On a phone, theme and language leave the header for this menu: with
+      the messages, six buttons pushed over the search */
+    }
+    <button
+      type='button'
+      role='menuitem'
+      onClick={toggleTheme}
+      class={`${itemClass} w-full cursor-pointer sm:hidden`}
+    >
+      {themeSignal.value === 'dark'
+        ? <Sun class='size-[18px]' />
+        : <Moon class='size-[18px]' />}
+      {themeSignal.value === 'dark' ? 'Thème clair' : 'Thème sombre'}
+    </button>
+    <button
+      type='button'
+      role='menuitem'
+      onClick={() =>
+        setLanguagePreference(language.value === 'fr' ? 'en' : 'fr')}
+      class={`${itemClass} w-full cursor-pointer sm:hidden`}
+    >
+      <span class='w-[18px] text-center font-mono text-[11px] font-semibold uppercase'>
+        {language.value === 'fr' ? 'en' : 'fr'}
+      </span>
+      {/* A language is named in its own words */}
+      <span translate={false}>
+        {language.value === 'fr' ? 'English' : 'Français'}
+      </span>
+    </button>
     {accountItems().map(({ label, icon: Icon, href, onClick }) => (
       <A
         key={label}
         role='menuitem'
         href={href}
         onClick={onClick}
-        class='flex h-[38px] items-center gap-2.5 rounded-md px-2.5 text-[14px] text-ink no-underline hover:bg-surface-200 hover:no-underline'
+        class={itemClass}
       >
         <Icon />
         {label}
@@ -138,8 +174,10 @@ export const Header = () => {
             </span>
           )}
         </Button>
-        <ThemeToggle />
-        <LanguageToggle />
+        <div class='hidden items-center gap-2.5 sm:flex'>
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
         <button
           type='button'
           popovertarget='account-menu'

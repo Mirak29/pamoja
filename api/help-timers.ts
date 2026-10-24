@@ -9,7 +9,7 @@ import {
   NEXT_WAVE_AFTER,
 } from '/api/help-rules.ts'
 import { sendWave } from '/api/matching.ts'
-import { log } from '/api/lib/log.ts'
+import { every } from '/api/lib/background.ts'
 import { createNotification } from '/api/notifications.ts'
 
 // The delays of §7.2, played by the server every 10 minutes: an open request
@@ -157,16 +157,5 @@ const timers = (at: number) =>
 export const HELP_TIMERS_EVERY = 10 * 60 * 1000
 
 /** Started by the server: at once, then every 10 minutes */
-export const startHelpTimers = () => {
-  const tick = () => {
-    try {
-      runHelpTimers()
-    } catch (err) {
-      log.error('help-timers-error', {
-        message: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
-  tick()
-  return setInterval(tick, HELP_TIMERS_EVERY)
-}
+export const startHelpTimers = () =>
+  every('help-timers-error', HELP_TIMERS_EVERY, () => runHelpTimers())

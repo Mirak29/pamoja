@@ -1,6 +1,6 @@
 import { sql } from '@01edu/db'
 import { github } from '/api/github.ts'
-import { log } from '/api/lib/log.ts'
+import { errorMessage, log } from '/api/lib/log.ts'
 import { skillIdOfAlias } from '/api/skills.ts'
 
 // « Demander une review » pre-fills the skills of a PR with the languages of
@@ -128,7 +128,7 @@ export const readPullRequestSkills = async () => {
     } catch (err) {
       log.warn('github-pull-files-error', {
         path,
-        message: err instanceof Error ? err.message : String(err),
+        message: errorMessage(err),
       })
     }
   }
@@ -146,6 +146,9 @@ export const scheduleSkillsRead = () => {
   }
   running = new Promise<void>((resolve) => setTimeout(resolve, 0))
     .then(() => readPullRequestSkills())
+    .catch((err) =>
+      log.error('github-pull-files-error', { message: errorMessage(err) })
+    )
     .finally(() => {
       running = undefined
       if (again) {
