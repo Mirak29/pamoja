@@ -433,7 +433,11 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
       {points.length
         ? (
           <>
-            <div class='hidden gap-5 sm:grid lg:grid-cols-[minmax(0,1fr)_16rem]'>
+            {
+              /* The detail goes beside the graph only where the graph keeps names
+            readable; below it otherwise */
+            }
+            <div class='hidden gap-5 sm:grid xl:grid-cols-[minmax(0,1fr)_16rem]'>
               <svg
                 viewBox={`0 0 ${W} ${H}`}
                 width='100%'
@@ -725,6 +729,8 @@ const Detail = (
   },
 ) => {
   const box = 'well flex flex-col gap-3 self-start p-4'
+  // Read out once kept (a click, or Enter), not at each hover
+  const live = kept ? 'polite' : undefined
   const close = kept && (
     <button
       type='button'
@@ -737,7 +743,7 @@ const Detail = (
   if (person) {
     const who = personOf(person.login)
     return (
-      <aside class={box} aria-live='polite'>
+      <aside class={box} aria-live={live}>
         <span class='flex items-center gap-3'>
           <span class='disc size-10 text-[13px]'>{initials(who.name)}</span>
           <span class='flex min-w-0 flex-col'>
@@ -780,7 +786,7 @@ const Detail = (
   if (place) {
     const href = hrefOf(place.key)
     return (
-      <aside class={box} aria-live='polite'>
+      <aside class={box} aria-live={live}>
         <span class='flex items-center gap-2.5'>
           <Cube size={28} top={place.owned ? 'filled' : 'soft'} />
           <span class='text-[15px] font-semibold'>

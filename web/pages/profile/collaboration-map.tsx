@@ -16,7 +16,6 @@ import {
   levelName,
   metalText,
 } from '/web/pages/profile/reputation.tsx'
-import { land } from '/web/pages/profile/land.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 // Longitude and latitude of the countries placed on the globe
@@ -79,8 +78,9 @@ const linkedCountries = (login: Login) => {
 
 /*
  * The globe is drawn by hand, without a map library: an orthographic view of
- * a sphere of radius `radius`, centred on (lon, lat). No coastline is drawn
- * (§9.3): only meridians and parallels, the countries and the threads.
+ * a sphere of radius `radius`, centred on (lon, lat), with the land of
+ * Natural Earth, meridians and parallels, the countries and the threads
+ * (§9.3).
  */
 
 type View = { lon: number; lat: number; radius: number }
@@ -141,32 +141,140 @@ const pathOf = (points: Vector[], view: View) => {
   return d
 }
 
-const landRings = land.map((ring) => {
-  const points: Vector[] = []
+// A land turns clockwise around its ground, a lake the other way. Read on
+// the longitudes unwrapped across 180°; a ring around a pole (Antarctica)
+// does not close once unwrapped and is a land
+const turnsClockwise = (ring: number[]) => {
+  let area = 0
+  let shift = 0
+  let previous = ring[0]
+  const lons: number[] = []
   for (let i = 0; i < ring.length; i += 2) {
-    points.push(vectorOf(ring[i], ring[i + 1]))
+    const step = ring[i] - previous
+    if (step > 180) shift -= 360
+    else if (step < -180) shift += 360
+    previous = ring[i]
+    lons.push(ring[i] + shift)
   }
-  return points
-})
+  if (Math.abs(lons.at(-1)! - lons[0]) > 180) return true
+  for (let k = 0; k < lons.length; k++) {
+    const next = (k + 1) % lons.length
+    area += lons[k] * ring[2 * next + 1] - lons[next] * ring[2 * k + 1]
+  }
+  return area < 0
+}
 
-// Land as filled shapes: a point behind the globe is pushed onto its edge,
-// so a coast that passes behind follows the horizon
+type Ring = { points: Vector[]; clockwise: boolean }
+
+// The land weighs 53 KB: read with the first globe shown, not with every
+// page of the app
+let landRings: Ring[] = []
+let landLoading: Promise<void> | undefined
+const loadLand = () =>
+  landLoading ??= import('./land.ts').then(({ land }) => {
+    landRings = land.map((ring) => {
+      const points: Vector[] = []
+      for (let i = 0; i < ring.length; i += 2) {
+        points.push(vectorOf(ring[i], ring[i + 1]))
+      }
+      return { points, clockwise: turnsClockwise(ring) }
+    })
+  })
+
+/*
+ * Land as filled shapes, cut at the horizon. A coast that goes behind the
+ * globe leaves it at one point of the edge and comes back at another; the
+ * shape follows the edge between them, on the side of what the ring holds.
+ * The rings of Natural Earth turn clockwise around their land and the other
+ * way around a lake: from where a coast leaves, the edge is followed in the
+ * turn of its ring to the next place it comes back. Pushing the hidden
+ * points onto the edge instead filled the sea once a large continent was
+ * mostly behind.
+ */
+
+// Where the edge of the globe crosses the segment from a seen point to a
+// hidden one, on the circle of the horizon
+const horizon = (seen: Vector, behind: Vector): Vector => {
+  const t = seen[2] / (seen[2] - behind[2])
+  const x = seen[0] + t * (behind[0] - seen[0])
+  const y = seen[1] + t * (behind[1] - seen[1])
+  const norm = Math.hypot(x, y) || 1
+  return [x / norm, y / norm, 0]
+}
+
+/** A stretch of coast in front of the globe, from the edge to the edge */
+type Stretch = { points: Vector[]; from: number; to: number }
+
+const angleOf = ([x, y]: Vector) => Math.atan2(y, x)
+
+// Clockwise distance along the edge, seen with y up
+const clockwise = (from: number, to: number) =>
+  ((from - to) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
+const counterclockwise = (from: number, to: number) => clockwise(to, from)
+
 const landOf = (view: View) => {
+  const point = (v: Vector) => {
+    const [x, y] = screen(v, view)
+    return `${x.toFixed(1)} ${y.toFixed(1)}`
+  }
+  const r = view.radius.toFixed(1)
   let d = ''
   for (const ring of landRings) {
-    let front = false
-    let part = ''
-    ring.forEach((point, i) => {
-      let [x, y, z] = turn(point, view)
-      if (z < 0) {
-        const norm = Math.hypot(x, y) || 1
-        x /= norm
-        y /= norm
-      } else front = true
-      const [sx, sy] = screen([x, y, z], view)
-      part += `${i ? 'L' : 'M'}${sx.toFixed(1)} ${sy.toFixed(1)}`
-    })
-    if (front) d += `${part}Z`
+    const seen = ring.points.map((p) => turn(p, view))
+    // The edge is followed on the side of what the ring holds: clockwise
+    // around a land, the other way around a lake, which the fill then cuts
+    // out of the land around it
+    const along = ring.clockwise ? clockwise : counterclockwise
+    const start = seen.findIndex((p) => p[2] < 0)
+    if (start === -1) {
+      // All in front: the coast as it is
+      d += `M${seen.map(point).join('L')}Z`
+      continue
+    }
+    // From a hidden point, so each stretch has its two ends on the edge
+    const stretches: Stretch[] = []
+    let current: Vector[] | null = null
+    for (let k = 1; k <= seen.length; k++) {
+      const prev = seen[(start + k - 1) % seen.length]
+      const next = seen[(start + k) % seen.length]
+      if (prev[2] < 0 && next[2] >= 0) current = [horizon(next, prev), next]
+      else if (prev[2] >= 0 && next[2] >= 0) current?.push(next)
+      else if (prev[2] >= 0 && next[2] < 0 && current) {
+        const out = horizon(prev, next)
+        current.push(out)
+        stretches.push({
+          points: current,
+          from: angleOf(current[0]),
+          to: angleOf(out),
+        })
+        current = null
+      }
+    }
+    // Each stretch, then the edge clockwise to the next one, until the shape
+    // closes on its first stretch
+    const left = new Set(stretches)
+    for (const first of stretches) {
+      if (!left.has(first)) continue
+      left.delete(first)
+      d += `M${first.points.map(point).join('L')}`
+      let stretch = first
+      for (;;) {
+        const candidates = [...left, first]
+        const next = candidates.reduce((best, s) =>
+          along(stretch.to, s.from) < along(stretch.to, best.from) ? s : best
+        )
+        const span = along(stretch.to, next.from)
+        // Sweep 1 is clockwise as seen, whichever way y points
+        d += `A${r} ${r} 0 ${span > Math.PI ? 1 : 0} ${
+          ring.clockwise ? 1 : 0
+        } ${point(next.points[0])}`
+        if (next === first) break
+        left.delete(next)
+        d += `L${next.points.map(point).join('L')}`
+        stretch = next
+      }
+      d += 'Z'
+    }
   }
   return d
 }
@@ -318,6 +426,12 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
     flyTo(framing)
     return () => cancelAnimationFrame(motion.current)
   }, [login])
+
+  // The sea and the threads show at once, the land as soon as it is read
+  const [, setLandShown] = useState(landRings.length > 0)
+  useEffect(() => {
+    if (!landRings.length) loadLand().then(() => setLandShown(true))
+  }, [])
 
   const zoom = (factor: number) =>
     flyTo({

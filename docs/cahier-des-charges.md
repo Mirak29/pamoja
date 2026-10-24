@@ -640,6 +640,7 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 
 - **Dev** : comme `task-dev.ts`, esbuild en mode watch sert `dist/` et le serveur Deno route `/api` vers l'API et le reste vers esbuild. Il n'y a pas de `@01edu/api-proxy` dans Tournament et il n'en faut pas.
 - **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17).
+- **Découpage** : esbuild découpe le bundle (`splitting`). Une donnée lourde que peu d'écrans affichent est importée à la demande et part dans `dist/chunks/` ; c'est le cas des terres du globe de la Collaboration Map (53 Ko, §9.3). Le reste de l'app tient en un fichier.
 - **Routage** : vrais chemins (`/@moussa`, `/projet/openpay-africa`) avec `@01edu/signal-router`, **jamais de `#`** : le serveur doit voir l'adresse pour injecter l'aperçu de partage. Le prototype utilise des `#` ; le code ne les reprend pas.
 
 ### 12.3 CSS : Tailwind v4 compilé, sans twind ni daisyUI

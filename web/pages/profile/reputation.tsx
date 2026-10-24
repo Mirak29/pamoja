@@ -104,8 +104,10 @@ export const DimensionColumns = (
 ) => {
   const list = dimensionsOf(login)
   const scale = Math.max(...list.map((d) => Math.max(d.count, d.next)))
+  // Three by row on a phone, where five columns would cut « Construction »
+  // and « Mentorat » in the middle of the word
   return (
-    <div class='grid grid-cols-5 gap-1.5'>
+    <div class='grid grid-cols-3 gap-x-1.5 gap-y-3 sm:grid-cols-5'>
       {list.map(({ key, label, count, next, summary }) => {
         const content = (
           <>
@@ -113,8 +115,9 @@ export const DimensionColumns = (
             <span class='text-[12px] leading-4 font-semibold text-balance'>
               {label}
             </span>
-            <span class='font-mono text-[11px] leading-4 text-ink-muted tabular-nums'>
-              {count} / {next}
+            <span class='font-mono text-[11px] leading-4 whitespace-nowrap text-ink-muted tabular-nums'>
+              {/* The last level reached: nothing left to aim for */}
+              {count >= next ? count : `${count} / ${next}`}
             </span>
           </>
         )
@@ -218,7 +221,6 @@ const emblems: Record<string, (stroke: string, fill: string) => JSX.Element> = {
       </g>
     )
   },
-  // A globe crossed by a thread
   // Months in a row: a calendar with its streak
   maintainer: (stroke, fill) => (
     <g stroke={stroke} stroke-width='1.6' stroke-linejoin='round'>
@@ -254,6 +256,7 @@ const emblems: Record<string, (stroke: string, fill: string) => JSX.Element> = {
       </g>
     )
   },
+  // A globe crossed by a thread
   cross_border: (stroke, fill) => (
     <g stroke={stroke} stroke-width='1.5' fill='none'>
       <circle cx='32' cy='32' r='12' fill='var(--surface-100)' />

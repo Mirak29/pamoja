@@ -1427,6 +1427,8 @@ export const english: Record<string, string> = {
   'son projet': 'their project',
   'un projet': 'a project',
   'une personne': 'a person',
+  'personne': 'person',
+  'personnes': 'people',
   'plus de travail': 'more work',
   'démo': 'demo',
   'autre lieu': 'other place',

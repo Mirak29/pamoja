@@ -102,7 +102,6 @@ const merged = (who: Login, list: [ProjectSlug, number][]) =>
     )
   )
 
-// Each proof is two days older than the previous one
 /**
  * The proofs of Wanjiru, a very active developer: about 260 over two years,
  * with 70 collaborators in 14 countries, on 24 projects and in 4
@@ -228,7 +227,8 @@ function busyProofs(): Proof[] {
   return Array.from({ length: 260 }, (_, i): Proof => {
     const other = often(mates)
     const at = daysAgo(1 + Math.floor(random() * 720))
-    const base = { id: `wk${i + 1}`, at, demo: true, verified: random() < 0.35 }
+    // Demo data, never « vérifié par GitHub » (§8.3, QA-10)
+    const base = { id: `wk${i + 1}`, at, demo: true, verified: false }
     // One proof in twelve is an answer accepted in a community
     if (i % 12 === 0) {
       return {
@@ -274,6 +274,7 @@ function busyProofs(): Proof[] {
   }
 }
 
+// Each proof is two days older than the previous one
 export const proofs: Proof[] = [
   ...reviews('moussa', [
     ['openpay-africa', 62],
