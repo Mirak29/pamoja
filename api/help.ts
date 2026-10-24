@@ -2,6 +2,7 @@ import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
+import { type Window, within } from '/api/lib/rate.ts'
 import {
   DESCRIPTION_MAX,
   OPEN_FOR,
@@ -126,12 +127,22 @@ const checked = (input: HelpInput) => {
   return { title, description, videoUrl, skills }
 }
 
+// Requests a developer may publish in a day (§16): each one notifies up to
+// five developers a wave. Counted in the database, so a restart keeps it
+export const HELP_RATE = { count: 10, per: 24 * 3600 }
+
+const countRequests = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM helpRequest
+  WHERE authorId = :me AND createdAt > :since
+`.get
+
 /**
  * Publishes a request, open for 7 days (§7.2). On a PR, one request at a
  * time: the check and the insert are one transaction.
  */
 export const createHelpRequest = (userId: number, input: HelpInput) => {
   const { title, description, videoUrl, skills } = checked(input)
+  within(countRequests, HELP_RATE, userId, 'Too many help requests today')
   const helpRequestId = db.transaction(() => {
     const { projectId, pullRequestId } = placeOf(userId, input)
     if (pullRequestId && getActiveOnPullRequest(pullRequestId)) {

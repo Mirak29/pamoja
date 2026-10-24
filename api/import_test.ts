@@ -1,5 +1,6 @@
 import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
+import { now } from '@01edu/time'
 import server from '/api/server.ts'
 import { refreshRepository } from '/api/sync.ts'
 import { login } from '/api/testing.ts'
@@ -259,6 +260,25 @@ Deno.test('import: the texts of the project keep their size (§16)', async () =>
   )
   // Refused before anything is written
   assertEquals(projects(), before)
+})
+
+Deno.test('import: ten imports an hour at most (§16)', async () => {
+  restore()
+  github()
+  const cookie = await login()
+  const { userId } = (await call('/api/user/me', { cookie })).json
+  // Ten projects imported in the last hour
+  for (let i = 0; i < 10; i++) {
+    db.exec(`INSERT INTO project (ownerId, name, slug, description,
+      visibility, status, source, createdAt, updatedAt)
+      VALUES (${userId}, 'P${i}', 'p-${i}', '', 'public', 'idea', 'github',
+      ${now()}, ${now()})`)
+  }
+  const { status, json } = await call('/api/project/import', {
+    body: project,
+    cookie,
+  })
+  assertEquals([status, json.message], [429, 'Too many imports'])
 })
 
 Deno.test('import: the refresh applies changes, then a 304 changes nothing', async () => {

@@ -1,7 +1,7 @@
 import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
-import { Entry, maybe } from '/api/entries.ts'
+import { entries, Entry, maybe } from '/api/entries.ts'
 import { LIMITS, MAX_ATTACHMENTS } from '/api/limits.ts'
 import { later } from '/api/lib/background.ts'
 import { APP_ENV } from '/api/lib/env.ts'
@@ -105,7 +105,10 @@ const checkMessages = (me: number) => {
  * Who may write to whom
  */
 
-// A project in common (not as an observer), or a help request between them
+// A project in common (not as an observer), a collaboration request of one
+// to the other, or a help delivered between them. Accepting a request and
+// leaving it is not enough (§10.6): the delivery is read in the journal,
+// which a withdrawal or a reopening does not erase
 const getWorkedTogether = sql<{ yes: number }, { a: number; b: number }>`
   SELECT EXISTS (
     SELECT 1 FROM projectMember AS one
@@ -114,8 +117,15 @@ const getWorkedTogether = sql<{ yes: number }, { a: number; b: number }>`
       AND one.role != 'observer' AND other.role != 'observer'
   ) OR EXISTS (
     SELECT 1 FROM helpRequest
-    WHERE (authorId = :a AND (acceptedBy = :b OR targetUserId = :b))
-       OR (authorId = :b AND (acceptedBy = :a OR targetUserId = :a))
+    WHERE (authorId = :a AND targetUserId = :b)
+       OR (authorId = :b AND targetUserId = :a)
+  ) OR EXISTS (
+    SELECT 1 FROM entry
+    JOIN helpRequest ON helpRequest.helpRequestId = entry.helpRequestId
+    WHERE entry.type IN (${entries.HELP_REQUEST_DELIVERED},
+        ${entries.REVIEW_SUBMITTED})
+      AND ((entry.userId = :a AND helpRequest.authorId = :b)
+        OR (entry.userId = :b AND helpRequest.authorId = :a))
   ) AS yes
 `.get
 

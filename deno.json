@@ -63,6 +63,12 @@
         "prod:build"
       ]
     },
+    "prod:local": {
+      "command": "deno run --env-file=.env-dev --env-file=.env-local -A prod-server.ts --local",
+      "dependencies": [
+        "prod:build"
+      ]
+    },
     "lint": "deno lint",
     "check": "deno check",
     "fmt": "deno fmt",

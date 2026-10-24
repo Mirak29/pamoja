@@ -143,6 +143,7 @@ export const Project = createTable('project', {
   skills: { type: 'JSON', optional: true },
 })
 unique('project_slug', 'project', 'slug')
+index('project_owner', 'project', 'ownerId, createdAt')
 
 /*
  * GitHub (§14.2). No token table: no user token is ever stored (§5.2)
@@ -478,6 +479,8 @@ export const HelpMessage = createTable('helpMessage', {
   createdAt: { type: 'REAL' },
 })
 index('help_message_thread', 'helpMessage', 'helpRequestId, createdAt')
+// The limits count what a developer wrote or imported lately (§16)
+index('help_message_author', 'helpMessage', 'authorId, createdAt')
 
 export const Notification = createTable('notification', {
   notificationId: { type: 'INTEGER', primary: true },

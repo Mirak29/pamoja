@@ -47,6 +47,8 @@ import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { retryAfterOf } from '/web/lib/api.ts'
+import { waitLabel } from '/web/lib/messages.ts'
 import { loadHelpDetail, playOnServer, sendOnServer } from '/web/lib/help.ts'
 import { useEvent } from '/web/lib/realtime.ts'
 import { counted } from '/web/lib/plural.ts'
@@ -465,12 +467,16 @@ const HelpThread = (
     try {
       await sendOnServer(request, text)
       setDraft('')
-    } catch {
+    } catch (err) {
+      // The draft stays in its field either way
+      const wait = retryAfterOf(err)
       notify({
-        title: 'Message non envoyé',
-        body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
+        title: wait ? 'Tu écris trop vite' : 'Message non envoyé',
+        body: wait
+          ? t`Réessaie ${waitLabel(wait)}. Ton texte est gardé.`
+          : 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
         icon: Info,
-        tone: 'danger',
+        tone: wait ? 'warning' : 'danger',
       })
     } finally {
       setSending(false)

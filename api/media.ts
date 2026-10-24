@@ -170,6 +170,24 @@ const getMedia = sql<MediaRow, number>`
   SELECT * FROM media WHERE mediaId = ?
 `.get
 
+/** The body of a request, refused as soon as it passes `max` bytes */
+const readCapped = async (req: Request, max: number) => {
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for await (const chunk of req.body ?? []) {
+    size += chunk.length
+    if (size > max) throw tooLarge()
+    chunks.push(chunk)
+  }
+  const all = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    all.set(chunk, offset)
+    offset += chunk.length
+  }
+  return all
+}
+
 /**
  * An image (JPEG, PNG, WebP, 2 MB) or a PDF (5 MB), read from the form of
  * the request (§17.3); 20 uploads by hour
@@ -180,8 +198,11 @@ export const upload = async (me: number, req: Request) => {
   within(countUploads, MEDIA_LIMITS.uploads, me, 'Too many uploads')
   let form: FormData
   try {
-    form = await req.formData()
-  } catch {
+    // Read with its limit: a body sent in chunks has no Content-Length
+    const body = await readCapped(req, MAX_REQUEST)
+    form = await new Response(body, { headers: req.headers }).formData()
+  } catch (err) {
+    if (err instanceof respond.ContentTooLargeError) throw err
     throw badRequest('A file is required')
   }
   const file = form.get('file')

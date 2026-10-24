@@ -507,7 +507,12 @@ export const Entry = initEntries(entries, relations, {
     userId: 'who accepted or declined the request',
     data: 'conversationId and status',
     fields: { source },
-    trigger: conversationMember,
+    // The sender never learns of a refusal (§10.6): a decline reaches the
+    // other tabs of who declined only
+    trigger: (entry, sub) =>
+      (entry as { data?: { status?: string } }).data?.status === 'declined'
+        ? self(entry, sub)
+        : conversationMember(entry, sub),
   },
   DIRECT_MESSAGE_UPDATED: {
     userId: 'who edited, deleted or reacted',

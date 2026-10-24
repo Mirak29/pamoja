@@ -80,7 +80,8 @@ sans twind ni daisyUI (§12.3).
 Lancer le projet : `deno task dev` sur `http://localhost:8800` (port distinct de
 Tournament pour faire tourner les deux). esbuild écoute en interne sur 8801 pour
 le rechargement automatique : ce n'est pas l'app, elle n'y a pas d'`/api`. Build
-de prod : `deno task prod`.
+de prod : `deno task prod` (le serveur refuse de démarrer sans `APP_ENV=prod`) ;
+pour essayer le build de prod sur sa machine : `deno task prod:local`.
 
 ## Interface : conventions du socle
 

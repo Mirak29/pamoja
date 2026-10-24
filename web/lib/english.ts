@@ -855,6 +855,8 @@ export const english: Record<string, string> = {
   'Sans projet': 'No project',
   'Demandes qui te correspondent': 'Requests that match you',
   'Français': 'French',
+  'Thème clair': 'Light theme',
+  'Thème sombre': 'Dark theme',
   'Sur ton profil': 'On your profile',
   'résultat': 'result',
   'résultats': 'results',
@@ -1686,6 +1688,10 @@ export const englishTemplates: Record<string, string> = {
   'Tu as écrit à beaucoup de développeurs que tu ne connais pas. Réessaie {0}.':
     'You wrote to many developers you do not know. Try again {0}.',
   'Réessaie {0}. Ton texte est gardé.': 'Try again {0}. Your text is kept.',
+  'Tu as publié beaucoup de demandes aujourd’hui. Réessaie {0}.':
+    'You published many requests today. Try again {0}.',
+  'Tu as importé beaucoup de projets cette heure-ci. Réessaie {0}.':
+    'You imported many projects this hour. Try again {0}.',
   'Toi, à {0}': 'You, to {0}',
   'Résultats · {0}': 'Results · {0}',
   'Archives · {0}': 'Archived · {0}',

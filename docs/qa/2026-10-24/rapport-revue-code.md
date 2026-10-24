@@ -1,6 +1,6 @@
 # Revue de code complète Pamoja — 24 octobre 2026
 
-**Verdict : le code est sain, et aucune faille de sécurité exploitable n'a été trouvée.** Le serveur tient ses règles d'accès partout : session signée, `state` OAuth à usage unique, signature des webhooks, trois contrôles de l'installation, fichiers lisibles seulement par qui y a droit, messages directs limités aux deux participants. Six défauts réels ont été corrigés. Le plus grave : une erreur dans une tâche de fond (rafraîchissement GitHub, file des webhooks, nettoyage des médias) arrêtait tout le serveur. La passe `/simplify` a retiré des duplications et ajouté les index qui manquaient sur les chemins chauds. Sept points ont été relevés hors correction (dernière section) : deux sont corrigés depuis (R-05, R-07), cinq restent à décider par l'équipe.
+**Verdict : le code est sain, et aucune faille de sécurité exploitable n'a été trouvée.** Le serveur tient ses règles d'accès partout : session signée, `state` OAuth à usage unique, signature des webhooks, trois contrôles de l'installation, fichiers lisibles seulement par qui y a droit, messages directs limités aux deux participants. Six défauts réels ont été corrigés. Le plus grave : une erreur dans une tâche de fond (rafraîchissement GitHub, file des webhooks, nettoyage des médias) arrêtait tout le serveur. La passe `/simplify` a retiré des duplications et ajouté les index qui manquaient sur les chemins chauds. Sept points ont été relevés hors correction (dernière section) ; tous sont corrigés depuis, avec le choix retenu pour chacun.
 
 ## Conditions
 
@@ -98,31 +98,31 @@ Quatre agents ont relu le serveur, chacun sous un angle : réutilisation, simpli
 
 Écarté, parce que la correction change un comportement ou dépasse une simple remise en ordre : limite de débit par défaut sur toutes les routes d'écriture, évaluation partielle des badges à chaque push, file unique pour la lecture des skills des PRs, déplacement de toutes les limites de taille dans une seule couche. Écarté aussi pour un gain faible à l'échelle de la démo : audience temps réel mise en cache par entry, requêtes par conversation dans la liste, N+1 de « Pour moi », cache des noms de skills.
 
-## À décider par l'équipe (non corrigé)
+## Relevés hors correction, corrigés depuis
 
-### R-01 · Le refus d'une demande de message se devine
+### R-01 · Le refus d'une demande de message se devine — corrigé
 
-`declineConversation` insère `CONVERSATION_UPDATED`, envoyé aux deux participants, alors que le §10.6 dit que l'expéditeur n'apprend jamais un refus. `api/entry_triggers_test.ts` décrit pourtant ce comportement comme voulu. Proposition : sur un refus, n'envoyer l'événement qu'à celui qui refuse.
+`declineConversation` insérait `CONVERSATION_UPDATED`, envoyé aux deux participants, alors que le §10.6 dit que l'expéditeur n'apprend jamais un refus. **Corrigé** : un refus n'est envoyé qu'aux onglets de celui qui refuse ; test ajouté dans `api/entry_triggers_test.ts`.
 
-### R-02 · Accepter une demande d'aide ouvre une conversation directe
+### R-02 · Accepter une demande d'aide ouvre une conversation directe — corrigé
 
-Le §10.6 l'autorise. Mais n'importe quel développeur peut accepter une demande ouverte, ouvrir une conversation acceptée d'office (sans demande de message, avec fichiers et statut en ligne), puis se désister : la conversation reste ouverte. Proposition : ne compter la relation d'aide qu'une fois l'aide livrée ou en cours.
+N'importe quel développeur pouvait accepter une demande ouverte, ouvrir une conversation acceptée d'office (sans demande de message, avec fichiers et statut en ligne), puis se désister. **Corrigé** : seule une aide livrée (`HELP_REQUEST_DELIVERED` ou `REVIEW_SUBMITTED`, lus dans le journal, qu'un désistement n'efface pas) ou une demande de collaboration adressée à l'autre ouvre la conversation directe ; §10.6 mis à jour, test ajouté.
 
-### R-03 · Upload sans `Content-Length`
+### R-03 · Upload sans `Content-Length` — corrigé
 
-`POST/api/media/upload` refuse un `Content-Length` trop grand. Un corps envoyé par morceaux (sans `Content-Length`) est pourtant lu en entier en mémoire avant le contrôle de taille. À couvrir par la limite de corps de Caddy (`request_body max_size`) dans PAM-114.
+Un corps envoyé par morceaux (sans `Content-Length`) était lu en entier en mémoire avant le contrôle de taille. **Corrigé** : le corps est lu par morceaux et refusé (413) dès qu'il dépasse la limite ; test ajouté. La limite de corps de Caddy (PAM-114) reste une protection de plus.
 
-### R-04 · Pas de limite de débit sur la plupart des écritures
+### R-04 · Pas de limite de débit sur la plupart des écritures — corrigé
 
-Le §16 demande une limite par utilisateur sur les routes d'écriture. Seuls les messages directs et l'upload en ont une. Une demande d'aide peut être publiée sans limite, et chacune notifie jusqu'à 5 développeurs par vague.
+Seuls les messages directs et l'upload avaient une limite. **Corrigé**, avec des limites comptées en base : 10 demandes d'aide par 24 heures, 20 messages par minute et 1 000 par jour dans le fil d'une demande, 10 imports de projet par heure. Les pages disent quand réessayer sans perdre le texte ; §16 mis à jour, tests ajoutés.
 
 ### R-05 · `unsuspend` d'une installation n'est pas traité — corrigé
 
 Une installation suspendue repasse ses repos en rafraîchissement toutes les 15 min. Sa réactivation (`unsuspend`) ne les remettait pas en synchro live. **Corrigé** : `unsuspend` est traité comme `created` (la documentation de GitHub confirme qu'il porte `repositories`), test ajouté dans `api/github-events_test.ts`.
 
-### R-06 · La production n'impose pas `APP_ENV=prod`
+### R-06 · La production n'impose pas `APP_ENV=prod` — corrigé
 
-Sans `APP_ENV=prod`, le serveur démarre avec le secret de session de dev et la connexion simulée. Déjà prévu par PAM-113 : faire refuser le démarrage par `prod-server.ts`.
+Sans `APP_ENV=prod`, le serveur démarrait avec le secret de session de dev et la connexion simulée. **Corrigé** : `prod-server.ts` importe d'abord `api/lib/production.ts`, qui refuse le démarrage sans `APP_ENV=prod`, avant que l'API ne se charge ; `deno task prod:local` essaie le build sur sa machine.
 
 ### R-07 · Test intermittent — corrigé
 
@@ -132,3 +132,7 @@ Sans `APP_ENV=prod`, le serveur démarre avec le secret de session de dev et la 
 
 - `deno fmt --check`, `deno lint` et `deno check api web *.ts` sont propres ; 146 tests verts (3 nouveaux, plus le cas suspendu puis réactivé ajouté à un test existant).
 - App relancée : accueil, connexion simulée, messagerie (une conversation créée, ouverte, recherchée, un message trop long refusé). Aucune erreur dans le journal du serveur.
+
+## Corrigé aussi pendant la relecture de PAM-316
+
+- **En-tête mobile** : depuis le bouton Messages (PAM-522), les boutons de l'en-tête passaient sur la recherche à 375 px. Sur téléphone, le thème et la langue vont dans le menu du compte ; la recherche garde environ 100 px.

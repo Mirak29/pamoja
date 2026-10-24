@@ -749,6 +749,21 @@ Relevé par la revue de code du 24 octobre (R-05). Une installation suspendue re
 - **Livrable** : `api/github-events.ts`, cas suspendu puis réactivé ajouté à `api/github-events_test.ts`
 - **Par** : @Mirak29
 
+### 2026-10-24 · Suites de la revue de code et en-tête mobile
+
+Les cinq points de la revue laissés à l'équipe sont corrigés :
+
+- **R-01** : un refus de demande de message n'arrive plus en temps réel chez l'expéditeur.
+- **R-02** : seule une aide livrée ouvre une conversation directe ; accepter une demande puis se désister ne suffit plus.
+- **R-03** : un envoi de fichier est lu avec sa limite, même sans `Content-Length`.
+- **R-04** : demandes d'aide, messages du fil d'une demande et imports de projet ont leur limite, comptée en base, et les pages disent quand réessayer.
+- **R-06** : le serveur de production refuse de démarrer sans `APP_ENV=prod`.
+
+L'en-tête ne chevauche plus la recherche sur téléphone : le thème et la langue passent dans le menu du compte. Vérifié dans le navigateur à 375 px et sur ordinateur.
+
+- **Livrable** : `api/entries.ts`, `api/messages.ts`, `api/media.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/import.ts`, `api/lib/production.ts`, index dans `api/schema.ts`, `deno.json` (`prod:local`), `web/ui/header.tsx`, messages de limite dans les pages ; 5 tests de plus ; cahier des charges §10.6, §12.2, §16 ; rapport `docs/qa/2026-10-24/rapport-revue-code.md`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

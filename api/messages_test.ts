@@ -2,6 +2,7 @@ import { assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { entries } from '/api/entry-types.ts'
+import { Entry } from '/api/entries.ts'
 import { cleanMedia, MEDIA_DIR } from '/api/media.ts'
 import { previewMessage } from '/api/messages.ts'
 import { Media, Profile, Project, User } from '/api/schema.ts'
@@ -172,6 +173,34 @@ Deno.test('messages: answering a request accepts it; worked together, no request
     (await list(sena)).find((c) => c.with.login === 'yaw')!.status,
     'accepted',
   )
+})
+
+Deno.test('messages: a help delivered opens the conversation, accepting it does not (§10.6)', async () => {
+  restore()
+  const ama = await dev('ama')
+  const kofi = await dev('kofi')
+  const zola = await dev('zola')
+  const at = now()
+  const helpOf = (helperId: number) => {
+    db.exec(`INSERT INTO helpRequest (authorId, category, title, description,
+      skills, status, acceptedBy, acceptedAt, expiresAt, source, createdAt,
+      updatedAt) VALUES (${ama.userId}, 'debugging', 't', '', '[]',
+      'accepted', ${helperId}, ${at}, ${at + 3600}, 'platform', ${at}, ${at})`)
+    return db.lastInsertRowId
+  }
+  // Kofi only accepted: his first message is a request
+  helpOf(kofi.userId)
+  await write(kofi, ama)
+  assertEquals((await list(kofi))[0].status, 'pending')
+  // Zola delivered her help: they write to each other at once
+  const delivered = helpOf(zola.userId)
+  Entry.insert.HELP_REQUEST_DELIVERED({
+    userId: zola.userId,
+    helpRequestId: delivered,
+    source: 'platform',
+  })
+  await write(zola, ama)
+  assertEquals((await list(zola))[0].status, 'accepted')
 })
 
 Deno.test('messages: a block stops both ways, unknown to the blocked one', async () => {
@@ -642,6 +671,34 @@ const uploadFile = async (
   )
   return { status: res.status, json: await res.json().catch(() => null) }
 }
+
+Deno.test('uploads: a body sent in chunks keeps the limit (§17.3)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  // No Content-Length: 6 MB in chunks of 64 KB, more than a PDF may weigh
+  let sent = 0
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (sent >= 6 * 1024 * 1024) return controller.close()
+      sent += 64 * 1024
+      controller.enqueue(new Uint8Array(64 * 1024))
+    },
+  })
+  const res = await server.fetch(
+    new Request('http://localhost/api/media/upload', {
+      method: 'POST',
+      body,
+      headers: {
+        Cookie: kadi.cookie,
+        'Content-Type': 'multipart/form-data; boundary=x',
+      },
+    }),
+  )
+  assertEquals(res.status, 413)
+  await res.body?.cancel()
+  // Refused before the end: the rest was never read
+  assertEquals(sent < 6 * 1024 * 1024, true)
+})
 
 const fetchMedia = (who: Dev, key: string) =>
   server.fetch(

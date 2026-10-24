@@ -219,6 +219,30 @@ Deno.test('triggers: every type of entry reaches exactly its audience (§13.3)',
   assertEquals(received.get('stranger'), [])
 })
 
+Deno.test('triggers: a declined message request reaches only who declined (§10.6)', () => {
+  restore()
+  Entry.insertListeners.clear()
+  const { ids, relations, conversationId } = world()
+  const received = listeners(ids, relations.projectId, relations.communityId)
+  Entry.insert.CONVERSATION_UPDATED({
+    userId: ids.actor,
+    data: { conversationId, status: 'declined' },
+    source: 'platform',
+  })
+  Entry.insert.CONVERSATION_UPDATED({
+    userId: ids.actor,
+    data: { conversationId, status: 'accepted' },
+    source: 'platform',
+  })
+  Entry.insertListeners.clear()
+  assertEquals(received.get('actor'), [
+    'CONVERSATION_UPDATED',
+    'CONVERSATION_UPDATED',
+  ])
+  // The sender hears of the acceptance, never of the refusal
+  assertEquals(received.get('correspondent'), ['CONVERSATION_UPDATED'])
+})
+
 Deno.test('triggers: no type is left without its audience', () => {
   assertEquals(
     (Object.keys(entries) as EntryTypeName[]).filter((type) =>

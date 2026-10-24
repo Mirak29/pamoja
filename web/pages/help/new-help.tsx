@@ -13,7 +13,8 @@ import type { Matched } from '/web/fixtures/matching.ts'
 import { isMe, personOf } from '/web/fixtures/people.ts'
 import { projects, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { type PullRequest, pullRequests } from '/web/fixtures/pull-requests.ts'
-import { api } from '/web/lib/api.ts'
+import { api, retryAfterOf } from '/web/lib/api.ts'
+import { waitLabel } from '/web/lib/messages.ts'
 import { matchedOf } from '/web/lib/help.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import {
@@ -92,7 +93,11 @@ const isWebLink = (link: string) => {
 
 /** What the server answered, said for the developer */
 const failureOf = (err: unknown) =>
-  err instanceof Error && /already in progress/.test(err.message)
+  retryAfterOf(err)
+    ? t`Tu as publié beaucoup de demandes aujourd’hui. Réessaie ${
+      waitLabel(retryAfterOf(err)!)
+    }.`
+    : err instanceof Error && /already in progress/.test(err.message)
     ? 'Une demande est déjà en cours sur cette PR. Retrouve-la dans Aide, onglet Mes demandes.'
     : err instanceof Error && /no longer open/.test(err.message)
     ? 'Cette PR a été fermée ou mergée entre-temps.'
