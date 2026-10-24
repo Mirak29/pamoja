@@ -260,6 +260,32 @@ export const projects = {
     events: [],
     demo: true,
   },
+  // The first project of Wanjiru, the busy profile: the one her proofs
+  // gather most (web/fixtures/reputation.ts)
+  'nairobi-pay': {
+    slug: 'nairobi-pay',
+    name: 'Nairobi Pay',
+    owner: 'wanjiru',
+    repoOwner: 'wanjiru-kamau',
+    stack: ['Go', 'Kubernetes', 'PostgreSQL'],
+    sync: 'poll',
+    description:
+      'Passerelle de paiement M-Pesa pour les petites entreprises de Nairobi.',
+    contributors: 18,
+    openIssues: 7,
+    release: 'v1.2',
+    members: [{ login: 'wanjiru', role: 'Propriétaire' }],
+    followers: [],
+    needs: ['Review de code', 'Tests'],
+    blockers: [],
+    stage: 'Production',
+    activity: 'Très actif',
+    releasedAt: daysAgo(12),
+    milestones: [],
+    gallery: defaultGallery,
+    events: [],
+    demo: true,
+  },
 } satisfies Record<string, Project>
 
 export type ProjectSlug = keyof typeof projects

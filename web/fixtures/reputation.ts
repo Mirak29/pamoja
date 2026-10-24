@@ -42,6 +42,8 @@ export type Proof = {
   help?: string
   /** The question whose answer was accepted */
   post?: string
+  /** The community of an accepted answer */
+  community?: string
   demo: boolean
   /** Name of the project, for a project the pages do not know */
   projectName?: string
@@ -99,6 +101,178 @@ const merged = (who: Login, list: [ProjectSlug, number][]) =>
       { pullRequest: pr },
     )
   )
+
+/**
+ * The proofs of Wanjiru, a very active developer: about 260 over two years,
+ * with 70 collaborators in 14 countries, on 24 projects and in 4
+ * communities. Drawn from a fixed seed, so every load gives the same profile;
+ * a few people and projects carry most of the work, as in a real network.
+ */
+function busyProofs(): Proof[] {
+  let seed = 2026
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+  // Skewed towards the start of the list: a few strong links, a long tail
+  const often = <T>(list: T[]) =>
+    list[Math.floor(random() * random() * list.length)]
+  const first = [
+    'Amani',
+    'Chidi',
+    'Kwame',
+    'Aïcha',
+    'Tendai',
+    'Lindiwe',
+    'Youssef',
+    'Fatima',
+    'Kofi',
+    'Nia',
+    'Babajide',
+    'Mariam',
+    'Thabo',
+    'Imani',
+    'Seun',
+    'Rokia',
+    'Jabari',
+    'Zawadi',
+    'Ousmane',
+    'Hana',
+  ]
+  const last = [
+    'Otieno',
+    'Okafor',
+    'Mensah',
+    'Diallo',
+    'Moyo',
+    'Dlamini',
+    'Benali',
+    'Haile',
+    'Uwase',
+    'Traoré',
+    'Mwangi',
+    'Adeyemi',
+    'Ndlovu',
+    'Kamara',
+  ]
+  const countryCodes = [
+    'NG',
+    'GH',
+    'SN',
+    'CI',
+    'CM',
+    'RW',
+    'ZA',
+    'EG',
+    'MA',
+    'TZ',
+    'UG',
+    'ET',
+    'BJ',
+    'KE',
+  ]
+  const mates = Array.from({ length: 70 }, (_, i) => {
+    const login = `wk-dev-${i + 1}`
+    hearOf(
+      login,
+      `${first[i % first.length]} ${
+        last[(i * 3 + Math.floor(i / first.length)) % last.length]
+      }`,
+      countryCodes[i % countryCodes.length],
+    )
+    return login as Login
+  })
+  const projectNames = [
+    'Nairobi Pay',
+    'Matatu Routes',
+    'Shamba Data',
+    'M-Afya',
+    'Jua Grid',
+    'Soko API',
+    'Lugha NLP',
+    'Tuma SMS',
+    'Kilimo Weather',
+    'Duka POS',
+    'Safari Maps',
+    'Elimu LMS',
+    'Bima Claims',
+    'Haraka CI',
+    'Pesa Ledger',
+    'Afya Records',
+    'Maji Meter',
+    'Kazi Jobs',
+    'Habari Feed',
+    'Nyumba Rent',
+    'Usafiri Track',
+    'Chakula Market',
+    'Sauti Voice',
+    'Mtandao Mesh',
+  ]
+  const places = projectNames.map((name, i) => ({
+    slug: name.toLowerCase().replace(/ /g, '-') as ProjectSlug,
+    name,
+    // Her own projects come first: they gather the most work
+    own: i < 4,
+  }))
+  const spaces = ['go', 'devops', 'open-source', 'code-review']
+  const kinds: Dimension[] = [
+    'review',
+    'review',
+    'review',
+    'review',
+    'help',
+    'help',
+    'oss',
+    'oss',
+    'mentor',
+    'help',
+  ]
+  return Array.from({ length: 260 }, (_, i): Proof => {
+    const other = often(mates)
+    const at = daysAgo(1 + Math.floor(random() * 720))
+    // Demo data, never « vérifié par GitHub » (§8.3, QA-10)
+    const base = { id: `wk${i + 1}`, at, demo: true, verified: false }
+    // One proof in twelve is an answer accepted in a community
+    if (i % 12 === 0) {
+      return {
+        ...base,
+        who: 'wanjiru',
+        by: other,
+        dimension: 'help',
+        title: 'Réponse acceptée',
+        community: often(spaces),
+      }
+    }
+    const place = often(places)
+    const dimension = place.own && random() < 0.6 ? 'review' : pick(kinds)
+    const pr = 10 + Math.floor(random() * 400)
+    // On her own projects, the others mostly help her; elsewhere she helps
+    const received = place.own && random() < 0.7
+    return {
+      ...base,
+      who: received ? other : 'wanjiru',
+      by: received ? 'wanjiru' : other,
+      dimension,
+      title: dimension === 'review'
+        ? `Review de la PR #${pr}`
+        : dimension === 'oss'
+        ? `PR #${pr} mergée chez ${place.name}`
+        : dimension === 'mentor'
+        ? 'Mentorat'
+        : 'Aide confirmée',
+      project: place.slug,
+      projectName: place.name,
+      // Demo repos, like those of the other projects of the fixtures
+      ...(dimension === 'review' || dimension === 'oss'
+        ? {
+          pullRequest: pr,
+          url: `https://github.com/wanjiru-kamau/${place.slug}/pull/${pr}`,
+        }
+        : {}),
+    }
+  })
+
+  function pick<T>(list: T[]) {
+    return list[Math.floor(random() * list.length)]
+  }
+}
 
 // Each proof is two days older than the previous one
 export const proofs: Proof[] = [
@@ -193,6 +367,7 @@ export const proofs: Proof[] = [
 ].map((p, i) =>
   Object.assign(p, { id: `p${i + 1}`, at: daysAgo((i + 1) * 2 + 3) })
 )
+  .concat(busyProofs())
 
 // A component that reads the proofs follows them: a confirmed help shows
 // on the profile without a refresh
@@ -306,6 +481,8 @@ export const badgeName = (key: string) =>
   definitions.find((b) => b.key === key)?.name ?? key
 
 export type Badge = {
+  /** Key of the badge on the server (§8.2) */
+  key: string
   name: string
   dimension?: Dimension
   count: number
@@ -336,6 +513,7 @@ const serverBadges = new Map<string, ApiBadge[]>()
 const fromServer = ({ badge, level, count, next }: ApiBadge): Badge => {
   const definition = definitions.find((b) => b.key === badge)!
   return {
+    key: badge,
     name: definition.name,
     dimension: definition.dimension,
     count,
@@ -357,7 +535,8 @@ export const badgesOf = (login: Login): Badge[] => {
   }
   const home = people[login].countryCode
   const countries = new Set(
-    mine.map((p) => p.by && personOf(p.by).countryCode)
+    // The countries of the Collaboration Map: people helped or who helped
+    linksOf(login).map((link) => personOf(link.login).countryCode)
       .filter((code) => code && code !== home),
   )
   return [
@@ -372,6 +551,7 @@ export const badgesOf = (login: Login): Badge[] => {
       const i = badge.thresholds.findIndex((threshold) => count < threshold)
       const next = i === -1 ? undefined : badge.thresholds[i]
       return {
+        key: badge.key,
         name: badge.name,
         dimension: badge.dimension,
         count,
@@ -383,6 +563,59 @@ export const badgesOf = (login: Login): Badge[] => {
       }
     })
 }
+
+/** A badge not started yet, with what unlocks its Bronze level */
+export type LockedBadge = {
+  key: string
+  name: string
+  dimension?: Dimension
+  hint: string
+}
+
+export const lockedBadgesOf = (login: Login): LockedBadge[] => {
+  const earned = new Set(badgesOf(login).map((b) => b.key))
+  // The badges only the server computes show for a developer it knows
+  const all = serverBadges.has(login)
+    ? definitions
+    : [...badgeDefinitions, crossBorder]
+  return all.filter((b) => !earned.has(b.key)).map((badge) => {
+    const [first] = badge.thresholds
+    return {
+      key: badge.key,
+      name: badge.name,
+      dimension: badge.dimension,
+      hint: t`${first} ${
+        translate(badge.unit[first > 1 ? 1 : 0])
+      } pour le niveau ${translate(levelNames[0])}`,
+    }
+  })
+}
+
+/**
+ * The proof that unlocked the current level of a badge of the fixtures: the
+ * one that reached its threshold, the proofs taken in the order they were
+ * earned. The server counts its own way, so its badges have none.
+ */
+export const unlockOf = (login: Login, badge: Badge): Proof | undefined => {
+  if (badge.level < 0 || !badge.dimension || serverBadges.has(login)) return
+  const definition = badgeDefinitions.find((b) => b.key === badge.key)
+  if (!definition) return
+  const earned = proofsOf(login)
+    .filter((p) => p.dimension === badge.dimension)
+    .sort((a, b) => a.at - b.at)
+  return earned[definition.thresholds[badge.level] - 1]
+}
+
+/**
+ * The badge to put forward: the highest level that still has one to reach,
+ * then the one with the fewest proofs missing.
+ */
+export const nextBadgeOf = (login: Login): Badge | undefined =>
+  badgesOf(login)
+    .filter((b) => b.next)
+    .sort((a, b) =>
+      b.level - a.level || (a.next! - a.count) - (b.next! - b.count)
+    )[0]
 
 /** Next threshold of the badge of a dimension, to draw its bar */
 export const nextThreshold = (dimension: Dimension, count: number) => {

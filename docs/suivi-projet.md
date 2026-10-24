@@ -567,6 +567,27 @@ Chaque événement GitHub a son handler, branché sur la file de PAM-204 : PRs (
 - **Livrable** : `api/help.ts`, `api/help-rules.ts`, `api/pull-skills.ts`, `migrations/003-help-request-fields.js`, routes `GET/api/help` et `POST/api/help/create`, `api/help_test.ts` (8 tests), formulaire `web/pages/help/new-help.tsx` branché sur l'API, `web/lib/live-data.ts`
 - **Par** : @Mirak29
 
+### 2026-10-22 · PAM-316 · Vitrine du profil : badges, réputation, Collaboration Map et Graph
+
+Les badges deviennent des médaillons à la manière des succès GitHub : un emblème par badge (y compris Mainteneur et Pilier de communauté, calculés par le serveur), un anneau dans la teinte métal du niveau (douze tokens ajoutés au thème), une pastille « x2 » à « x4 », un arc indigo en route vers le Bronze ; la section met en avant le prochain palier avec l'action qui le fait grandir sur son propre profil, et montre les badges à découvrir. La réputation passe des barres à cinq colonnes isométriques. La Collaboration Map devient un globe qu'on fait tourner, aux couleurs de Pamoja, avec un arc par pays relié et un vol vers un pays de la liste ; le Graph devient une étoile à deux niveaux qui met les projets en avant : le développeur, ses cinq lieux principaux, puis les personnes près du lieu qu'elles partagent le plus, nommées avec leur nombre de liens, et un panneau de détail à côté (survol, clic ou clavier) ; le panneau « Réseau de travail » montre tout avec une recherche, et le mobile garde un classement en barres. Des colonnes, des orbites et un simple classement ont été essayés sur le profil chargé avant ce choix. Un profil de démo chargé, Wanjiru Kamau (260 preuves, 70 collaborateurs, 14 pays, généré avec une graine fixe), sert à le vérifier sans l'API. Le badge Cross-border compte, dans les fixtures, les mêmes pays que la carte. Vérifié dans le navigateur en clair, en sombre et sur mobile, avec la connexion simulée.
+
+Corrigé après la relecture du 24 octobre :
+
+- Les preuves générées de Wanjiru ne se disent plus « vérifiées par GitHub » : ce sont des données de démo (§8.3, QA-10).
+- Le globe ne peint plus la mer en terre. Les terres sont coupées à l'horizon, puis refermées le long du bord du côté de ce que chaque contour entoure (terre ou lac). Rabattre les points cachés sur le bord remplissait jusqu'à 90 % du disque quand l'Afrique-Eurasie ou les Amériques passaient derrière. Vérifié sur trois rotations complètes : la part de terre varie sans saut.
+- Une colonne au dernier niveau affiche son nombre seul au lieu de « 84 / 50 ».
+- Sur téléphone, la réputation passe à trois colonnes par ligne, pour ne plus couper « Construction » ni « Mentorat ».
+- Le détail du graphe passe sous le graphe en dessous de 1 280 px : à 1 024 px, les noms passent de 6,5 à 11,3 px.
+- Le panneau de détail n'est lu par les lecteurs d'écran qu'une fois gardé, plus à chaque survol.
+- Les terres du globe (53 Ko) sont chargées au premier globe affiché, plus avec chaque page, grâce au découpage du bundle par esbuild (§12.2).
+- « personnes » est traduit en anglais.
+- Le globe zoome aussi en pinçant (écran tactile ou trackpad) et avec Ctrl ou Cmd + molette ; la molette seule fait toujours défiler la page.
+- Pendant un glisser, il ne recalcule plus les pays reliés ni les badges : 3,4 ms par image au lieu de 7,1 ms en médiane.
+- Wanjiru a son premier projet, Nairobi Pay : son profil ne dit plus « 0 projet », et le graphe montre son cube plein.
+
+- **Livrable** : `web/pages/profile/reputation.tsx`, `web/pages/profile/collaboration-map.tsx` (globe), `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/land.ts`, `web/fixtures/reputation.ts` et `web/fixtures/people.ts` (profil chargé), `docs/identite/tokens.json` et `web/assets/styles/theme.css` (teintes métal), `web/lib/english.ts` ; après relecture, `build-config.ts` (`splitting`)
+- **Par** : @niangoos, relecture @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

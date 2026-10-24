@@ -10,5 +10,8 @@ export const config: BuildOptions = {
   bundle: true,
   jsxFactory: 'h',
   jsxFragment: 'Fragment',
+  // A page loads what it shows: the land of the globe comes apart
+  splitting: true,
+  chunkNames: 'chunks/[name]-[hash]',
   outdir: 'dist',
 } as const

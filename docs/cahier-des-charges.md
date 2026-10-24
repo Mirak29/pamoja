@@ -426,7 +426,7 @@ Toute réputation est calculée à partir du journal d'entries, jamais d'une dé
 
 ### 8.1 Réputation par dimensions
 
-Pas de score global de type « 93/100 ». Cinq dimensions affichées en barres : Code Review, Project Building, Mentoring, Open Source, Community Help. Chaque barre se déplie en preuves, par exemple : 18 reviews réalisées, 14 confirmées utiles, dont Go 8, TypeScript 4, Rust 2.
+Pas de score global de type « 93/100 ». Cinq dimensions affichées en colonnes isométriques côte à côte : Code Review, Project Building, Mentoring, Open Source, Community Help. La hauteur d'une colonne suit le nombre de preuves (en racine carrée, pour qu'une seule preuve reste visible à côté de vingt) ; un volume en pointillé au-dessus montre ce qui manque pour le prochain niveau du badge de la dimension. Chaque colonne s'ouvre en preuves, par exemple : 18 reviews réalisées, 14 confirmées utiles, dont Go 8, TypeScript 4, Rust 2.
 
 | Dimension | Entries prises en compte |
 | --- | --- |
@@ -454,6 +454,8 @@ Chaque badge a quatre niveaux. Les seuils sont des valeurs initiales, ajustables
 | Community Pillar | Réponses acceptées dans les communautés | 5 | 15 | 40 | 100 |
 
 Le profil affiche la progression (« 15 / 20 »). Le passage d'un niveau produit l'entry `BADGE_UNLOCKED` et une notification.
+
+**Affichage**, à la manière des succès GitHub : chaque badge est un médaillon rond, avec un emblème propre au badge et un anneau dans la teinte métal du niveau (bronze, argent, or, platine) ; à partir d'Argent, une pastille « x2 » à « x4 ». En route vers le Bronze, un arc indigo sur l'anneau montre le chemin parcouru ; un badge pas encore commencé est en pointillé, avec ce qui débloque son Bronze. La section Badges met en avant le prochain palier atteignable (ce qui manque, la preuve qui a débloqué le niveau actuel et, sur son propre profil, l'action qui le fait grandir), puis tous les badges, débloqués, en route et à découvrir. Le passeport montre les trois plus hauts.
 
 Précisions de calcul (`api/badges.ts`, lu par `GET/api/user/badges`) :
 
@@ -526,8 +528,8 @@ Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Cor
 
 - **Developer Passport** : c'est la vue publique de `/@username` (sans connexion) : projets actifs, contributions, reviews, développeurs aidés, pays des collaborateurs, top skills.
 - **Share Card** : image générée côté serveur (nom, pays, headline, 3 chiffres clés, technologies). C'est aussi l'image Open Graph du profil (§17). Bouton de partage LinkedIn, X, WhatsApp, et téléchargement PNG.
-- **Collaboration Map** : « Collaborations à travers l'Afrique » : une colonne par pays posée sur une grille isométrique, sa hauteur selon le nombre de collaborations, un fil indigo vers le pays du profil. Pas de contour de l'Afrique, pour ne pas dessiner une carte approximative. Le pays du profil n'est jamais compté parmi les pays reliés. Calculée depuis les collaborations confirmées et le pays des profils.
-- **Collaboration Graph** : réseau développeurs ↔ projets ↔ communautés, construit uniquement sur des liens de travail (projets communs, aides, reviews, contributions), jamais sur les follows.
+- **Collaboration Map** : un globe qu'on fait tourner, inspiré de celui de 01edu, aux couleurs de Pamoja : mer `indigo`, terres en `surface-100` (Natural Earth 1:110m, domaine public). Un arc relie le pays du profil à chaque pays où il a collaboré, plus épais selon le nombre de collaborations ; plein si vérifié par GitHub, en pointillé pour une donnée de démo. Le pays du profil est un disque indigo à ses initiales, un pays relié un disque avec son nombre de collaborations, un pays où vivent des développeurs Pamoja pas encore reliés un disque en pointillé. On le tourne en glissant, on zoome aux boutons, au clavier, en pinçant (écran tactile ou trackpad) ou avec Ctrl + molette, la molette seule faisant défiler la page ; un pays de la liste fait voler le globe jusqu'à lui. À côté, les cinq pays les plus reliés avec quatre personnes au plus chacun (le reste en « +N » et « Voir les N pays »), et le badge Cross-border Builder. Le pays du profil n'est jamais compté parmi les pays reliés. Calculée depuis les liens de travail, dans les deux sens, et le pays des profils : les mêmes pays que le badge Cross-border Builder.
+- **Collaboration Graph** : une étoile à deux niveaux, les projets en avant. Au centre le développeur ; autour, ses cinq projets ou communautés principaux (cubes, plein pour les siens ; tuiles pour les communautés), reliés par un fil d'autant plus épais que le travail y est important, les autres lieux réunis en « +N autres lieux » ; à l'extérieur, les quatorze personnes avec qui il a le plus travaillé, chacune près du lieu qu'elle partage le plus, nommée avec son nombre de liens. Un panneau à côté du graphe résume le réseau (personnes, lieux, pays, lieu principal, lien le plus fort) ; au survol ou au clic (gardé jusqu'au « Retour au réseau »), et au clavier, un lieu allume ses personnes et le panneau les liste avec un lien vers le projet ou la communauté, une personne montre ce qui a été fait (reviews, aides, PRs, mentorat), où, et un lien vers son profil. Une légende dessinée avec les formes du graphe. « Voir tout le réseau » ouvre un panneau avec toutes les personnes et tous les lieux, triés, avec une recherche. Filtres par type de lien et par période (tout, 12 mois, 90 jours). Sur mobile, où les noms seraient trop petits, les personnes en classement avec une barre par type de lien. Construit uniquement sur des liens de travail, jamais sur les follows.
 
 Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'apparaît pas sur la carte.
 
@@ -638,6 +640,7 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 
 - **Dev** : comme `task-dev.ts`, esbuild en mode watch sert `dist/` et le serveur Deno route `/api` vers l'API et le reste vers esbuild. Il n'y a pas de `@01edu/api-proxy` dans Tournament et il n'en faut pas.
 - **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17). Il refuse de démarrer sans `APP_ENV=prod`, qui rend obligatoires les secrets (session, GitHub) et coupe la connexion simulée ; `deno task prod:local` essaie le build sur sa machine.
+- **Découpage** : esbuild découpe le bundle (`splitting`). Une donnée lourde que peu d'écrans affichent est importée à la demande et part dans `dist/chunks/` ; c'est le cas des terres du globe de la Collaboration Map (53 Ko, §9.3). Le reste de l'app tient en un fichier.
 - **Routage** : vrais chemins (`/@moussa`, `/projet/openpay-africa`) avec `@01edu/signal-router`, **jamais de `#`** : le serveur doit voir l'adresse pour injecter l'aperçu de partage. Le prototype utilise des `#` ; le code ne les reprend pas.
 
 ### 12.3 CSS : Tailwind v4 compilé, sans twind ni daisyUI
@@ -686,7 +689,7 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 
 **Identité visuelle** : définie par le [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) (tokens, typographie, logo, composants, avec une copie des tokens et du logo dans `docs/identite/`) et par le **prototype Pamoja v2** (`docs/prototype/`), référence des écrans. L'idée centrale : *des personnes reliées par un fil*.
 
-- Le fil qui relie les personnes est **indigo**, seule couleur de marque ; tout le reste est en gris.
+- Le fil qui relie les personnes est **indigo**, seule couleur de marque ; tout le reste est en gris. Seule exception : les teintes métal des niveaux de badge (bronze, argent, or, platine, §8.2), réservées aux médaillons.
 - Trait plein = vérifié par GitHub ; trait pointillé = donnée de démonstration ou lien pas encore créé.
 - Typographie : Bricolage Grotesque (titres), IBM Plex Sans (texte), IBM Plex Mono (chiffres, IDs, code).
 
@@ -696,9 +699,9 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 - **Touches** : boutons, puces, onglets actifs. Épaisseur de 4px ; au survol la touche monte (5px) ; au clic elle s'enfonce entièrement (translation de 3,46 × 2px, épaisseur nulle), en 120 ms. Primaire : faces `indigo-side`, arête `indigo-edge` ; secondaire : `side` et `line-control` ; danger : `side` et `danger`.
 - **Puits** : champs, recherche, rails d'onglets, creusés dans le sol (ombre intérieure `line` puis `surface-200`).
 - **Formes par type d'objet** : personne = disque, projet = cube, événement = tuile, état = losange.
-- **Colonnes** : les métriques du Pulse, les badges et la Collaboration Map sont des colonnes dont la hauteur suit la valeur. Le volume encode une donnée réelle, jamais une décoration.
+- **Colonnes** : les métriques du Pulse et les cinq dimensions de la réputation sont des colonnes dont la hauteur suit la valeur. Le volume encode une donnée réelle, jamais une décoration.
 - **Fond uni** (`surface-000`) : la grille isométrique au sol a été essayée puis retirée, elle gênait la lecture.
-- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu. Exceptions : la couverture « Plaques » d'un profil, que le développeur choisit lui-même (§9.2), et les pages publiques (landing et 404), qui présentent le produit avec les figures du système isométrique (plaques reliées par le fil, figures des quatre étapes de la boucle).
+- **Pas d'illustration décorative** : un état vide montre une phrase claire, une action et, au besoin, la forme de l'objet attendu. Exceptions : la couverture « Plaques » d'un profil, que le développeur choisit lui-même (§9.2), les pages publiques (landing et 404), qui présentent le produit avec les figures du système isométrique (plaques reliées par le fil, figures des quatre étapes de la boucle), et le globe de la Collaboration Map, dont les terres situent les pays reliés (§9.3).
 
 ### 12.8 Tests
 

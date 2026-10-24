@@ -38,7 +38,6 @@ import {
   projectsShownOf,
 } from '/web/fixtures/projects.ts'
 import {
-  badgesOf,
   type Dimension,
   profileStats,
   type Proof,
@@ -56,8 +55,9 @@ import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import {
   CollaborationGraph,
-  CollaborationMap,
-} from '/web/pages/profile/collaboration.tsx'
+  NetworkDrawer,
+} from '/web/pages/profile/collaboration-graph.tsx'
+import { CollaborationMap } from '/web/pages/profile/collaboration-map.tsx'
 import { CollaborationDialog } from '/web/pages/profile/collaboration-dialog.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
 import { Passport } from '/web/pages/profile/passport.tsx'
@@ -66,7 +66,10 @@ import {
   ProofsDrawer,
   ProofSource,
 } from '/web/pages/profile/proofs-drawer.tsx'
-import { BadgeList, DimensionBars } from '/web/pages/profile/reputation.tsx'
+import {
+  BadgeShowcase,
+  DimensionColumns,
+} from '/web/pages/profile/reputation.tsx'
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
 import { t } from '/web/lib/language.ts'
 import {
@@ -435,21 +438,7 @@ const Reputation = ({ login }: { login: Login }) => (
         Pas de score global : cinq dimensions, chacune prouvée.
       </span>
     </div>
-    <DimensionBars login={login} />
-  </section>
-)
-
-const Badges = ({ login }: { login: Login }) => (
-  <section class='slab flex flex-col gap-3.5 p-[22px]'>
-    <Eyebrow>Badges</Eyebrow>
-    {badgesOf(login).length
-      ? <BadgeList login={login} />
-      : (
-        <span class='text-[14px] text-pretty text-ink-muted'>
-          Pas encore de badge. Trois reviews confirmées font le premier :
-          Reviewer de confiance, niveau Bronze.
-        </span>
-      )}
+    <DimensionColumns login={login} />
   </section>
 )
 
@@ -546,7 +535,7 @@ const sections: Record<
   building: Building,
   contributions: Contributions,
   reputation: Reputation,
-  badges: Badges,
+  badges: BadgeShowcase,
   activity: Activity,
   communities: Communities,
   map: CollaborationMap,
@@ -582,6 +571,7 @@ export const ProfilePage = () => {
         </div>
       </div>
       <ProofsDrawer login={login} />
+      <NetworkDrawer login={login} />
       <ShareDialog login={login} />
       {!isMe(login) && <CollaborationDialog login={login} />}
     </Page>
