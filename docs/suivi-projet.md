@@ -719,6 +719,15 @@ Vérifié dans le navigateur à deux comptes : Moussa joint une image de 3 000 p
 - **Livrable** : `api/media.ts`, `api/link-preview.ts`, `api/lib/rate.ts` (limite partagée), migration 009 (`media.fileName`), `POST/api/media/upload`, `GET/api/media`, fichiers et aperçus dans `api/messages.ts`, nettoyage horaire dans `api/server.ts`, `api/link-preview_test.ts` (4 tests) et 3 tests de plus dans `api/messages_test.ts` ; `web/lib/messages.ts` (préparation et envoi), `web/pages/messages-page.tsx`, icône `FileText`, traductions ; `media/` ignoré par git ; §10.6, §15, §16, §17.3
 - **Par** : @Mirak29
 
+### 2026-10-24 · PAM-117 · CI : format, lint, types et tests sur chaque PR
+
+Chaque PR et chaque push sur `master` lancent maintenant sur GitHub Actions les quatre vérifications faites jusqu'ici à la main : `deno fmt --check`, `deno lint`, `deno check api web *.ts` et `deno task test`. Deno est figé sur la 2.9.7, celle des postes de l'équipe, et les deux actions utilisées sont épinglées sur leur commit. Les tests simulent tous les appels à GitHub : la CI n'a besoin d'aucun secret. Le dossier `.claude/` (worktrees locaux de Claude Code) est exclu de toutes les commandes Deno, pour qu'un worktree ne soit jamais vérifié ni testé à la place du repo.
+
+Vérifié en local : les quatre commandes passent, et un fichier mal formaté et un test en échec placés dans `.claude/worktrees/` sont bien ignorés. La protection de `master` (CI verte et une approbation) se règle dans les paramètres GitHub du repo.
+
+- **Livrable** : `.github/workflows/ci.yml`, `exclude` dans `deno.json`
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline
