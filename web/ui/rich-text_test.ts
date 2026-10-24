@@ -64,6 +64,12 @@ Deno.test('rich text: Markdown as elements, nothing a member writes can run', as
       ['@moussa', 'http://localhost/@moussa'],
     ])
     assertEquals(root.querySelector('button')!.textContent, '#golang')
+    // A number is not a hashtag: « PR #8 »
+    show('Voir la PR #8 et #go')
+    assertEquals(
+      [...root.querySelectorAll('button')].map((b) => b.textContent),
+      ['#go'],
+    )
     // Line breaks are kept
     assertEquals(
       root.querySelector('p')!.getAttribute('class')!.includes(

@@ -44,6 +44,29 @@ export const useEvent = (
   handler: Handler,
 ) => useEffect(() => onEvent(types, handler), [String(types)])
 
+// Presence (§13.6) comes as named events, not entries: gone once sent
+type Signals = {
+  presence: { login: string; online: boolean }
+  typing: { conversationId: number }
+}
+type SignalName = keyof Signals
+const signalHandlers = new Set<
+  { name: SignalName; handler: (data: never) => void }
+>()
+
+/**
+ * Calls `handler` for each presence event of this name: who came online or
+ * left, who is typing. Returns the unsubscribe.
+ */
+export const onSignal = <Name extends SignalName>(
+  name: Name,
+  handler: (data: Signals[Name]) => void,
+) => {
+  const item = { name, handler }
+  signalHandlers.add(item)
+  return () => signalHandlers.delete(item)
+}
+
 /**
  * Calls `handler` after each reconnection: entries sent meanwhile were
  * missed, so critical data (notifications, current page) is fetched again.
@@ -102,6 +125,14 @@ const connect = () => {
       item.type === type && run(item.handler, { at, type, id })
     }
   })
+  for (const name of ['presence', 'typing'] as const) {
+    current.addEventListener(name, (message) => {
+      const data = JSON.parse(message.data) as never
+      for (const item of signalHandlers) {
+        item.name === name && run(item.handler, data)
+      }
+    })
+  }
   // A refused connection (the server restarting, an error answer) is closed
   // for good by the browser: try again in 5 s
   current.addEventListener('error', () => {

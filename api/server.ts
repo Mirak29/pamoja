@@ -8,6 +8,7 @@ import { APP_ENV } from '/api/lib/env.ts'
 import { startHelpTimers } from '/api/help-timers.ts'
 import { startRefresh } from '/api/sync.ts'
 import { startWorker } from '/api/webhooks.ts'
+import { startMediaCleanup } from '/api/media.ts'
 // What each GitHub event changes (§5.5): registered before the worker runs
 import '/api/github-events.ts'
 
@@ -26,6 +27,8 @@ if (APP_ENV !== 'test') {
   startRefresh()
   startWorker()
   startHelpTimers()
+  // Uploads never attached, after 24 h (§17.3)
+  startMediaCleanup()
 }
 
 log.info('server-start')

@@ -17,6 +17,8 @@ export const LIMITS = {
   reply: 1250,
   // Project channels (§6.8)
   channelMessage: 2000,
+  // Direct messages (§10.6)
+  directMessage: 2000,
   // Help requests (§7.1, §7.2)
   helpTitle: TITLE_MAX,
   helpDescription: DESCRIPTION_MAX,
@@ -32,6 +34,9 @@ export const LIMITS = {
 } as const
 
 export type Limited = keyof typeof LIMITS
+
+/** Images and files of a direct message (§10.6) */
+export const MAX_ATTACHMENTS = 4
 
 /** The first field longer than its limit, if any: for a 400 of the server */
 export const tooLong = <K extends Limited>(

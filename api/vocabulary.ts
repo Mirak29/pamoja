@@ -111,6 +111,17 @@ export type HelpLevel = keyof typeof helpLevels
 
 export const helpDurations = [20, 30, 60, 120]
 
+// Why a content is reported (§10.5)
+export const reportReasons = {
+  spam: 'Spam',
+  harassment: 'Harcèlement',
+  inappropriate: 'Contenu inapproprié',
+  impersonation: 'Usurpation',
+  reputation_fraud: 'Triche à la réputation',
+  other: 'Autre',
+} as const
+export type ReportReason = keyof typeof reportReasons
+
 /** The stored key of a label shown in the app */
 export const keyOf = <K extends string>(
   labels: Record<K, string>,

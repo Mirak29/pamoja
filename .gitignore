@@ -3,6 +3,9 @@ pamoja.db
 pamoja.db-shm
 pamoja.db-wal
 
+# uploaded images and files (§17.3)
+media/
+
 # build output
 dist/
 

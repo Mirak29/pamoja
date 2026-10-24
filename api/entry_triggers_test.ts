@@ -25,6 +25,7 @@ type Role =
   | 'communityMember'
   | 'moderator' // moderates the community
   | 'fan' // follows the actor
+  | 'correspondent' // the other one of a conversation with the actor
   | 'stranger'
 
 const project: Role[] = ['member', 'follower']
@@ -80,6 +81,10 @@ const audience: Record<EntryTypeName, Role[]> = {
   POST_REPOSTED: ['communityMember', 'fan'],
   CONTENT_REPORTED: ['moderator'],
   MODERATION_ACTION: ['actor', 'moderator'],
+  // Direct messages: the two of the conversation only (§10.6)
+  DIRECT_MESSAGE_CREATED: ['actor', 'correspondent'],
+  CONVERSATION_UPDATED: ['actor', 'correspondent'],
+  DIRECT_MESSAGE_UPDATED: ['actor', 'correspondent'],
 }
 
 const roles: Role[] = [
@@ -92,6 +97,7 @@ const roles: Role[] = [
   'communityMember',
   'moderator',
   'fan',
+  'correspondent',
   'stranger',
 ]
 
@@ -140,10 +146,16 @@ const world = () => {
     notificationId: insert(`INSERT INTO notification (userId, type, category,
       payload, createdAt) VALUES (${ids.actor}, 't', 'system', '{}', 0)`),
   }
+  const conversationId = insert(`INSERT INTO conversation (startedBy, status,
+    createdAt, updatedAt) VALUES (${ids.actor}, 'accepted', 0, 0)`)
+  for (const userId of [ids.actor, ids.correspondent]) {
+    db.exec(`INSERT INTO conversationMember (conversationId, userId)
+      VALUES (${conversationId}, ${userId})`)
+  }
   db.exec(`INSERT INTO helpMatch (helpRequestId, userId, score, reasons, wave,
     newcomerSlot, status) VALUES (${relations.helpRequestId}, ${ids.matched},
     80, '[]', 1, 0, 'notified')`)
-  return { ids, relations }
+  return { ids, relations, conversationId }
 }
 
 /** A listener per role, with what the server computes for it (§13.2) */
@@ -180,7 +192,7 @@ const listeners = (
 Deno.test('triggers: every type of entry reaches exactly its audience (§13.3)', () => {
   restore()
   Entry.insertListeners.clear()
-  const { ids, relations } = world()
+  const { ids, relations, conversationId } = world()
   const received = listeners(ids, relations.projectId, relations.communityId)
   // Every relation given: the trigger decides alone who receives it
   const insert = Entry.insert as unknown as Record<
@@ -188,7 +200,10 @@ Deno.test('triggers: every type of entry reaches exactly its audience (§13.3)',
     (params: Record<string, unknown>) => number
   >
   const types = Object.keys(entries) as EntryTypeName[]
-  for (const type of types) insert[type]({ ...relations, data: {} })
+  // The conversation travels in the data of a message entry
+  for (const type of types) {
+    insert[type]({ ...relations, data: { conversationId } })
+  }
   Entry.insertListeners.clear()
 
   const got = Object.fromEntries(types.map((type) => [

@@ -590,6 +590,72 @@ export const Report = createTable('report', {
 unique('report_target', 'report', 'reporterId, targetType, targetId')
 index('report_queue', 'report', 'status, createdAt')
 
+/*
+ * Direct messages (§10.6): a conversation between two developers
+ */
+
+export const Conversation = createTable('conversation', {
+  conversationId: { type: 'INTEGER', primary: true },
+  startedBy: { type: 'INTEGER', join: User },
+  // pending (a message request), accepted or declined
+  status: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+  // Time of the last message: the list is sorted by it
+  updatedAt: { type: 'REAL' },
+})
+
+export const ConversationMember = createTable('conversationMember', {
+  conversationMemberId: { type: 'INTEGER', primary: true },
+  conversationId: { type: 'INTEGER', join: Conversation },
+  userId: { type: 'INTEGER', join: User },
+  // Messages after it are unread
+  lastReadAt: { type: 'REAL', optional: true },
+  // Added by migrations/007: no toast nor count; out of the main list
+  mutedAt: { type: 'REAL', optional: true },
+  archivedAt: { type: 'REAL', optional: true },
+})
+unique('conversation_member', 'conversationMember', 'conversationId, userId')
+index('conversation_member_user', 'conversationMember', 'userId')
+
+export const DirectMessage = createTable('directMessage', {
+  directMessageId: { type: 'INTEGER', primary: true },
+  conversationId: { type: 'INTEGER', join: Conversation },
+  authorId: { type: 'INTEGER', join: User },
+  body: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+  // Added by migrations/007. A deleted message keeps its place, not its text
+  editedAt: { type: 'REAL', optional: true },
+  deletedAt: { type: 'REAL', optional: true },
+  // The message it answers, in the same conversation (checked by the code)
+  replyToId: { type: 'INTEGER', optional: true },
+  // Added by migrations/008: title, description and site of the first link,
+  // read by the server
+  linkPreview: { type: 'JSON', optional: true },
+})
+index('direct_message_list', 'directMessage', 'conversationId, createdAt')
+
+// One emoji of a short list per developer and message (§10.6)
+export const DirectMessageReaction = createTable('directMessageReaction', {
+  directMessageReactionId: { type: 'INTEGER', primary: true },
+  directMessageId: { type: 'INTEGER', join: DirectMessage },
+  userId: { type: 'INTEGER', join: User },
+  emoji: { type: 'TEXT' },
+  createdAt: { type: 'REAL' },
+})
+unique(
+  'direct_message_reaction',
+  'directMessageReaction',
+  'directMessageId, userId, emoji',
+)
+
+export const UserBlock = createTable('userBlock', {
+  userBlockId: { type: 'INTEGER', primary: true },
+  blockerId: { type: 'INTEGER', join: User },
+  blockedId: { type: 'INTEGER', join: User },
+  createdAt: { type: 'REAL' },
+})
+unique('user_block', 'userBlock', 'blockerId, blockedId')
+
 // Immutable history of the moderation (§10.5)
 export const ModerationAction = createTable('moderationAction', {
   moderationActionId: { type: 'INTEGER', primary: true },
@@ -620,5 +686,8 @@ export const Media = createTable('media', {
   hiddenAt: { type: 'REAL', optional: true },
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
+  // Added by migrations/009, so last: the name of a file (a PDF), none for an
+  // image
+  fileName: { type: 'TEXT', optional: true },
 })
 index('media_target', 'media', 'targetType, targetId')

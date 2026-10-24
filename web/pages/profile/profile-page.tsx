@@ -9,6 +9,7 @@ import {
   GraduationCap,
   LifeBuoy,
   Link,
+  MessageSquare,
   UserPlus,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
@@ -125,6 +126,10 @@ const Actions = ({ login }: { login: Login }) => {
       <Button variant='secondary' onClick={() => toggleFollowing(login)}>
         {following ? <Check /> : <UserPlus />}
         {following ? 'Suivi' : 'Suivre'}
+      </Button>
+      <Button variant='secondary' href={`messages?avec=${login}`}>
+        <MessageSquare />
+        Écrire
       </Button>
       <Button params={{ dialog: 'collaboration' }}>
         Proposer une collaboration
