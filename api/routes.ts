@@ -18,11 +18,12 @@ import {
 import { listMyProjects } from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
-import { getPublicProfile } from '/api/profile.ts'
+import { getPublicProfile, getPublicProfileOfGithubId } from '/api/profile.ts'
 import { MAX_NEEDS, tooLong } from '/api/limits.ts'
 import {
   acceptConversation,
   archiveConversation,
+  conversationIdOf,
   declineConversation,
   deleteMessage,
   editMessage,
@@ -162,6 +163,10 @@ const media = OBJ({
   bytes: NUM('Size'),
   name: STR('Name of a file, empty for an image'),
 }, 'An image or a file')
+
+// A conversation is known by its public id, its address (PAM-125): the
+// number of the database never reaches the page
+const conversationKey = STR('Public id of the conversation, its address')
 
 const conversationRights = {
   status: STR('pending, accepted; a declined request still reads pending'),
@@ -353,11 +358,18 @@ const defs = {
 
   'GET/api/user': route({
     authorize: withOptionalSession,
-    fn: (ctx, { username }) =>
-      getPublicProfile(username, !!ctx.session) ??
+    fn: (ctx, { username, githubId }) =>
+      (username
+        ? getPublicProfile(username, !!ctx.session)
+        : getPublicProfileOfGithubId(Number(githubId), !!ctx.session)) ??
         respond.NotFound({ message: 'No such developer' }),
-    input: OBJ({ username: STR('GitHub login') }),
+    input: OBJ({
+      username: optional(STR('Login of Pamoja, from the address /@login')),
+      // A link to write to someone carries their GitHub account (PAM-125)
+      githubId: optional(STR('GitHub account id, when no login is given')),
+    }),
     output: OBJ({
+      githubId: NUM('GitHub account: stable when the login changes'),
       ...identity,
       available: BOOL('Available to help'),
       helpTypes: currentUser.helpTypes,
@@ -827,7 +839,7 @@ const defs = {
     fn: (ctx) => listConversations(ctx.session.userId),
     output: ARR(
       OBJ({
-        id: NUM('Id of the conversation'),
+        id: conversationKey,
         with: person,
         ...conversationRights,
         updatedAt: NUM('Time of the last message'),
@@ -851,15 +863,19 @@ const defs = {
 
   'GET/api/conversation': route({
     authorize: withSession,
-    // A query string carries text: the ids are read as numbers here
+    // A query string carries text: `before` is read as a number here
     fn: (ctx, { id, before }) =>
-      getConversation(ctx.session.userId, Number(id), Number(before ?? 0)),
+      getConversation(
+        ctx.session.userId,
+        conversationIdOf(id),
+        Number(before ?? 0),
+      ),
     input: OBJ({
-      id: STR('Id of the conversation'),
+      id: conversationKey,
       before: optional(STR('Older messages than this id')),
     }),
     output: OBJ({
-      id: NUM('Id of the conversation'),
+      id: conversationKey,
       with: person,
       ...conversationRights,
       muted: BOOL('No toast nor count'),
@@ -909,14 +925,15 @@ const defs = {
 
   'POST/api/conversation/start': route({
     authorize: withSession,
-    fn: (ctx, { username, body }) => ({
-      id: startConversation(ctx.session.userId, username, body),
+    fn: (ctx, { githubId, body }) => ({
+      id: startConversation(ctx.session.userId, githubId, body),
     }),
     input: OBJ({
-      username: STR('Login of the developer written to'),
+      // Never the login, which can change and pass to someone else
+      githubId: NUM('GitHub account of the developer written to'),
       body: STR('Markdown, 2 000 characters at most'),
     }),
-    output: OBJ({ id: NUM('Id of the conversation') }),
+    output: OBJ({ id: conversationKey }),
     description:
       'Write to a developer: in the conversation they share, or a new one',
   }),
@@ -926,14 +943,14 @@ const defs = {
     fn: (ctx, { id, body, replyTo, attachments }) => ({
       id: sendMessage(
         ctx.session.userId,
-        id,
+        conversationIdOf(id),
         body,
         replyTo ?? 0,
         attachments ?? [],
       ),
     }),
     input: OBJ({
-      id: NUM('Id of the conversation'),
+      id: conversationKey,
       body: STR('Markdown, 2 000 characters at most; may be empty with files'),
       replyTo: optional(NUM('The message answered')),
       attachments: optional(
@@ -992,16 +1009,17 @@ const defs = {
 
   'POST/api/conversation/typing': route({
     authorize: withSession,
-    fn: (ctx, { id }) => typing(ctx.session.userId, id),
-    input: OBJ({ id: NUM('Id of the conversation') }),
+    fn: (ctx, { id }) => typing(ctx.session.userId, conversationIdOf(id)),
+    input: OBJ({ id: conversationKey }),
     description: 'Tell the other one the developer is typing, for a moment',
   }),
 
   'POST/api/conversation/unread': route({
     authorize: withSession,
-    fn: (ctx, { id, from }) => markUnread(ctx.session.userId, id, from),
+    fn: (ctx, { id, from }) =>
+      markUnread(ctx.session.userId, conversationIdOf(id), from),
     input: OBJ({
-      id: NUM('Id of the conversation'),
+      id: conversationKey,
       from: NUM('First message to read again'),
     }),
     description: 'Mark a conversation unread from a message received',
@@ -1009,17 +1027,18 @@ const defs = {
 
   'POST/api/conversation/mute': route({
     authorize: withSession,
-    fn: (ctx, { id, muted }) => muteConversation(ctx.session.userId, id, muted),
-    input: OBJ({ id: NUM('Id of the conversation'), muted: BOOL('Muted') }),
+    fn: (ctx, { id, muted }) =>
+      muteConversation(ctx.session.userId, conversationIdOf(id), muted),
+    input: OBJ({ id: conversationKey, muted: BOOL('Muted') }),
     description: 'No toast nor count for a conversation, or back to normal',
   }),
 
   'POST/api/conversation/archive': route({
     authorize: withSession,
     fn: (ctx, { id, archived }) =>
-      archiveConversation(ctx.session.userId, id, archived),
+      archiveConversation(ctx.session.userId, conversationIdOf(id), archived),
     input: OBJ({
-      id: NUM('Id of the conversation'),
+      id: conversationKey,
       archived: BOOL('Archived'),
     }),
     description: 'Out of the main list until a new message, or back',
@@ -1031,7 +1050,7 @@ const defs = {
     input: OBJ({ q: STR('Two to 100 characters') }),
     output: ARR(
       OBJ({
-        conversationId: NUM('Conversation of the message'),
+        conversationId: STR('Public id of the conversation of the message'),
         with: person,
         message: OBJ({
           id: NUM('Id of the message'),
@@ -1047,22 +1066,25 @@ const defs = {
 
   'POST/api/conversation/read': route({
     authorize: withSession,
-    fn: (ctx, { id }) => readConversation(ctx.session.userId, id),
-    input: OBJ({ id: NUM('Id of the conversation') }),
+    fn: (ctx, { id }) =>
+      readConversation(ctx.session.userId, conversationIdOf(id)),
+    input: OBJ({ id: conversationKey }),
     description: 'Mark the conversation as read',
   }),
 
   'POST/api/conversation/accept': route({
     authorize: withSession,
-    fn: (ctx, { id }) => acceptConversation(ctx.session.userId, id),
-    input: OBJ({ id: NUM('Id of the conversation') }),
+    fn: (ctx, { id }) =>
+      acceptConversation(ctx.session.userId, conversationIdOf(id)),
+    input: OBJ({ id: conversationKey }),
     description: 'Accept a message request',
   }),
 
   'POST/api/conversation/decline': route({
     authorize: withSession,
-    fn: (ctx, { id }) => declineConversation(ctx.session.userId, id),
-    input: OBJ({ id: NUM('Id of the conversation') }),
+    fn: (ctx, { id }) =>
+      declineConversation(ctx.session.userId, conversationIdOf(id)),
+    input: OBJ({ id: conversationKey }),
     description: 'Decline a message request; the sender is not told',
   }),
 

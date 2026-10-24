@@ -93,7 +93,7 @@ const Footer = ({ children }: { children: ComponentChildren }) => (
 )
 
 const created = (slug: string, imported: boolean) => {
-  navigate({ href: `projet/${slug}` })
+  navigate({ href: `project/${slug}` })
   notify({
     title: imported ? 'Projet importé' : 'Projet créé',
     body: imported
@@ -213,7 +213,7 @@ const RepoList = (
                     Déjà sur Pamoja
                   </span>
                   <A
-                    href={`projet/${repo.existing}`}
+                    href={`project/${repo.existing}`}
                     class='text-[13px] font-semibold'
                   >
                     Ouvrir le projet

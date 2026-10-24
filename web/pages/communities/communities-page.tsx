@@ -39,7 +39,7 @@ const CommunityCard = ({ community }: { community: Community }) => {
   return (
     <div class='slab mb-2 flex flex-col gap-3 p-[18px]'>
       <A
-        href={`communaute/${community.slug}`}
+        href={`community/${community.slug}`}
         class='flex min-w-0 items-center gap-3 text-ink no-underline hover:no-underline'
       >
         <span class='tile flex size-11 flex-none items-center justify-center font-display text-[14px] leading-none font-bold text-indigo'>

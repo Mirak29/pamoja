@@ -272,7 +272,7 @@ const Preview = ({ draft }: { draft: Draft }) => (
   </aside>
 )
 
-/** /profil/modifier: identity, appearance, skills and section order (§9.2) */
+/** /profile/edit: identity, appearance, skills and section order (§9.2) */
 export const ProfileEditPage = () => {
   const person: Person = me
   const [draft, setDraft] = useState<Draft>(() => ({

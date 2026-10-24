@@ -49,14 +49,14 @@ type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 const channelList: [string, Channel, string, string][] = [
   ['general', 'general', 'général', 'Discussions de l’équipe'],
   [
-    'suivi',
+    'updates',
     'tracking',
     'suivi',
     'Alertes GitHub et CI/CD, écrites par la plateforme',
   ],
-  ['aide', 'help', 'aide', 'Demandes d’aide du projet et leurs échanges'],
+  ['help', 'help', 'aide', 'Demandes d’aide du projet et leurs échanges'],
   [
-    'annonces',
+    'announcements',
     'announcements',
     'annonces',
     'Annonces du Propriétaire et des Mainteneurs',
@@ -190,7 +190,7 @@ const MessageRow = (
         {action && (
           <Button
             size={32}
-            href='aide/nouvelle'
+            href='help/new'
             params={action.params}
             class='mt-0.5 mb-1 self-start'
           >
@@ -464,7 +464,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
             return (
               <A
                 key={p}
-                href={`projet/${project.slug}/canaux/${p}`}
+                href={`project/${project.slug}/channels/${p}`}
                 aria-current={active ? 'page' : undefined}
                 class={`mr-[3px] flex h-9 items-center gap-2 rounded-md border px-2.5 font-mono text-[14px] no-underline hover:bg-surface-200 hover:no-underline ${
                   active

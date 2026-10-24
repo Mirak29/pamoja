@@ -222,7 +222,7 @@ const LinkPreview = ({ login }: { login: Login }) => {
           </div>
         )}
       <A
-        params={{ dialog: null, vue: 'publique' }}
+        params={{ dialog: null, view: 'public' }}
         class='self-start text-[13px] font-semibold'
       >
         Ouvrir le passeport développeur
@@ -233,7 +233,7 @@ const LinkPreview = ({ login }: { login: Login }) => {
 
 /** Share card with its links (?dialog=partage) */
 export const ShareDialog = ({ login }: { login: Login }) => (
-  <Dialog id='partage' title='Carte de partage' width={720}>
+  <Dialog id='share' title='Carte de partage' width={720}>
     <div class='flex flex-col gap-[18px] px-6 pt-5 pb-6'>
       <Card login={login} />
       <div class='flex flex-wrap gap-3 pb-1'>

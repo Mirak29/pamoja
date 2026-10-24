@@ -36,7 +36,7 @@ const NewCommunity = () => {
       type,
       description: description.trim() || 'Nouvelle communauté sur Pamoja.',
     }, me)
-    navigate({ href: `communaute/${community.slug}` })
+    navigate({ href: `community/${community.slug}` })
     notify({
       title: 'Communauté créée',
       body:
@@ -63,7 +63,7 @@ const NewCommunity = () => {
         <span class='-mt-2.5 flex flex-wrap items-center gap-2 text-[13px] text-ink-muted'>
           Une communauté porte déjà ce nom.
           <A
-            href={`communaute/${existing.slug}`}
+            href={`community/${existing.slug}`}
             params={{ dialog: null }}
             class='font-semibold'
           >

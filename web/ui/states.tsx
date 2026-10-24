@@ -39,7 +39,7 @@ export const GhostSlab = (
  * No decorative figure (cahier des charges §12.7).
  *
  * @example
- * <EmptyState action={<Button href='aide/nouvelle'>Demander de l’aide</Button>}>
+ * <EmptyState action={<Button href='help/new'>Demander de l’aide</Button>}>
  *   Aucune demande pour l’instant.
  * </EmptyState>
  */
@@ -104,7 +104,7 @@ export const LoadingState = () => (
  * The page could not load. Nothing is lost: say it, and offer to retry.
  *
  * @example
- * <ErrorState code='ERR_NETWORK · /aide' onRetry={() => help.fetch()} />
+ * <ErrorState code='ERR_NETWORK · /help' onRetry={() => help.fetch()} />
  */
 export const ErrorState = (
   { code, onRetry }: { code?: string; onRetry: () => void },

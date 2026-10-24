@@ -18,23 +18,23 @@ const myProjects = Object.values(projects)
 
 const tabs = [
   {
-    key: 'pour-moi',
+    key: 'for-me',
     label: 'Pour moi',
     empty: 'Aucune demande ouverte ne correspond à tes skills pour l’instant.',
   },
   {
-    key: 'mes-demandes',
+    key: 'mine',
     label: 'Mes demandes',
     empty:
       'Tu n’as pas encore demandé d’aide. Une PR qui attend ? Demande une review.',
   },
   {
-    key: 'acceptees',
+    key: 'accepted',
     label: 'Acceptées par moi',
     empty: 'Tu n’as accepté aucune demande pour l’instant.',
   },
   {
-    key: 'projets',
+    key: 'projects',
     label: 'Demandes des projets',
     empty: 'Aucune demande dans tes projets.',
   },
@@ -48,12 +48,12 @@ export const HelpList = () => {
     string,
     { request: typeof helpRequests[0]; score?: number }[]
   > = {
-    'pour-moi': scored,
-    'mes-demandes': helpRequests.filter((h) => isMe(h.author))
+    'for-me': scored,
+    mine: helpRequests.filter((h) => isMe(h.author))
       .map((request) => ({ request })),
-    acceptees: helpRequests.filter((h) => h.helper && isMe(h.helper))
+    accepted: helpRequests.filter((h) => h.helper && isMe(h.helper))
       .map((request) => ({ request })),
-    projets: helpRequests
+    projects: helpRequests
       .filter((h) =>
         !isMe(h.author) && h.project && myProjects.includes(h.project)
       )
@@ -64,7 +64,7 @@ export const HelpList = () => {
   return (
     <Page title='Aide' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
-        <Button size={40} href='aide/nouvelle'>
+        <Button size={40} href='help/new'>
           <Plus />
           Nouvelle demande d’aide
         </Button>

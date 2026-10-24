@@ -35,9 +35,9 @@ const allPeople = () =>
   (Object.values(people) as Person[]).filter((p) => !isMe(p.login as Login))
 const allProjects = () => Object.values(projects as Record<string, Project>)
 
-// Filters live in the URL: ?skill=Go&pays=Sénégal
+// Filters live in the URL: ?skill=Go&country=Sénégal
 const param = (key: string) => url.params[key] ?? ''
-// A switched on toggle is ?disponible=1: an empty value would read as off
+// A switched on toggle is ?available=1: an empty value would read as off
 const setParam = (key: string, value: string | boolean) =>
   navigate({
     params: { [key]: value === true ? '1' : value || null },
@@ -107,12 +107,12 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
 
 const Developers = () => {
   const all = allPeople()
-  const community = communities.find((c) => c.name === param('communaute'))
+  const community = communities.find((c) => c.name === param('community'))
   const list = all.filter((p) =>
     (!param('skill') || p.skills.includes(param('skill'))) &&
-    (!param('pays') || p.country === param('pays')) &&
-    (!param('intention') || p.intents.includes(param('intention'))) &&
-    (!param('disponible') || p.available) &&
+    (!param('country') || p.country === param('country')) &&
+    (!param('intent') || p.intents.includes(param('intent'))) &&
+    (!param('available') || p.available) &&
     (!community || p.communities.includes(community.slug))
   )
   return (
@@ -126,12 +126,12 @@ const Developers = () => {
               options={sorted(all.flatMap((p) => p.skills))}
             />
             <FilterSelect
-              name='pays'
+              name='country'
               label='Pays'
               options={sorted(all.map((p) => p.country))}
             />
             <FilterSelect
-              name='communaute'
+              name='community'
               label='Communauté'
               feminine
               options={communities.map((c) => c.name)}
@@ -143,26 +143,26 @@ const Developers = () => {
           .map((intent) => (
             <OptionButton
               key={intent}
-              pressed={param('intention') === intent}
+              pressed={param('intent') === intent}
               onClick={() =>
                 setParam(
-                  'intention',
-                  param('intention') === intent ? '' : intent,
+                  'intent',
+                  param('intent') === intent ? '' : intent,
                 )}
             >
               {intent}
             </OptionButton>
           ))}
         <OptionButton
-          pressed={!!param('disponible')}
-          onClick={() => setParam('disponible', !param('disponible'))}
+          pressed={!!param('available')}
+          onClick={() => setParam('available', !param('available'))}
         >
           Disponible
         </OptionButton>
       </Filters>
       <Count
         label={counted(list.length, 'développeur')}
-        keys={['skill', 'pays', 'communaute', 'intention', 'disponible']}
+        keys={['skill', 'country', 'community', 'intent', 'available']}
       />
       <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
         {list.map((person) => (
@@ -181,12 +181,12 @@ const Developers = () => {
 const Projects = () => {
   const all = allProjects()
   const list = all.filter((p) =>
-    (!param('techno') || p.stack.includes(param('techno'))) &&
-    (!param('stade') || p.stage === param('stade')) &&
-    (!param('pays') || people[p.owner].country === param('pays')) &&
-    (!param('activite') || p.activity === param('activite')) &&
-    (!param('contributeurs') || p.needs.length > 0) &&
-    (!param('debutants') || beginnerIssues(p) > 0)
+    (!param('tech') || p.stack.includes(param('tech'))) &&
+    (!param('stage') || p.stage === param('stage')) &&
+    (!param('country') || people[p.owner].country === param('country')) &&
+    (!param('activity') || p.activity === param('activity')) &&
+    (!param('contributors') || p.needs.length > 0) &&
+    (!param('beginners') || beginnerIssues(p) > 0)
   )
   return (
     <>
@@ -194,19 +194,19 @@ const Projects = () => {
         selects={
           <>
             <FilterSelect
-              name='techno'
+              name='tech'
               label='Techno'
               feminine
               options={sorted(all.flatMap((p) => p.stack))}
             />
-            <FilterSelect name='stade' label='Stade' options={stages} />
+            <FilterSelect name='stage' label='Stade' options={stages} />
             <FilterSelect
-              name='pays'
+              name='country'
               label='Pays'
               options={sorted(all.map((p) => people[p.owner].country))}
             />
             <FilterSelect
-              name='activite'
+              name='activity'
               label='Activité'
               feminine
               options={activities}
@@ -215,14 +215,14 @@ const Projects = () => {
         }
       >
         <OptionButton
-          pressed={!!param('contributeurs')}
-          onClick={() => setParam('contributeurs', !param('contributeurs'))}
+          pressed={!!param('contributors')}
+          onClick={() => setParam('contributors', !param('contributors'))}
         >
           Cherche des contributeurs
         </OptionButton>
         <OptionButton
-          pressed={!!param('debutants')}
-          onClick={() => setParam('debutants', !param('debutants'))}
+          pressed={!!param('beginners')}
+          onClick={() => setParam('beginners', !param('beginners'))}
         >
           Beginner friendly
         </OptionButton>
@@ -230,12 +230,12 @@ const Projects = () => {
       <Count
         label={counted(list.length, 'projet')}
         keys={[
-          'techno',
-          'stade',
-          'pays',
-          'activite',
-          'contributeurs',
-          'debutants',
+          'tech',
+          'stage',
+          'country',
+          'activity',
+          'contributors',
+          'beginners',
         ]}
       />
       <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'>
@@ -274,7 +274,7 @@ const workGroups = (): [string, Work[]][] => {
     reason: `Score ${score} / 100 · ${
       request.skills.filter((s) => me.skills.includes(s)).join(', ')
     }`,
-    href: `aide/${request.id}`,
+    href: `help/${request.id}`,
     cta: 'Voir la demande',
   }))
   // good first issues have their own group below
@@ -295,7 +295,7 @@ const workGroups = (): [string, Work[]][] => {
     reason: stack
       ? t`Le projet est en ${hits.join(', ')}, que tu connais`
       : t`Tu as ${hits.join(', ')}`,
-    href: `projet/${project.slug}/equipe`,
+    href: `project/${project.slug}/team`,
     cta: 'Voir l’équipe',
   }))
   const shared = (p: Project) =>
@@ -371,11 +371,11 @@ const WorkList = () => (
 
 const tabs = [
   ['', 'Développeurs'],
-  ['projets', 'Projets'],
-  ['travail', 'Sur quoi puis-je travailler ?'],
+  ['projects', 'Projets'],
+  ['work', 'Sur quoi puis-je travailler ?'],
 ] as const
 
-/** /explorer, /explorer/projets, /explorer/travail (§10.3) */
+/** /explore, /explore/projects, /explore/work (§10.3) */
 export const ExplorePage = () => {
   const segment = url.relativePath.slice(1).split('/')[1] ?? ''
   const current = tabs.find(([key]) => key === segment)?.[0] ?? ''
@@ -388,12 +388,12 @@ export const ExplorePage = () => {
         tabs={tabs.map(([key, label]) => ({
           key,
           label,
-          href: key ? `explorer/${key}` : 'explorer',
+          href: key ? `explore/${key}` : 'explore',
         }))}
       />
       {current === '' && <Developers />}
-      {current === 'projets' && <Projects />}
-      {current === 'travail' && <WorkList />}
+      {current === 'projects' && <Projects />}
+      {current === 'work' && <WorkList />}
     </Page>
   )
 }

@@ -106,7 +106,7 @@ const NewPost = (
               Une demande d’aide passe par le matching : Pamoja la propose aux 5
               développeurs qui correspondent le mieux.
             </span>
-            <Button size={36} href='aide/nouvelle' class='self-start'>
+            <Button size={36} href='help/new' class='self-start'>
               Ouvrir le formulaire d’aide
             </Button>
           </div>

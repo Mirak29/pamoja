@@ -66,9 +66,9 @@ const findMessage = (id: string) => {
 
 const channelPaths: Record<string, string> = {
   general: 'general',
-  tracking: 'suivi',
-  help: 'aide',
-  announcements: 'annonces',
+  tracking: 'updates',
+  help: 'help',
+  announcements: 'announcements',
 }
 
 export type ReportTarget = {
@@ -99,7 +99,7 @@ export const reportTarget = (
       where: `${projects[slug as keyof typeof projects].name} · #${
         channelPaths[channel] === 'general' ? 'général' : channelPaths[channel]
       }`,
-      href: `projet/${slug}/canaux/${channelPaths[channel]}`,
+      href: `project/${slug}/channels/${channelPaths[channel]}`,
       label: 'ton message',
     }
   }
@@ -112,7 +112,7 @@ export const reportTarget = (
       excerpt: cut(help.description),
       kindLabel: 'Demande d’aide',
       where: help.project ? projects[help.project].name : '',
-      href: `aide/${id}`,
+      href: `help/${id}`,
       label: 'ta demande d’aide',
     }
   }

@@ -72,6 +72,7 @@ import {
 } from '/web/pages/profile/reputation.tsx'
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
 import { t } from '/web/lib/language.ts'
+import { conversations, conversationWith } from '/web/lib/messages.ts'
 import {
   loadProfile,
   type ProfileStatus,
@@ -110,15 +111,29 @@ const useProfileLogin = () => {
   }
 }
 
-const Actions = ({ login }: { login: Login }) => {
+/** Where « Écrire » leads: the conversation shared, or a first message */
+const writeTo = (login: string) => {
+  const existing = conversationWith(login)
+  if (existing) return `messages/${existing.id}`
+  const githubId = personOf(login).githubId
+  return githubId ? `messages/new/${githubId}` : undefined
+}
+
+const Actions = (
+  { login, write }: {
+    login: Login
+    /** Where « Écrire » leads, computed by the page that reads the data */
+    write?: string
+  },
+) => {
   const following = me.follows?.includes(login) ?? false
   if (isMe(login)) {
     return (
       <div class='flex flex-wrap gap-3 pb-1'>
-        <Button variant='secondary' params={{ dialog: 'partage' }}>
+        <Button variant='secondary' params={{ dialog: 'share' }}>
           Partager
         </Button>
-        <Button variant='secondary' href='profil/modifier'>
+        <Button variant='secondary' href='profile/edit'>
           Modifier le profil
         </Button>
       </div>
@@ -130,14 +145,20 @@ const Actions = ({ login }: { login: Login }) => {
         {following ? <Check /> : <UserPlus />}
         {following ? 'Suivi' : 'Suivre'}
       </Button>
-      <Button variant='secondary' href={`messages?avec=${login}`}>
-        <MessageSquare />
-        Écrire
-      </Button>
+      {
+        /* Never the login in the address (PAM-125): the conversation by its
+      public id, or a first message by the GitHub account */
+      }
+      {write && (
+        <Button variant='secondary' href={write}>
+          <MessageSquare />
+          Écrire
+        </Button>
+      )}
       <Button params={{ dialog: 'collaboration' }}>
         Proposer une collaboration
       </Button>
-      <Button variant='secondary' params={{ dialog: 'partage' }}>
+      <Button variant='secondary' params={{ dialog: 'share' }}>
         Partager
       </Button>
       {/* The report dialog comes with PAM-516 */}
@@ -153,7 +174,7 @@ const Actions = ({ login }: { login: Login }) => {
   )
 }
 
-const Hero = ({ login }: { login: Login }) => {
+const Hero = ({ login, write }: { login: Login; write?: string }) => {
   const person: Person = people[login]
   return (
     <section class='slab mr-2 overflow-hidden'>
@@ -167,7 +188,7 @@ const Hero = ({ login }: { login: Login }) => {
             class='flex size-24 items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[32px] leading-none font-bold shadow-slab'
           />
           <div class='hidden sm:block'>
-            <Actions login={login} />
+            <Actions login={login} write={write} />
           </div>
         </div>
         <div class='flex flex-col gap-1 pt-2'>
@@ -181,7 +202,7 @@ const Hero = ({ login }: { login: Login }) => {
           </span>
         </div>
         <div class='sm:hidden'>
-          <Actions login={login} />
+          <Actions login={login} write={write} />
         </div>
         <p
           translate={false}
@@ -260,17 +281,17 @@ const Stats = ({ login }: { login: Login }) => {
     [
       figures.reviews,
       plural(figures.reviews, 'review confirmée', 'reviews confirmées'),
-      'preuves-review',
+      'proofs-review',
     ],
     [
       figures.contributions,
       plural(figures.contributions, 'contribution'),
-      'preuves-contributions',
+      'proofs-contributions',
     ],
     [
       figures.helped,
       plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
-      'preuves-aides',
+      'proofs-helped',
     ],
     [
       figures.collaborations,
@@ -290,7 +311,7 @@ const Stats = ({ login }: { login: Login }) => {
             <span class='text-[13px] text-ink-muted'>{label}</span>
           </>
         )
-        return target.startsWith('preuves')
+        return target.startsWith('proofs')
           ? (
             <A key={label} params={{ dialog: target }} class={tile}>
               {content}
@@ -303,7 +324,7 @@ const Stats = ({ login }: { login: Login }) => {
               class={`${tile} cursor-pointer`}
               // A section hidden by the developer: its proofs instead
               onClick={() =>
-                scrollTo(target) || navigate({ params: { dialog: 'preuves' } })}
+                scrollTo(target) || navigate({ params: { dialog: 'proofs' } })}
             >
               {content}
             </button>
@@ -354,7 +375,7 @@ const Building = ({ login }: { login: Login }) => {
           ? (
             <A
               key={project.slug}
-              href={`projet/${project.slug}`}
+              href={`project/${project.slug}`}
               class={`${projectCard} slab-lift`}
             >
               {content}
@@ -387,15 +408,15 @@ const proofHref = (proof: Proof) =>
     : proof.post
     ? `post/${proof.post}`
     : proof.help
-    ? `aide/${proof.help}`
-    : `projet/${proof.project}`
+    ? `help/${proof.help}`
+    : `project/${proof.project}`
 
 const Contributions = ({ login }: { login: Login }) => {
   const mine = proofsOf(login)
   return (
     <section class='slab overflow-hidden'>
       <SectionHeader title='Contributions'>
-        <Button variant='secondary' size={32} params={{ dialog: 'preuves' }}>
+        <Button variant='secondary' size={32} params={{ dialog: 'proofs' }}>
           Toutes les preuves · <span>{mine.length}</span>
         </Button>
       </SectionHeader>
@@ -456,7 +477,7 @@ const Activity = ({ login }: { login: Login }) => {
       {list.map((help) => (
         <A
           key={help.id}
-          href={`aide/${help.id}`}
+          href={`help/${help.id}`}
           class='flex flex-col gap-1.5 border-t border-line px-5 py-3 text-ink no-underline hover:bg-surface-000 hover:no-underline'
         >
           <span class='text-[14px] text-pretty'>
@@ -484,7 +505,7 @@ const Communities = ({ login }: { login: Login }) =>
           {people[login].communities.map((slug) => (
             <A
               key={slug}
-              href={`communaute/${slug}`}
+              href={`community/${slug}`}
               class='inline-flex h-[30px] items-center rounded-[5px] border border-figure-edge bg-surface-100 px-2.5 text-[13px] text-ink no-underline shadow-tile hover:bg-surface-200 hover:no-underline'
             >
               {communities.find((c) => c.slug === slug)?.name}
@@ -497,7 +518,7 @@ const Communities = ({ login }: { login: Login }) =>
 const NotFound = ({ login }: { login: string }) => (
   <Page title='Profil introuvable' class='pt-5'>
     <GhostSlab>
-      <EmptyState action={<Button href='explorer'>Explorer</Button>}>
+      <EmptyState action={<Button href='explore'>Explorer</Button>}>
         {t`Aucun développeur « ${login} » sur Pamoja.`}
       </EmptyState>
     </GhostSlab>
@@ -549,6 +570,8 @@ const sections: Record<
 export const ProfilePage = () => {
   profileChanged.value
   peopleChanged.value
+  // « Écrire » follows the conversations and the GitHub account once read
+  conversations.value
   const { status, login } = useProfileLogin()
   if (!login) return <Missing status={status} />
   const { theme, accent, order } = settingsOf(login)
@@ -561,7 +584,7 @@ export const ProfilePage = () => {
           theme === 'minimal' ? '' : 'px-[18px] pt-5 pb-7'
         }`}
       >
-        <Hero login={login} />
+        <Hero login={login} write={writeTo(login)} />
         <Stats login={login} />
         <div class='mr-2 flex flex-col gap-8'>
           {order.map((key) => {

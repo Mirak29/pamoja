@@ -25,7 +25,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
   const beginner = beginnerIssues(project)
   return (
     <A
-      href={`projet/${project.slug}`}
+      href={`project/${project.slug}`}
       class='slab slab-lift mb-2 flex flex-col gap-3 p-[18px] text-ink no-underline hover:no-underline'
     >
       <div class='flex items-start gap-3'>

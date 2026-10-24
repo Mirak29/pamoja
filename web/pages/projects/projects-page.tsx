@@ -69,7 +69,7 @@ const MineCard = ({ project }: { project: Project }) => {
   const role = roleOf(project)
   return (
     <A
-      href={`projet/${project.slug}`}
+      href={`project/${project.slug}`}
       class='mb-2 flex flex-col gap-3 rounded-lg border border-indigo bg-surface-100 p-5 text-ink no-underline shadow-slab-selected transition-[translate] duration-180 ease-out hover:-translate-x-[1.73px] hover:-translate-y-px hover:no-underline'
     >
       <div class='flex items-start gap-3.5'>
@@ -123,7 +123,7 @@ const FollowedRow = ({ project }: { project: Project }) => (
   <div class='tile flex flex-wrap items-center gap-3.5 px-3.5 py-3'>
     <Cube size={28} top='plain' />
     <A
-      href={`projet/${project.slug}`}
+      href={`project/${project.slug}`}
       class='flex min-w-[220px] flex-1 flex-col text-ink no-underline hover:no-underline'
     >
       <span class='font-display text-[16px] leading-[22px] font-semibold'>

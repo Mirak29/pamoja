@@ -37,6 +37,11 @@ export type Person = {
   avatarUrl?: string
   /** Login on GitHub when it differs from the one of Pamoja (§14) */
   github?: string
+  /**
+   * The GitHub account, read from the API: a link to write to someone
+   * carries it, never the login, which can change (PAM-125)
+   */
+  githubId?: number
 }
 
 const fixturePeople = {
@@ -218,7 +223,14 @@ type ApiPerson =
     | 'domains'
     | 'intents'
   >
-  & Partial<{ available: boolean; helpTypes: string[]; communities: string[] }>
+  & Partial<
+    {
+      available: boolean
+      helpTypes: string[]
+      communities: string[]
+      githubId: number
+    }
+  >
 
 /**
  * A developer read from the API joins `people`, or updates the record of
@@ -261,6 +273,7 @@ const adoptPerson = (user: ApiPerson) => {
       }
       : {},
     user.communities ? { communities: user.communities } : {},
+    user.githubId ? { githubId: user.githubId } : {},
   )
   ;(people as Record<string, Person>)[user.login] = person
   peopleChanged.value++

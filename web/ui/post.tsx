@@ -263,7 +263,7 @@ const Actions = (
   )
 }
 
-/** Keep a post, or let it go; a kept post is in /enregistres */
+/** Keep a post, or let it go; a kept post is in /saved */
 export const save = (post: Post) => {
   const saved = !post.bookmarks?.includes(me.login)
   toggleBookmark(post, me.login)
@@ -274,7 +274,7 @@ export const save = (post: Post) => {
         body: 'Tu le retrouves dans Enregistrés.',
         icon: BookmarkCheck,
         tone: 'verified',
-        href: 'enregistres',
+        href: 'saved',
       }
       : { title: 'Retiré des enregistrés', icon: Bookmark, tone: 'muted' },
   )
@@ -750,7 +750,7 @@ export const PostCard = (
               <>
                 <span class='text-ink-muted'>·</span>
                 <A
-                  href={`communaute/${community.slug}`}
+                  href={`community/${community.slug}`}
                   class='text-[13px] font-semibold'
                 >
                   {community.name}
@@ -789,7 +789,7 @@ export const PostCard = (
           )}
           {project && (
             <A
-              href={`projet/${project.slug}`}
+              href={`project/${project.slug}`}
               class='mr-[3px] flex items-center gap-3 rounded-[8px] border border-figure-edge px-3 py-2.5 text-ink no-underline shadow-tile hover:bg-surface-000 hover:no-underline'
             >
               <Cube />

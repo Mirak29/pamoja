@@ -13,11 +13,12 @@ import { request } from '/api/testing.ts'
 // Direct messages (§10.6)
 const restore = makeRestorePoint()
 
-let githubId = 0
+let lastGithubId = 0
 const dev = async (login: string) => {
   const at = now()
+  const githubId = ++lastGithubId
   const userId = User.insert({
-    githubId: ++githubId,
+    githubId,
     githubUsername: login,
     avatarUrl: '',
     source: 'github',
@@ -39,17 +40,24 @@ const dev = async (login: string) => {
     const res = await request(path, { body, cookie: `session=${session}` })
     return { status: res.status, json: await res.json().catch(() => null) }
   }
-  const get = (path: string, params: Record<string, number>) =>
+  const get = (path: string, params: Record<string, string | number>) =>
     call(`${path}?${new URLSearchParams(
       Object.entries(params).map(([k, v]) => [k, String(v)]),
     )}`)
-  return { userId, login, call, get, cookie: `session=${session}` }
+  return {
+    userId,
+    githubId,
+    login,
+    call,
+    get,
+    cookie: `session=${session}`,
+  }
 }
 
 type Dev = Awaited<ReturnType<typeof dev>>
 
 const write = (from: Dev, to: Dev, body = 'Salut !') =>
-  from.call('/api/conversation/start', { username: to.login, body })
+  from.call('/api/conversation/start', { githubId: to.githubId, body })
 
 const list = async (who: Dev) =>
   (await who.call('/api/conversations')).json as {
@@ -203,6 +211,36 @@ Deno.test('messages: a help delivered opens the conversation, accepting it does 
   assertEquals((await list(zola))[0].status, 'accepted')
 })
 
+Deno.test('messages: a conversation is reached by its public id only (PAM-125)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  const sena = await dev('sena')
+  const stranger = await dev('yao')
+  const { id } = (await write(kadi, sena)).json
+  // Random, never the number of the database
+  assertEquals(/^[0-9A-Za-z]{12}$/.test(id), true)
+  const { number } = db.prepare(
+    'SELECT conversationId AS number FROM conversation WHERE publicId = ?',
+  ).get(id) as { number: number }
+  assertEquals((await kadi.get('/api/conversation', { id })).status, 200)
+  assertEquals(
+    (await kadi.get('/api/conversation', { id: String(number) })).status,
+    404,
+  )
+  // A valid id opens nothing for someone outside the conversation
+  assertEquals((await stranger.get('/api/conversation', { id })).status, 404)
+  assertEquals(
+    (await stranger.call('/api/conversation/read', { id })).status,
+    404,
+  )
+  // Answering from her side goes to the same conversation
+  assertEquals((await write(sena, kadi, 'Oui ?')).json.id, id)
+  // The page finds who to write to by their GitHub account
+  const profile = await kadi.get('/api/user', { githubId: sena.githubId })
+  assertEquals([profile.status, profile.json.login], [200, 'sena'])
+  assertEquals(profile.json.githubId, sena.githubId)
+})
+
 Deno.test('messages: a block stops both ways, unknown to the blocked one', async () => {
   restore()
   const kadi = await dev('kadi')
@@ -254,7 +292,7 @@ Deno.test('messages: only the two read it; limits; reports; no text in entries',
   assertEquals((await write(kadi, kadi)).status, 400)
   assertEquals(
     (await kadi.call('/api/conversation/start', {
-      username: 'nobody',
+      githubId: 999_999,
       body: 'x',
     })).status,
     404,
@@ -294,7 +332,9 @@ Deno.test('messages: 50 at a time, the older ones on demand', async () => {
   // Written over time: within the limit of 20 a minute (§10.6)
   for (let i = 2; i <= 55; i++) {
     db.exec(`INSERT INTO directMessage (conversationId, authorId, body,
-      createdAt) VALUES (${id}, ${kadi.userId}, 'm${i}', ${now() - 3600 + i})`)
+      createdAt) VALUES ((SELECT conversationId FROM conversation
+        WHERE publicId = '${id}'), ${kadi.userId}, 'm${i}',
+        ${now() - 3600 + i})`)
   }
   const page = (await sena.get('/api/conversation', { id })).json
   assertEquals([page.messages.length, page.more], [50, true])
@@ -331,7 +371,7 @@ Deno.test('messages: limits against spam, kept in the database (§10.6)', async 
     assertEquals((await write(kadi, stranger)).status, 200)
   }
   const refused = await request('/api/conversation/start', {
-    body: { username: 'stranger10', body: 'Salut' },
+    body: { githubId: strangers[10].githubId, body: 'Salut' },
     cookie: kadi.cookie,
   })
   assertEquals(refused.status, 429)
@@ -563,7 +603,7 @@ Deno.test("messages: search one's conversations only (PAM-527)", async () => {
     (await sena.get('/api/conversations/search', { q: 'a' } as never)).status,
     400,
   )
-  assertEquals(other > 0, true)
+  assertEquals(/^[0-9A-Za-z]{12}$/.test(other), true)
 })
 
 // The event stream of a developer, read as text until it is quiet
@@ -617,7 +657,7 @@ Deno.test('messages: online and typing, in memory, to the other one only (PAM-52
   await sena.call('/api/conversation/typing', { id })
   assertEquals(
     await kadiEvents.read(),
-    `event: typing\ndata: {"conversationId":${id}}\n\n`,
+    `event: typing\ndata: {"conversationId":"${id}"}\n\n`,
   )
   assertEquals(await senaEvents.read(), '')
   // A stranger's request: no presence, no typing

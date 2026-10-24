@@ -62,7 +62,7 @@ export const installationUrl = async (userId: number, slug: string) => {
   if (isSimulated) {
     return {
       nonce,
-      url: `connexion/github?${new URLSearchParams({
+      url: `login/github?${new URLSearchParams({
         code: DEMO_CODE,
         installation_id: '0',
         setup_action: 'install',

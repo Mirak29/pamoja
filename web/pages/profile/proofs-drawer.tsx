@@ -61,10 +61,10 @@ const Row = ({ proof }: { proof: Proof }) => {
         )}
         {pull && !proof.pullRequest && <a href={pull}>Sur GitHub</a>}
         {proof.project && (
-          <A href={`projet/${proof.project}`}>{projectNameOf(proof)}</A>
+          <A href={`project/${proof.project}`}>{projectNameOf(proof)}</A>
         )}
         {proof.post && <A href={`post/${proof.post}`}>Question</A>}
-        {proof.help && <A href={`aide/${proof.help}`}>Demande d’aide</A>}
+        {proof.help && <A href={`help/${proof.help}`}>Demande d’aide</A>}
       </div>
     </div>
   )
@@ -75,15 +75,15 @@ const Row = ({ proof }: { proof: Proof }) => {
 const filters: Record<string, [string, (proof: Proof) => boolean]> = {
   ...Object.fromEntries(
     dimensions.map(([key, label]) => [
-      `preuves-${key}`,
+      `proofs-${key}`,
       [label, (proof: Proof) => proof.dimension === key],
     ]),
   ),
-  'preuves-contributions': [
+  'proofs-contributions': [
     'Contributions',
     (proof) => proof.dimension === 'oss' || proof.dimension === 'build',
   ],
-  'preuves-aides': [
+  'proofs-helped': [
     'Développeurs aidés',
     (proof) => !!proof.by && proof.dimension !== 'build',
   ],
@@ -91,11 +91,11 @@ const filters: Record<string, [string, (proof: Proof) => boolean]> = {
 
 /**
  * Proofs behind the reputation, all of them (?dialog=preuves) or those of
- * one figure (?dialog=preuves-review, preuves-contributions…).
+ * one figure (?dialog=proofs-review, proofs-contributions…).
  */
 export const ProofsDrawer = ({ login }: { login: Login }) => {
   const opened = String(url.params.dialog ?? '')
-  if (!opened.startsWith('preuves')) return null
+  if (!opened.startsWith('proofs')) return null
   const filter = Object.hasOwn(filters, opened) ? filters[opened] : undefined
   const list = proofsOf(login).filter((p) => !filter || filter[1](p))
   const verified = list.filter((p) => p.verified).length

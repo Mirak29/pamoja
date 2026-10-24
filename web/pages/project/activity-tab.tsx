@@ -31,10 +31,10 @@ type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
 // URL key, kind and label of each filter
 const filters: [string, ActivityKind | null, string][] = [
-  ['tout', null, 'Tout'],
+  ['all', null, 'Tout'],
   ['github', 'github', 'GitHub'],
-  ['equipe', 'team', 'Équipe'],
-  ['aide', 'help', 'Aide'],
+  ['team', 'team', 'Équipe'],
+  ['help', 'help', 'Aide'],
 ]
 
 // Icon and color of an entry, read from its text like its kind
@@ -71,7 +71,7 @@ const dayOf = (at: number) =>
 export const ActivityTab = ({ project }: { project: Project }) => {
   activityChanged.value
   const entries = activityOf(project)
-  const current = filters.find(([key]) => key === url.params.filtre) ??
+  const current = filters.find(([key]) => key === url.params.filter) ??
     filters[0]
   const shown = entries.filter((entry) =>
     !current[1] || activityKind(entry.text) === current[1]
@@ -93,7 +93,7 @@ export const ActivityTab = ({ project }: { project: Project }) => {
             <OptionButton
               key={key}
               pressed={key === current[0]}
-              onClick={() => navigate({ params: { filtre: i ? key : null } })}
+              onClick={() => navigate({ params: { filter: i ? key : null } })}
             >
               {label} · {entries.filter((entry) =>
                 !kind || activityKind(entry.text) === kind

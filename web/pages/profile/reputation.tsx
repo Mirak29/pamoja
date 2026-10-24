@@ -132,7 +132,7 @@ export const DimensionColumns = (
           : (
             <A
               key={key}
-              params={{ dialog: `preuves-${key}` }}
+              params={{ dialog: `proofs-${key}` }}
               aria-label={t`${translate(label)} : ${summary}. Voir les preuves`}
               title={summary}
               class={`${cell} hover:bg-surface-200`}
@@ -403,14 +403,14 @@ const Segments = (
 
 // The action that makes a badge grow: helping, contributing, building
 const actions: Record<string, [string, string]> = {
-  trusted_reviewer: ['aide', 'Voir les demandes de review'],
-  first_responder: ['aide', 'Voir les demandes d’aide'],
-  mentor: ['aide', 'Voir les demandes de mentorat'],
-  open_source: ['explorer/travail', 'Trouver où contribuer'],
-  builder: ['projets', 'Créer un projet'],
-  cross_border: ['explorer', 'Trouver des développeurs'],
-  maintainer: ['projets', 'Voir mes projets'],
-  community_pillar: ['communautes', 'Répondre dans les communautés'],
+  trusted_reviewer: ['help', 'Voir les demandes de review'],
+  first_responder: ['help', 'Voir les demandes d’aide'],
+  mentor: ['help', 'Voir les demandes de mentorat'],
+  open_source: ['explore/work', 'Trouver où contribuer'],
+  builder: ['projects', 'Créer un projet'],
+  cross_border: ['explore', 'Trouver des développeurs'],
+  maintainer: ['projects', 'Voir mes projets'],
+  community_pillar: ['communities', 'Répondre dans les communautés'],
 }
 
 /**
@@ -485,7 +485,7 @@ const BadgeTile = ({ badge }: { badge: Badge }) => {
   return badge.dimension
     ? (
       <A
-        params={{ dialog: `preuves-${badge.dimension}` }}
+        params={{ dialog: `proofs-${badge.dimension}` }}
         aria-label={t`Voir les preuves du badge ${translate(badge.name)}`}
         class={`${tileClass} tile slab-lift`}
       >

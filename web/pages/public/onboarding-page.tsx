@@ -353,10 +353,10 @@ const stepContents = [ProfileStep, SkillsStep, IntentsStep, MatchingStep]
 export const OnboardingPage = () => {
   const step = Math.min(
     steps.length - 1,
-    Math.max(0, (Number(url.params.etape) || 1) - 1),
+    Math.max(0, (Number(url.params.step) || 1) - 1),
   )
   const setStep = (next: number) =>
-    navigate({ params: { etape: next ? next + 1 : null } })
+    navigate({ params: { step: next ? next + 1 : null } })
   const [draft, setDraft] = useState(onboardingDraft)
   const [repo, setRepo] = useState<string | null>(null)
   const update: Update = (patch) => setDraft({ ...draft, ...patch })
@@ -388,7 +388,7 @@ export const OnboardingPage = () => {
         })
       }
     }
-    navigate({ href: slug ? `projet/${slug}` : '.' })
+    navigate({ href: slug ? `project/${slug}` : '.' })
     notify({
       title: 'Bienvenue sur Pamoja',
       body:

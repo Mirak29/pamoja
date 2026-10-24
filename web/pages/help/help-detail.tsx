@@ -769,7 +769,7 @@ const Matching = (
   )
 }
 
-/** /aide/:id: lifecycle, actions by role and the matching panel */
+/** /help/:id: lifecycle, actions by role and the matching panel */
 // The entries of a lifecycle: the page reads its request again (§13)
 const lifecycle = [
   'HELP_REQUEST_ACCEPTED',
@@ -815,7 +815,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
       <Page title='Demande introuvable' class='pt-5'>
         <GhostSlab>
           <EmptyState
-            action={<Button href='aide'>Voir les demandes d’aide</Button>}
+            action={<Button href='help'>Voir les demandes d’aide</Button>}
           >
             Cette demande d’aide n’existe pas ou a été supprimée.
           </EmptyState>
@@ -850,7 +850,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
             {request.demo && <DemoBadge />}
             {project && (
               <A
-                href={`projet/${project.slug}`}
+                href={`project/${project.slug}`}
                 class='inline-flex items-center gap-1.5 text-[14px] font-semibold'
               >
                 <Cube size={18} />
@@ -859,7 +859,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
             )}
             {project && request.pullRequest && (
               <A
-                href={`projet/${project.slug}/prs`}
+                href={`project/${project.slug}/prs`}
                 params={{ dialog: `pr-${request.pullRequest}` }}
                 class='font-mono text-[14px] leading-5 font-medium'
               >

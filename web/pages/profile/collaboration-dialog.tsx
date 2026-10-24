@@ -75,7 +75,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
       title: t`${me.name.split(' ')[0]} te propose : ${translate(kind)}`,
       body: [name, pullRequest && `PR #${pullRequest}`, message.trim()]
         .filter(Boolean).join(' · ') || 'Pas de message.',
-      href: project ? `projet/${project}` : `@${me.login}`,
+      href: project ? `project/${project}` : `@${me.login}`,
     })
     navigate({ params: { dialog: null } })
     notify({

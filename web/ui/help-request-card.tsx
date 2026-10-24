@@ -25,7 +25,7 @@ export const HelpRequestCard = (
   const helper = request.helper && personOf(request.helper).name.split(' ')[0]
   return (
     <A
-      href={`aide/${request.id}`}
+      href={`help/${request.id}`}
       class='flex flex-wrap items-start gap-4 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline sm:flex-nowrap'
     >
       {score != null && (

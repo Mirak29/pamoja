@@ -71,7 +71,7 @@ export const apply = (
     body: t`${draft.areas.map(translate).join(', ')}, ${
       translate(draft.availability)
     } : « ${message} »`,
-    href: `projet/${draft.project}/equipe`,
+    href: `project/${draft.project}/team`,
     application: id,
   })
   applicationsChanged.value++
@@ -112,8 +112,8 @@ export const decideApplication = (
       } a accepté ta candidature. Tu peux écrire dans #général.`
       : t`${project.name} n’a pas retenu ta candidature cette fois.`,
     href: accept
-      ? `projet/${application.project}/canaux/general`
-      : `projet/${application.project}`,
+      ? `project/${application.project}/channels/general`
+      : `project/${application.project}`,
   })
   applicationsChanged.value++
   notificationsChanged.value++

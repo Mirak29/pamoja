@@ -8,7 +8,7 @@ import type { ComponentChildren } from 'preact'
  * @example
  * <button popovertarget='account-menu'>…</button>
  * <Menu id='account-menu' label='Compte' class='top-[68px] right-6 w-[252px]'>
- *   <a href='reglages'>Réglages</a>
+ *   <a href='settings'>Réglages</a>
  * </Menu>
  */
 export const Menu = (

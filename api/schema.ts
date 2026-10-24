@@ -616,7 +616,12 @@ export const Conversation = createTable('conversation', {
   createdAt: { type: 'REAL' },
   // Time of the last message: the list is sorted by it
   updatedAt: { type: 'REAL' },
+  // Added by migrations/010, so last: the address of the conversation
+  // (PAM-125), random. Always written; optional only because a column added
+  // to an existing table cannot be NOT NULL without a default
+  publicId: { type: 'TEXT', optional: true },
 })
+unique('conversation_public_id', 'conversation', 'publicId')
 // The limit of message requests counts those a developer started (§10.6)
 index('conversation_started_by', 'conversation', 'startedBy, createdAt')
 

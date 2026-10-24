@@ -134,7 +134,7 @@ const toPage = (n: Item): Notification => ({
   to: me.login,
   category: n.category as Notification['category'],
   href: n.helpRequestId
-    ? `aide/${n.helpRequestId}`
+    ? `help/${n.helpRequestId}`
     : n.type === 'badge_unlocked'
     ? `@${me.login}`
     : 'notifications',

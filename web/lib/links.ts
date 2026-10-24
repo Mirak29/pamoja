@@ -30,14 +30,14 @@ export const eventLink = (project: Repo, text: string): Link | undefined => {
       p.project === project.slug && p.number === pr && p.state === 'open'
     )
     return open
-      ? { href: `projet/${project.slug}/prs`, params: { dialog: `pr-${pr}` } }
+      ? { href: `project/${project.slug}/prs`, params: { dialog: `pr-${pr}` } }
       : { href: githubUrl(project, 'pull', pr) }
   }
   const issue = Number(text.match(/[Ii]ssue #(\d+)/)?.[1])
   if (issue) return { href: githubUrl(project, 'issues', issue) }
   if (/[Rr]elease/.test(text)) return { href: githubUrl(project, 'releases') }
   if (/[Dd]emande d’aide/.test(text)) {
-    return { href: `projet/${project.slug}/canaux/aide` }
+    return { href: `project/${project.slug}/channels/help` }
   }
-  if (/^Carte /.test(text)) return { href: `projet/${project.slug}/board` }
+  if (/^Carte /.test(text)) return { href: `project/${project.slug}/board` }
 }

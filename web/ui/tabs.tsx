@@ -20,7 +20,7 @@ export type Tab = Pick<LinkProps, 'href' | 'params'> & {
  * <Tabs
  *   label='Demandes d’aide'
  *   current={tab}
- *   tabs={[{ key: 'pour-moi', label: 'Pour moi', params: { tab: null }, count: 3 }]}
+ *   tabs={[{ key: 'for-me', label: 'Pour moi', params: { tab: null }, count: 3 }]}
  * />
  */
 export const Tabs = (

@@ -61,7 +61,7 @@ import {
   typingIn,
   uploadMedia,
 } from '/web/lib/messages.ts'
-import { loadProfile } from '/web/lib/profile.ts'
+import { loadProfile, loadProfileOfGithubId } from '/web/lib/profile.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -76,9 +76,21 @@ import { notify } from '/web/ui/toast.tsx'
 // the right; on a phone, one or the other. Like Discord: edit, delete,
 // reply, react, unread again, mute, archive, search.
 
+// /messages/<publicId>: a conversation is known by its public id
+// (PAM-125); an old /messages/<number> opens nothing
 const idOfAddress = () => {
-  const id = Number(url.relativePath.slice(1).split('/')[1])
-  return Number.isInteger(id) && id > 0 ? id : null
+  const id = url.relativePath.slice(1).split('/')[1] ?? ''
+  return /^[0-9A-Za-z]{12}$/.test(id) ? id : null
+}
+
+// /messages/new/<githubId>: a first message to someone. The demo accounts
+// of the seed have negative ids, never those of a real GitHub account
+const githubIdOfAddress = () => {
+  const [, segment, id] = url.relativePath.slice(1).split('/')
+  const githubId = Number(id)
+  return segment === 'new' && Number.isInteger(githubId) && githubId !== 0
+    ? githubId
+    : null
 }
 
 /*
@@ -239,7 +251,7 @@ const SearchBox = ({ onResults }: {
   )
 }
 
-const List = ({ openId }: { openId: number | null }) => {
+const List = ({ openId }: { openId: string | null }) => {
   const [results, setResults] = useState<SearchResult[] | null>(null)
   const [archives, setArchives] = useState(false)
   const list = conversations.value
@@ -706,7 +718,7 @@ const Bubble = (
     jumped,
   }: {
     message: Message
-    conversationId: number
+    conversationId: string
     nameOf: (login: string) => string
     canAct: boolean
     onReply: (message: Message) => void
@@ -892,7 +904,7 @@ const Bubble = (
  * A conversation
  */
 
-const Open = ({ id }: { id: number }) => {
+const Open = ({ id }: { id: string }) => {
   const shown = thread.value
   const jumpTo = Number(url.params.message) || 0
   const [missing, setMissing] = useState(false)
@@ -1150,11 +1162,29 @@ const Open = ({ id }: { id: number }) => {
   )
 }
 
-/** A first message to a developer, from their profile (?avec=login) */
-const New = ({ login }: { login: string }) => {
+/**
+ * A first message to a developer, from their profile
+ * (/messages/new/<githubId>). Once they are known, a conversation they
+ * already share opens instead.
+ */
+const New = ({ githubId }: { githubId: number }) => {
+  const [login, setLogin] = useState<string | null | undefined>(null)
   useEffect(() => {
-    loadProfile(login)
-  }, [login])
+    setLogin(null)
+    loadProfileOfGithubId(githubId).then(setLogin)
+  }, [githubId])
+  const existing = login ? conversationWith(login) : undefined
+  useEffect(() => {
+    existing && navigate({ href: `messages/${existing.id}`, replace: true })
+  }, [existing?.id])
+  if (login === undefined) {
+    return (
+      <GhostSlab>
+        <EmptyState>Ce développeur n’est pas sur Pamoja.</EmptyState>
+      </GhostSlab>
+    )
+  }
+  if (!login || existing) return null
   const person = personOf(login)
   return (
     <section class='slab flex min-h-[420px] min-w-0 flex-col overflow-hidden'>
@@ -1171,9 +1201,9 @@ const New = ({ login }: { login: string }) => {
       <Composer
         placeholder={t`Écrire à ${person.name}`}
         onSend={async (text) => {
-          const id = await startConversation(login, text)
+          const id = await startConversation(githubId, text)
           if (!id) return false
-          navigate({ href: `messages/${id}`, params: { avec: null } })
+          navigate({ href: `messages/${id}`, replace: true })
           return true
         }}
       />
@@ -1257,23 +1287,34 @@ const ReportMessage = () => {
   )
 }
 
-/** /messages, /messages/12, /messages/12?message=40, /messages?avec=login */
+/**
+ * /messages, /messages/<publicId>, /messages/<publicId>?message=40,
+ * /messages/new/<githubId>
+ */
 export const MessagesPage = () => {
   const openId = idOfAddress()
+  const githubId = githubIdOfAddress()
+  // The links of the first versions named someone by login (?avec=):
+  // they lead to the same place by their GitHub account
   const avec = String(url.params.avec ?? '')
-  // Writing to someone already in a conversation opens it
-  const existing = avec ? conversationWith(avec) : undefined
   useEffect(() => {
-    existing && navigate({
-      href: `messages/${existing.id}`,
-      params: { avec: null },
-      replace: true,
+    if (!avec) return
+    const existing = conversationWith(avec)
+    if (existing) {
+      return void navigate({ href: `messages/${existing.id}`, replace: true })
+    }
+    loadProfile(avec).then(() => {
+      const known = personOf(avec).githubId
+      navigate({
+        href: known ? `messages/new/${known}` : 'messages',
+        replace: true,
+      })
     })
-  }, [existing?.id])
+  }, [avec, conversationsLoaded.value])
   const right = openId
     ? <Open id={openId} />
-    : avec && !existing && conversationsLoaded.value
-    ? <New login={avec} />
+    : githubId && conversationsLoaded.value
+    ? <New githubId={githubId} />
     : null
   return (
     <Page title='Messages' heading={false} class='pt-5'>

@@ -14,7 +14,7 @@ import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
  */
 export const passportLink = (login: string) => ({
   href: `@${login}`,
-  params: signedIn.value ? { vue: 'publique' } : undefined,
+  params: signedIn.value ? { view: 'public' } : undefined,
 })
 
 /** Header of the pages seen without a session: landing and passport */
@@ -39,7 +39,7 @@ export const PublicHeader = () => (
       </A>
       <ThemeToggle />
       <LanguageToggle />
-      <Button variant='secondary' href='connexion'>Se connecter</Button>
+      <Button variant='secondary' href='login'>Se connecter</Button>
     </div>
   </header>
 )

@@ -34,7 +34,7 @@ export const NotFoundPage = () => (
     </p>
     <div class='flex flex-wrap justify-center gap-3.5 pb-1'>
       <Button size={42} href='.'>Retourner à l’accueil</Button>
-      <Button size={42} variant='secondary' href='explorer/projets'>
+      <Button size={42} variant='secondary' href='explore/projects'>
         Explorer les projets
       </Button>
     </div>

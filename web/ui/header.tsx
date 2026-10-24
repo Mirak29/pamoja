@@ -32,8 +32,8 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 // A function: `me` is known once the session is (PAM-110)
 const accountItems = () => [
   { label: 'Mon profil', icon: CircleUser, href: `@${me.login}` },
-  { label: 'Enregistrés', icon: Bookmark, href: 'enregistres' },
-  { label: 'Réglages', icon: Settings, href: 'reglages' },
+  { label: 'Enregistrés', icon: Bookmark, href: 'saved' },
+  { label: 'Réglages', icon: Settings, href: 'settings' },
   ...(me.moderator
     ? [{ label: 'Modération', icon: ShieldCheck, href: 'moderation' }]
     : []),

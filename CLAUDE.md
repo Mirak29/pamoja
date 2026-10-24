@@ -123,6 +123,7 @@ pour essayer le build de prod sur sa machine : `deno task prod:local`.
 - CSS : Tailwind v4 seul, sans daisyUI ; thème généré depuis `docs/identite/tokens.json` — §12.3.
 - DA : interface entièrement isométrique (dalles, touches, puits, formes par type d'objet, colonnes pour les valeurs), sans illustration décorative hors des plaques (couverture de profil, landing, 404) ; référence visuelle : prototype Pamoja v2 (`docs/prototype/`) — §12.7.
 - Routage en vrais chemins (`/@moussa`), jamais de `#` ; profil à une seule adresse `/@login` — §9, §12.2.
+- Adresses en anglais (chemins et paramètres, l'interface reste en français) ; ce qui est privé a un id public aléatoire, jamais un numéro qui se suit ni un login (`/messages/<id public>`, `/messages/new/<id GitHub>`) — §12.2, PAM-125.
 - IA toujours avec un repli déterministe ; fournisseur encore à choisir — §11, §20.
 
 ## Où on en est

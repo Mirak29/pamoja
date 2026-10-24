@@ -163,7 +163,7 @@ const invite = (project: Project, login: Login, need: string) => {
     } pense que tu pourrais aider ${project.name}`,
     body:
       t`Besoin : ${need}. Tu peux proposer ton aide ou rejoindre le projet.`,
-    href: `projet/${project.slug}`,
+    href: `project/${project.slug}`,
   })
   notify({
     title: 'Invitation envoyée',

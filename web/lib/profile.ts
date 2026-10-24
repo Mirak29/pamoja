@@ -21,21 +21,47 @@ const canonical = signal<Record<string, string>>({})
 const set = (login: string, status: ProfileStatus) =>
   statuses.value = { ...statuses.peek(), [login]: status }
 
+type ApiProfile = Awaited<ReturnType<typeof api['GET/api/user']['fetch']>>
+type ProfileQuery = Parameters<typeof api['GET/api/user']['fetch']>[0]
+
+// The client writes the query with URLSearchParams, which turns null into
+// « null »: only the key given is sent
+const queryOf = (key: 'username' | 'githubId', value: string) =>
+  ({ [key]: value }) as ProfileQuery
+
+/** What a profile read from the API brings to the pages */
+const adopt = (profile: ApiProfile) => {
+  adoptProfile(profile)
+  adoptProfileProjects(
+    profile.login,
+    profile.projects.map((project) => ({
+      slug: project.slug,
+      name: project.name,
+      description: project.description,
+      stack: project.stack,
+      role: roleNames[project.role] ?? 'Contributeur',
+    })),
+  )
+  profile.activity.length && adoptHelpRequests(profile.activity)
+}
+
+/**
+ * The developer of a GitHub account, for a link to write to them
+ * (PAM-125): their login once read, undefined if nobody has it
+ */
+export const loadProfileOfGithubId = (githubId: number) =>
+  api['GET/api/user'].fetch(queryOf('githubId', String(githubId)))
+    .then((profile) => {
+      adopt(profile)
+      return profile.login
+    }, () => undefined)
+
 export const loadProfile = (login: string) => {
   statuses.peek()[login] === 'found' || set(login, 'loading')
-  return api['GET/api/user'].fetch({ username: login }).then((profile) => {
-    adoptProfile(profile)
-    adoptProfileProjects(
-      profile.login,
-      profile.projects.map((project) => ({
-        slug: project.slug,
-        name: project.name,
-        description: project.description,
-        stack: project.stack,
-        role: roleNames[project.role] ?? 'Contributeur',
-      })),
-    )
-    profile.activity.length && adoptHelpRequests(profile.activity)
+  return api['GET/api/user'].fetch(queryOf('username', login)).then((
+    profile,
+  ) => {
+    adopt(profile)
     canonical.value = { ...canonical.peek(), [login]: profile.login }
     set(login, 'found')
     return loadReputation(profile.login)

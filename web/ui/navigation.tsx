@@ -44,23 +44,23 @@ const navItems = (): {
 }[] => [
   { key: '', href: '.', label: 'Accueil', short: 'Accueil', icon: House },
   {
-    key: 'explorer',
-    href: 'explorer',
+    key: 'explore',
+    href: 'explore',
     label: 'Explorer',
     short: 'Explorer',
     icon: Compass,
   },
   {
-    key: 'projets',
-    href: 'projets',
+    key: 'projects',
+    href: 'projects',
     label: 'Projets',
     short: 'Projets',
     icon: FolderGit2,
   },
-  { key: 'aide', href: 'aide', label: 'Aide', short: 'Aide', icon: LifeBuoy },
+  { key: 'help', href: 'help', label: 'Aide', short: 'Aide', icon: LifeBuoy },
   {
-    key: 'communautes',
-    href: 'communautes',
+    key: 'communities',
+    href: 'communities',
     label: 'Communautés',
     short: 'Commu.',
     icon: Users,
@@ -91,9 +91,9 @@ const navItems = (): {
 
 // A project page belongs to Projets, a post to Communautés
 const sections: Record<string, string> = {
-  projet: 'projets',
-  communaute: 'communautes',
-  post: 'communautes',
+  project: 'projects',
+  community: 'communities',
+  post: 'communities',
 }
 
 const currentSection = () => {
@@ -113,20 +113,20 @@ const createItems = [
     label: 'Projet',
     sub: 'Importer depuis GitHub ou créer de zéro',
     icon: FolderGit2,
-    href: 'projets',
+    href: 'projects',
     params: { dialog: 'new-project' },
   },
   {
     label: 'Demande d’aide',
     sub: 'Review, debug, architecture…',
     icon: LifeBuoy,
-    href: 'aide/nouvelle',
+    href: 'help/new',
   },
   {
     label: 'Communauté',
     sub: 'Technologie, pays ou domaine',
     icon: Users,
-    href: 'communautes',
+    href: 'communities',
     params: { dialog: 'new-community' },
   },
 ]

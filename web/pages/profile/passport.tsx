@@ -79,8 +79,8 @@ export const Passport = ({ login }: { login: Login }) => {
               />
               <Button
                 size={40}
-                href='connexion'
-                params={{ retour: `/@${login}?dialog=collaboration` }}
+                href='login'
+                params={{ next: `/@${login}?dialog=collaboration` }}
               >
                 {t`Collaborer avec ${person.name}`}
               </Button>
@@ -157,8 +157,8 @@ export const Passport = ({ login }: { login: Login }) => {
             {location.host}/@{login}
           </span>
           <A
-            href='connexion'
-            params={{ retour: `/@${login}` }}
+            href='login'
+            params={{ next: `/@${login}` }}
             class='text-[14px] font-semibold'
           >
             Rejoindre Pamoja

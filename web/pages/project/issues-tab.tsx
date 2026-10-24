@@ -39,7 +39,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
   const beginners = open.filter((issue) =>
     issue.labels.includes(GOOD_FIRST_ISSUE)
   )
-  const onlyBeginners = url.params.filtre === 'good-first-issue'
+  const onlyBeginners = url.params.filter === 'good-first-issue'
   const list = onlyBeginners ? beginners : open
   const cards = boards[project.slug as ProjectSlug] ?? []
   const isMember = project.owner === me.login ||
@@ -58,13 +58,13 @@ export const IssuesTab = ({ project }: { project: Project }) => {
         <div class='flex flex-wrap gap-2 pb-1'>
           <OptionButton
             pressed={!onlyBeginners}
-            onClick={() => navigate({ params: { filtre: null } })}
+            onClick={() => navigate({ params: { filter: null } })}
           >
             Toutes · {open.length}
           </OptionButton>
           <OptionButton
             pressed={onlyBeginners}
-            onClick={() => navigate({ params: { filtre: 'good-first-issue' } })}
+            onClick={() => navigate({ params: { filter: 'good-first-issue' } })}
           >
             {GOOD_FIRST_ISSUE} · {beginners.length}
           </OptionButton>
@@ -140,7 +140,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                       body: t`Issue #${issue.number} dans la colonne Backlog.`,
                       icon: Columns3,
                       tone: 'verified',
-                      href: `projet/${project.slug}/board`,
+                      href: `project/${project.slug}/board`,
                     })
                   }}
                 >

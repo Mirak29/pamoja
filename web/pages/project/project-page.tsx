@@ -53,14 +53,14 @@ import { t } from '/web/lib/language.ts'
 const tabs = [
   ['', 'Aperçu'],
   ['pulse', 'Pulse'],
-  ['canaux', 'Canaux'],
+  ['channels', 'Canaux'],
   ['prs', 'Pull requests'],
   ['issues', 'Issues'],
-  ['equipe', 'Équipe'],
-  ['activite', 'Activité'],
+  ['team', 'Équipe'],
+  ['activity', 'Activité'],
   ['board', 'Board'],
   ['roadmap', 'Roadmap'],
-  ['reglages', 'Réglages'],
+  ['settings', 'Réglages'],
 ] as const
 
 type TabKey = typeof tabs[number][0]
@@ -71,14 +71,14 @@ const tabContents: Record<
 > = {
   '': OverviewTab,
   pulse: PulseTab,
-  canaux: ChannelsTab,
+  channels: ChannelsTab,
   prs: PullRequestsTab,
   issues: IssuesTab,
-  equipe: TeamTab,
-  activite: ActivityTab,
+  team: TeamTab,
+  activity: ActivityTab,
   board: BoardTab,
   roadmap: RoadmapTab,
-  reglages: SettingsTab,
+  settings: SettingsTab,
 }
 
 const activeHelp: HelpStatus[] = [
@@ -135,7 +135,7 @@ const Actions = ({ project }: { project: Project }) => {
   if (isOwner || isMember) {
     return (
       <div class='flex flex-wrap gap-3 pb-1'>
-        <Button href='aide/nouvelle' params={{ project: project.slug }}>
+        <Button href='help/new' params={{ project: project.slug }}>
           <LifeBuoy />
           Demander de l’aide
         </Button>
@@ -157,7 +157,10 @@ const Actions = ({ project }: { project: Project }) => {
         {following ? <Check /> : <Plus />}
         {following ? 'Suivi' : 'Suivre'}
       </Button>
-      <Button variant='secondary' href={`projet/${project.slug}/canaux/aide`}>
+      <Button
+        variant='secondary'
+        href={`project/${project.slug}/channels/help`}
+      >
         Proposer mon aide
       </Button>
       {!applied && <Button params={{ dialog: 'join' }}>Rejoindre</Button>}
@@ -270,9 +273,9 @@ const unreadMessages = (project: Project, reading?: string) =>
 // Path segment of a channel to its data key
 const channelKeys: Record<string, string> = {
   general: 'general',
-  suivi: 'tracking',
-  aide: 'help',
-  annonces: 'announcements',
+  updates: 'tracking',
+  help: 'help',
+  announcements: 'announcements',
 }
 
 const ProjectTabs = ({ project, current }: {
@@ -284,15 +287,17 @@ const ProjectTabs = ({ project, current }: {
     current={current}
     wide
     tabs={tabs
-      .filter(([key]) => key !== 'reglages' || project.owner === me.login)
+      .filter(([key]) => key !== 'settings' || project.owner === me.login)
       .map(([key, label]) => ({
         key,
         label,
-        href: key ? `projet/${project.slug}/${key}` : `projet/${project.slug}`,
-        badge: key === 'canaux'
+        href: key
+          ? `project/${project.slug}/${key}`
+          : `project/${project.slug}`,
+        badge: key === 'channels'
           ? unreadMessages(
             project,
-            current === 'canaux'
+            current === 'channels'
               ? channelKeys[url.relativePath.split('/')[4] ?? 'general']
               : undefined,
           )
@@ -304,14 +309,14 @@ const ProjectTabs = ({ project, current }: {
 const NotFound = ({ slug }: { slug: string }) => (
   <Page title='Projet introuvable' class='pt-5'>
     <GhostSlab>
-      <EmptyState action={<Button href='projets'>Voir les projets</Button>}>
+      <EmptyState action={<Button href='projects'>Voir les projets</Button>}>
         {t`Le projet « ${slug} » n’existe pas ou n’est plus public.`}
       </EmptyState>
     </GhostSlab>
   </Page>
 )
 
-/** /projet/:slug/:tab, each tab in its own file */
+/** /project/:slug/:tab, each tab in its own file */
 export const ProjectPage = () => {
   // Read here, not in children: with @preact/signals, a component that reads
   // a signal or has hooks only re-renders when its props or state change

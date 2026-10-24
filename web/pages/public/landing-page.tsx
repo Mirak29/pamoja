@@ -199,7 +199,7 @@ const Hero = () => (
         humaine.
       </p>
       <div class='flex flex-wrap gap-3.5 pb-1.5'>
-        <Button size={48} href='connexion'>
+        <Button size={48} href='login'>
           <Github class='size-[18px]' />
           Continuer avec GitHub
         </Button>
@@ -341,7 +341,7 @@ const CallToAction = () => (
         Moins de 2 minutes pour créer ton profil à partir de GitHub.
       </span>
     </div>
-    <Button size={48} href='connexion'>
+    <Button size={48} href='login'>
       <Github class='size-[18px]' />
       Continuer avec GitHub
     </Button>

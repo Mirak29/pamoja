@@ -127,7 +127,7 @@ export const authorizationUrl = async () => {
   const { state, nonce } = await newState()
   if (isSimulated) {
     const params = new URLSearchParams({ code: DEMO_CODE, state })
-    return { url: `connexion/github?${params}`, nonce }
+    return { url: `login/github?${params}`, nonce }
   }
   // No redirect_uri: GitHub uses the Callback URL of the app (§5.1)
   const params = new URLSearchParams({ client_id: GITHUB_CLIENT_ID, state })
