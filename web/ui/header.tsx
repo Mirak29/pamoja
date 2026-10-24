@@ -1,10 +1,12 @@
 import { counted } from '/web/lib/plural.ts'
+import { t } from '/web/lib/language.ts'
 import { A } from '@01edu/signal-router'
 import {
   Bell,
   Bookmark,
   CircleUser,
   LogOut,
+  MessageSquare,
   Plus,
   Search,
   Settings,
@@ -18,6 +20,7 @@ import { paletteOpen } from '/web/ui/command-palette.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 import { Menu } from '/web/ui/menu.tsx'
 import { unread } from '/web/ui/navigation.tsx'
+import { unreadMessages } from '/web/lib/messages.ts'
 import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
 
@@ -65,6 +68,7 @@ const AccountMenu = () => (
 /** Header without page title: the search sits in the middle (§6.2) */
 export const Header = () => {
   const count = unread()
+  const messages = unreadMessages.value
   return (
     <header class='sticky top-0 z-30 grid flex-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line bg-surface-000 px-3 py-2.5 md:grid-cols-[minmax(max-content,1fr)_minmax(0,520px)_minmax(max-content,1fr)] md:pt-4 md:pr-8 md:pb-3.5 md:pl-4'>
       <div class='flex min-w-0 items-center'>
@@ -99,6 +103,23 @@ export const Header = () => {
           class='md:hidden'
         >
           <Plus />
+        </Button>
+        <Button
+          variant='secondary'
+          size={40}
+          square
+          href='messages'
+          aria-label={messages
+            ? t`Messages, ${counted(messages, 'non lu', 'non lus')}`
+            : 'Messages'}
+          class='relative md:hidden'
+        >
+          <MessageSquare class='size-5' />
+          {messages > 0 && (
+            <span class='absolute -top-[7px] -right-2 h-[18px] min-w-5 rounded-sm border border-indigo-edge bg-indigo px-[5px] text-center font-mono text-[10px] leading-4 font-medium text-on-indigo shadow-[1.73px_1px_0_0_var(--indigo-edge)]'>
+              {messages > 9 ? '9+' : messages}
+            </span>
+          )}
         </Button>
         <Button
           variant='secondary'

@@ -5,6 +5,8 @@ import '/web/lib/external-links.ts'
 import '/web/lib/live-data.ts'
 // The notifications of the server, and their toast (§7.4)
 import '/web/lib/notifications.ts'
+// Direct messages, their counter and their toast (§10.6)
+import '/web/lib/messages.ts'
 import { url } from '@01edu/signal-router'
 import { CommunitiesPage } from '/web/pages/communities/communities-page.tsx'
 import { CommunityPage } from '/web/pages/communities/community-page.tsx'
@@ -12,6 +14,7 @@ import { ExplorePage } from '/web/pages/explore/explore-page.tsx'
 import { HelpPage } from '/web/pages/help/help-page.tsx'
 import { HomePage } from '/web/pages/home/home-page.tsx'
 import { ModerationPage } from '/web/pages/moderation-page.tsx'
+import { MessagesPage } from '/web/pages/messages-page.tsx'
 import { NotificationsPage } from '/web/pages/notifications.tsx'
 import { ProfileEditPage } from '/web/pages/profile/profile-edit.tsx'
 import { PassportPage, ProfilePage } from '/web/pages/profile/profile-page.tsx'
@@ -47,6 +50,7 @@ const routes: Record<string, () => JSX.Element | null> = {
   explorer: ExplorePage,
   onboarding: OnboardingPage,
   moderation: ModerationPage,
+  messages: MessagesPage,
   notifications: NotificationsPage,
   post: PostPage,
   'profil/modifier': ProfileEditPage,

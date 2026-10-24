@@ -8,6 +8,7 @@ import {
   FolderGit2,
   House,
   LifeBuoy,
+  MessageSquare,
   PenLine,
   Plus,
   Users,
@@ -17,6 +18,7 @@ import {
   notifications,
   notificationsChanged,
 } from '/web/fixtures/notifications.ts'
+import { unreadMessages } from '/web/lib/messages.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
@@ -37,6 +39,8 @@ const navItems = (): {
   label: string
   short: string
   icon: IconComponent
+  /** Left out of the tab bar of phones, full: in the header there */
+  desktopOnly?: boolean
 }[] => [
   { key: '', href: '.', label: 'Accueil', short: 'Accueil', icon: House },
   {
@@ -60,6 +64,14 @@ const navItems = (): {
     label: 'Communautés',
     short: 'Commu.',
     icon: Users,
+  },
+  {
+    key: 'messages',
+    href: 'messages',
+    label: 'Messages',
+    short: 'Messages',
+    icon: MessageSquare,
+    desktopOnly: true,
   },
   {
     key: 'notifications',
@@ -201,6 +213,9 @@ export const Sidebar = () => {
                 {key === 'notifications' && count > 0 && (
                   <CountBadge count={count} />
                 )}
+                {key === 'messages' && unreadMessages.value > 0 && (
+                  <CountBadge count={unreadMessages.value} />
+                )}
               </A>
             )
           })}
@@ -236,7 +251,9 @@ export const MobileNav = () => {
       aria-label='Navigation principale'
       class='fixed inset-x-0 bottom-0 z-30 grid h-[68px] grid-cols-7 gap-0.5 border-t border-figure-edge bg-surface-100 px-1.5 pt-1.5 pb-2 md:hidden'
     >
-      {navItems().map(({ key, href, label, short, icon: Icon }) => {
+      {navItems().filter((item) => !item.desktopOnly).map((
+        { key, href, label, short, icon: Icon },
+      ) => {
         const active = key === section
         return (
           <A

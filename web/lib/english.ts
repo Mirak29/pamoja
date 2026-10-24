@@ -1459,6 +1459,73 @@ export const english: Record<string, string> = {
     'Collaboration globe. Arrow keys turn it, plus and minus zoom.',
   'Glisse pour faire tourner le globe. Un pays de la liste t’y emmène.':
     'Drag to turn the globe. A country in the list takes you there.',
+  'Messages': 'Messages',
+  'Écrire': 'Message',
+  'Pas encore de conversation. Écris à un développeur depuis son profil, avec « Écrire ».':
+    'No conversation yet. Write to a developer from their profile, with “Message”.',
+  'Toutes les conversations': 'All conversations',
+  'Bloquer': 'Block',
+  'Débloquer': 'Unblock',
+  'Afficher les messages précédents': 'Show earlier messages',
+  'Mes messages': 'My messages',
+  'Cette conversation n’existe pas, ou n’est pas la tienne.':
+    'This conversation does not exist, or is not yours.',
+  'Signaler ce message': 'Report this message',
+  'Le signalement n’a pas pu être envoyé. Réessaie.':
+    'The report could not be sent. Try again.',
+  'Seul ce message est transmis aux modérateurs. Ton signalement reste anonyme pour son auteur.':
+    'Only this message goes to the moderators. Your report stays anonymous to its author.',
+  'Choisis une conversation, ou écris à un développeur depuis son profil.':
+    'Pick a conversation, or write to a developer from their profile.',
+  'Tu ne peux pas écrire à ce développeur pour l’instant.':
+    'You cannot write to this developer for now.',
+  'non lu': 'unread',
+  'non lus': 'unread',
+  'Si vous n’avez jamais travaillé ensemble, il arrivera en demande : tu pourras écrire de nouveau une fois la demande acceptée.':
+    'If you have never worked together, it arrives as a request: you can write again once it is accepted.',
+  'Trop de demandes de message': 'Too many message requests',
+  'Trop de signalements': 'Too many reports',
+  'Tu écris trop vite': 'You are writing too fast',
+  'En sourdine': 'Muted',
+  'Message supprimé': 'Message deleted',
+  'Rechercher dans mes messages': 'Search my messages',
+  'Aucun message ne contient ce texte.': 'No message contains this text.',
+  'Ne plus répondre à ce message': 'Stop replying to this message',
+  'Modifier le message': 'Edit the message',
+  'Entrée pour enregistrer · Échap pour annuler':
+    'Enter to save · Escape to cancel',
+  'Réagir': 'React',
+  'Modifier': 'Edit',
+  'Supprimer': 'Delete',
+  'Supprimer définitivement': 'Delete for good',
+  'Marquer comme non lu': 'Mark as unread',
+  '· modifié': '· edited',
+  'Réactiver les alertes': 'Unmute',
+  'Mettre en sourdine': 'Mute',
+  'Désarchiver': 'Unarchive',
+  'Revenir aux derniers messages': 'Back to the latest messages',
+  'Message trouvé par la recherche.': 'Message found by the search.',
+  'Nouveaux messages': 'New messages',
+  'En réponse à ton message': 'Replying to your message',
+  'écrit…': 'typing…',
+  '· en ligne': '· online',
+  'En ligne': 'Online',
+  'Pièce jointe': 'Attachment',
+  'Retirer ce fichier': 'Remove this file',
+  'Envoi…': 'Uploading…',
+  'Joindre une image ou un PDF': 'Attach an image or a PDF',
+  'Image jointe': 'Attached image',
+  'Format non accepté': 'Format not accepted',
+  'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
+    'Send a JPEG, PNG or WebP image, or a PDF.',
+  'Image illisible': 'Unreadable image',
+  'Cette image n’a pas pu être lue.': 'This image could not be read.',
+  'Trop de fichiers envoyés': 'Too many files sent',
+  'Fichier trop lourd': 'File too large',
+  'Une image fait 2 Mo au plus, un PDF 5 Mo.':
+    'An image is 2 MB at most, a PDF 5 MB.',
+  'Envoie les autres dans un message suivant.':
+    'Send the others in another message.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1665,4 +1732,34 @@ export const englishTemplates: Record<string, string> = {
   '{0} {1} pour le niveau {2}': '{0} {1} for the {2} level',
   'En pointillé : {0}, où vivent des développeurs Pamoja à relier.':
     'Dotted: {0}, where Pamoja developers live, not connected yet.',
+  'Toi : ': 'You: ',
+  'Demandes · {0}': 'Requests · {0}',
+  '{0} veut t’écrire': '{0} wants to message you',
+  'Tu as bloqué {0} : vous ne pouvez plus vous écrire.':
+    'You blocked {0}: you can no longer write to each other.',
+  'Tu ne peux pas écrire à {0} pour l’instant.':
+    'You cannot write to {0} for now.',
+  'Ton premier message à {0}.': 'Your first message to {0}.',
+  'Messages, {0}': 'Messages, {0}',
+  '{0} veut t’écrire. Accepte pour répondre ; si tu refuses, personne n’en sera prévenu.':
+    '{0} wants to message you. Accept to reply; if you decline, nobody is told.',
+  'En attente : {0} lira ton message une fois ta demande acceptée.':
+    'Waiting: {0} will read your message once your request is accepted.',
+  'dans {0} s': 'in {0} s',
+  'dans {0} min': 'in {0} min',
+  'dans {0} h': 'in {0} h',
+  'Tu as écrit à beaucoup de développeurs que tu ne connais pas. Réessaie {0}.':
+    'You wrote to many developers you do not know. Try again {0}.',
+  'Réessaie {0}. Ton texte est gardé.': 'Try again {0}. Your text is kept.',
+  'Toi, à {0}': 'You, to {0}',
+  'Résultats · {0}': 'Results · {0}',
+  'Archives · {0}': 'Archived · {0}',
+  'En réponse à {0}': 'Replying to {0}',
+  'Réagir {0}': 'React {0}',
+  '{0} écrit…': '{0} is typing…',
+  '{0} fichiers au plus': '{0} files at most',
+  'Réessaie {0}.': 'Try again {0}.',
+  'PDF · {0}': 'PDF · {0}',
+  '{0} ko': '{0} KB',
+  '{0} Mo': '{0} MB',
 }

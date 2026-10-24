@@ -139,6 +139,21 @@ const isAnnouncement = sqlCheck<{ messageId: Id }>`
   WHERE messageId = :messageId AND channel = 'announcements'
 `
 
+// The two developers of a conversation (§10.6); the conversation is in the
+// data of the entry, never the text of the message
+const isConversationMember = sqlCheck<
+  { conversationId: Id; userId: number }
+>`
+  FROM conversationMember
+  WHERE conversationId = :conversationId AND userId = :userId
+`
+const conversationMember = (entry: Target, sub: unknown) =>
+  isConversationMember({
+    conversationId: (entry as { data?: { conversationId?: number } }).data
+      ?.conversationId,
+    userId: listener(sub).userId,
+  })
+
 const requester = (entry: Target, sub: unknown) =>
   isRequester({
     helpRequestId: entry.helpRequestId,
@@ -477,6 +492,28 @@ export const Entry = initEntries(entries, relations, {
     data: 'moderationActionId and action',
     fields: { source },
     trigger: (entry, sub) => self(entry, sub) || moderator(entry, sub),
+  },
+
+  /*
+   * Direct messages (§10.6)
+   */
+  DIRECT_MESSAGE_CREATED: {
+    userId: 'author of the message',
+    data: 'conversationId and directMessageId, never the text',
+    fields: { source },
+    trigger: conversationMember,
+  },
+  CONVERSATION_UPDATED: {
+    userId: 'who accepted or declined the request',
+    data: 'conversationId and status',
+    fields: { source },
+    trigger: conversationMember,
+  },
+  DIRECT_MESSAGE_UPDATED: {
+    userId: 'who edited, deleted or reacted',
+    data: 'conversationId and directMessageId, never the text',
+    fields: { source },
+    trigger: conversationMember,
   },
 })
 

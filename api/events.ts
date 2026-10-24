@@ -1,5 +1,6 @@
 import { sql } from '@01edu/db'
 import { Entry, type EntryListener } from '/api/entries.ts'
+import { connectionClosed, connectionOpened } from '/api/presence.ts'
 
 // Server-Sent Events (§13.2): the client never chooses what it receives, the
 // server computes it from the database when the connection opens
@@ -51,9 +52,13 @@ const ACK_EVERY = 15_000
 export const openEvents = (userId: number) => {
   let listener: EntryListener
   let heartbeat: ReturnType<typeof setInterval>
+  let closed = false
   const close = () => {
     clearInterval(heartbeat)
     listeners.delete(listener)
+    if (closed) return
+    closed = true
+    connectionClosed(userId)
   }
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -66,6 +71,7 @@ export const openEvents = (userId: number) => {
         controller,
       }
       listeners.add(listener)
+      connectionOpened(userId)
       heartbeat = setInterval(() => {
         try {
           controller.enqueue(ACK)
