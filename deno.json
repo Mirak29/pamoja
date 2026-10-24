@@ -1,4 +1,7 @@
 {
+  "exclude": [
+    ".claude/"
+  ],
   "fmt": {
     "useTabs": false,
     "lineWidth": 80,
