@@ -11,6 +11,17 @@ export const BATCH = 20
 // The next batch loads this far before the end comes into view
 const AHEAD = '800px'
 
+// What the list scrolls in: a column of its own (the messages), or the page.
+// The margin ahead applies to it only: within a column, the page's would be
+// cut by the column
+const scrollerOf = (element: HTMLElement) => {
+  for (let node = element.parentElement; node; node = node.parentElement) {
+    if (node === document.body) break
+    if (/auto|scroll/.test(getComputedStyle(node).overflowY)) return node
+  }
+  return null
+}
+
 /**
  * A list that loads its next batch a little before its end comes into view.
  * « Charger plus » does the same from the keyboard or a screen reader, and
@@ -54,7 +65,7 @@ export const InfiniteList = (
     if (typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(
       (entries) => entries.some((entry) => entry.isIntersecting) && load(),
-      { rootMargin: `0px 0px ${AHEAD} 0px` },
+      { root: scrollerOf(target), rootMargin: `0px 0px ${AHEAD} 0px` },
     )
     observer.observe(target)
     return () => observer.disconnect()

@@ -33,14 +33,16 @@ import {
   type Conversation,
   conversations,
   conversationsLoaded,
-  conversationWith,
   deleteMessage,
   editMessage,
+  findConversationWith,
   loadOlder,
+  loadOlderConversations,
   markUnread,
   type Media,
   mediaUrl,
   type Message,
+  olderConversations,
   online,
   openAt,
   openConversation,
@@ -67,6 +69,7 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
 import { memberLink } from '/web/lib/member-links.ts'
@@ -292,9 +295,14 @@ const List = ({ openId }: { openId: string | null }) => {
                   ))}
                 </>
               )}
-              {others.map((c) => (
-                <Row key={c.id} conversation={c} active={c.id === openId} />
-              ))}
+              <InfiniteList
+                more={!!olderConversations.value}
+                onMore={loadOlderConversations}
+              >
+                {others.map((c) => (
+                  <Row key={c.id} conversation={c} active={c.id === openId} />
+                ))}
+              </InfiniteList>
               {archived.length > 0 && (
                 <>
                   <button
@@ -1216,10 +1224,16 @@ const New = ({ githubId }: { githubId: number }) => {
     setLogin(null)
     loadProfileOfGithubId(githubId).then(setLogin)
   }, [githubId])
-  const existing = login ? conversationWith(login) : undefined
+  // A conversation they share opens instead, older than the batches read
+  // included: the server knows it
+  const [shared, setShared] = useState<string | null>(null)
   useEffect(() => {
-    existing && navigate({ href: `messages/${existing.id}`, replace: true })
-  }, [existing?.id])
+    setShared(null)
+    login &&
+      findConversationWith(login).then((id) =>
+        id ? navigate({ href: `messages/${id}`, replace: true }) : setShared('')
+      )
+  }, [login])
   if (login === undefined) {
     return (
       <GhostSlab>
@@ -1227,7 +1241,7 @@ const New = ({ githubId }: { githubId: number }) => {
       </GhostSlab>
     )
   }
-  if (!login || existing) return null
+  if (!login || shared !== '') return null
   const person = personOf(login)
   return (
     <section class='slab flex h-full min-w-0 flex-col overflow-hidden'>
@@ -1342,18 +1356,16 @@ export const MessagesPage = () => {
   const avec = String(url.params.avec ?? '')
   useEffect(() => {
     if (!avec) return
-    const existing = conversationWith(avec)
-    if (existing) {
-      return void navigate({ href: `messages/${existing.id}`, replace: true })
-    }
-    loadProfile(avec).then(() => {
+    findConversationWith(avec).then(async (id) => {
+      if (id) return navigate({ href: `messages/${id}`, replace: true })
+      await loadProfile(avec)
       const known = personOf(avec).githubId
       navigate({
         href: known ? `messages/new/${known}` : 'messages',
         replace: true,
       })
     })
-  }, [avec, conversationsLoaded.value])
+  }, [avec])
   const right = openId
     ? <Open id={openId} />
     : githubId && conversationsLoaded.value

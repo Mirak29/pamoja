@@ -29,6 +29,10 @@ export type Project = {
   description: string
   contributors: number
   openIssues: number
+  /** Counted by the server for a project of the API (§12.7) */
+  beginnerIssues?: number
+  openPullRequests?: number
+  waitingReview?: number
   release: string
   members: { login: Login; role: ProjectRole }[]
   followers: Login[]

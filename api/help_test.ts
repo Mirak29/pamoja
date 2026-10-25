@@ -266,6 +266,7 @@ Deno.test('pull skills: read once per head commit, shown on the PR', async () =>
   await readPullRequestSkills()
   const pulls = async () =>
     (await call('/api/projects', session)).json[0].repository.pullRequests
+      .items
   // The merged PR is not read
   assertEquals((await pulls()).map((p: { skills: string[] }) => p.skills), [
     ['Go', 'SQL'],

@@ -11,6 +11,8 @@ import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
+import { loadProjectIssues, projectBatches } from '/web/fixtures/repos.ts'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -39,6 +41,11 @@ export const IssuesTab = ({ project }: { project: Project }) => {
   const beginners = open.filter((issue) =>
     issue.labels.includes(GOOD_FIRST_ISSUE)
   )
+  // Counted by the server for a project of the API: the batches read may
+  // not hold every issue yet (§12.7)
+  const openCount = project.demo ? open.length : project.openIssues
+  const beginnerCount = project.beginnerIssues ?? beginners.length
+  const more = projectBatches.value[project.slug]?.issues
   const onlyBeginners = url.params.filter === 'good-first-issue'
   const list = onlyBeginners ? beginners : open
   const cards = boards[project.slug as ProjectSlug] ?? []
@@ -51,8 +58,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
         <div class='flex min-w-0 flex-[1_1_260px] flex-col gap-1.5'>
           <Eyebrow>Issues · synchronisées depuis GitHub</Eyebrow>
           <h2 class='font-display text-heading'>
-            {open.length}{' '}
-            {open.length > 1 ? 'issues ouvertes' : 'issue ouverte'}
+            {openCount} {openCount > 1 ? 'issues ouvertes' : 'issue ouverte'}
           </h2>
         </div>
         <div class='flex flex-wrap gap-2 pb-1'>
@@ -60,97 +66,104 @@ export const IssuesTab = ({ project }: { project: Project }) => {
             pressed={!onlyBeginners}
             onClick={() => navigate({ params: { filter: null } })}
           >
-            Toutes · {open.length}
+            Toutes · {openCount}
           </OptionButton>
           <OptionButton
             pressed={onlyBeginners}
             onClick={() => navigate({ params: { filter: 'good-first-issue' } })}
           >
-            {GOOD_FIRST_ISSUE} · {beginners.length}
+            {GOOD_FIRST_ISSUE} · {beginnerCount}
           </OptionButton>
         </div>
       </div>
-      {list.map((issue) => {
-        const blocked = issue.labels.includes('blocked')
-        const card = cards.find((c) => c.issue === issue.number)
-        const column = card && columnNames[card.column]
-        return (
-          <div
-            key={issue.number}
-            class='flex flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 hover:bg-surface-000'
-          >
-            <span
-              class={`tile flex size-[34px] flex-none items-center justify-center ${
-                blocked ? 'text-danger' : 'text-verified'
-              }`}
+      <InfiniteList
+        more={!!more}
+        onMore={() => loadProjectIssues(project.slug)}
+      >
+        {list.map((issue) => {
+          const blocked = issue.labels.includes('blocked')
+          const card = cards.find((c) => c.issue === issue.number)
+          const column = card && columnNames[card.column]
+          return (
+            <div
+              key={issue.number}
+              class='flex flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 hover:bg-surface-000'
             >
-              {blocked
-                ? <CircleAlert class='size-[18px]' />
-                : <CircleDot class='size-[18px]' />}
-            </span>
-            <div class='flex min-w-[220px] flex-1 flex-col gap-[7px]'>
-              <a
-                href={githubUrl(project, 'issues', issue.number)}
-                class='font-semibold text-pretty text-ink hover:text-indigo'
+              <span
+                class={`tile flex size-[34px] flex-none items-center justify-center ${
+                  blocked ? 'text-danger' : 'text-verified'
+                }`}
               >
-                <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
-                  #{issue.number}
-                </span>{' '}
-                {issue.title}
-              </a>
-              <div class='flex flex-wrap gap-1.5'>
-                {issue.labels.map((label) => (
-                  <span
-                    key={label}
-                    class={`inline-flex h-[22px] items-center rounded-sm border px-2 font-mono text-[12px] leading-none font-medium whitespace-nowrap ${
-                      labelTones[label] ?? 'border-line-control text-ink-muted'
-                    }`}
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <span class='text-[13px] leading-5 text-ink-muted'>
-                {t`${nameOf(issue.author).split(' ')[0]} · ouverte ${
-                  ago(issue.at)
-                } · ${counted(issue.comments, 'commentaire')}`}
+                {blocked
+                  ? <CircleAlert class='size-[18px]' />
+                  : <CircleDot class='size-[18px]' />}
               </span>
-            </div>
-            <div class='flex flex-col items-end gap-2 pb-1'>
-              {issue.demo && <DemoBadge />}
-              {column && (
-                <span class='inline-flex items-center gap-1.5 text-[13px] text-ink-muted'>
-                  <Columns3 class='size-3.5' />
-                  Board · {column}
-                </span>
-              )}
-              {isMember && !column && (
-                <Button
-                  variant='secondary'
-                  size={32}
-                  aria-label={t`Ajouter l’issue #${issue.number} au board`}
-                  onClick={() => {
-                    addCard(
-                      project.slug as ProjectSlug,
-                      issue.title,
-                      issue.number,
-                    )
-                    notify({
-                      title: 'Ajoutée au board',
-                      body: t`Issue #${issue.number} dans la colonne Backlog.`,
-                      icon: Columns3,
-                      tone: 'verified',
-                      href: `project/${project.slug}/board`,
-                    })
-                  }}
+              <div class='flex min-w-[220px] flex-1 flex-col gap-[7px]'>
+                <a
+                  href={githubUrl(project, 'issues', issue.number)}
+                  class='font-semibold text-pretty text-ink hover:text-indigo'
                 >
-                  Ajouter au board
-                </Button>
-              )}
+                  <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
+                    #{issue.number}
+                  </span>{' '}
+                  {issue.title}
+                </a>
+                <div class='flex flex-wrap gap-1.5'>
+                  {issue.labels.map((label) => (
+                    <span
+                      key={label}
+                      class={`inline-flex h-[22px] items-center rounded-sm border px-2 font-mono text-[12px] leading-none font-medium whitespace-nowrap ${
+                        labelTones[label] ??
+                          'border-line-control text-ink-muted'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+                <span class='text-[13px] leading-5 text-ink-muted'>
+                  {t`${nameOf(issue.author).split(' ')[0]} · ouverte ${
+                    ago(issue.at)
+                  } · ${counted(issue.comments, 'commentaire')}`}
+                </span>
+              </div>
+              <div class='flex flex-col items-end gap-2 pb-1'>
+                {issue.demo && <DemoBadge />}
+                {column && (
+                  <span class='inline-flex items-center gap-1.5 text-[13px] text-ink-muted'>
+                    <Columns3 class='size-3.5' />
+                    Board · {column}
+                  </span>
+                )}
+                {isMember && !column && (
+                  <Button
+                    variant='secondary'
+                    size={32}
+                    aria-label={t`Ajouter l’issue #${issue.number} au board`}
+                    onClick={() => {
+                      addCard(
+                        project.slug as ProjectSlug,
+                        issue.title,
+                        issue.number,
+                      )
+                      notify({
+                        title: 'Ajoutée au board',
+                        body:
+                          t`Issue #${issue.number} dans la colonne Backlog.`,
+                        icon: Columns3,
+                        tone: 'verified',
+                        href: `project/${project.slug}/board`,
+                      })
+                    }}
+                  >
+                    Ajouter au board
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </InfiniteList>
       {!list.length && (
         <p class='border-t border-line px-6 py-10 text-center text-ink-muted'>
           {onlyBeginners

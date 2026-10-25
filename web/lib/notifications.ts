@@ -11,7 +11,7 @@ import { badgeName, levelNames } from '/web/fixtures/reputation.ts'
 import { me, personOf } from '/web/fixtures/people.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
-import { onEvent, onReconnect } from '/web/lib/realtime.ts'
+import { onEvent, onReconnect, whenShown } from '/web/lib/realtime.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { effect, signal } from '@preact/signals'
 
@@ -256,5 +256,6 @@ effect(() => {
   seen.clear()
   loadNotifications()
 })
-onEvent('NOTIFICATION_CREATED', () => loadNotifications())
-onReconnect(() => currentUser.peek() && loadNotifications())
+// Hidden, the tab reads once when it shows again (§12.7)
+onEvent('NOTIFICATION_CREATED', () => whenShown(loadNotifications))
+onReconnect(() => currentUser.peek() && whenShown(loadNotifications))

@@ -237,13 +237,30 @@ const helpSelect = `
 
 // The requests a developer sees on the help page, by tab: those they wrote,
 // accepted, or of their projects; all of them together for the other pages
+// After the cursor, newest first
+const after = `(createdAt < :value
+  OR (createdAt = :value AND helpRequestId < :id))`
+
+// The newest of one way of being concerned, from its own index: a batch of
+// the union reads at most a batch from each, never the whole table as an OR
+// would (§12.7)
+const newest = (where: string) =>
+  `SELECT helpRequestId FROM (
+    SELECT helpRequestId FROM helpRequest WHERE ${where} AND ${after}
+    ORDER BY createdAt DESC, helpRequestId DESC LIMIT :limit
+  )`
+
 const helpTabs = {
-  '': `(helpRequest.authorId = :userId
-    OR helpRequest.acceptedBy = :userId
-    OR helpRequest.targetUserId = :userId
-    OR helpRequest.projectId IN (
-      SELECT projectId FROM projectMember WHERE userId = :userId
-    ))`,
+  '': `helpRequest.helpRequestId IN (
+    ${newest('authorId = :userId')}
+    UNION ${newest('acceptedBy = :userId')}
+    UNION ${newest('targetUserId = :userId')}
+    UNION ${
+    newest(
+      'projectId IN (SELECT projectId FROM projectMember WHERE userId = :userId)',
+    )
+  }
+  )`,
   mine: `helpRequest.authorId = :userId`,
   accepted: `helpRequest.acceptedBy = :userId`,
   projects: `(helpRequest.authorId != :userId AND helpRequest.projectId IN (
@@ -272,11 +289,17 @@ const listTab = Object.fromEntries(
 ) as Record<HelpTab, (window: Batch) => HelpRow[]>
 
 // The latest requests a developer wrote or accepted: the Activity of their
-// profile (§9.1)
-const listActivity = sql<HelpRow, { userId: number }>`${helpSelect}
-  WHERE helpRequest.authorId = :userId OR helpRequest.acceptedBy = :userId
-  ORDER BY helpRequest.createdAt DESC
-  LIMIT 10
+// profile (§9.1), from the two indexes
+const listActivity = sql<
+  HelpRow,
+  { userId: number; value: number; id: number; limit: number }
+>`${helpSelect}
+  WHERE helpRequest.helpRequestId IN (
+    ${newest('authorId = :userId')}
+    UNION ${newest('acceptedBy = :userId')}
+  )
+  ORDER BY helpRequest.createdAt DESC, helpRequest.helpRequestId DESC
+  LIMIT :limit
 `.all
 
 const getOne = sql<HelpRow, number>`${helpSelect}
@@ -329,7 +352,7 @@ export const listHelpRequests = (
 }
 
 export const listHelpActivity = (userId: number) =>
-  withMedia(listActivity({ userId }))
+  withMedia(listActivity({ userId, ...readCursor(''), limit: 10 }))
 
 export const getHelpRequest = (helpRequestId: number) => {
   const row = getOne(helpRequestId)

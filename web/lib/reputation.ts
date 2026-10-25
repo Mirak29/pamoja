@@ -1,6 +1,7 @@
 import { adoptReputation } from '/web/fixtures/reputation.ts'
 import { api } from '/web/lib/api.ts'
-import { onEvent, onReconnect } from '/web/lib/realtime.ts'
+import { url } from '@01edu/signal-router'
+import { onEvent, onReconnect, whenShown } from '/web/lib/realtime.ts'
 
 // The reputation of a profile, read from the server (§8): its proofs by
 // dimension and its badges. A developer the server does not know is a demo
@@ -18,12 +19,25 @@ export const loadReputation = (login: string) =>
     adoptReputation(login, proofs, badges)
   }, () => {})
 
+// Only the profile on screen: another one reads its reputation again when
+// it opens. The entry reaches many pages at once: each waits a random moment
+// more (§12.7)
+const onScreen = () => {
+  const login = url.relativePath.slice(1).match(/^@([^/]+)/)?.[1]
+    ?.toLowerCase()
+  return [...shown].find((known) => known.toLowerCase() === login)
+}
+
 let pending: ReturnType<typeof setTimeout> | undefined
 const reload = () => {
   clearTimeout(pending)
   pending = setTimeout(
-    () => shown.forEach((login) => loadReputation(login)),
-    300,
+    () =>
+      whenShown(() => {
+        const login = onScreen()
+        login && loadReputation(login)
+      }),
+    300 + Math.random() * 1500,
   )
 }
 

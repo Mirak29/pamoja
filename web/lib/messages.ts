@@ -4,7 +4,7 @@ import { CircleAlert, MessageSquare } from '/web/assets/icons.tsx'
 import type { ReportReason } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t } from '/web/lib/language.ts'
-import { onEvent, onReconnect, onSignal } from '/web/lib/realtime.ts'
+import { onEvent, onReconnect, onSignal, whenShown } from '/web/lib/realtime.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { notify } from '/web/ui/toast.tsx'
 
@@ -12,7 +12,8 @@ import { notify } from '/web/ui/toast.tsx'
 // open on the page, read from the server and followed live by their
 // entries. The text of a message stays between the two.
 
-export type Conversation = ApiOutput['GET/api/conversations'][number]
+type Batch = ApiOutput['GET/api/conversations']
+export type Conversation = Batch['items'][number]
 type ApiThread = ApiOutput['GET/api/conversation']
 /** A message; `pending` while it is on its way, shown before the server
  * answers */
@@ -30,14 +31,41 @@ export const conversationsLoaded = signal(false)
 /** The conversation open on the page */
 export const thread = signal<Thread | null>(null)
 
+/*
+ * The list comes by batches of 20, the latest first (§12.7): the first at
+ * once and after each change, the older ones as one scrolls. The counter of
+ * the menu comes from the server, which counts beyond the batches read.
+ */
+
+/** Cursor of the older batch, empty when every conversation is read */
+export const olderConversations = signal('')
+// Older batches read: a new read of the latest leaves their cursor alone
+let olderRead = false
+// Unread messages of the server, muted ones aside, counted up to 99
+const serverUnread = signal(0)
+
 /** Messages not read yet, requests included, muted ones aside: the counter
  * of the menu */
-export const unreadMessages = computed(() =>
-  conversations.value.reduce(
-    (count, c) => count + (c.muted ? 0 : c.unread),
-    0,
-  )
-)
+export const unreadMessages = computed(() => serverUnread.value)
+
+// The latest first, as the server sorts them
+const byLatest = (a: Conversation, b: Conversation) =>
+  b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : -1)
+
+/** A batch joins those already read, each conversation once */
+const merge = (fresh: Conversation[]) => {
+  const ids = new Set(fresh.map((c) => c.id))
+  return [...fresh, ...conversations.peek().filter((c) => !ids.has(c.id))]
+    .sort(byLatest)
+}
+
+const keepOnline = (fresh: Conversation[]) => {
+  const next = new Set(online.peek())
+  for (const c of fresh) {
+    c.online ? next.add(c.with.login) : next.delete(c.with.login)
+  }
+  online.value = next
+}
 
 const failed = () =>
   notify({
@@ -109,21 +137,40 @@ const announce = (before: Conversation[], after: Conversation[]) => {
   }
 }
 
+/** The latest batch, after a change: joined to the older ones already read */
 export const loadConversations = () =>
-  api['GET/api/conversations'].fetch().then((list) => {
+  api['GET/api/conversations'].fetch({ before: '' }).then((batch) => {
     const before = conversations.peek()
-    announce(before, list)
+    announce(before, batch.items)
     // Their message arrived: they stopped typing
-    for (const c of list) {
+    for (const c of batch.items) {
       const was = before.find((b) => b.id === c.id)?.last?.at
       c.last && !c.last.mine && c.last.at !== was && stopTyping(c.id)
     }
-    conversations.value = list
-    online.value = new Set(
-      list.filter((c) => c.online).map((c) => c.with.login),
-    )
+    conversations.value = merge(batch.items)
+    keepOnline(batch.items)
+    serverUnread.value = batch.unread
+    olderRead || (olderConversations.value = batch.next)
     conversationsLoaded.value = true
   }, () => {})
+
+let reading: Promise<void> | undefined
+
+/** The next older batch, as one scrolls the list; once at a time */
+export const loadOlderConversations = () =>
+  reading ??= (async () => {
+    const before = olderConversations.peek()
+    if (!before) return
+    try {
+      const batch = await api['GET/api/conversations'].fetch({ before })
+      conversations.value = merge(batch.items)
+      keepOnline(batch.items)
+      olderRead = true
+      olderConversations.value = batch.next
+    } finally {
+      reading = undefined
+    }
+  })()
 
 /*
  * Presence (§10.6, §13.6): in memory on the server, never stored
@@ -170,6 +217,11 @@ export const tellTyping = (id: string) => {
 }
 
 const markRead = (id: string) => {
+  const read = conversations.peek().find((c) => c.id === id)
+  // The counter of the server, without what was just read
+  if (read && !read.muted) {
+    serverUnread.value = Math.max(0, serverUnread.peek() - read.unread)
+  }
   conversations.value = conversations.peek().map((c) =>
     c.id === id ? { ...c, unread: 0 } : c
   )
@@ -556,11 +608,20 @@ export const sizeLabel = (bytes: number) =>
     ? t`${Math.max(1, Math.round(bytes / 1024))} ko`
     : t`${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} Mo`
 
-/** The conversation with a developer, if there is one */
+/** The conversation with a developer, among those already read */
 export const conversationWith = (login: string) =>
   conversations.value.find((c) =>
     c.with.login.toLowerCase() === login.toLowerCase()
   )
+
+/**
+ * The key of the conversation shared with a developer, empty if none: from
+ * the batches read, otherwise from the server, which knows the older ones
+ */
+export const findConversationWith = async (login: string) =>
+  conversationWith(login)?.id ??
+    (await api['GET/api/conversation/with'].fetch({ login })
+      .catch(() => ({ id: '' }))).id
 
 // Read once the developer is known, again for each new one
 let loadedFor: number | undefined
@@ -568,6 +629,9 @@ effect(() => {
   const user = currentUser.value
   if (!user) {
     loadedFor = undefined
+    olderRead = false
+    olderConversations.value = ''
+    serverUnread.value = 0
     conversations.value = []
     conversationsLoaded.value = false
     thread.value = null
@@ -589,9 +653,11 @@ const reload = () => {
   id && shown?.id === id && !shown.jumpedTo &&
     openConversation(id).catch(() => {})
 }
+// Hidden, the tab reads once when it shows again (§12.7)
+const reloadShown = () => whenShown(reload)
 onEvent([
   'DIRECT_MESSAGE_CREATED',
   'DIRECT_MESSAGE_UPDATED',
   'CONVERSATION_UPDATED',
-], reload)
-onReconnect(reload)
+], reloadShown)
+onReconnect(reloadShown)

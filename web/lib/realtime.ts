@@ -84,6 +84,32 @@ const run = <T>(fn: (arg: T) => void, arg: T) => {
   }
 }
 
+/*
+ * The load of the server (§12.7): an entry makes the open pages read again
+ * what changed. A hidden tab reads nothing: it reads once, when it shows
+ * again, what changed while nobody looked at it.
+ */
+
+const whileHidden = new Set<() => unknown>()
+
+/** Calls `load` now if the page is shown, once it shows again otherwise */
+export const whenShown = (load: () => unknown) => {
+  if (
+    typeof document === 'undefined' || document.visibilityState !== 'hidden'
+  ) {
+    return void load()
+  }
+  whileHidden.add(load)
+}
+
+typeof document !== 'undefined' &&
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') return
+    const loads = [...whileHidden]
+    whileHidden.clear()
+    for (const load of loads) run(load, undefined)
+  })
+
 // The server sends an ack every 15 s: none for 20 s, the connection is lost
 const ACK_TIMEOUT = 20_000
 

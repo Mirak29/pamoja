@@ -6,7 +6,9 @@ import { counted } from '/web/lib/plural.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { type Login, me } from '/web/fixtures/people.ts'
-import type { ApiOutput } from '/web/lib/api.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
+import { signal } from '@preact/signals'
+import type { Issue } from '/web/fixtures/issues.ts'
 import {
   type Project,
   type ProjectRole,
@@ -233,6 +235,139 @@ const bringRepo = (key: ProjectSlug, repo: Repo) => {
 }
 
 type ApiProject = ApiOutput['GET/api/projects'][number]
+type ApiRepo = NonNullable<ApiProject['repository']>
+type ApiIssue = ApiRepo['issues']['items'][number]
+type ApiPull = ApiRepo['pullRequests']['items'][number]
+
+const toIssue = (key: ProjectSlug, issue: ApiIssue): Issue => ({
+  number: issue.number,
+  project: key,
+  title: issue.title,
+  labels: issue.labels,
+  author: issue.authorLogin as Login,
+  comments: issue.comments,
+  state: issue.state === 'closed' ? 'closed' : 'open',
+  at: issue.createdAt * 1000,
+  demo: false,
+})
+
+const toPull = (key: ProjectSlug, pull: ApiPull): PullRequest => ({
+  number: pull.number,
+  project: key,
+  title: pull.title,
+  author: pull.authorLogin as Login,
+  branch: pull.branch,
+  state: pull.state as PullRequest['state'],
+  // A review seen on GitHub: no longer waiting (§6.4)
+  review: pull.reviewed ? 'received' : 'waiting',
+  ci: 'ok',
+  at: pull.createdAt * 1000,
+  skills: pull.skills,
+  demo: false,
+})
+
+/*
+ * The issues and PRs of a project of the API come by batches of 20 (§12.7):
+ * the first with the project, the next ones as its tabs scroll
+ */
+
+type Batches = {
+  /** Cursor of the next batch, empty at the end */
+  issues: string
+  pulls: string
+  /** Older batches read: a new first batch keeps them */
+  issuesRead: boolean
+  pullsRead: boolean
+}
+
+export const projectBatches = signal<Record<string, Batches>>({})
+
+// The order of the PR tab: the open ones first, then by number
+const pullOrder = (pull: { state: string; number: number }) =>
+  (pull.state === 'open' ? 1e9 : 0) + pull.number
+
+/**
+ * Puts a batch in a list. A first batch replaces what the list holds for the
+ * project, but the older batches already read (`olderRead`) stay below it;
+ * a next batch (`first` false) only joins the others.
+ */
+const keep = <T extends { project: string; number: number }>(
+  list: T[],
+  key: string,
+  fresh: T[],
+  order: (item: T) => number,
+  { first, olderRead }: { first: boolean; olderRead: boolean },
+) => {
+  if (first) {
+    const lowest = Math.min(...fresh.map(order))
+    for (let i = list.length - 1; i >= 0; i--) {
+      const item = list[i]
+      if (item.project !== key) continue
+      if (!olderRead || order(item) >= lowest) list.splice(i, 1)
+    }
+  }
+  for (const item of fresh) {
+    const i = list.findIndex((x) =>
+      x.project === key && x.number === item.number
+    )
+    i < 0 ? list.push(item) : list[i] = item
+  }
+}
+
+const reading = new Map<string, Promise<void>>()
+
+const readBatch = (slug: string, kind: 'issues' | 'pulls') => {
+  const at = `${slug} ${kind}`
+  const current = reading.get(at)
+  if (current) return current
+  const before = projectBatches.peek()[slug]?.[kind]
+  if (!before) return Promise.resolve()
+  const key = slug as ProjectSlug
+  const read = (async () => {
+    if (kind === 'issues') {
+      const batch = await api['GET/api/project/issues'].fetch({ slug, before })
+      keep(
+        issues,
+        key,
+        batch.items.map((i) => toIssue(key, i)),
+        (i) => i.number,
+        { first: false, olderRead: true },
+      )
+      return {
+        ...projectBatches.peek()[slug],
+        issues: batch.next,
+        issuesRead: true,
+      }
+    }
+    const batch = await api['GET/api/project/pulls'].fetch({ slug, before })
+    keep(
+      pullRequests,
+      key,
+      batch.items.map((p) => toPull(key, p)),
+      pullOrder,
+      { first: false, olderRead: true },
+    )
+    return {
+      ...projectBatches.peek()[slug],
+      pulls: batch.next,
+      pullsRead: true,
+    }
+  })()
+    .then((next) => {
+      projectBatches.value = { ...projectBatches.peek(), [slug]: next }
+      projectsChanged.value++
+    })
+    .catch(() => {})
+    .finally(() => reading.delete(at))
+  reading.set(at, read)
+  return read
+}
+
+/** The next batch of the open issues of a project of the API */
+export const loadProjectIssues = (slug: string) => readBatch(slug, 'issues')
+
+/** The next batch of the PRs of a project of the API */
+export const loadProjectPulls = (slug: string) => readBatch(slug, 'pulls')
 
 export const roleNames: Record<string, ProjectRole> = {
   owner: 'Propriétaire',
@@ -256,6 +391,7 @@ const stageNames: Record<string, Project['stage']> = {
  */
 export const adoptProjects = (list: ApiProject[]) => {
   const all = projects as Record<string, Project>
+  const batches: Record<string, Batches> = {}
   for (const project of list) {
     if (all[project.slug]?.demo) {
       // Its screenshots are real as soon as the server knows the project
@@ -276,9 +412,13 @@ export const adoptProjects = (list: ApiProject[]) => {
       languages: repo?.languages.map(({ name, share }) => [name, share]),
       description: project.description,
       vision: project.vision || undefined,
-      about: repo?.readme ? readmeSummary(repo.readme) : undefined,
+      about: repo?.about || undefined,
       contributors: repo?.contributors ?? project.members.length,
-      openIssues: repo?.issues.filter((i) => i.state === 'open').length ?? 0,
+      // Counted by the server: only the first batch travels with the project
+      openIssues: repo?.openIssues ?? 0,
+      beginnerIssues: repo?.beginnerIssues ?? 0,
+      openPullRequests: repo?.openPullRequests ?? 0,
+      waitingReview: repo?.waitingReview ?? 0,
       release: repo?.release || '—',
       releasedAt: (repo?.releasedAt || project.createdAt) * 1000,
       members: project.members.map(({ login, role }) => ({
@@ -298,42 +438,33 @@ export const adoptProjects = (list: ApiProject[]) => {
       demo: false,
     }
     boards[key] ??= []
-    // The GitHub issues and PRs replace those already shown for it
-    for (const list of [issues, pullRequests] as { project: string }[][]) {
-      for (let i = list.length - 1; i >= 0; i--) {
-        list[i].project === key && list.splice(i, 1)
-      }
-    }
-    for (const issue of repo?.issues ?? []) {
-      issues.push({
-        number: issue.number,
-        project: key,
-        title: issue.title,
-        labels: issue.labels,
-        author: issue.authorLogin as Login,
-        comments: issue.comments,
-        state: issue.state === 'closed' ? 'closed' : 'open',
-        at: issue.createdAt * 1000,
-        demo: false,
-      })
-    }
-    for (const pull of repo?.pullRequests ?? []) {
-      pullRequests.push({
-        number: pull.number,
-        project: key,
-        title: pull.title,
-        author: pull.authorLogin as Login,
-        branch: pull.branch,
-        state: pull.state as PullRequest['state'],
-        // A review seen on GitHub: no longer waiting (§6.4)
-        review: pull.reviewed ? 'received' : 'waiting',
-        ci: 'ok',
-        at: pull.createdAt * 1000,
-        skills: pull.skills,
-        demo: false,
-      })
+    // The first batch of the GitHub issues and PRs replaces the one shown;
+    // the older batches the tabs read stay, with their cursor
+    const known = projectBatches.peek()[key]
+    const issuesRead = known?.issuesRead ?? false
+    const pullsRead = known?.pullsRead ?? false
+    keep(
+      issues,
+      key,
+      (repo?.issues.items ?? []).map((i) => toIssue(key, i)),
+      (i) => i.number,
+      { first: true, olderRead: issuesRead },
+    )
+    keep(
+      pullRequests,
+      key,
+      (repo?.pullRequests.items ?? []).map((p) => toPull(key, p)),
+      pullOrder,
+      { first: true, olderRead: pullsRead },
+    )
+    batches[key] = {
+      issues: issuesRead ? known!.issues : repo?.issues.next ?? '',
+      pulls: pullsRead ? known!.pulls : repo?.pullRequests.next ?? '',
+      issuesRead,
+      pullsRead,
     }
   }
+  projectBatches.value = { ...projectBatches.peek(), ...batches }
   projectsChanged.value++
 }
 

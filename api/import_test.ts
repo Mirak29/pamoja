@@ -191,12 +191,13 @@ Deno.test('import: the project, its repo, issues and PRs', async () => {
   assertEquals(mine.repository.syncMode, 'poll')
   // The PR listed among the issues is not an issue
   assertEquals(
-    mine.repository.issues.map((i: { number: number }) => i.number),
+    mine.repository.issues.items.map((i: { number: number }) => i.number),
     [
       44,
     ],
   )
-  assertEquals(mine.repository.pullRequests[0].branch, 'feat/81')
+  assertEquals(mine.repository.openIssues, 1)
+  assertEquals(mine.repository.pullRequests.items[0].branch, 'feat/81')
   assertEquals(
     db.prepare(`SELECT count(*) n FROM entry WHERE type = 5`).get(),
     { n: 1 },
@@ -305,9 +306,11 @@ Deno.test('import: the refresh applies changes, then a 304 changes nothing', asy
   assertEquals(await refreshRepository(repositoryId), true)
   const [mine] = (await call('/api/projects', { cookie })).json
   assertEquals(mine.repository.stars, 230)
-  assertEquals(mine.repository.issues[0].state, 'closed')
+  // Closed: counted out, and out of the open issues listed
+  assertEquals(mine.repository.openIssues, 0)
+  assertEquals(mine.repository.issues.items, [])
   assertEquals(
-    mine.repository.pullRequests.find((p: { number: number }) =>
+    mine.repository.pullRequests.items.find((p: { number: number }) =>
       p.number === 81
     ).state,
     'merged',

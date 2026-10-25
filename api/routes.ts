@@ -15,7 +15,11 @@ import {
   listRepositories,
   previewRepository,
 } from '/api/import.ts'
-import { listMyProjects } from '/api/projects.ts'
+import {
+  listMyProjects,
+  listProjectIssues,
+  listProjectPulls,
+} from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
 import { getPublicProfile, getPublicProfileOfGithubId } from '/api/profile.ts'
@@ -24,6 +28,7 @@ import {
   acceptConversation,
   archiveConversation,
   conversationIdOf,
+  conversationWith,
   declineConversation,
   deleteMessage,
   editMessage,
@@ -215,6 +220,43 @@ const person = OBJ({
 // A conversation is known by its public id, its address (PAM-125): the
 // number of the database never reaches the page
 const conversationKey = STR('Public id of the conversation, its address')
+
+// Issues and PRs of a project, by batches (§12.7)
+const issueBatch = OBJ({
+  items: ARR(
+    OBJ({
+      number: NUM(),
+      title: STR(),
+      state: STR(),
+      labels: ARR(STR()),
+      authorLogin: STR(),
+      comments: NUM(),
+      createdAt: NUM(),
+    }),
+    'Open issues, newest first',
+  ),
+  next: STR('Cursor of the next batch, empty at the end'),
+})
+
+const pullBatch = OBJ({
+  items: ARR(
+    OBJ({
+      number: NUM(),
+      title: STR(),
+      state: STR('open, merged or closed'),
+      authorLogin: STR(),
+      branch: STR(),
+      createdAt: NUM(),
+      skills: ARR(
+        STR('Skill of the vocabulary'),
+        'Languages of the changed files, empty until read (§7.1)',
+      ),
+      reviewed: BOOL('A review was submitted on GitHub'),
+    }),
+    'The open ones first, then the others, newest first',
+  ),
+  next: STR('Cursor of the next batch, empty at the end'),
+})
 
 const conversationRights = {
   status: STR('pending, accepted; a declined request still reads pending'),
@@ -656,7 +698,7 @@ const defs = {
           owner: STR(),
           name: STR(),
           syncMode: STR('poll or live'),
-          readme: STR(),
+          about: STR('First paragraphs of the README, 600 characters at most'),
           stars: NUM(),
           topics: ARR(STR()),
           languages: ARR(OBJ({ name: STR(), share: NUM() })),
@@ -664,33 +706,42 @@ const defs = {
           release: STR(),
           releasedAt: NUM(),
           lastSyncedAt: NUM(),
-          issues: ARR(OBJ({
-            number: NUM(),
-            title: STR(),
-            state: STR(),
-            labels: ARR(STR()),
-            authorLogin: STR(),
-            comments: NUM(),
-            createdAt: NUM(),
-          })),
-          pullRequests: ARR(OBJ({
-            number: NUM(),
-            title: STR(),
-            state: STR('open, merged or closed'),
-            authorLogin: STR(),
-            branch: STR(),
-            createdAt: NUM(),
-            skills: ARR(
-              STR('Skill of the vocabulary'),
-              'Languages of the changed files, empty until read (§7.1)',
-            ),
-            reviewed: BOOL('A review was submitted on GitHub'),
-          })),
+          openIssues: NUM('Open issues, all of them'),
+          beginnerIssues: NUM('Open issues labelled good first issue'),
+          openPullRequests: NUM('Open PRs, all of them'),
+          waitingReview: NUM('Open PRs with no review yet'),
+          issues: issueBatch,
+          pullRequests: pullBatch,
         })),
       }),
       'Projects the developer is a member of',
     ),
-    description: 'The projects of the signed-in developer',
+    description:
+      'The projects of the signed-in developer, with the first batch of their issues and PRs',
+  }),
+
+  'GET/api/project/issues': route({
+    authorize: withSession,
+    fn: (ctx, { slug, before }) =>
+      listProjectIssues(ctx.session.userId, slug, before),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+    }),
+    output: issueBatch,
+    description: 'The open issues of a project, 20 at a time',
+  }),
+
+  'GET/api/project/pulls': route({
+    authorize: withSession,
+    fn: (ctx, { slug, before }) =>
+      listProjectPulls(ctx.session.userId, slug, before),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      before: STR('Cursor of the next batch, empty for the first (§12.7)'),
+    }),
+    output: pullBatch,
+    description: 'The PRs of a project, the open ones first, 20 at a time',
   }),
 
   /*
@@ -936,29 +987,46 @@ const defs = {
    */
   'GET/api/conversations': route({
     authorize: withSession,
-    fn: (ctx) => listConversations(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        id: conversationKey,
-        with: person,
-        ...conversationRights,
-        updatedAt: NUM('Time of the last message'),
-        last: optional(
-          OBJ({
-            excerpt: STR('Beginning of the last message, as plain text'),
-            deleted: BOOL('The last message was deleted'),
-            mine: BOOL('Written by the developer'),
-            at: NUM('When'),
-          }),
-        ),
-        unread: NUM('Messages of the other one not read yet'),
-        muted: BOOL('No toast nor count'),
-        archived: BOOL('Out of the main list'),
-        online: BOOL('The other one has Pamoja open'),
-      }),
-      'The conversations, the latest first',
-    ),
+    fn: (ctx, { before }) => listConversations(ctx.session.userId, before),
+    input: OBJ({
+      before: STR('Cursor of the next batch, empty for the latest (§12.7)'),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          id: conversationKey,
+          with: person,
+          ...conversationRights,
+          updatedAt: NUM('Time of the last message'),
+          last: optional(
+            OBJ({
+              excerpt: STR('Beginning of the last message, as plain text'),
+              deleted: BOOL('The last message was deleted'),
+              mine: BOOL('Written by the developer'),
+              at: NUM('When'),
+            }),
+          ),
+          unread: NUM('Messages of the other one not read yet'),
+          muted: BOOL('No toast nor count'),
+          archived: BOOL('Out of the main list'),
+          online: BOOL('The other one has Pamoja open'),
+        }),
+        'The conversations, the latest first, 20 at a time',
+      ),
+      next: STR('Cursor of the next batch, empty at the end'),
+      unread: NUM('Unread messages, muted ones aside, counted up to 99'),
+    }),
     description: 'The conversations of the developer, requests included',
+  }),
+
+  'GET/api/conversation/with': route({
+    authorize: withSession,
+    fn: (ctx, { login }) => ({
+      id: conversationWith(ctx.session.userId, login),
+    }),
+    input: OBJ({ login: STR('Login of the other developer') }),
+    output: OBJ({ id: STR('Key of the conversation shared, empty if none') }),
+    description: 'The conversation shared with a developer, for « Écrire »',
   }),
 
   'GET/api/conversation': route({

@@ -12,6 +12,7 @@ import {
   type Preview,
 } from '/api/link-preview.ts'
 import { attach, mediaOf, removeMediaOf } from '/api/media.ts'
+import { batch, readCursor } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import { isOnline, sendTo } from '/api/presence.ts'
 import { userIdOfGithubId, userIdOfLogin } from '/api/user.ts'
@@ -520,7 +521,28 @@ type ListRow = ConversationRow & {
   unread: number
 }
 
-const listMine = sql<ListRow, number>`
+// By batches of 20, the latest first (§12.7). The ids of the batch first,
+// small rows cheap to sort; then the details of those 20 only: the last
+// message and the unread ones are never computed for the whole list
+const BATCH = 20
+
+const listBatch = sql<
+  { conversationId: number; updatedAt: number },
+  { me: number; value: number; id: number; limit: number }
+>`
+  SELECT conversation.conversationId, conversation.updatedAt
+  FROM conversationMember AS me
+  JOIN conversation ON conversation.conversationId = me.conversationId
+  WHERE me.userId = :me
+    -- A request they declined is gone from their list
+    AND NOT (conversation.startedBy != :me AND conversation.status = 'declined')
+    AND (conversation.updatedAt < :value OR (conversation.updatedAt = :value
+      AND conversation.conversationId < :id))
+  ORDER BY conversation.updatedAt DESC, conversation.conversationId DESC
+  LIMIT :limit
+`.all
+
+const listMine = sql<ListRow, { me: number; ids: string }>`
   SELECT conversation.*, other.userId AS other,
     user.githubUsername AS login, profile.displayName AS name, user.avatarUrl,
     last.body AS lastBody, last.authorId AS lastAuthor,
@@ -541,9 +563,27 @@ const listMine = sql<ListRow, number>`
     WHERE conversationId = conversation.conversationId
     ORDER BY createdAt DESC, directMessageId DESC LIMIT 1
   )
-  WHERE me.userId = ?
-  ORDER BY conversation.updatedAt DESC
+  WHERE me.userId = :me
+    AND conversation.conversationId IN (SELECT value FROM json_each(:ids))
+  ORDER BY conversation.updatedAt DESC, conversation.conversationId DESC
 `.all
+
+// The counter of the menu: unread messages, muted conversations aside. It
+// says « 9+ » past 9, so the count stops at 99 instead of reading them all
+const countUnread = sql<{ n: number }, number>`
+  SELECT count(*) AS n FROM (
+    SELECT 1 FROM conversationMember AS me
+    JOIN conversation ON conversation.conversationId = me.conversationId
+    JOIN directMessage AS message
+      ON message.conversationId = me.conversationId
+        AND message.authorId != me.userId AND message.deletedAt IS NULL
+        AND message.createdAt > coalesce(me.lastReadAt, 0)
+    WHERE me.userId = ? AND me.mutedAt IS NULL
+      AND NOT (conversation.startedBy != me.userId
+        AND conversation.status = 'declined')
+    LIMIT 99
+  )
+`.get
 
 // A message as plain text, without the marks of its Markdown
 const plain = (body: string) =>
@@ -563,32 +603,58 @@ export const excerpt = (body: string) => {
 }
 
 /**
- * The conversations of the developer, the latest first. A request they
- * declined is gone from their list; a request someone sent them waits apart.
+ * A batch of the conversations of the developer, the latest first, from a
+ * cursor, with the counter of the menu. A request they declined is gone from
+ * their list; a request someone sent them waits apart.
  */
-export const listConversations = (me: number) =>
-  listMine(me).flatMap((row) => {
-    if (row.startedBy !== me && row.status === 'declined') return []
-    const rights = rightsOf(row, me)
-    return [{
-      id: row.publicId,
-      with: { login: row.login, name: row.name, avatarUrl: row.avatarUrl },
-      ...rights,
-      updatedAt: row.updatedAt,
-      last: row.lastAt === null ? null : {
-        excerpt: row.lastDeleted ? '' : excerpt(row.lastBody ?? ''),
-        deleted: !!row.lastDeleted,
-        mine: row.lastAuthor === me,
-        at: row.lastAt,
-      },
-      unread: row.unread,
-      muted: !!row.mutedAt,
-      archived: !!row.archivedAt,
-      // Seen only in an accepted conversation with no block (§10.6)
-      online: row.status === 'accepted' && rights.canWrite &&
-        isOnline(row.other),
-    }]
-  })
+export const listConversations = (me: number, before = '') => {
+  const { value, id } = readCursor(before)
+  const { items, next } = batch(
+    listBatch({ me, value, id, limit: BATCH + 1 }),
+    BATCH,
+    (row) => ({ value: row.updatedAt, id: row.conversationId }),
+  )
+  const ids = JSON.stringify(items.map((row) => row.conversationId))
+  return {
+    items: listMine({ me, ids }).map((row) => shownConversation(row, me)),
+    next,
+    unread: countUnread(me)!.n,
+  }
+}
+
+const shownConversation = (row: ListRow, me: number) => {
+  const rights = rightsOf(row, me)
+  return {
+    id: row.publicId,
+    with: { login: row.login, name: row.name, avatarUrl: row.avatarUrl },
+    ...rights,
+    updatedAt: row.updatedAt,
+    last: row.lastAt === null ? null : {
+      excerpt: row.lastDeleted ? '' : excerpt(row.lastBody ?? ''),
+      deleted: !!row.lastDeleted,
+      mine: row.lastAuthor === me,
+      at: row.lastAt,
+    },
+    unread: row.unread,
+    muted: !!row.mutedAt,
+    archived: !!row.archivedAt,
+    // Seen only in an accepted conversation with no block (§10.6)
+    online: row.status === 'accepted' && rights.canWrite &&
+      isOnline(row.other),
+  }
+}
+
+/**
+ * The conversation shared with a developer, for « Écrire » on their profile:
+ * the page knows only the latest conversations. Empty if none, or if it is
+ * a request the developer declined.
+ */
+export const conversationWith = (me: number, login: string) => {
+  const other = userIdOfLogin(login)
+  const row = other && getBetween({ a: me, b: other })
+  if (!row || (row.startedBy !== me && row.status === 'declined')) return ''
+  return row.publicId
+}
 
 // « En train d'écrire… » (§10.6): sent to the other one at once, never
 // stored, at most once every 2 s by conversation

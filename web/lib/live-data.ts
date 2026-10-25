@@ -1,4 +1,4 @@
-import { onEvent, onReconnect } from '/web/lib/realtime.ts'
+import { onEvent, onReconnect, whenShown } from '/web/lib/realtime.ts'
 import { loadHelpRequests, loadProjects } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
 
@@ -6,17 +6,23 @@ import { reloadOpenedChannels } from '/web/lib/channels.ts'
 // entry makes the page read it again. A burst of entries, like a merge with
 // its CI, is read once.
 
-const debounced = (load: () => unknown) => {
+// An entry of a project reaches every member at once: each one waits a
+// random moment more, so that their pages do not all ask the server in the
+// same instant (§12.7)
+const debounced = (load: () => unknown, spread = 0) => {
   let pending: ReturnType<typeof setTimeout> | undefined
   return () => {
     clearTimeout(pending)
-    pending = setTimeout(load, 300)
+    pending = setTimeout(
+      () => whenShown(load),
+      300 + Math.random() * spread,
+    )
   }
 }
 
 // The projects follow GitHub: a PR, an issue, the CI, a release, a push, the
 // 15 min sync
-const reloadProjects = debounced(loadProjects)
+const reloadProjects = debounced(loadProjects, 1500)
 onEvent([
   'PROJECT_UPDATED',
   'PROJECT_MEMBER_JOINED',

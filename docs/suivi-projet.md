@@ -741,6 +741,30 @@ Vérifié dans le navigateur avec `?stress` (2 000 posts, 3 000 développeurs) :
 - **Livrable** : `web/ui/infinite-list.tsx` ; `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, traductions ; §12.7
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Charge du serveur
+
+À la relecture de PAM-529 et PAM-530, une partie de la charge restait : ces tâches limitaient surtout l'affichage. Audit mesuré sur la base de `deno task stress` (5 000 développeurs, 1 200 conversations, un dépôt de 3 000 issues et 2 000 PRs), plans de requête SQLite compris, puis corrections, chacune vérifiée.
+
+Ce que l'audit a trouvé :
+
+- `GET/api/projects` renvoyait 909 Ko : tous les projets avec tous leurs membres, issues, PRs et le README entier, relu par chaque membre à chaque événement de PR ou de CI.
+- `GET/api/conversations` renvoyait les 1 200 conversations en 148 ms, en calculant le dernier message et les non lus de chacune, et elle était relue à chaque message.
+- Les requêtes par lots de PAM-529 lisaient toutes les lignes de l'utilisateur puis les triaient avant d'en garder 20 (`USE TEMP B-TREE FOR ORDER BY`) ; « Acceptées par moi » parcourait toute la table, faute d'index ; la liste de toutes les demandes d'aide, lue à chaque connexion, parcourait toute la table à cause d'un `OR`.
+- Aucune réponse n'était compressée : la compression de `Deno.serve` est désactivée par défaut.
+
+Ce qui a changé :
+
+- **Index composés** qui suivent chaque requête par lots (notifications, onglets de l'aide, « Pour moi », fil d'une conversation, issues et PRs d'un projet, dont un index sur expression pour les PRs ouvertes d'abord) ; les `OR` deviennent des `UNION` de lectures d'index limitées au lot (aide, activité d'un profil). Plus aucun tri de la liste entière dans les plans : la liste de toutes les demandes d'aide prend 0,3 ms.
+- **Projets** : la liste porte des comptes exacts (issues ouvertes, good first issues, PRs ouvertes, PRs en attente de review), le premier lot d'issues ouvertes et de PRs, et le résumé du README. Les onglets Issues et PRs lisent la suite par lots au défilement (`GET/api/project/issues`, `GET/api/project/pulls`) ; un rechargement garde les lots déjà lus. 909 Ko deviennent 96 Ko, 3,6 Ko compressés.
+- **Conversations** : par lots de 20 ; les ids du lot d'abord, puis le détail de ces 20 seulement. Le compteur du menu vient du serveur et s'arrête à 99, puisque le menu affiche « 9+ ». « Écrire » depuis un profil retrouve une conversation plus ancienne que les lots lus (`GET/api/conversation/with`). 433 Ko en 148 ms deviennent 7 Ko en 6 ms, 0,8 Ko compressés.
+- **Temps réel** : un message relit le premier lot de la liste, pas toute la liste. Un onglet caché ne relit rien et relit une fois en redevenant visible. Un événement de projet fait attendre chaque membre un moment au hasard (jusqu'à 1,5 s) avant de relire. La réputation n'est relue que pour le profil à l'écran, plus pour tous ceux vus depuis l'ouverture.
+- **Compression** par Deno en dev comme en production, jamais pour le flux SSE (`no-transform`). **Cache** : morceaux du bundle hachés gardés un an, page et fichiers sans hash revalidés par ETag. Caddy ne compresse pas une seconde fois (§17.4).
+
+Vérifié dans le navigateur sur la base de charge : conversations par lots, y compris au défilement de leur colonne, compteur « 9+ » du serveur, « Écrire » vers une conversation non chargée, onglets d'un dépôt de 3 000 issues avec « 1334 PRs ouvertes · 1334 en attente de review » pour 40 PRs chargées. Sources consultées : la documentation SQLite sur le [planificateur](https://www.sqlite.org/queryplanner.html) et sur les [nombreuses petites requêtes](https://www.sqlite.org/np1queryprob.html), et la [documentation de `Deno.serve`](https://docs.deno.com/runtime/fundamentals/http_server/) sur la compression automatique.
+
+- **Livrable** : `api/schema.ts` (index), `api/help.ts`, `api/messages.ts`, `api/projects.ts`, `api/routes.ts`, `api/events.ts`, `prod-server.ts`, `.env-dev`, tests (`projects_test.ts`, `messages_test.ts`, `import_test.ts`, `help_test.ts`) ; `web/lib/messages.ts`, `web/lib/realtime.ts` (`whenShown`), `web/lib/live-data.ts`, `web/lib/notifications.ts`, `web/lib/reputation.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/ui/infinite-list.tsx` (défilement d'une colonne), `web/ui/project-card.tsx`, `web/pages/messages-page.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx` ; §12.7, §15, §17.4
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -14,6 +14,8 @@ import { type Status, StatusBadge, statusLabel } from '/web/ui/badge.tsx'
 import { githubUrl } from '/web/lib/links.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
+import { loadProjectPulls, projectBatches } from '/web/fixtures/repos.ts'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { t, translate } from '/web/lib/language.ts'
@@ -118,49 +120,59 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
       b.number - a.number
     )
   const open = prs.filter((pr) => pr.state === 'open')
-  const waiting = open.filter((pr) => pr.review === 'waiting').length
+  // Counted by the server for a project of the API: the batches read may
+  // not hold every PR yet (§12.7)
+  const openCount = project.openPullRequests ?? open.length
+  const waiting = project.waitingReview ??
+    open.filter((pr) => pr.review === 'waiting').length
+  const more = projectBatches.value[project.slug]?.pulls
   const opened = prs.find((pr) => url.params.dialog === `pr-${pr.number}`)
   return (
     <section class='slab mr-2 overflow-hidden'>
       <div class='flex px-5 pt-[18px] pb-4'>
         <Eyebrow>
-          {counted(open.length, 'PR ouverte', 'PRs ouvertes')} · {waiting}{' '}
+          {counted(openCount, 'PR ouverte', 'PRs ouvertes')} · {waiting}{' '}
           en attente de review
         </Eyebrow>
       </div>
-      {prs.map((pr) => (
-        <A
-          key={pr.number}
-          params={{ dialog: `pr-${pr.number}` }}
-          class='flex w-full flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-left text-ink no-underline hover:bg-surface-000 hover:no-underline'
-        >
-          <span
-            class={`tile flex size-[34px] flex-none items-center justify-center ${
-              pr.state === 'merged' ? 'text-indigo' : 'text-verified'
-            }`}
+      <InfiniteList
+        more={!!more}
+        onMore={() => loadProjectPulls(project.slug)}
+      >
+        {prs.map((pr) => (
+          <A
+            key={pr.number}
+            params={{ dialog: `pr-${pr.number}` }}
+            class='flex w-full flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-left text-ink no-underline hover:bg-surface-000 hover:no-underline'
           >
-            {pr.state === 'merged'
-              ? <GitMerge class='size-[18px]' />
-              : <GitPullRequest class='size-[18px]' />}
-          </span>
-          <span class='flex min-w-[220px] flex-1 flex-col gap-1'>
-            <span class='font-semibold'>
-              <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
-                #{pr.number}
-              </span>{' '}
-              {pr.title}
+            <span
+              class={`tile flex size-[34px] flex-none items-center justify-center ${
+                pr.state === 'merged' ? 'text-indigo' : 'text-verified'
+              }`}
+            >
+              {pr.state === 'merged'
+                ? <GitMerge class='size-[18px]' />
+                : <GitPullRequest class='size-[18px]' />}
             </span>
-            <span class='text-[13px] leading-5 text-ink-muted'>
-              {firstName(pr.author)} · {pr.branch} ·{' '}
-              {pr.state === 'merged' ? 'mergée' : t`ouverte ${ago(pr.at)}`}
+            <span class='flex min-w-[220px] flex-1 flex-col gap-1'>
+              <span class='font-semibold'>
+                <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
+                  #{pr.number}
+                </span>{' '}
+                {pr.title}
+              </span>
+              <span class='text-[13px] leading-5 text-ink-muted'>
+                {firstName(pr.author)} · {pr.branch} ·{' '}
+                {pr.state === 'merged' ? 'mergée' : t`ouverte ${ago(pr.at)}`}
+              </span>
             </span>
-          </span>
-          <span class='flex flex-wrap gap-1.5'>
-            <StatusBadge status={reviewStatus(pr)} />
-            <StatusBadge status={pr.ci === 'ok' ? 'ci-ok' : 'ci-failed'} />
-          </span>
-        </A>
-      ))}
+            <span class='flex flex-wrap gap-1.5'>
+              <StatusBadge status={reviewStatus(pr)} />
+              <StatusBadge status={pr.ci === 'ok' ? 'ci-ok' : 'ci-failed'} />
+            </span>
+          </A>
+        ))}
+      </InfiniteList>
       {!prs.length && (
         <p class='border-t border-line px-6 py-10 text-center text-ink-muted'>
           Aucune pull request sur ce projet pour l’instant.
