@@ -45,7 +45,7 @@ import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { countsOf, emblemOf } from '/web/pages/communities/communities-page.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
-import { t } from '/web/lib/language.ts'
+import { dotted, t } from '/web/lib/language.ts'
 
 const tabs = [
   ['', 'Fil'],
@@ -154,12 +154,12 @@ const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
         ))}
       </div>
       <span class='text-[13px] leading-5 text-ink-muted'>
-        {[
-          personOf(request.author).name,
+        {dotted([
+          <span translate={false}>{personOf(request.author).name}</span>,
           ago(request.at),
           request.duration,
           request.level,
-        ].filter(Boolean).join(' · ')}
+        ])}
       </span>
     </div>
     <div class='flex flex-none flex-col items-end gap-1.5'>

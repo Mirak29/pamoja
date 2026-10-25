@@ -12,7 +12,9 @@ dist/
 # dependencies
 node_modules/
 
-# local env and editor
+# local env, editor and coding agents (their context stays out of the repo)
+AGENTS.md
+.claude/
 .env
 .env-local
 .vscode

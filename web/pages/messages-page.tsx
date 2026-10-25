@@ -864,7 +864,7 @@ const Bubble = (
       )}
       <span class='flex flex-wrap items-center gap-1 text-[12px] text-ink-muted'>
         <span class='px-1'>
-          {message.pending ? 'Envoi…' : ago(message.at * 1000)}
+          {message.pending ? 'Envoi en cours…' : ago(message.at * 1000)}
           {message.edited && <span class='ml-1'>· modifié</span>}
         </span>
         {canAct && !editing && (

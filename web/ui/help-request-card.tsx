@@ -9,7 +9,7 @@ import {
   StatusBadge,
   VerifiedBadge,
 } from '/web/ui/badge.tsx'
-import { t } from '/web/lib/language.ts'
+import { dotted, t } from '/web/lib/language.ts'
 
 /**
  * A help request in a list: its match score for the viewer when given,
@@ -65,12 +65,12 @@ export const HelpRequestCard = (
           ))}
         </div>
         <span class='text-[13px] leading-5 text-ink-muted'>
-          {[
-            personOf(request.author).name,
+          {dotted([
+            <span translate={false}>{personOf(request.author).name}</span>,
             ago(request.at),
             request.duration,
             request.level,
-          ].filter(Boolean).join(' · ')}
+          ])}
           {helper && (request.status === 'completed'
             ? t` · aidé par ${helper}`
             : t` · pris par ${helper}`)}

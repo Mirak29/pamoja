@@ -46,7 +46,7 @@ import { Markdown } from '/web/ui/rich-text.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
-import { t } from '/web/lib/language.ts'
+import { dotted, t } from '/web/lib/language.ts'
 import { retryAfterOf } from '/web/lib/api.ts'
 import { waitLabel } from '/web/lib/messages.ts'
 import { loadHelpDetail, playOnServer, sendOnServer } from '/web/lib/help.ts'
@@ -884,8 +884,7 @@ export const HelpDetail = ({ id }: { id: string }) => {
               {personOf(request.author).name}
             </A>
             <span>
-              {[ago(request.at), request.level, request.duration]
-                .filter(Boolean).join(' · ')}
+              {dotted([ago(request.at), request.level, request.duration])}
             </span>
             {!isMe(request.author) && (
               // The report dialog comes with PAM-516

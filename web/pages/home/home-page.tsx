@@ -54,7 +54,7 @@ import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { PostCard } from '/web/ui/post.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { notify } from '/web/ui/toast.tsx'
-import { t } from '/web/lib/language.ts'
+import { dotted, t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
@@ -163,15 +163,19 @@ const HelpInsert = (
       <span translate={false} class='wrap-anywhere'>{request.title}</span>
     </A>
     <span class='text-[13px] text-ink-muted'>
-      {[
+      {dotted([
         request.type,
         request.project &&
-        (projects[request.project]?.name ?? request.project),
-        personOf(request.author).name,
+        (
+          <span translate={false}>
+            {projects[request.project]?.name ?? request.project}
+          </span>
+        ),
+        <span translate={false}>{personOf(request.author).name}</span>,
         ago(request.at),
         request.duration,
         request.level,
-      ].filter(Boolean).join(' · ')}
+      ])}
     </span>
     <div class='flex flex-wrap gap-1.5'>
       {request.skills.map((skill) => (

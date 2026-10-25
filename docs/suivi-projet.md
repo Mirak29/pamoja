@@ -613,6 +613,20 @@ Suite du test de charge, avec des données réalistes (demandes `platform`, proj
 - **Livrable** : `api/help.ts`, `api/routes.ts`, `web/ui/layout.tsx`, `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/search-page.tsx`, `web/pages/home/home-page.tsx`, `web/ui/help-request-card.tsx`, `web/ui/command-palette.tsx`, `web/fixtures/help.ts`, `web/fixtures/reports.ts`
 - **Par** : @Mirak29
 
+### 2026-10-25 · Corrections après relecture du test de charge
+
+Relecture de la branche du test de charge, quatre corrections et un outil rendu rejouable :
+
+- **Une conversation en remplaçait une autre** : envoyer un message puis ouvrir tout de suite une autre conversation pouvait laisser un cadre vide, quand la relecture de la première arrivait en dernier. Une réponse arrivée après un changement de conversation est maintenant ignorée (lecture du fil comme saut vers un résultat de recherche). Vérifié en retardant exprès la réponse de 2,5 s.
+- **Un envoi refusé restait dans la liste** : la liste affichait « Toi : … » pour un message refusé (limite, réseau). Elle reprend l'état du serveur après un échec, et le texte revient dans le champ.
+- **L'anglais des cartes** : les lignes « type · date · durée · niveau » étaient jointes en une seule chaîne, qu'aucune entrée de traduction ne reconnaissait. `dotted` (`web/lib/language.ts`) garde les morceaux séparés : chacun est traduit, et les noms de personnes et de projets restent tels quels. Vérifié : « 5 h ago · Intermediate · ~30 min », « Beta · Very active ».
+- **« Envoi… »** : un message en route disait « Uploading… » en anglais, la clé de l'envoi d'un fichier ; il dit « Envoi en cours… », « Sending… ».
+- **Test de charge rejouable** : `deno task stress` remplit la base de dev après le seed, une seule fois, et refuse la production avant d'ouvrir la base ; `?stress` ajoute les fixtures en volume dans le bundle de dev seulement, jusqu'à `?stress=0`. Le script est formaté : la CI bloquait dessus.
+- **Contexte des agents de code** : `AGENTS.md` et `.claude/launch.json` sortent du repo (gardés sur le disque, ignorés par git), comme `CLAUDE.md`.
+
+- **Livrable** : `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/lib/language.ts` (`dotted`), `web/ui/help-request-card.tsx`, `web/ui/project-card.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/communities/community-page.tsx`, `task-db-stress.ts`, `api/stress.ts`, `web/stress-fixtures.ts`, `web/debug-app.ts`, `deno.json`, `.gitignore`, `web/lib/english.ts` ; §14
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

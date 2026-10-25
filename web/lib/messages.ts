@@ -182,6 +182,8 @@ const markRead = (id: string) => {
  */
 export const openConversation = async (id: string) => {
   const fresh = await api['GET/api/conversation'].fetch({ id, before: '' })
+  // Answered after the page went to another conversation: that one stays
+  if (openId() !== id) return thread.peek()
   const shown = thread.peek()
   const same = shown?.id === id && !shown.jumpedTo
   const older = same
@@ -190,14 +192,14 @@ export const openConversation = async (id: string) => {
     )
     : []
   // Still on their way: they stay after what the server has
-  const sending = same
+  const onTheirWay = same
     ? shown!.messages.filter((m) => m.pending && inFlight.has(m.id))
     : []
   thread.value = {
     ...fresh,
     // The « Nouveaux messages » line stays where it was while it is open
     readUpTo: same ? shown!.readUpTo : fresh.readUpTo,
-    messages: [...older, ...fresh.messages, ...sending],
+    messages: [...older, ...fresh.messages, ...onTheirWay],
     more: older.length ? shown!.more : fresh.more,
   }
   fresh.incoming || markRead(id)
@@ -210,6 +212,7 @@ export const openAt = async (id: string, messageId: number) => {
     id,
     before: String(messageId + 1),
   })
+  if (openId() !== id) return
   thread.value = { ...page, jumpedTo: messageId }
 }
 
@@ -332,6 +335,8 @@ export const sendMessage = async (
     await sent
   } catch (err) {
     dropPending(local)
+    // The list showed it as the last message: the server's list comes back
+    loadConversations()
     if (tellLimit(err)) return false
     err instanceof Error && /Waiting|cannot write/.test(err.message)
       ? await openConversation(id)
