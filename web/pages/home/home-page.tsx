@@ -167,11 +167,13 @@ const HelpInsert = (
         request.type,
         request.project &&
         (
-          <span translate={false}>
+          <span key='project' translate={false}>
             {projects[request.project]?.name ?? request.project}
           </span>
         ),
-        <span translate={false}>{personOf(request.author).name}</span>,
+        <span key='author' translate={false}>
+          {personOf(request.author).name}
+        </span>,
         ago(request.at),
         request.duration,
         request.level,

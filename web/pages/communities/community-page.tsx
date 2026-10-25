@@ -155,7 +155,9 @@ const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
       </div>
       <span class='text-[13px] leading-5 text-ink-muted'>
         {dotted([
-          <span translate={false}>{personOf(request.author).name}</span>,
+          <span key='author' translate={false}>
+            {personOf(request.author).name}
+          </span>,
           ago(request.at),
           request.duration,
           request.level,

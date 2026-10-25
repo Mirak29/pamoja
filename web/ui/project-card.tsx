@@ -41,7 +41,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
               project.stage,
               project.activity,
               (owner.city || owner.country) && (
-                <span translate={false}>
+                <span key='place' translate={false}>
                   {[owner.city, owner.country].filter(Boolean).join(', ')}
                 </span>
               ),
