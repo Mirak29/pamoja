@@ -350,11 +350,14 @@ export const CommunityPage = () => {
       )}
       {current === 'projects' && (
         <>
-          <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'>
-            {projectList.map((project) => (
+          <Batched
+            items={projectList}
+            reset={slug}
+            class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'
+            row={(project) => (
               <ProjectCard key={project.slug} project={project} />
-            ))}
-          </div>
+            )}
+          />
           {!projectList.length && (
             <Empty>Aucun projet lié à cette communauté pour l’instant.</Empty>
           )}
@@ -362,11 +365,12 @@ export const CommunityPage = () => {
       )}
       {current === 'help' && (
         <section class='slab mr-2 overflow-hidden'>
-          <div class='-mt-px'>
-            {help.map((request) => (
-              <HelpRow key={request.id} request={request} />
-            ))}
-          </div>
+          <Batched
+            items={help}
+            reset={slug}
+            class='-mt-px'
+            row={(request) => <HelpRow key={request.id} request={request} />}
+          />
           {!help.length && (
             <div class='px-5 py-6 text-[14px] text-ink-muted'>
               Aucune demande d’aide ouverte ici.

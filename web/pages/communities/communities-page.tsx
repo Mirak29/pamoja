@@ -10,6 +10,7 @@ import { posts, postsChanged } from '/web/fixtures/posts.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { translate } from '/web/lib/language.ts'
 import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
@@ -82,14 +83,23 @@ export const CommunitiesPage = () => {
         if (!list.length) return null
         return (
           <section key={type} class='flex flex-col gap-4'>
-            <Eyebrow>{label}</Eyebrow>
-            <Batched
-              items={list}
-              class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
-              row={(community) => (
-                <CommunityCard key={community.slug} community={community} />
-              )}
-            />
+            <Eyebrow>
+              {list.length > 6 ? `${translate(label)} · ${list.length}` : label}
+            </Eyebrow>
+            {
+              /* About two rows: the others scroll inside, by batches, so a
+              long kind does not push the next ones down (§12.7) */
+            }
+            <div class='-mr-1 max-h-[520px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-3'>
+              <Batched
+                items={list}
+                reset={type}
+                class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6'
+                row={(community) => (
+                  <CommunityCard key={community.slug} community={community} />
+                )}
+              />
+            </div>
           </section>
         )
       })}

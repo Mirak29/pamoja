@@ -794,6 +794,14 @@ La page Projets listait tous les projets d'un coup : avec 61 projets, il fallait
 - **Livrable** : `web/pages/projects/projects-page.tsx` ; §12.7
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Communautés dans des cadres
+
+- **Page Communautés** : les trois sortes (technologies, pays, domaines) étaient empilées en entier, et une longue sorte repoussait les suivantes. Chacune tient maintenant dans un cadre d'environ deux rangées, qui défile par lots, avec le nombre dans le titre (« Technologies · 103 »). Vérifié avec `?stress` (300 communautés de plus) : les trois sections se suivent, la page fait 2 027 px.
+- **Page d'une communauté** : les onglets Projets et Aide s'affichaient en entier ; ils se chargent par lots, comme les posts et les membres. Ces onglets n'ont qu'une liste chacun : ils défilent avec la page, comme un fil, sans cadre qui ajouterait une seconde barre de défilement.
+
+- **Livrable** : `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
