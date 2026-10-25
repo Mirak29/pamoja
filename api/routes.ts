@@ -51,6 +51,7 @@ import { skillIdsOf } from '/api/skills.ts'
 import {
   createHelpRequest,
   getHelpRequest,
+  HELP_TABS,
   listHelpRequests,
   projectIdOf,
 } from '/api/help.ts'
@@ -697,8 +698,16 @@ const defs = {
    */
   'GET/api/help': route({
     authorize: withSession,
-    fn: (ctx) => listHelpRequests(ctx.session.userId),
-    output: ARR(helpRequest, 'Newest first'),
+    fn: (ctx, { tab, before }) =>
+      listHelpRequests(ctx.session.userId, tab, before),
+    input: OBJ({
+      tab: LIST(HELP_TABS, 'mine, accepted, projects; empty for all of them'),
+      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+    }),
+    output: OBJ({
+      items: ARR(helpRequest, 'Newest first, 20 at a time'),
+      next: STR('Cursor of the next batch, empty at the end'),
+    }),
     description:
       'The requests the developer wrote, accepted, or that concern one of their projects',
   }),
@@ -747,15 +756,21 @@ const defs = {
   }),
   'GET/api/help/for-me': route({
     authorize: withSession,
-    fn: (ctx) => listHelpForMe(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        ...helpRequestFields,
-        score: NUM('My score for it'),
-        reasons: ARR(reason),
-      }),
-      'Best score first',
-    ),
+    fn: (ctx, { before }) => listHelpForMe(ctx.session.userId, before),
+    input: OBJ({
+      before: STR('Cursor of the next batch, empty for the best (§12.7)'),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          ...helpRequestFields,
+          score: NUM('My score for it'),
+          reasons: ARR(reason),
+        }),
+        'Best score first, 20 at a time',
+      ),
+      next: STR('Cursor of the next batch, empty at the end'),
+    }),
     description: 'The open requests the developer was matched with',
   }),
   'GET/api/help/preview': route({
@@ -823,28 +838,38 @@ const defs = {
    */
   'GET/api/notifications': route({
     authorize: withSession,
-    fn: (ctx) => listNotifications(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        id: NUM('Id of the notification'),
-        type: STR('help_match, help_accepted, help_message…'),
-        category: STR('for-you, projects, communities, social or system'),
-        actor: STR('Login of who caused it, empty if no one'),
-        helpRequestId: NUM('Request it is about, 0 if none'),
-        title: STR('Title of what it is about'),
-        project: STR('Project name, empty if none'),
-        score: NUM('Matching score, 0 if none'),
-        minutes: NUM('Estimated duration, 0 if none'),
-        skills: ARR(STR('Skill asked')),
-        excerpt: STR('Start of a message, empty if none'),
-        eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
-        badge: STR('Key of a badge unlocked, empty if none'),
-        level: NUM('Level of that badge, 0 if none'),
-        readAt: NUM('In seconds, 0 if unread'),
-        createdAt: NUM('In seconds'),
-      }),
-      'Newest first, the 100 last',
-    ),
+    fn: (ctx, { before }) => listNotifications(ctx.session.userId, before),
+    input: OBJ({
+      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          id: NUM('Id of the notification'),
+          type: STR('help_match, help_accepted, help_message…'),
+          category: STR('for-you, projects, communities, social or system'),
+          actor: STR('Login of who caused it, empty if no one'),
+          helpRequestId: NUM('Request it is about, 0 if none'),
+          title: STR('Title of what it is about'),
+          project: STR('Project name, empty if none'),
+          score: NUM('Matching score, 0 if none'),
+          minutes: NUM('Estimated duration, 0 if none'),
+          skills: ARR(STR('Skill asked')),
+          excerpt: STR('Start of a message, empty if none'),
+          eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
+          badge: STR('Key of a badge unlocked, empty if none'),
+          level: NUM('Level of that badge, 0 if none'),
+          readAt: NUM('In seconds, 0 if unread'),
+          createdAt: NUM('In seconds'),
+        }),
+        'Newest first, 20 at a time',
+      ),
+      next: STR('Cursor of the next batch, empty at the end'),
+      unread: ARR(
+        OBJ({ category: STR('Category'), count: NUM('Unread ones') }),
+        'Every unread one, by category, not only those of the batch',
+      ),
+    }),
     description: 'The inbox of the developer; the page writes the sentences',
   }),
   'POST/api/notification/read': route({

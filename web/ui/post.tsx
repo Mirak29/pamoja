@@ -367,13 +367,15 @@ type Row = {
 
 /**
  * Flattens a thread: each reply with its lines to the parent and siblings,
- * at most `topLimit` replies at the first level (then 2), `maxDepth` levels.
+ * at most `topLimit` replies at the first level, `nestedLimit` below (0 for
+ * all), `maxDepth` levels.
  */
 const flatten = (
   rootId: string,
   unfolded: string[],
   maxDepth: number,
   topLimit: number,
+  nestedLimit: number,
 ) => {
   const level = levelWidth()
   const column = (k: number) => k * level + 16
@@ -413,7 +415,7 @@ const flatten = (
         walk(
           post.id,
           depth + 1,
-          limit ? 2 : 0,
+          nestedLimit,
           depth > 0 ? [...lines, next] : [],
           row,
         )
@@ -584,16 +586,20 @@ const ReplyRow = (
 
 /**
  * Replies under a post with their connecting lines; folded below the first
- * level until unfolded (§10.1).
+ * level until unfolded (§10.1). In a card, `topLimit` replies, then 2 below
+ * each; on the page of the post, `pageSize` replies at a time (§12.7), all
+ * of them below.
  *
  * @example
  * <Thread root={post} maxDepth={3} topLimit={3} />
+ * <Thread root={post} maxDepth={8} pageSize={20} />
  */
 export const Thread = (
-  { root, maxDepth, topLimit = 0, onRest }: {
+  { root, maxDepth, topLimit = 0, pageSize = 0, onRest }: {
     root: Post
     maxDepth: number
     topLimit?: number
+    pageSize?: number
     /** Called with the number of first level replies left out */
     onRest?: (rest: number) => ComponentChildren
   },
@@ -601,9 +607,16 @@ export const Thread = (
   postsChanged.value
   const [unfolded, setUnfolded] = useState<string[]>([])
   const [replying, setReplying] = useState<string[]>([])
+  const [pages, setPages] = useState(1)
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((x) => x !== id) : [...list, id]
-  const { rows, rest, level } = flatten(root.id, unfolded, maxDepth, topLimit)
+  const { rows, rest, level } = flatten(
+    root.id,
+    unfolded,
+    maxDepth,
+    pageSize ? pageSize * pages : topLimit,
+    pageSize ? 0 : topLimit ? 2 : 0,
+  )
   return (
     <>
       <div class='flex flex-col'>
@@ -625,6 +638,15 @@ export const Thread = (
           />
         ))}
       </div>
+      {pageSize > 0 && rest > 0 && (
+        <button
+          type='button'
+          onClick={() => setPages(pages + 1)}
+          class='cursor-pointer self-start pt-2 text-[13px] font-semibold text-indigo'
+        >
+          {t`Afficher plus de réponses · ${counted(rest, 'restante')}`}
+        </button>
+      )}
       {onRest?.(rest)}
     </>
   )

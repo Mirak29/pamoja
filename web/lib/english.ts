@@ -1582,6 +1582,9 @@ export const english: Record<string, string> = {
   'Captures et vidéo du projet': 'Project screenshots and video',
   'Vidéo': 'Video',
   'Post non publié': 'Post not published',
+  'Charger plus': 'Load more',
+  'restante': 'left',
+  'restantes': 'left',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1862,4 +1865,5 @@ export const englishTemplates: Record<string, string> = {
   'Captures de la demande': 'Screenshots of the request',
   'Lire : {0}': 'Play: {0}',
   'Images du post': 'Images of the post',
+  'Afficher plus de réponses · {0}': 'Show more replies · {0}',
 }

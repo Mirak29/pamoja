@@ -170,7 +170,7 @@ export const Header = () => {
           <Bell class='size-5' />
           {count > 0 && (
             <span class='absolute -top-[7px] -right-2 h-[18px] min-w-5 rounded-sm border border-indigo-edge bg-indigo px-[5px] text-center font-mono text-[10px] leading-4 font-medium text-on-indigo shadow-[1.73px_1px_0_0_var(--indigo-edge)]'>
-              {count}
+              {count > 9 ? '9+' : count}
             </span>
           )}
         </Button>

@@ -213,7 +213,7 @@ const log = (request: HelpRequest, text: string) => {
   ]
 }
 
-type ApiHelp = ApiOutput['GET/api/help'][number]
+type ApiHelp = ApiOutput['GET/api/help']['items'][number]
 
 /** « ~20 min », « ~1 h »: a duration in minutes as the form shows it */
 export const durationLabel = (minutes: number) =>

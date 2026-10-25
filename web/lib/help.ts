@@ -9,6 +9,66 @@ import { counted } from '/web/lib/plural.ts'
 import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
+import { signal } from '@preact/signals'
+
+/*
+ * The tabs of the help page come by batches of 20 (§12.7): the first when a
+ * tab opens, the next ones on demand. The requests join those of the pages.
+ */
+
+export type HelpListTab = 'for-me' | 'mine' | 'accepted' | 'projects'
+
+/**
+ * Cursor of the next batch of each tab: empty once everything is read,
+ * missing before the first batch
+ */
+export const helpBatches = signal<Partial<Record<HelpListTab, string>>>({})
+
+const reading = new Map<HelpListTab, Promise<void>>()
+
+const readBatch = async (tab: HelpListTab, before: string) => {
+  if (tab === 'for-me') {
+    const batch = await api['GET/api/help/for-me'].fetch({ before })
+    adoptHelpRequests(batch.items)
+      .forEach((request, i) => request.myScore = batch.items[i].score)
+    return batch.next
+  }
+  const batch = await api['GET/api/help'].fetch({ tab, before })
+  adoptHelpRequests(batch.items)
+  return batch.next
+}
+
+/** The next batch of a tab, the first one if none was read; once at a time */
+export const loadHelpBatch = (tab: HelpListTab) => {
+  const before = helpBatches.peek()[tab]
+  if (before === '') return Promise.resolve()
+  const current = reading.get(tab)
+  if (current) return current
+  const read = readBatch(tab, before ?? '')
+    .then((next) => {
+      helpBatches.value = { ...helpBatches.peek(), [tab]: next }
+    })
+    .catch(() => {})
+    .finally(() => reading.delete(tab))
+  reading.set(tab, read)
+  return read
+}
+
+/**
+ * The newest requests again, after a change: the first batch of all of them
+ * and of « Pour moi ». The older batches already read keep their cursor.
+ */
+export const reloadHelpRequests = () =>
+  Promise.all([
+    api['GET/api/help'].fetch({ tab: '', before: '' })
+      .then((batch) => adoptHelpRequests(batch.items)),
+    readBatch('for-me', '').then((next) => {
+      const batches = helpBatches.peek()
+      if (batches['for-me'] === undefined) {
+        helpBatches.value = { ...batches, 'for-me': next }
+      }
+    }),
+  ]).catch(() => {})
 
 // A real help request plays its lifecycle on the server (§7.2); the demo ones
 // keep playing it in the page (actOnHelp). The page reads the answer as the

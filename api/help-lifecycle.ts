@@ -10,6 +10,7 @@ import { createNotification } from '/api/notifications.ts'
 import { evaluateBadges } from '/api/badges.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { HelpMessage } from '/api/schema.ts'
+import { batch, readCursor } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
@@ -579,22 +580,37 @@ export const getHelpDetail = (userId: number, helpRequestId: number) => {
  * « Pour moi »: the open requests the developer was matched with (§7.3)
  */
 
+// By batches of 20, best score first (§12.7)
+const FOR_ME_BATCH = 20
+
 const listForMe = sql<
   { helpRequestId: number; score: number; reasons: string },
-  number
+  { userId: number; value: number; id: number; limit: number }
 >`
   SELECT helpMatch.helpRequestId, score, reasons FROM helpMatch
   JOIN helpRequest ON helpRequest.helpRequestId = helpMatch.helpRequestId
-  WHERE helpMatch.userId = ? AND helpMatch.status = 'notified'
+  WHERE helpMatch.userId = :userId AND helpMatch.status = 'notified'
     AND helpRequest.status = 'open'
+    AND (score < :value OR (score = :value AND helpMatch.helpRequestId < :id))
   ORDER BY score DESC, helpMatch.helpRequestId DESC
-  LIMIT 100
+  LIMIT :limit
 `.all
 
-export const listHelpForMe = (userId: number) =>
-  listForMe(userId).flatMap(({ helpRequestId, score, reasons }) => {
-    const request = getHelpRequest(helpRequestId)
-    return request
-      ? [{ ...request, score, reasons: explain(JSON.parse(reasons)) }]
-      : []
-  })
+/** A batch of the open requests matched with the developer, from a cursor */
+export const listHelpForMe = (userId: number, before = '') => {
+  const { value, id } = readCursor(before)
+  const { items, next } = batch(
+    listForMe({ userId, value, id, limit: FOR_ME_BATCH + 1 }),
+    FOR_ME_BATCH,
+    (row) => ({ value: row.score, id: row.helpRequestId }),
+  )
+  return {
+    items: items.flatMap(({ helpRequestId, score, reasons }) => {
+      const request = getHelpRequest(helpRequestId)
+      return request
+        ? [{ ...request, score, reasons: explain(JSON.parse(reasons)) }]
+        : []
+    }),
+    next,
+  }
+}

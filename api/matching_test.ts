@@ -237,8 +237,10 @@ Deno.test('matching: waves on creation, 2 h later, and after a withdrawal', asyn
   )).json
   assertEquals(forOther.matches.length, 1)
   // « Pour moi » lists it, with the score
-  const forMe =
-    (await call('/api/help/for-me', await createSession(other, 'demo'))).json
+  const forMe = (await call(
+    '/api/help/for-me?before=',
+    await createSession(other, 'demo'),
+  )).json.items
   assertEquals(forMe.map((h: { id: number }) => h.id), [id])
   assert(forMe[0].score > 0)
 })

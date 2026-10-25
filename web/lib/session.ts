@@ -1,6 +1,6 @@
 import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
-import { adoptHelpRequests } from '/web/fixtures/help.ts'
+import { reloadHelpRequests } from '/web/lib/help.ts'
 import { adoptUser, me } from '/web/fixtures/people.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -49,17 +49,11 @@ export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
 
 /**
- * The help requests the developer wrote, accepted, or of their projects, and
- * those the matching sent them, with their score (§7.3)
+ * The newest help requests the developer wrote, accepted, or of their
+ * projects, and those the matching sent them, with their score (§7.3); the
+ * help page reads the older ones by batches
  */
-export const loadHelpRequests = () =>
-  Promise.all([
-    api['GET/api/help'].fetch().then(adoptHelpRequests),
-    api['GET/api/help/for-me'].fetch().then((list) => {
-      const adopted = adoptHelpRequests(list)
-      adopted.forEach((request, i) => request.myScore = list[i].score)
-    }),
-  ]).catch(() => {})
+export const loadHelpRequests = () => reloadHelpRequests()
 
 api['GET/api/user/me'].fetch().then(
   setUser,

@@ -227,7 +227,8 @@ export const BoardTab = ({ project }: { project: Project }) => {
                 setDragged(null)
                 setOver(null)
               }}
-              class={`flex min-h-[480px] flex-col gap-3 rounded-lg border pt-3 pr-3 pb-4 pl-2.5 inset-shadow-well transition-[background-color] duration-150 ease-out ${
+              // As high as the screen at most: the cards scroll inside
+              class={`flex h-[max(480px,calc(100dvh-260px))] flex-col gap-3 rounded-lg border pt-3 pr-1 pb-2 pl-2.5 inset-shadow-well transition-[background-color] duration-150 ease-out ${
                 over === key
                   ? 'border-dashed border-indigo bg-indigo-soft'
                   : 'border-line-strong bg-surface-000'
@@ -245,25 +246,27 @@ export const BoardTab = ({ project }: { project: Project }) => {
                   {list.length}
                 </span>
               </div>
-              {list.map((card) => (
-                <BoardCard
-                  key={card.id}
-                  project={project}
-                  card={card}
-                  index={index}
-                  canMove={canMove}
-                  dragged={dragged === card.id}
-                  moved={moved === card.id}
-                  onDrag={setDragged}
-                  onMove={move}
-                />
-              ))}
-              {!list.length && (
-                <div class='flex min-h-[84px] items-center justify-center rounded-[8px] border border-dashed border-line-strong p-3 text-center text-[13px] text-ink-muted'>
-                  Dépose une carte ici
-                </div>
-              )}
-              {key === 'backlog' && canMove && <NewCard project={project} />}
+              <div class='-ml-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pt-0.5 pr-2 pb-2 pl-1'>
+                {list.map((card) => (
+                  <BoardCard
+                    key={card.id}
+                    project={project}
+                    card={card}
+                    index={index}
+                    canMove={canMove}
+                    dragged={dragged === card.id}
+                    moved={moved === card.id}
+                    onDrag={setDragged}
+                    onMove={move}
+                  />
+                ))}
+                {!list.length && (
+                  <div class='flex min-h-[84px] items-center justify-center rounded-[8px] border border-dashed border-line-strong p-3 text-center text-[13px] text-ink-muted'>
+                    Dépose une carte ici
+                  </div>
+                )}
+                {key === 'backlog' && canMove && <NewCard project={project} />}
+              </div>
             </div>
           )
         })}

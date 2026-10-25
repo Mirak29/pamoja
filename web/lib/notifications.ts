@@ -13,13 +13,14 @@ import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
 import { onEvent, onReconnect } from '/web/lib/realtime.ts'
 import { currentUser } from '/web/lib/session.ts'
-import { effect } from '@preact/signals'
+import { effect, signal } from '@preact/signals'
 
 // The notifications of the server (§7.4) join those of the demo in the
 // center; a new one pops up as a toast. The server says what happened, the
 // page writes the sentence in its language.
 
-type Item = ApiOutput['GET/api/notifications'][number]
+type Batch = ApiOutput['GET/api/notifications']
+type Item = Batch['items'][number]
 
 // The badges of §8.2, by their key on the server
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
@@ -148,14 +149,36 @@ const toPage = (n: Item): Notification => ({
 const seen = new Set<string>()
 let loaded = false
 
-/** The inbox of the server: the first read is quiet, later ones pop up */
+/*
+ * The inbox comes by batches of 20 (§12.7): the newest at once, the older
+ * ones on demand. The counters come from the server, which counts every
+ * unread one, not only those of the batches read.
+ */
+
+/** Cursor of the older batch, empty when everything is read */
+export const olderNotifications = signal('')
+// Older batches read: a new read of the newest leaves their cursor alone
+let olderRead = false
+// Unread ones of the server, by category
+const serverUnread = signal<Record<string, number>>({})
+
+const keep = (batch: Batch) => {
+  serverUnread.value = Object.fromEntries(
+    batch.unread.map(({ category, count }) => [category, count]),
+  )
+  const fresh = batch.items.map(toPage)
+  for (const notification of fresh) {
+    const i = notifications.findIndex((n) => n.id === notification.id)
+    i < 0 ? notifications.push(notification) : notifications[i] = notification
+  }
+  return fresh
+}
+
+/** The newest batch of the server: the first read is quiet, later ones pop up */
 export const loadNotifications = () =>
-  api['GET/api/notifications'].fetch().then((items) => {
-    const fresh = items.map(toPage)
-    for (let i = notifications.length - 1; i >= 0; i--) {
-      notifications[i].id.startsWith('s') && notifications.splice(i, 1)
-    }
-    notifications.push(...fresh)
+  api['GET/api/notifications'].fetch({ before: '' }).then((batch) => {
+    const fresh = keep(batch)
+    olderRead || (olderNotifications.value = batch.next)
     const arrived = fresh.filter((n) => !n.read && !seen.has(n.id))
     fresh.forEach((n) => seen.add(n.id))
     if (loaded && arrived.length) incoming.value = arrived[0]
@@ -163,10 +186,55 @@ export const loadNotifications = () =>
     notificationsChanged.value++
   }, () => {})
 
+let reading: Promise<void> | undefined
+
+/** The next older batch; nothing when one is already on its way */
+export const loadOlderNotifications = () =>
+  reading ??= (async () => {
+    const before = olderNotifications.peek()
+    if (!before) return
+    try {
+      const batch = await api['GET/api/notifications'].fetch({ before })
+      keep(batch).forEach((n) => seen.add(n.id))
+      olderRead = true
+      olderNotifications.value = batch.next
+      notificationsChanged.value++
+    } finally {
+      reading = undefined
+    }
+  })()
+
+/**
+ * Unread ones for the developer, of a category or all: those of the demo,
+ * counted here, and those of the server, counted by the server
+ */
+export const unreadCount = (category?: string) => {
+  notificationsChanged.value
+  const demo =
+    notifications.filter((n) =>
+      n.to === me.login && !n.read && !n.id.startsWith('s') &&
+      (!category || n.category === category)
+    ).length
+  const server = serverUnread.value
+  return demo +
+    (category
+      ? server[category] ?? 0
+      : Object.values(server).reduce((sum, count) => sum + count, 0))
+}
+
 /** Opened or read: the server keeps it */
 export const readOne = (notification: Notification) => {
+  const wasUnread = !notification.read
   markRead(notification)
   if (notification.id.startsWith('s')) {
+    if (wasUnread) {
+      const counts = serverUnread.peek()
+      const left = (counts[notification.category] ?? 1) - 1
+      serverUnread.value = {
+        ...counts,
+        [notification.category]: Math.max(0, left),
+      }
+    }
     api['POST/api/notification/read']
       .fetch({ id: Number(notification.id.slice(1)) })
       .catch(() => {})
@@ -175,6 +243,7 @@ export const readOne = (notification: Notification) => {
 
 export const readAll = () => {
   markAllRead(me.login)
+  serverUnread.value = {}
   api['POST/api/notifications/read-all'].fetch().catch(() => {})
 }
 
@@ -183,6 +252,7 @@ export const readAll = () => {
 effect(() => {
   if (!currentUser.value) return
   loaded = false
+  olderRead = false
   seen.clear()
   loadNotifications()
 })

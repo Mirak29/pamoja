@@ -1,3 +1,4 @@
+import { useEffect } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { Plus } from '/web/assets/icons.tsx'
 import {
@@ -11,12 +12,13 @@ import { Button } from '/web/ui/button.tsx'
 import { HelpRequestCard } from '/web/ui/help-request-card.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
+import { helpBatches, type HelpListTab, loadHelpBatch } from '/web/lib/help.ts'
 
 const myProjects = Object.values(projects)
   .filter((p) => isMe(p.owner) || p.members.some((m) => isMe(m.login)))
   .map((p) => p.slug as string)
 
-const tabs = [
+const tabs: { key: HelpListTab; label: string; empty: string }[] = [
   {
     key: 'for-me',
     label: 'Pour moi',
@@ -61,6 +63,13 @@ export const HelpList = () => {
   }
   const current = tabs.find((t) => t.key === url.params.tab) ?? tabs[0]
   const rows = lists[current.key]
+  // By batches of 20 (§12.7): the first when the tab opens
+  const batches = helpBatches.value
+  const more = batches[current.key]
+  useEffect(() => {
+    helpBatches.peek()[current.key] === undefined &&
+      loadHelpBatch(current.key)
+  }, [current.key])
   return (
     <Page title='Aide' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
@@ -76,7 +85,8 @@ export const HelpList = () => {
           key,
           label,
           params: { tab: i ? key : null },
-          count: lists[key].length,
+          // Known once every batch of the tab is read
+          count: batches[key] === '' ? lists[key].length : undefined,
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
@@ -85,7 +95,17 @@ export const HelpList = () => {
             <HelpRequestCard key={request.id} request={request} score={score} />
           ))}
         </div>
-        {!rows.length && (
+        {more && (
+          <div class='border-t border-line px-6 py-4'>
+            <Button
+              variant='secondary'
+              onClick={() => loadHelpBatch(current.key)}
+            >
+              Charger plus
+            </Button>
+          </div>
+        )}
+        {!rows.length && more === '' && (
           <p class='px-6 py-10 text-center text-ink-muted'>{current.empty}</p>
         )}
       </div>

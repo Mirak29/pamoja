@@ -14,11 +14,8 @@ import {
   Users,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
-import {
-  notifications,
-  notificationsChanged,
-} from '/web/fixtures/notifications.ts'
 import { unreadMessages } from '/web/lib/messages.ts'
+import { unreadCount } from '/web/lib/notifications.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
@@ -26,10 +23,8 @@ import { Menu } from '/web/ui/menu.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
-export const unread = () => {
-  notificationsChanged.value
-  return notifications.filter((n) => n.to === me.login && !n.read).length
-}
+/** Unread notifications, those of the server counted by it (§12.7) */
+export const unread = () => unreadCount()
 
 // key: first path segment, short: label of the mobile tab bar
 // A function: `me` is known once the session is (PAM-110)

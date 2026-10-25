@@ -33,7 +33,13 @@ import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
-import { readAll, readOne } from '/web/lib/notifications.ts'
+import {
+  loadOlderNotifications,
+  olderNotifications,
+  readAll,
+  readOne,
+  unreadCount,
+} from '/web/lib/notifications.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -149,7 +155,8 @@ export const NotificationsPage = () => {
   const current = categories.find(([key]) => key === url.params.category) ??
     categories[0]
   const list = mine.filter((n) => !current[1] || n.category === current[1])
-  const unread = mine.filter((n) => !n.read).length
+  // Counted by the server too: older batches may not be read yet
+  const unread = unreadCount()
   return (
     <Page title='Notifications' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
@@ -169,17 +176,21 @@ export const NotificationsPage = () => {
           key,
           label,
           params: { category: i ? key : null },
-          unread:
-            mine.filter((n) =>
-              !n.read && (!category || n.category === category)
-            ).length,
+          unread: unreadCount(category ?? undefined),
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
         {list.map((notification) => (
           <Row key={notification.id} notification={notification} />
         ))}
-        {!list.length && (
+        {olderNotifications.value && (
+          <div class='border-t border-line px-6 py-4'>
+            <Button variant='secondary' onClick={loadOlderNotifications}>
+              Charger plus
+            </Button>
+          </div>
+        )}
+        {!list.length && !olderNotifications.value && (
           <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
             <span class='font-display text-[17px] leading-[22px] font-semibold'>
               Rien de neuf ici

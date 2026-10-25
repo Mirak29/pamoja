@@ -710,6 +710,21 @@ Les non-lus des canaux ne se perdent plus au rechargement et suivent le dévelop
 
 - **Livrable** : `api/tracking.ts`, route `GET/api/project/tracking`, réponses sous une alerte dans `api/channels.ts`, `api/tracking_test.ts` (3 tests), `web/lib/tracking.ts`, `adoptTracking`, `loadTracking`, `answerAlert` et `reloadOpenedChannels`, onglet Canaux, page projet, `web/lib/live-data.ts`
 - **Par** : @niangoos
+### 2026-10-25 · PAM-529 · Longues listes, corrections rapides
+
+Avec les données du test de charge, plusieurs listes s'affichaient en entier ou étaient coupées sans le dire. Corrigé :
+
+- **Notifications** : le serveur n'en rendait que 100, sans moyen de voir les plus anciennes. Elles arrivent maintenant par lots de 20, et « Charger plus » lit les suivantes. Les compteurs (menu, cloche, onglets) viennent du serveur, qui compte toutes les non lues et pas seulement celles déjà chargées : « Toutes 1002 » avec 20 notifications affichées. La cloche de l'en-tête affiche « 9+ » comme le menu, au lieu de « 1002 ».
+- **Demandes d'aide** : le serveur en rendait 200, toutes mélangées. Chaque onglet (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets) lit maintenant ses propres lots de 20, à son ouverture puis avec « Charger plus » ; « Pour moi » est trié par score. Le compteur d'un onglet n'apparaît qu'une fois tout lu, pour ne jamais afficher un faux total.
+- **Page d'un post** : les 500 réponses d'un fil s'affichaient d'un coup. Il y en a maintenant 20 au premier niveau, puis « Afficher plus de réponses · 480 restantes ».
+- **Board** : une colonne grandissait avec ses cartes. Elle ne dépasse plus la hauteur de l'écran (480 px au moins), et ses cartes défilent à l'intérieur.
+
+Le lot suivant se demande par curseur (la date ou le score, et l'id du dernier élément reçu), jamais par numéro de page : une notification qui arrive entre deux lots ne décale ni ne répète rien. Trouvé en écrivant le test : `Number.MAX_VALUE`, un entier pour JavaScript, est lié en entier 64 bits par le pilote SQLite et déborde ; le curseur de départ utilise `Number.MAX_SAFE_INTEGER`.
+
+Vérifié dans le navigateur avec `deno task stress` (3 000 notifications, 1 500 demandes « Pour moi ») et `?stress` (fil de 500 réponses) : lots de 20, compteurs exacts, « Charger plus » sur chaque liste, colonnes du board bornées.
+
+- **Livrable** : `api/lib/cursor.ts`, `api/notifications.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/routes.ts`, tests (`notifications_test.ts`, `help_test.ts`, `matching_test.ts`) ; `web/lib/notifications.ts`, `web/lib/help.ts`, `web/lib/session.ts`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/project/board-tab.tsx`, `web/ui/navigation.tsx`, `web/ui/header.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
 
 ## Audits QA
 

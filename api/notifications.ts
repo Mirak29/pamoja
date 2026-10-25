@@ -1,6 +1,7 @@
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
+import { batch, readCursor } from '/api/lib/cursor.ts'
 import { Notification } from '/api/schema.ts'
 
 // A notification for one developer (§7.4): a row of their inbox, and an entry
@@ -52,14 +53,30 @@ type Row = {
   createdAt: number
 }
 
-const listInbox = sql<Row, number>`
+// By batches of 20, newest first (§12.7)
+const BATCH = 20
+
+const listInbox = sql<
+  Row,
+  { userId: number; value: number; id: number; limit: number }
+>`
   SELECT notificationId, type, category, actor.githubUsername AS actor,
     payload, readAt, notification.createdAt
   FROM notification
   LEFT JOIN user AS actor ON actor.userId = notification.actorId
-  WHERE notification.userId = ?
+  WHERE notification.userId = :userId
+    AND (notification.createdAt < :value
+      OR (notification.createdAt = :value AND notificationId < :id))
   ORDER BY notification.createdAt DESC, notificationId DESC
-  LIMIT 100
+  LIMIT :limit
+`.all
+
+// Every unread one, not only those of the batch: the counters of the menu
+// and of the tabs
+const countUnread = sql<{ category: string; count: number }, number>`
+  SELECT category, count(*) AS count FROM notification
+  WHERE userId = ? AND readAt IS NULL
+  GROUP BY category
 `.all
 
 // What a notification says: the page writes the sentence in its language
@@ -86,8 +103,16 @@ const shown = (row: Row) => {
   }
 }
 
-export const listNotifications = (userId: number) =>
-  listInbox(userId).map(shown)
+/** A batch of the inbox, from a cursor, with every unread one counted */
+export const listNotifications = (userId: number, before = '') => {
+  const { value, id } = readCursor(before)
+  const { items, next } = batch(
+    listInbox({ userId, value, id, limit: BATCH + 1 }),
+    BATCH,
+    (row) => ({ value: row.createdAt, id: row.notificationId }),
+  )
+  return { items: items.map(shown), next, unread: countUnread(userId) }
+}
 
 const setRead = sql<undefined, { userId: number; id: number; at: number }>`
   UPDATE notification SET readAt = :at

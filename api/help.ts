@@ -2,6 +2,7 @@ import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
+import { batch, readCursor } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import {
   DESCRIPTION_MAX,
@@ -234,18 +235,41 @@ const helpSelect = `
   LEFT JOIN repository ON repository.repositoryId = pullRequest.repositoryId
 `
 
-// Until the matching (PAM-209): the requests a developer wrote, accepted,
-// or that concern one of their projects
-const listVisible = sql<HelpRow, { userId: number }>`${helpSelect}
-  WHERE helpRequest.authorId = :userId
+// The requests a developer sees on the help page, by tab: those they wrote,
+// accepted, or of their projects; all of them together for the other pages
+const helpTabs = {
+  '': `(helpRequest.authorId = :userId
     OR helpRequest.acceptedBy = :userId
     OR helpRequest.targetUserId = :userId
     OR helpRequest.projectId IN (
       SELECT projectId FROM projectMember WHERE userId = :userId
-    )
-  ORDER BY helpRequest.createdAt DESC
-  LIMIT 200
-`.all
+    ))`,
+  mine: `helpRequest.authorId = :userId`,
+  accepted: `helpRequest.acceptedBy = :userId`,
+  projects: `(helpRequest.authorId != :userId AND helpRequest.projectId IN (
+      SELECT projectId FROM projectMember WHERE userId = :userId
+    ))`,
+} as const
+export type HelpTab = keyof typeof helpTabs
+export const HELP_TABS = Object.keys(helpTabs) as HelpTab[]
+
+// By batches of 20, newest first (§12.7)
+const BATCH = 20
+
+type Batch = { userId: number; value: number; id: number; limit: number }
+
+const listTab = Object.fromEntries(
+  HELP_TABS.map((tab) => [
+    tab,
+    sql<HelpRow, Batch>`${helpSelect}
+      WHERE ${helpTabs[tab]}
+        AND (helpRequest.createdAt < :value OR (helpRequest.createdAt = :value
+          AND helpRequest.helpRequestId < :id))
+      ORDER BY helpRequest.createdAt DESC, helpRequest.helpRequestId DESC
+      LIMIT :limit
+    `.all,
+  ]),
+) as Record<HelpTab, (window: Batch) => HelpRow[]>
 
 // The latest requests a developer wrote or accepted: the Activity of their
 // profile (§9.1)
@@ -289,8 +313,20 @@ const withMedia = (rows: HelpRow[]) => {
   return rows.map((row) => shown(row, media.get(row.helpRequestId)))
 }
 
-export const listHelpRequests = (userId: number) =>
-  withMedia(listVisible({ userId }))
+/** A batch of the requests of a tab, from a cursor, with their images */
+export const listHelpRequests = (
+  userId: number,
+  tab: HelpTab = '',
+  before = '',
+) => {
+  const { value, id } = readCursor(before)
+  const { items, next } = batch(
+    listTab[tab]({ userId, value, id, limit: BATCH + 1 }),
+    BATCH,
+    (row) => ({ value: row.createdAt, id: row.helpRequestId }),
+  )
+  return { items: withMedia(items), next }
+}
 
 export const listHelpActivity = (userId: number) =>
   withMedia(listActivity({ userId }))

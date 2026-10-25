@@ -223,6 +223,8 @@ Responsable : _à répartir_
 - [x] **PAM-526** · Messages directs : séparateur « Nouveaux messages », marquer comme non lu, sourdine, archiver (§10.6)
 - [x] **PAM-527** · Messages directs : recherche dans ses conversations (§10.6)
 - [x] **PAM-528** · Messages directs : images et fichiers, aperçu des liens (§10.6, §17.3) — après PAM-409
+- [x] **PAM-529** · Longues listes, corrections rapides : 20 réponses de premier niveau sur la page d'un post, colonnes du board à hauteur d'écran, notifications et demandes d'aide par curseur au lieu d'une coupe silencieuse à 100 et 200 (§12.7)
+- [ ] **PAM-530** · Brique `InfiniteList` : chargement par lots au défilement avec bouton de secours, pour le fil, Explore, les communautés, les notifications et les demandes d'aide (§12.7)
 - [x] **PAM-513** · Écran Accueil sur données fictives : rédaction, onglets du fil, insertions, colonne de droite (§6.2, §10.1) — @niangoos
 - [x] **PAM-514** · Écrans Explorer (développeurs, projets, sur quoi travailler) et résultats de recherche sur données fictives (§10.3, §10.4) — @niangoos
 - [x] **PAM-515** · Écrans Communautés, communauté et post sur données fictives : réponses, réponse acceptée, nouveau post, nouvelle communauté (§10.1, §10.2) — @niangoos
@@ -336,3 +338,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-28 · Non-lus par canal (PAM-412) : le serveur garde l'heure de dernière lecture et le réglage, la page compte les messages des autres après cette heure ; le réglage règle aussi le compteur (Rien, Mentions, Seulement mes PRs) en attendant les notifications de canal · §6.8
 - 2026-10-28 · Canal #suivi (PAM-411) : lu dans les entries GitHub, sans table propre ; le serveur donne les faits et la page écrit la phrase ; réponses en fil sous une alerte, par les membres seulement ; PR sans review signalée une fois, vérifiée toutes les 30 min · §6.8, §13.3
 - 2026-10-29 · Fils et réactions des canaux (PAM-406) : un fil sous un message, sur un seul niveau, ouvert aux membres seulement, même sous #annonces ; la seule réaction est « +1 », donnée par tout lecteur du canal ; un +1 n'a pas d'entry et n'est pas diffusé en temps réel · §6.8
+- 2026-10-25 · Longues listes : aucune liste affichée en entier ni coupée sans le dire ; lots de 20 par curseur (date ou score et id du dernier élément reçu, jamais un numéro de page) pour les notifications et les demandes d'aide, compteurs de non lues donnés par le serveur ; 20 réponses de premier niveau sur la page d'un post ; colonnes du board à hauteur d'écran · §12.7
