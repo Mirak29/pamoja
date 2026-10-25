@@ -889,9 +889,14 @@ const defs = {
    */
   'GET/api/notifications': route({
     authorize: withSession,
-    fn: (ctx, { before }) => listNotifications(ctx.session.userId, before),
+    fn: (ctx, { before, category }) =>
+      listNotifications(ctx.session.userId, before, category),
     input: OBJ({
       before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+      category: LIST(
+        ['', 'for-you', 'projects', 'communities', 'social', 'system'],
+        'A tab of the inbox; empty for all of them',
+      ),
     }),
     output: OBJ({
       items: ARR(

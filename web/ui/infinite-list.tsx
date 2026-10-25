@@ -9,7 +9,8 @@ import { Button } from '/web/ui/button.tsx'
 export const BATCH = 20
 
 // The next batch loads this far before the end comes into view
-const AHEAD = '800px'
+const AHEAD_PX = 800
+const AHEAD = `${AHEAD_PX}px`
 
 // What the list scrolls in: a column of its own (the messages), or the page.
 // The margin ahead applies to it only: within a column, the page's would be
@@ -23,10 +24,15 @@ const scrollerOf = (element: HTMLElement) => {
 }
 
 /**
- * A list that loads its next batch a little before its end comes into view.
- * « Charger plus » does the same from the keyboard or a screen reader, and
- * stays when the browser cannot watch the scroll; the end of the list is
- * said. The rows go inside the container (`class`, a grid as well).
+ * A list that loads its next batch a little before its end comes into view,
+ * with « Chargement… » meanwhile; the end of the list is said. The rows go
+ * inside the container (`class`, a grid as well).
+ *
+ * « Charger plus » stays for the keyboard and screen readers, out of sight
+ * until it has the focus. It shows when the list cannot load by itself: a
+ * browser that does not watch the scroll, or a batch that added no row (a
+ * list filtered by the page), so that it never reads batch after batch to
+ * fill the screen (§12.7).
  *
  * @example
  * <InfiniteList more={!!next} onMore={loadOlder} end='C’est tout.'>
@@ -46,48 +52,73 @@ export const InfiniteList = (
   },
 ) => {
   const [loading, setLoading] = useState(false)
+  // The rows before the last batch: the same after it, the list stops
+  // loading by itself
+  const [stalledAt, setStalledAt] = useState<number | null>(null)
+  const busy = useRef(false)
   const sentinel = useRef<HTMLDivElement>(null)
   const count = toChildArray(children).length
-  const load = async () => {
-    if (loading || !more) return
+  const watching = typeof IntersectionObserver !== 'undefined'
+  const stalled = stalledAt === count
+  const load = async (byHand = false) => {
+    if (busy.current || !more || (stalled && !byHand)) return
+    busy.current = true
     setLoading(true)
+    const before = count
     try {
       await onMore()
     } finally {
+      busy.current = false
       setLoading(false)
+      setStalledAt(before)
     }
   }
   // Watched again after each batch: a batch that does not fill the screen
-  // calls the next one
+  // calls the next one, unless it added no row
   useEffect(() => {
     const target = sentinel.current
-    if (!target || !more || loading) return
-    if (typeof IntersectionObserver === 'undefined') return
+    if (!target || !more || loading || stalled || !watching) return
+    const root = scrollerOf(target)
     const observer = new IntersectionObserver(
       (entries) => entries.some((entry) => entry.isIntersecting) && load(),
-      { root: scrollerOf(target), rootMargin: `0px 0px ${AHEAD} 0px` },
+      { root, rootMargin: `0px 0px ${AHEAD} 0px` },
     )
     observer.observe(target)
-    return () => observer.disconnect()
-  }, [more, loading, count])
+    // Checked once by hand too, after the layout: the list does not hang on
+    // the first report of the observer
+    const frame = requestAnimationFrame(() => {
+      const bottom = root?.getBoundingClientRect().bottom ?? innerHeight
+      target.getBoundingClientRect().top < bottom + AHEAD_PX && load()
+    })
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    }
+  }, [more, loading, count, stalled])
+  const visible = !watching || stalled
   return (
     <>
       <div class={className}>{children}</div>
       <div ref={sentinel} class='flex flex-col items-center py-3'>
-        {more
-          ? (
-            <Button
-              variant='secondary'
-              size={36}
-              disabled={loading}
-              onClick={load}
-            >
-              {loading ? 'Chargement…' : 'Charger plus'}
-            </Button>
-          )
-          : count > 0 && end
-          ? <p class='text-[13px] text-ink-muted'>{end}</p>
-          : null}
+        {more && (
+          <Button
+            variant='secondary'
+            size={36}
+            disabled={loading}
+            onClick={() => load(true)}
+            class={visible ? '' : 'sr-only focus:not-sr-only'}
+          >
+            Charger plus
+          </Button>
+        )}
+        {loading && (
+          <p class='text-[13px] text-ink-muted' aria-hidden='true'>
+            Chargement…
+          </p>
+        )}
+        {!more && count > 0 && end && (
+          <p class='text-[13px] text-ink-muted'>{end}</p>
+        )}
         <span role='status' class='sr-only'>
           {loading ? 'Chargement…' : ''}
         </span>

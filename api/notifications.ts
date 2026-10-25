@@ -56,20 +56,25 @@ type Row = {
 // By batches of 20, newest first (§12.7)
 const BATCH = 20
 
-const listInbox = sql<
-  Row,
-  { userId: number; value: number; id: number; limit: number }
->`
-  SELECT notificationId, type, category, actor.githubUsername AS actor,
-    payload, readAt, notification.createdAt
-  FROM notification
-  LEFT JOIN user AS actor ON actor.userId = notification.actorId
-  WHERE notification.userId = :userId
-    AND (notification.createdAt < :value
-      OR (notification.createdAt = :value AND notificationId < :id))
-  ORDER BY notification.createdAt DESC, notificationId DESC
-  LIMIT :limit
-`.all
+type Window = { userId: number; value: number; id: number; limit: number }
+
+// One query by tab, each from its own index: all of them, or one category.
+// A tab filtered by the page would read batches of every category to find
+// its own, up to the whole inbox (§12.7)
+const inbox = (where: string) =>
+  sql<Row, Window & { category?: string }>`
+    SELECT notificationId, type, category, actor.githubUsername AS actor,
+      payload, readAt, notification.createdAt
+    FROM notification
+    LEFT JOIN user AS actor ON actor.userId = notification.actorId
+    WHERE notification.userId = :userId ${where}
+      AND (notification.createdAt < :value
+        OR (notification.createdAt = :value AND notificationId < :id))
+    ORDER BY notification.createdAt DESC, notificationId DESC
+    LIMIT :limit
+  `.all
+const listInbox = inbox('')
+const listCategory = inbox('AND notification.category = :category')
 
 // Every unread one, not only those of the batch: the counters of the menu
 // and of the tabs
@@ -104,10 +109,19 @@ const shown = (row: Row) => {
 }
 
 /** A batch of the inbox, from a cursor, with every unread one counted */
-export const listNotifications = (userId: number, before = '') => {
+/**
+ * A batch of the inbox, of a category or all of them, from a cursor, with
+ * every unread one counted
+ */
+export const listNotifications = (
+  userId: number,
+  before = '',
+  category = '',
+) => {
   const { value, id } = readCursor(before)
+  const window = { userId, value, id, limit: BATCH + 1 }
   const { items, next } = batch(
-    listInbox({ userId, value, id, limit: BATCH + 1 }),
+    category ? listCategory({ ...window, category }) : listInbox(window),
     BATCH,
     (row) => ({ value: row.createdAt, id: row.notificationId }),
   )

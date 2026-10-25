@@ -1,3 +1,4 @@
+import { useEffect } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { navigate, url } from '@01edu/signal-router'
 import {
@@ -35,7 +36,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
 import {
-  loadOlderNotifications,
+  loadNotificationBatch,
   olderNotifications,
   readAll,
   readOne,
@@ -156,6 +157,13 @@ export const NotificationsPage = () => {
   const current = categories.find(([key]) => key === url.params.category) ??
     categories[0]
   const list = mine.filter((n) => !current[1] || n.category === current[1])
+  // A tab reads its first batch when it opens; all of them come with the
+  // session (§12.7)
+  useEffect(() => {
+    const category = current[1]
+    category && olderNotifications.peek()[category] === undefined &&
+      loadNotificationBatch(category)
+  }, [current[1]])
   // Counted by the server too: older batches may not be read yet
   const unread = unreadCount()
   return (
@@ -182,15 +190,15 @@ export const NotificationsPage = () => {
       />
       <div class='slab mr-2 overflow-hidden'>
         <InfiniteList
-          more={!!olderNotifications.value}
-          onMore={loadOlderNotifications}
+          more={!!olderNotifications.value[current[1] ?? '']}
+          onMore={() => loadNotificationBatch(current[1] ?? '')}
           end={list.length > 20 && 'Tu as tout vu.'}
         >
           {list.map((notification) => (
             <Row key={notification.id} notification={notification} />
           ))}
         </InfiniteList>
-        {!list.length && !olderNotifications.value && (
+        {!list.length && !olderNotifications.value[current[1] ?? ''] && (
           <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
             <span class='font-display text-[17px] leading-[22px] font-semibold'>
               Rien de neuf ici

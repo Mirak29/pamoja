@@ -765,6 +765,20 @@ Vérifié dans le navigateur sur la base de charge : conversations par lots, y c
 - **Livrable** : `api/schema.ts` (index), `api/help.ts`, `api/messages.ts`, `api/projects.ts`, `api/routes.ts`, `api/events.ts`, `prod-server.ts`, `.env-dev`, tests (`projects_test.ts`, `messages_test.ts`, `import_test.ts`, `help_test.ts`) ; `web/lib/messages.ts`, `web/lib/realtime.ts` (`whenShown`), `web/lib/live-data.ts`, `web/lib/notifications.ts`, `web/lib/reputation.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/ui/infinite-list.tsx` (défilement d'une colonne), `web/ui/project-card.tsx`, `web/pages/messages-page.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx` ; §12.7, §15, §17.4
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Retour sur les listes : notifications, bouton, profil
+
+Corrigé après un retour sur la branche :
+
+- **Un onglet des notifications vide ou presque proposait « Charger plus »**, et la page lisait en fond les lots de toutes les catégories pour tenter de le remplir (vérifié : `before=…_20`, `_40`, `_60`… pour l'onglet Communautés vide), jusqu'à toute la boîte. Le filtre par catégorie se faisait dans la page. Chaque onglet lit maintenant sa catégorie côté serveur (`GET/api/notifications?category=`, index par catégorie) avec ses propres lots : l'onglet Communautés vide fait une requête et dit « Rien de neuf ici », l'onglet Social montre sa notification sans bouton.
+- **Le bouton « Charger plus » restait affiché** même quand la liste se chargeait seule. Il est maintenant caché tant qu'il n'a pas le focus (clavier, lecteur d'écran) et « Chargement… » s'affiche pendant la lecture. Il ne réapparaît que si la liste ne peut pas se charger seule.
+- **Garde-fous dans la brique** : une liste dont le dernier lot n'a ajouté aucune ligne cesse de charger seule (le bouton reprend la main), ce qui empêche toute lecture en chaîne ; un verrou évite deux lectures à la fois ; la position est vérifiée une fois à la main après chaque lot, en plus de l'observateur.
+- **Projets d'un profil** : la liste « En train de construire » s'affichait en entier. Elle tient dans un cadre d'environ trois cartes, qui défile à l'intérieur et se charge par lots, avec le nombre de projets dans le titre (« En train de construire · 61 »).
+
+Vérifié dans le navigateur sur la base de charge, en naviguant dans l'app comme dans le retour : onglets Communautés et Social sans bouton ni lecture en chaîne, « Toutes » chargé au défilement avec le bouton caché, Explore chargé au défilement après le passage par les notifications, cadre des projets du profil chargé à son défilement (20 puis 40 cartes).
+
+- **Livrable** : `api/notifications.ts`, `api/routes.ts`, `api/schema.ts`, `api/notifications_test.ts` ; `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/ui/infinite-list.tsx`, `web/pages/profile/profile-page.tsx`, traductions ; §12.7, §15
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

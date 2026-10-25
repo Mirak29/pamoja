@@ -3,6 +3,7 @@ import {
   markAllRead,
   markRead,
   type Notification,
+  type NotificationCategory,
   notifications,
   notificationsChanged,
 } from '/web/fixtures/notifications.ts'
@@ -151,14 +152,18 @@ let loaded = false
 
 /*
  * The inbox comes by batches of 20 (§12.7): the newest at once, the older
- * ones on demand. The counters come from the server, which counts every
- * unread one, not only those of the batches read.
+ * ones on demand, each tab (a category, or all of them) by its own batches:
+ * a tab never reads the others' to find its own. The counters come from the
+ * server, which counts every unread one, not only those of the batches read.
  */
 
-/** Cursor of the older batch, empty when everything is read */
-export const olderNotifications = signal('')
-// Older batches read: a new read of the newest leaves their cursor alone
-let olderRead = false
+/**
+ * Cursor of the older batch of each tab (`''` for all of them): empty when
+ * everything is read, missing before the first batch of the tab
+ */
+export const olderNotifications = signal<Record<string, string>>({})
+// Tabs whose older batches were read: a new read of the newest keeps them
+const olderRead = new Set<string>()
 // Unread ones of the server, by category
 const serverUnread = signal<Record<string, number>>({})
 
@@ -176,33 +181,49 @@ const keep = (batch: Batch) => {
 
 /** The newest batch of the server: the first read is quiet, later ones pop up */
 export const loadNotifications = () =>
-  api['GET/api/notifications'].fetch({ before: '' }).then((batch) => {
-    const fresh = keep(batch)
-    olderRead || (olderNotifications.value = batch.next)
-    const arrived = fresh.filter((n) => !n.read && !seen.has(n.id))
-    fresh.forEach((n) => seen.add(n.id))
-    if (loaded && arrived.length) incoming.value = arrived[0]
-    loaded = true
-    notificationsChanged.value++
-  }, () => {})
-
-let reading: Promise<void> | undefined
-
-/** The next older batch; nothing when one is already on its way */
-export const loadOlderNotifications = () =>
-  reading ??= (async () => {
-    const before = olderNotifications.peek()
-    if (!before) return
-    try {
-      const batch = await api['GET/api/notifications'].fetch({ before })
-      keep(batch).forEach((n) => seen.add(n.id))
-      olderRead = true
-      olderNotifications.value = batch.next
+  api['GET/api/notifications'].fetch({ before: '', category: '' }).then(
+    (batch) => {
+      const fresh = keep(batch)
+      olderRead.has('') || setCursor('', batch.next)
+      const arrived = fresh.filter((n) => !n.read && !seen.has(n.id))
+      fresh.forEach((n) => seen.add(n.id))
+      if (loaded && arrived.length) incoming.value = arrived[0]
+      loaded = true
       notificationsChanged.value++
-    } finally {
-      reading = undefined
-    }
-  })()
+    },
+    () => {},
+  )
+
+const setCursor = (category: string, next: string) => {
+  olderNotifications.value = { ...olderNotifications.peek(), [category]: next }
+}
+
+const reading = new Map<string, Promise<void>>()
+
+/**
+ * The next batch of a tab, its first one if none was read; nothing when one
+ * is already on its way
+ */
+export const loadNotificationBatch = (
+  category: NotificationCategory | '' = '',
+) => {
+  const current = reading.get(category)
+  if (current) return current
+  const before = olderNotifications.peek()[category]
+  if (before === '') return Promise.resolve()
+  const read = api['GET/api/notifications']
+    .fetch({ before: before ?? '', category })
+    .then((batch) => {
+      keep(batch).forEach((n) => seen.add(n.id))
+      before && olderRead.add(category)
+      setCursor(category, batch.next)
+      notificationsChanged.value++
+    })
+    .catch(() => {})
+    .finally(() => reading.delete(category))
+  reading.set(category, read)
+  return read
+}
 
 /**
  * Unread ones for the developer, of a category or all: those of the demo,
@@ -252,7 +273,8 @@ export const readAll = () => {
 effect(() => {
   if (!currentUser.value) return
   loaded = false
-  olderRead = false
+  olderRead.clear()
+  olderNotifications.value = {}
   seen.clear()
   loadNotifications()
 })

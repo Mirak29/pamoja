@@ -52,7 +52,7 @@ const form = {
 }
 
 const inbox = async (session: string) =>
-  (await call('/api/notifications?before=', session)).json.items as {
+  (await call('/api/notifications?before=&category=', session)).json.items as {
     id: number
     type: string
     actor: string
@@ -164,7 +164,7 @@ Deno.test('notifications: by batches of 20, every unread one counted (§12.7)', 
   }
   const read = async (before: string) =>
     (await call(
-      `/api/notifications?before=${encodeURIComponent(before)}`,
+      `/api/notifications?category=&before=${encodeURIComponent(before)}`,
       abdou.session,
     )).json as Batch
   const titles: string[] = []
@@ -187,7 +187,22 @@ Deno.test('notifications: by batches of 20, every unread one counted (§12.7)', 
   assertEquals(titles[0], 'N39')
   assertEquals(titles.at(-1), 'N40')
   assertEquals(
-    (await call('/api/notifications?before=nope', abdou.session)).status,
+    (await call('/api/notifications?before=nope&category=', abdou.session))
+      .status,
     400,
+  )
+  // A tab reads its category only: 15 system ones, in one batch
+  const system = (await call(
+    '/api/notifications?before=&category=system',
+    abdou.session,
+  )).json
+  assertEquals([system.items.length, system.next], [15, ''])
+  assertEquals(
+    (await call(
+      '/api/notifications?before=&category=communities',
+      abdou.session,
+    ))
+      .json.items,
+    [],
   )
 })

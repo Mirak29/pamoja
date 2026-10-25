@@ -521,6 +521,8 @@ export const Notification = createTable('notification', {
 index('notification_inbox', 'notification', 'userId, readAt, createdAt')
 // The inbox by batches, newest first (§12.7)
 index('notification_recent', 'notification', 'userId, createdAt')
+// A tab of the inbox, by category (§12.7)
+index('notification_category', 'notification', 'userId, category, createdAt')
 
 // Badges themselves are constants of the code (§8.2)
 export const BadgeProgress = createTable('badgeProgress', {

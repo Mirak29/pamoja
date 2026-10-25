@@ -50,6 +50,7 @@ import { Portrait } from '/web/ui/avatar.tsx'
 import { SkillChip, StatusBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
@@ -351,44 +352,60 @@ const Building = ({ login }: { login: Login }) => {
   if (!list.length) return null
   return (
     <section id='profil-projets' class='flex flex-col gap-4'>
-      <Eyebrow>En train de construire</Eyebrow>
-      {list.map((project) => {
-        const content = (
-          <>
-            <Cube size={40} />
-            <span class='flex min-w-0 flex-1 flex-col gap-1'>
-              <span class='flex items-center justify-between gap-2'>
-                <span class='font-display text-[17px] leading-[22px] font-semibold'>
-                  {project.name}
+      <Eyebrow>
+        {list.length > 3
+          ? t`En train de construire · ${list.length}`
+          : 'En train de construire'}
+      </Eyebrow>
+      {
+        /* About three cards high: the others scroll inside, so that a long
+        list does not push the rest of the profile down; by batches (§12.7) */
+      }
+      <div class='-mr-2 max-h-[440px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-1'>
+        <Batched
+          items={list}
+          reset={login}
+          row={(project) => {
+            const content = (
+              <>
+                <Cube size={40} />
+                <span class='flex min-w-0 flex-1 flex-col gap-1'>
+                  <span class='flex items-center justify-between gap-2'>
+                    <span class='font-display text-[17px] leading-[22px] font-semibold'>
+                      {project.name}
+                    </span>
+                    <span class='text-[12px] text-ink-muted'>
+                      {project.role}
+                    </span>
+                  </span>
+                  <span
+                    translate={false}
+                    class='wrap-anywhere text-[14px] text-pretty text-ink-muted'
+                  >
+                    {project.description}
+                  </span>
+                  <span class='font-mono text-[12px] leading-4 text-ink-muted'>
+                    {project.stack.join(' · ')}
+                  </span>
                 </span>
-                <span class='text-[12px] text-ink-muted'>{project.role}</span>
-              </span>
-              <span
-                translate={false}
-                class='wrap-anywhere text-[14px] text-pretty text-ink-muted'
-              >
-                {project.description}
-              </span>
-              <span class='font-mono text-[12px] leading-4 text-ink-muted'>
-                {project.stack.join(' · ')}
-              </span>
-            </span>
-          </>
-        )
-        // A project the pages cannot open yet (another developer's, read
-        // with their profile) is shown without a link until PAM-401
-        return Object.hasOwn(projects, project.slug)
-          ? (
-            <A
-              key={project.slug}
-              href={`project/${project.slug}`}
-              class={`${projectCard} slab-lift`}
-            >
-              {content}
-            </A>
-          )
-          : <div key={project.slug} class={projectCard}>{content}</div>
-      })}
+              </>
+            )
+            // A project the pages cannot open yet (another developer's, read
+            // with their profile) is shown without a link until PAM-401
+            return Object.hasOwn(projects, project.slug)
+              ? (
+                <A
+                  key={project.slug}
+                  href={`project/${project.slug}`}
+                  class={`${projectCard} slab-lift`}
+                >
+                  {content}
+                </A>
+              )
+              : <div key={project.slug} class={projectCard}>{content}</div>
+          }}
+        />
+      </div>
     </section>
   )
 }
