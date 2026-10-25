@@ -588,6 +588,16 @@ Corrigé après la relecture du 24 octobre :
 - **Livrable** : `web/pages/profile/reputation.tsx`, `web/pages/profile/collaboration-map.tsx` (globe), `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/land.ts`, `web/fixtures/reputation.ts` et `web/fixtures/people.ts` (profil chargé), `docs/identite/tokens.json` et `web/assets/styles/theme.css` (teintes métal), `web/lib/english.ts` ; après relecture, `build-config.ts` (`splitting`)
 - **Par** : @niangoos, relecture @Mirak29
 
+### 2026-10-25 · Une seule Preact dans le bundle, des pages qui tiennent avec de vrais utilisateurs
+
+Trouvé pendant le test de charge (5 000 développeurs, 1 200 conversations, 3 000 demandes d'aide). Deux corrections :
+
+- **Une seule Preact** : l'app pouvait rester blanche après une reconstruction du serveur de dev. Le loader esbuild lance un `deno info` par lot de paquets, sans `deno.json` quand on ne lui donne pas : interrogé seul, `@preact/signals` prenait Preact 11 comme pair et repointait vers elle son lien dans `node_modules`, que suit esbuild. Le bundle portait alors deux Preact, et les composants ne suivaient plus les signaux. Le loader reçoit maintenant `configPath` (option documentée de `@luca/esbuild-deno-loader`). Vérifié en reconstruction, lien amorcé sur Preact 11 : deux Preact à chaque build avant, une seule après, et le lien reste sur la 10.
+- **Des personnes que les fixtures ne connaissent pas** : l'accueil, Explorer › Projets et l'aide d'une communauté lisaient `people[login]` pour l'auteur d'une demande ou le propriétaire d'un projet venus de l'API. Avec un vrai utilisateur, la page plantait, puis toutes les pages suivantes restaient vides jusqu'au rechargement. Ces lectures passent par `personOf`, qui nomme quand même la personne. Vérifié dans le navigateur sur 20 écrans avec les données de charge.
+
+- **Livrable** : `build-config.ts`, `web/fixtures/matching.ts`, `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/project/join-dialog.tsx`, `web/ui/project-card.tsx`
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -11,6 +11,7 @@ import {
   me,
   people,
   type Person,
+  personOf,
 } from '/web/fixtures/people.ts'
 import { needSkills, type Project, projects } from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
@@ -183,7 +184,7 @@ const Projects = () => {
   const list = all.filter((p) =>
     (!param('tech') || p.stack.includes(param('tech'))) &&
     (!param('stage') || p.stage === param('stage')) &&
-    (!param('country') || people[p.owner].country === param('country')) &&
+    (!param('country') || personOf(p.owner).country === param('country')) &&
     (!param('activity') || p.activity === param('activity')) &&
     (!param('contributors') || p.needs.length > 0) &&
     (!param('beginners') || beginnerIssues(p) > 0)
@@ -203,7 +204,9 @@ const Projects = () => {
             <FilterSelect
               name='country'
               label='Pays'
-              options={sorted(all.map((p) => people[p.owner].country))}
+              options={sorted(
+                all.map((p) => personOf(p.owner).country).filter(Boolean),
+              )}
             />
             <FilterSelect
               name='activity'

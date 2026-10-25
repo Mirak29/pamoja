@@ -27,6 +27,7 @@ import {
   people,
   peopleChanged,
   type Person,
+  personOf,
   toggleFollowing,
 } from '/web/fixtures/people.ts'
 import {
@@ -90,7 +91,8 @@ const composerTypes: PostType[] = [
 // Help requests set aside with « Plus tard » during the session
 const dismissedHelp = signal<string[]>([])
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+// The author of a PR is often not on Pamoja: personOf names them anyway
+const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
 /** Projects I build or follow: their GitHub events reach the feed */
 const myProjects = () =>
@@ -163,7 +165,7 @@ const HelpInsert = (
     <span class='text-[13px] text-ink-muted'>
       {request.type}
       {request.project && ` · ${projects[request.project].name}`} ·{' '}
-      {people[request.author].name} · {ago(request.at)} · {request.duration} ·
+      {personOf(request.author).name} · {ago(request.at)} · {request.duration} ·
       {' '}
       {request.level}
     </span>

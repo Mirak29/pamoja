@@ -8,7 +8,13 @@ import {
 } from '/web/fixtures/communities.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
 import { match } from '/web/fixtures/matching.ts'
-import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
+import {
+  type Login,
+  me,
+  people,
+  type Person,
+  personOf,
+} from '/web/fixtures/people.ts'
 import {
   childrenOf,
   type Post,
@@ -72,7 +78,7 @@ const projectsOf = (community: Community, members: Person[]) =>
     community.type === 'Technologie'
       ? p.stack.includes(community.name)
       : community.type === 'Pays'
-      ? people[p.owner].country === community.country
+      ? personOf(p.owner).country === community.country
       : members.some((m) =>
         p.owner === m.login || p.members.some((x) => x.login === m.login)
       )
@@ -143,9 +149,9 @@ const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
         ))}
       </div>
       <span class='text-[13px] leading-5 text-ink-muted'>
-        {people[request.author].name} · {ago(request.at)} · {request.duration} ·
+        {personOf(request.author).name} · {ago(request.at)} · {request.duration}
         {' '}
-        {request.level}
+        · {request.level}
       </span>
     </div>
     <div class='flex flex-none flex-col items-end gap-1.5'>
