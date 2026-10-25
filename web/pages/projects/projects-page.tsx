@@ -13,6 +13,7 @@ import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
 import { GhostSlab } from '/web/ui/states.tsx'
@@ -168,11 +169,19 @@ export const ProjectsPage = () => {
             Nouveau projet
           </Button>
         </div>
+        {
+          /* About two rows of cards: the others scroll inside, by batches,
+          so the projects followed stay close (§12.7) */
+        }
         {mine.length > 0 && (
-          <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-7 gap-y-6 pr-2'>
-            {mine.map((project) => (
-              <MineCard key={project.slug} project={project} />
-            ))}
+          <div class='-mr-1 max-h-[700px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-3'>
+            <Batched
+              items={mine}
+              class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-7 gap-y-6'
+              row={(project) => (
+                <MineCard key={project.slug} project={project} />
+              )}
+            />
           </div>
         )}
         {!mine.length && (
@@ -200,10 +209,14 @@ export const ProjectsPage = () => {
           </span>
         </div>
         {followed.length > 0 && (
-          <div class='mr-2 flex flex-col gap-2.5 rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
-            {followed.map((project) => (
-              <FollowedRow key={project.slug} project={project} />
-            ))}
+          <div class='mr-2 max-h-[480px] overflow-y-auto overscroll-contain rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
+            <Batched
+              items={followed}
+              class='flex flex-col gap-2.5'
+              row={(project) => (
+                <FollowedRow key={project.slug} project={project} />
+              )}
+            />
           </div>
         )}
         {!followed.length && (

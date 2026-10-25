@@ -787,6 +787,13 @@ Vérifié dans le navigateur sur la base de charge, en naviguant dans l'app comm
 - **Livrable** : `web/ui/infinite-list.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/project/team-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx`, traductions ; §12.7
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Page Projets dans des cadres
+
+La page Projets listait tous les projets d'un coup : avec 61 projets, il fallait faire défiler toute la page pour arriver à « Projets que tu suis ». « Tes projets » tient maintenant dans un cadre d'environ deux rangées de cartes, qui défile à l'intérieur et se charge par lots ; « Projets que tu suis » suit la même logique dans son propre cadre. Vérifié sur la base de charge : la page passe à 1 251 px de haut, les projets suivis sont visibles juste sous le cadre, et le défilement du cadre charge les cartes suivantes (20 puis 40).
+
+- **Livrable** : `web/pages/projects/projects-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
