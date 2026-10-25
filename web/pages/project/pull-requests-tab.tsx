@@ -135,44 +135,49 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
           en attente de review
         </Eyebrow>
       </div>
-      <InfiniteList
-        more={!!more}
-        onMore={() => loadProjectPulls(project.slug)}
-      >
-        {prs.map((pr) => (
-          <A
-            key={pr.number}
-            params={{ dialog: `pr-${pr.number}` }}
-            class='flex w-full flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-left text-ink no-underline hover:bg-surface-000 hover:no-underline'
-          >
-            <span
-              class={`tile flex size-[34px] flex-none items-center justify-center ${
-                pr.state === 'merged' ? 'text-indigo' : 'text-verified'
-              }`}
+      {
+        /* The list scrolls in a frame, by batches: the page keeps its height */
+      }
+      <div class='max-h-[720px] overflow-y-auto overscroll-contain'>
+        <InfiniteList
+          more={!!more}
+          onMore={() => loadProjectPulls(project.slug)}
+        >
+          {prs.map((pr) => (
+            <A
+              key={pr.number}
+              params={{ dialog: `pr-${pr.number}` }}
+              class='flex w-full flex-wrap items-start gap-3.5 border-t border-line px-5 py-3.5 text-left text-ink no-underline hover:bg-surface-000 hover:no-underline'
             >
-              {pr.state === 'merged'
-                ? <GitMerge class='size-[18px]' />
-                : <GitPullRequest class='size-[18px]' />}
-            </span>
-            <span class='flex min-w-[220px] flex-1 flex-col gap-1'>
-              <span class='font-semibold'>
-                <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
-                  #{pr.number}
-                </span>{' '}
-                {pr.title}
+              <span
+                class={`tile flex size-[34px] flex-none items-center justify-center ${
+                  pr.state === 'merged' ? 'text-indigo' : 'text-verified'
+                }`}
+              >
+                {pr.state === 'merged'
+                  ? <GitMerge class='size-[18px]' />
+                  : <GitPullRequest class='size-[18px]' />}
               </span>
-              <span class='text-[13px] leading-5 text-ink-muted'>
-                {firstName(pr.author)} · {pr.branch} ·{' '}
-                {pr.state === 'merged' ? 'mergée' : t`ouverte ${ago(pr.at)}`}
+              <span class='flex min-w-[220px] flex-1 flex-col gap-1'>
+                <span class='font-semibold'>
+                  <span class='font-mono text-[14px] leading-5 font-medium text-ink-muted'>
+                    #{pr.number}
+                  </span>{' '}
+                  {pr.title}
+                </span>
+                <span class='text-[13px] leading-5 text-ink-muted'>
+                  {firstName(pr.author)} · {pr.branch} ·{' '}
+                  {pr.state === 'merged' ? 'mergée' : t`ouverte ${ago(pr.at)}`}
+                </span>
               </span>
-            </span>
-            <span class='flex flex-wrap gap-1.5'>
-              <StatusBadge status={reviewStatus(pr)} />
-              <StatusBadge status={pr.ci === 'ok' ? 'ci-ok' : 'ci-failed'} />
-            </span>
-          </A>
-        ))}
-      </InfiniteList>
+              <span class='flex flex-wrap gap-1.5'>
+                <StatusBadge status={reviewStatus(pr)} />
+                <StatusBadge status={pr.ci === 'ok' ? 'ci-ok' : 'ci-failed'} />
+              </span>
+            </A>
+          ))}
+        </InfiniteList>
+      </div>
       {!prs.length && (
         <p class='border-t border-line px-6 py-10 text-center text-ink-muted'>
           Aucune pull request sur ce projet pour l’instant.

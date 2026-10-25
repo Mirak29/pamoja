@@ -99,7 +99,12 @@ export const InfiniteList = (
   return (
     <>
       <div class={className}>{children}</div>
-      <div ref={sentinel} class='flex flex-col items-center py-3'>
+      {
+        /* relative: the hidden button stays inside, where the list scrolls.
+        Absolute without it, it went out of a column that scrolls and made
+        the whole page longer */
+      }
+      <div ref={sentinel} class='relative flex flex-col items-center py-3'>
         {more && (
           <Button
             variant='secondary'

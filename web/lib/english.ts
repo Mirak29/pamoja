@@ -1871,4 +1871,5 @@ export const englishTemplates: Record<string, string> = {
   'Images du post': 'Images of the post',
   'Afficher plus de réponses · {0}': 'Show more replies · {0}',
   'En train de construire · {0}': 'Currently building · {0}',
+  'Équipe · {0}': 'Team · {0}',
 }

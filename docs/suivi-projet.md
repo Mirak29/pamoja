@@ -779,6 +779,14 @@ Vérifié dans le navigateur sur la base de charge, en naviguant dans l'app comm
 - **Livrable** : `api/notifications.ts`, `api/routes.ts`, `api/schema.ts`, `api/notifications_test.ts` ; `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/ui/infinite-list.tsx`, `web/pages/profile/profile-page.tsx`, traductions ; §12.7, §15
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Page Messages trop longue, sections d'un projet dans des cadres
+
+- **La page Messages défilait sur un grand vide** : 1 771 px de haut pour un écran de 768. Le bouton « Charger plus » caché de la liste des conversations est placé en position absolue ; sans ancêtre positionné, il sortait de la colonne qui défile et rallongeait toute la page. Le pied de liste est maintenant `relative` : le bouton reste dans sa liste. La page Messages retrouve la hauteur de l'écran ; le cadre des projets d'un profil avait le même défaut.
+- **Page projet** : comme les projets d'un profil, les longues sections tiennent dans un cadre qui défile à l'intérieur et se charge par lots : l'équipe dans l'aperçu (environ six personnes, « Équipe · 400 »), les membres de l'onglet Équipe (et des Réglages, qui réutilisent la liste), les listes des onglets Issues et PRs. Sur le dépôt de test (400 membres, 3 000 issues, 2 000 PRs), l'aperçu passe de 20 482 à 1 594 px de haut, l'onglet Équipe de 27 862 à 1 702 px, Issues et PRs vers 1 600 px.
+
+- **Livrable** : `web/ui/infinite-list.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/project/team-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
