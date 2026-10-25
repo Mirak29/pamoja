@@ -174,7 +174,7 @@ export const ProjectsPage = () => {
           so the projects followed stay close (§12.7) */
         }
         {mine.length > 0 && (
-          <div class='-mr-1 max-h-[700px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-3'>
+          <div class='-mr-1 max-h-[700px] overflow-y-auto pt-1 pr-3 pb-3'>
             <Batched
               items={mine}
               class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-7 gap-y-6'
@@ -209,7 +209,7 @@ export const ProjectsPage = () => {
           </span>
         </div>
         {followed.length > 0 && (
-          <div class='mr-2 max-h-[480px] overflow-y-auto overscroll-contain rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
+          <div class='mr-2 max-h-[480px] overflow-y-auto rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
             <Batched
               items={followed}
               class='flex flex-col gap-2.5'

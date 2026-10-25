@@ -93,7 +93,7 @@ const PersonLink = (
 export const MemberRows = (
   { project, isOwner }: { project: Project; isOwner: boolean },
 ) => (
-  <div class='max-h-[640px] overflow-y-auto overscroll-contain'>
+  <div class='max-h-[640px] overflow-y-auto'>
     <Batched
       items={project.members}
       reset={project.slug}

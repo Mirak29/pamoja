@@ -246,7 +246,7 @@ export const BoardTab = ({ project }: { project: Project }) => {
                   {list.length}
                 </span>
               </div>
-              <div class='-ml-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pt-0.5 pr-2 pb-2 pl-1'>
+              <div class='-ml-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pt-0.5 pr-2 pb-2 pl-1'>
                 {list.map((card) => (
                   <BoardCard
                     key={card.id}

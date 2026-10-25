@@ -508,7 +508,7 @@ const Rail = () => {
   return (
     <aside
       aria-label='Pour toi'
-      class='sticky top-24 hidden max-h-[calc(100vh-112px)] flex-col gap-6 overflow-y-auto overscroll-contain pr-2.5 pb-4 [scrollbar-color:transparent_transparent] [scrollbar-width:thin] hover:[scrollbar-color:var(--line-control)_transparent] min-[1100px]:flex'
+      class='sticky top-24 hidden max-h-[calc(100vh-112px)] flex-col gap-6 overflow-y-auto pr-2.5 pb-4 [scrollbar-color:transparent_transparent] [scrollbar-width:thin] hover:[scrollbar-color:var(--line-control)_transparent] min-[1100px]:flex'
     >
       <RailSection title={matchTitle} accent>
         {matches.slice(0, 3).map(({ request, score }) => (

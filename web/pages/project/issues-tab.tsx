@@ -79,7 +79,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
       {
         /* The list scrolls in a frame, by batches: the page keeps its height */
       }
-      <div class='max-h-[720px] overflow-y-auto overscroll-contain'>
+      <div class='max-h-[720px] overflow-y-auto'>
         <InfiniteList
           more={!!more}
           onMore={() => loadProjectIssues(project.slug)}

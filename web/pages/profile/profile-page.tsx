@@ -361,7 +361,7 @@ const Building = ({ login }: { login: Login }) => {
         /* About three cards high: the others scroll inside, so that a long
         list does not push the rest of the profile down; by batches (§12.7) */
       }
-      <div class='-mr-2 max-h-[440px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-1'>
+      <div class='-mr-2 max-h-[440px] overflow-y-auto pt-1 pr-3 pb-1'>
         <Batched
           items={list}
           reset={login}

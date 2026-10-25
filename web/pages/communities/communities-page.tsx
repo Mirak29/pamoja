@@ -90,7 +90,7 @@ export const CommunitiesPage = () => {
               /* About two rows: the others scroll inside, by batches, so a
               long kind does not push the next ones down (§12.7) */
             }
-            <div class='-mr-1 max-h-[520px] overflow-y-auto overscroll-contain pt-1 pr-3 pb-3'>
+            <div class='-mr-1 max-h-[520px] overflow-y-auto pt-1 pr-3 pb-3'>
               <Batched
                 items={list}
                 reset={type}

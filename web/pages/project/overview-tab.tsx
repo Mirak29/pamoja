@@ -180,7 +180,7 @@ const Team = ({ project }: { project: Project }) => {
         /* About six people high: the others scroll inside, by batches, so a
         large team does not stretch the page (§12.7) */
       }
-      <div class='-mr-2 max-h-[300px] overflow-y-auto overscroll-contain pr-2'>
+      <div class='-mr-2 max-h-[300px] overflow-y-auto pr-2'>
         <Batched
           items={project.members}
           reset={project.slug}
