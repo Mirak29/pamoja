@@ -1,5 +1,5 @@
 import { Fragment } from 'preact'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
   ArrowLeft,
@@ -259,64 +259,70 @@ const List = ({ openId }: { openId: string | null }) => {
   const others = list.filter((c) => !c.incoming && !c.archived)
   const archived = list.filter((c) => !c.incoming && c.archived)
   return (
-    <section class='slab flex min-w-0 flex-col overflow-hidden'>
+    <section class='slab flex h-full min-w-0 flex-col overflow-hidden'>
       <h1 class='px-4 pt-4 pb-3 font-display text-[19px] leading-6 font-semibold'>
         Messages
       </h1>
       <SearchBox onResults={setResults} />
-      {results
-        ? (
-          <>
-            <span class='border-t border-line px-4 pt-3 pb-1.5 font-mono text-label text-ink-muted uppercase'>
-              {t`Résultats · ${results.length}`}
-            </span>
-            {results.map((r) => <Found key={r.message.id} result={r} />)}
-            {!results.length && (
-              <p class='border-t border-line px-4 py-5 text-[14px] text-ink-muted'>
-                Aucun message ne contient ce texte.
-              </p>
-            )}
-          </>
-        )
-        : (
-          <>
-            {requests.length > 0 && (
-              <>
-                <span class='border-t border-line px-4 pt-3 pb-1.5 font-mono text-label text-ink-muted uppercase'>
-                  {t`Demandes · ${requests.length}`}
-                </span>
-                {requests.map((c) => (
-                  <Row key={c.id} conversation={c} active={c.id === openId} />
-                ))}
-              </>
-            )}
-            {others.map((c) => (
-              <Row key={c.id} conversation={c} active={c.id === openId} />
-            ))}
-            {archived.length > 0 && (
-              <>
-                <button
-                  type='button'
-                  aria-expanded={archives}
-                  onClick={() => setArchives(!archives)}
-                  class='cursor-pointer border-t border-line px-4 pt-3 pb-2 text-left font-mono text-label text-ink-muted uppercase hover:text-indigo'
-                >
-                  {t`Archives · ${archived.length}`}
-                </button>
-                {archives &&
-                  archived.map((c) => (
+      <div class='flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain'>
+        {results
+          ? (
+            <>
+              <span class='border-t border-line px-4 pt-3 pb-1.5 font-mono text-label text-ink-muted uppercase'>
+                {t`Résultats · ${results.length}`}
+              </span>
+              {results.map((r) => <Found key={r.message.id} result={r} />)}
+              {!results.length && (
+                <p class='border-t border-line px-4 py-5 text-[14px] text-ink-muted'>
+                  Aucun message ne contient ce texte.
+                </p>
+              )}
+            </>
+          )
+          : (
+            <>
+              {requests.length > 0 && (
+                <>
+                  <span class='border-t border-line px-4 pt-3 pb-1.5 font-mono text-label text-ink-muted uppercase'>
+                    {t`Demandes · ${requests.length}`}
+                  </span>
+                  {requests.map((c) => (
                     <Row key={c.id} conversation={c} active={c.id === openId} />
                   ))}
-              </>
-            )}
-            {conversationsLoaded.value && !list.length && (
-              <p class='border-t border-line px-4 py-5 text-[14px] text-pretty text-ink-muted'>
-                Pas encore de conversation. Écris à un développeur depuis son
-                profil, avec « Écrire ».
-              </p>
-            )}
-          </>
-        )}
+                </>
+              )}
+              {others.map((c) => (
+                <Row key={c.id} conversation={c} active={c.id === openId} />
+              ))}
+              {archived.length > 0 && (
+                <>
+                  <button
+                    type='button'
+                    aria-expanded={archives}
+                    onClick={() => setArchives(!archives)}
+                    class='cursor-pointer border-t border-line px-4 pt-3 pb-2 text-left font-mono text-label text-ink-muted uppercase hover:text-indigo'
+                  >
+                    {t`Archives · ${archived.length}`}
+                  </button>
+                  {archives &&
+                    archived.map((c) => (
+                      <Row
+                        key={c.id}
+                        conversation={c}
+                        active={c.id === openId}
+                      />
+                    ))}
+                </>
+              )}
+              {conversationsLoaded.value && !list.length && (
+                <p class='border-t border-line px-4 py-5 text-[14px] text-pretty text-ink-muted'>
+                  Pas encore de conversation. Écris à un développeur depuis son
+                  profil, avec « Écrire ».
+                </p>
+              )}
+            </>
+          )}
+      </div>
     </section>
   )
 }
@@ -346,13 +352,12 @@ const Composer = (
     withName?: string
     onCancelReply?: () => void
     onEditLast?: () => void
-    onSend: (text: string, attachments: number[]) => Promise<boolean>
+    onSend: (text: string, attachments: Media[]) => Promise<boolean>
     /** Images and files allowed: an accepted conversation */
     files?: boolean
   },
 ) => {
   const [draft, setDraft] = useState('')
-  const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<Pending[]>([])
   const box = useRef<HTMLDivElement>(null)
   const picker = useRef<HTMLInputElement>(null)
@@ -393,15 +398,34 @@ const Composer = (
   }, [replying?.id])
   const send = async () => {
     const text = draft.trim()
-    if ((!text && !pending.length) || busy || uploading) return
+    if ((!text && !pending.length) || uploading) return
     if (text.length > LIMITS.directMessage) return
-    setBusy(true)
-    const sent = await onSend(text, pending.map((p) => p.media!.id))
-    setBusy(false)
-    if (!sent) return
+    const files = pending
+    // The message is shown at once: the field is free for the next one,
+    // which may leave before this one is answered
     setDraft('')
-    for (const p of pending) p.shown && URL.revokeObjectURL(p.shown)
     setPending([])
+    const sent = await onSend(text, files.map((p) => p.media!))
+    // Sent from the button with the keyboard, which empty is disabled: the
+    // focus goes back to the field, never away from where it went meanwhile
+    const field = box.current?.querySelector('textarea')
+    const active = document.activeElement
+    if (!active || active === document.body || box.current?.contains(active)) {
+      field?.focus()
+    }
+    if (!sent) {
+      // Taken back: the text and the files return to the field, before what
+      // was typed meanwhile
+      setDraft((now) =>
+        now.trim()
+          ? `${text}
+${now}`
+          : text
+      )
+      setPending((now) => [...files, ...now])
+      return
+    }
+    for (const p of files) p.shown && URL.revokeObjectURL(p.shown)
   }
   return (
     <div ref={box} class='flex flex-col border-t border-line'>
@@ -478,7 +502,7 @@ const Composer = (
               type='button'
               title='Joindre une image ou un PDF'
               aria-label='Joindre une image ou un PDF'
-              disabled={busy || pending.length >= MAX_ATTACHMENTS}
+              disabled={pending.length >= MAX_ATTACHMENTS}
               onClick={() => picker.current?.click()}
               class='flex size-10 flex-none cursor-pointer items-center justify-center rounded-md border border-line-control text-ink-muted hover:border-line-strong hover:text-indigo disabled:cursor-default disabled:opacity-50'
             >
@@ -490,8 +514,9 @@ const Composer = (
           rows={1}
           value={draft}
           limit={LIMITS.directMessage}
+          // Never disabled nor read-only while a message leaves: the focus
+          // and the next words typed stay
           wrap='min-w-0 flex-1'
-          disabled={busy}
           aria-label={placeholder}
           placeholder={placeholder}
           onInput={(event) => {
@@ -519,8 +544,10 @@ const Composer = (
         />
         <Button
           size={40}
+          // A click keeps the focus in the field, as in a messenger
+          onMouseDown={(event) => event.preventDefault()}
           onClick={send}
-          disabled={busy || uploading || (!draft.trim() && !pending.length)}
+          disabled={uploading || (!draft.trim() && !pending.length)}
         >
           <SendHorizontal />
           Envoyer
@@ -837,7 +864,7 @@ const Bubble = (
       )}
       <span class='flex flex-wrap items-center gap-1 text-[12px] text-ink-muted'>
         <span class='px-1'>
-          {ago(message.at * 1000)}
+          {message.pending ? 'Envoi…' : ago(message.at * 1000)}
           {message.edited && <span class='ml-1'>· modifié</span>}
         </span>
         {canAct && !editing && (
@@ -915,6 +942,10 @@ const Open = ({ id }: { id: string }) => {
   // At the bottom, the conversation stays there while an image loads or a
   // preview arrives; read higher up, it does not move
   const stick = useRef(true)
+  // Older messages load above the one read, from the top of the thread,
+  // where the browser keeps no scroll anchor (CSS Scroll Anchoring §2.1):
+  // its distance to the bottom is kept by hand
+  const fromBottom = useRef<number | null>(null)
   const ready = shown?.id === id
   useEffect(() => {
     if (!content.current) return
@@ -936,6 +967,13 @@ const Open = ({ id }: { id: string }) => {
     )
   }, [id, jumpTo])
   const last = shown?.id === id ? shown.messages.at(-1)?.id : undefined
+  const first = shown?.id === id ? shown.messages[0]?.id : undefined
+  useLayoutEffect(() => {
+    const box = scroller.current
+    if (!box || fromBottom.current === null) return
+    box.scrollTop = box.scrollHeight - fromBottom.current
+    fromBottom.current = null
+  }, [first])
   useEffect(() => {
     if (shown?.jumpedTo) {
       document.getElementById(`message-${shown.jumpedTo}`)
@@ -954,7 +992,7 @@ const Open = ({ id }: { id: string }) => {
       </GhostSlab>
     )
   }
-  if (!shown || shown.id !== id) return <section class='slab min-h-[420px]' />
+  if (!shown || shown.id !== id) return <section class='slab h-full' />
   const other = shown.with
   const canAct = shown.status === 'accepted' && shown.canWrite
   const firstNew = shown.jumpedTo
@@ -1009,12 +1047,12 @@ const Open = ({ id }: { id: string }) => {
   const nameOf = (login: string) =>
     login === other.login ? other.name : translate('Toi')
   const lastMine = [...shown.messages].reverse().find((m) =>
-    m.mine && !m.deleted
+    m.mine && !m.deleted && !m.pending
   )
   const key = (label: string) =>
     `flex size-8 flex-none cursor-pointer items-center justify-center rounded-md border border-transparent text-ink-muted hover:border-line-strong hover:text-indigo ${label}`
   return (
-    <section class='slab flex min-h-[420px] min-w-0 flex-col overflow-hidden'>
+    <section class='slab flex h-full min-w-0 flex-col overflow-hidden'>
       <Header
         login={other.login}
         name={other.name}
@@ -1088,13 +1126,18 @@ const Open = ({ id }: { id: string }) => {
           stick.current =
             box.scrollHeight - box.scrollTop - box.clientHeight < 80
         }}
-        class='max-h-[62vh] min-h-[260px] overflow-y-auto px-4 py-4'
+        class='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4'
       >
         <div ref={content} class='flex flex-col gap-3'>
           {shown.more && !shown.jumpedTo && (
             <button
               type='button'
-              onClick={() => loadOlder()}
+              onClick={() => {
+                const box = scroller.current
+                if (box) fromBottom.current = box.scrollHeight - box.scrollTop
+                // Not loaded: no position to keep for another thread
+                loadOlder().catch(() => fromBottom.current = null)
+              }}
               class='cursor-pointer self-center text-[13px] font-semibold text-indigo'
             >
               Afficher les messages précédents
@@ -1116,7 +1159,7 @@ const Open = ({ id }: { id: string }) => {
                 message={message}
                 conversationId={id}
                 nameOf={nameOf}
-                canAct={canAct}
+                canAct={canAct && !message.pending}
                 onReply={setReplying}
                 editing={editing === message.id}
                 setEditing={setEditing}
@@ -1187,7 +1230,7 @@ const New = ({ githubId }: { githubId: number }) => {
   if (!login || existing) return null
   const person = personOf(login)
   return (
-    <section class='slab flex min-h-[420px] min-w-0 flex-col overflow-hidden'>
+    <section class='slab flex h-full min-w-0 flex-col overflow-hidden'>
       <Header login={login} name={person.name} avatarUrl={person.avatarUrl} />
       <div class='flex flex-1 flex-col justify-end gap-2 px-4 py-6 text-[14px] text-pretty text-ink-muted'>
         <span>
@@ -1317,9 +1360,14 @@ export const MessagesPage = () => {
     ? <New githubId={githubId} />
     : null
   return (
-    <Page title='Messages' heading={false} class='pt-5'>
-      <div class='mr-2 grid grid-cols-1 items-start gap-6 md:grid-cols-[320px_minmax(0,1fr)]'>
-        <div class={right ? 'hidden md:block' : ''}>
+    <Page
+      title='Messages'
+      heading={false}
+      fill
+      class='flex min-h-0 flex-1 flex-col pt-5'
+    >
+      <div class='mr-2 grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-6 md:grid-cols-[320px_minmax(0,1fr)]'>
+        <div class={right ? 'hidden min-h-0 md:block' : 'min-h-0'}>
           <List openId={openId} />
         </div>
         {right ?? (

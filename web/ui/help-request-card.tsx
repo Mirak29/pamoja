@@ -65,8 +65,12 @@ export const HelpRequestCard = (
           ))}
         </div>
         <span class='text-[13px] leading-5 text-ink-muted'>
-          {personOf(request.author).name} · {ago(request.at)} ·{' '}
-          {request.duration} · {request.level}
+          {[
+            personOf(request.author).name,
+            ago(request.at),
+            request.duration,
+            request.level,
+          ].filter(Boolean).join(' · ')}
           {helper && (request.status === 'completed'
             ? t` · aidé par ${helper}`
             : t` · pris par ${helper}`)}
@@ -74,9 +78,7 @@ export const HelpRequestCard = (
       </div>
       <div class='flex flex-wrap items-center gap-1.5 sm:flex-none sm:flex-col sm:items-end'>
         <StatusBadge status={request.status} />
-        {request.log?.some((entry) =>
-          entry.verified
-        ) && <VerifiedBadge />}
+        {request.log?.some((entry) => entry.verified) && <VerifiedBadge />}
         {request.demo && <DemoBadge />}
       </div>
     </A>

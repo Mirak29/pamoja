@@ -181,6 +181,9 @@ const helpRequestFields = {
   project: STR('Slug of the project, empty if none'),
   pullRequest: NUM('Number of the PR, 0 if none'),
   branch: STR('Branch of the PR, empty if none'),
+  repository: STR(
+    'owner/name of the repository of the PR, empty if none: the helper is often not a member of the project',
+  ),
   category: STR('Type of help, a key of helpCategories'),
   title: STR('Title'),
   description: STR('Description in Markdown'),

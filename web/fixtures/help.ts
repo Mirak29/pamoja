@@ -47,6 +47,8 @@ export type HelpRequest = {
   issue?: number
   pullRequest?: number
   branch?: string
+  /** owner/name of the repository of the PR, from the API */
+  repository?: string
   /** Failing CI job, for a request born from a #suivi alert */
   job?: string
   video?: string
@@ -221,6 +223,7 @@ export const adoptHelpRequests = (list: ApiHelp[]) => {
       acceptedAt: help.acceptedAt ? help.acceptedAt * 1000 : undefined,
       pullRequest: help.pullRequest || undefined,
       branch: help.branch || undefined,
+      repository: help.repository || undefined,
       video: help.videoUrl || undefined,
       demo: help.demo,
     })

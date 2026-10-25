@@ -163,11 +163,15 @@ const HelpInsert = (
       <span translate={false} class='wrap-anywhere'>{request.title}</span>
     </A>
     <span class='text-[13px] text-ink-muted'>
-      {request.type}
-      {request.project && ` · ${projects[request.project].name}`} ·{' '}
-      {personOf(request.author).name} · {ago(request.at)} · {request.duration} ·
-      {' '}
-      {request.level}
+      {[
+        request.type,
+        request.project &&
+        (projects[request.project]?.name ?? request.project),
+        personOf(request.author).name,
+        ago(request.at),
+        request.duration,
+        request.level,
+      ].filter(Boolean).join(' · ')}
     </span>
     <div class='flex flex-wrap gap-1.5'>
       {request.skills.map((skill) => (
@@ -488,7 +492,8 @@ const Rail = () => {
               </span>
               <span class='text-[12px] leading-4 text-ink-muted'>
                 {request.type}
-                {request.project && ` · ${projects[request.project].name}`}
+                {request.project &&
+                  ` · ${projects[request.project]?.name ?? request.project}`}
               </span>
             </span>
           </A>

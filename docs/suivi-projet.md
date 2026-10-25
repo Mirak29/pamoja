@@ -598,6 +598,21 @@ Trouvé pendant le test de charge (5 000 développeurs, 1 200 conversations, 3 0
 - **Livrable** : `build-config.ts`, `web/fixtures/matching.ts`, `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/project/join-dialog.tsx`, `web/ui/project-card.tsx`
 - **Par** : @Mirak29
 
+### 2026-10-25 · Messagerie fluide et pages qui tiennent avec de vrais volumes
+
+Suite du test de charge, avec des données réalistes (demandes `platform`, projets dont on n'est pas membre). Tout a été vérifié dans le navigateur, en ordinateur et à 375 px.
+
+- **Messagerie à hauteur d'écran** : la page ne défile plus, la liste et le fil défilent chacun de leur côté ; la zone d'écriture reste visible, sur téléphone au-dessus de la barre du bas. Une page s'y prête avec `<Page fill>`, que la mise en page lit par `:has([data-fill])`.
+- **Envoi immédiat** : le message s'affiche à la frappe d'Entrée (« Envoi… »), le champ se vide et garde le focus, les messages tapés d'affilée partent dans l'ordre. Avant, le champ restait désactivé le temps de relire le fil et toute la liste des conversations (200 ms de calcul pour 1 200 conversations, deux fois par message). Un échec retire le message et rend le texte.
+- **« Afficher les messages précédents »** garde le message lu en place : en haut du fil, le navigateur ne garde pas d'ancrage de défilement (CSS Scroll Anchoring §2.1).
+- **Lien vers la PR d'une demande** : chaque demande donne le dépôt de sa PR (`repository`) ; l'aidant, souvent pas membre du projet, ouvrait une page blanche après avoir accepté.
+- **Projets inconnus des pages** : le nom d'un projet dont on n'est pas membre est remplacé par son slug, au lieu de faire planter Explorer, l'aide d'une communauté et la recherche.
+- **Pages figées** : Explorer › Projets et Sur quoi travailler, l'aide et les projets d'une communauté et la recherche lisent les signaux des données de l'API et se mettent à jour quand elles arrivent.
+- **Cartes de demande** : plus de « · · » quand la durée ou le niveau manquent.
+
+- **Livrable** : `api/help.ts`, `api/routes.ts`, `web/ui/layout.tsx`, `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/search-page.tsx`, `web/pages/home/home-page.tsx`, `web/ui/help-request-card.tsx`, `web/ui/command-palette.tsx`, `web/fixtures/help.ts`, `web/fixtures/reports.ts`
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -6,7 +6,7 @@ import {
   type Community,
   defaultRules,
 } from '/web/fixtures/communities.ts'
-import { helpRequests } from '/web/fixtures/help.ts'
+import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
 import { match } from '/web/fixtures/matching.ts'
 import {
   type Login,
@@ -21,7 +21,11 @@ import {
   posts,
   postsChanged,
 } from '/web/fixtures/posts.ts'
-import { type Project, projects } from '/web/fixtures/projects.ts'
+import {
+  type Project,
+  projects,
+  projectsChanged,
+} from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -135,8 +139,9 @@ const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
     </span>
     <div class='flex min-w-0 flex-1 flex-col gap-1.5'>
       <span class='font-mono text-label text-ink-muted uppercase'>
-        {request.type} ·{' '}
-        {request.project ? projects[request.project].name : 'Sans projet'}
+        {request.type} · {request.project
+          ? projects[request.project]?.name ?? request.project
+          : 'Sans projet'}
       </span>
       <span class='text-[16px] leading-6 font-semibold text-pretty'>
         {request.title}
@@ -149,9 +154,12 @@ const HelpRow = ({ request }: { request: typeof helpRequests[0] }) => (
         ))}
       </div>
       <span class='text-[13px] leading-5 text-ink-muted'>
-        {personOf(request.author).name} · {ago(request.at)} · {request.duration}
-        {' '}
-        · {request.level}
+        {[
+          personOf(request.author).name,
+          ago(request.at),
+          request.duration,
+          request.level,
+        ].filter(Boolean).join(' · ')}
       </span>
     </div>
     <div class='flex flex-none flex-col items-end gap-1.5'>
@@ -241,6 +249,9 @@ const NotFound = ({ slug }: { slug: string }) => (
 export const CommunityPage = () => {
   communitiesChanged.value
   postsChanged.value
+  // The requests and projects of the API arrive after the first render
+  helpChanged.value
+  projectsChanged.value
   const [, slug = '', tab = ''] = url.relativePath.slice(1).split('/')
   const community = communities.find((c) => c.slug === slug)
   if (!community) return <NotFound slug={slug} />

@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pamoja-dev",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "serve",
+        "--env-file=.env-dev",
+        "-A",
+        "--host=127.0.0.1",
+        "--port=8800",
+        "task-dev.ts"
+      ],
+      "port": 8800
+    }
+  ]
+}

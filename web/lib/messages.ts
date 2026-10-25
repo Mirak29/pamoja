@@ -13,11 +13,15 @@ import { notify } from '/web/ui/toast.tsx'
 // entries. The text of a message stays between the two.
 
 export type Conversation = ApiOutput['GET/api/conversations'][number]
-export type Thread = ApiOutput['GET/api/conversation'] & {
+type ApiThread = ApiOutput['GET/api/conversation']
+/** A message; `pending` while it is on its way, shown before the server
+ * answers */
+export type Message = ApiThread['messages'][number] & { pending?: boolean }
+export type Thread = Omit<ApiThread, 'messages'> & {
+  messages: Message[]
   /** Opened on a message found by the search, not on the latest ones */
   jumpedTo?: number
 }
-export type Message = Thread['messages'][number]
 export type SearchResult = ApiOutput['GET/api/conversations/search'][number]
 export type Media = Message['attachments'][number]
 
@@ -181,13 +185,19 @@ export const openConversation = async (id: string) => {
   const shown = thread.peek()
   const same = shown?.id === id && !shown.jumpedTo
   const older = same
-    ? shown!.messages.filter((m) => m.id < (fresh.messages[0]?.id ?? 0))
+    ? shown!.messages.filter((m) =>
+      !m.pending && m.id < (fresh.messages[0]?.id ?? 0)
+    )
+    : []
+  // Still on their way: they stay after what the server has
+  const sending = same
+    ? shown!.messages.filter((m) => m.pending && inFlight.has(m.id))
     : []
   thread.value = {
     ...fresh,
     // The « Nouveaux messages » line stays where it was while it is open
     readUpTo: same ? shown!.readUpTo : fresh.readUpTo,
-    messages: [...older, ...fresh.messages],
+    messages: [...older, ...fresh.messages, ...sending],
     more: older.length ? shown!.more : fresh.more,
   }
   fresh.incoming || markRead(id)
@@ -210,28 +220,118 @@ export const loadOlder = async () => {
     id: shown.id,
     before: String(shown.messages[0].id),
   })
+  // What arrived meanwhile stays: messages sent, answers
+  const now = thread.peek()
+  if (now?.id !== shown.id) return
   thread.value = {
-    ...shown,
-    messages: [...page.messages, ...shown.messages],
+    ...now,
+    messages: [...page.messages, ...now.messages],
     more: page.more,
   }
 }
 
-/** Sends a message, maybe an answer to another one, maybe with files */
+// What the list shows of a message until the server answers: its first words
+const firstWords = (body: string) => {
+  const text = body.replace(/\s+/g, ' ').trim()
+  return text.length > 120 ? `${text.slice(0, 118)}…` : text
+}
+
+// Negative: never the id of a message of the server
+let pendingId = 0
+/** Messages shown while on their way: a reload keeps them at the end */
+const inFlight = new Set<number>()
+// Messages typed in a row leave one after the other, in their order
+let sending: Promise<unknown> = Promise.resolve()
+
+/** Shows a message on its way at once, in the thread and in the list */
+const showPending = (
+  id: string,
+  body: string,
+  replyTo: number,
+  attachments: Media[],
+) => {
+  const local = --pendingId
+  inFlight.add(local)
+  const at = Date.now() / 1000
+  const shown = thread.peek()
+  if (shown?.id === id) {
+    const answered = shown.messages.find((m) => m.id === replyTo)
+    thread.value = {
+      ...shown,
+      messages: [...shown.messages, {
+        id: local,
+        author: currentUser.peek()?.login ?? '',
+        mine: true,
+        body,
+        at,
+        edited: false,
+        deleted: false,
+        replyTo: answered
+          ? {
+            id: answered.id,
+            author: answered.author,
+            excerpt: firstWords(answered.body),
+            deleted: answered.deleted,
+          }
+          : null,
+        reactions: [],
+        attachments,
+        preview: null,
+        pending: true,
+      }],
+    }
+  }
+  // The latest conversation goes first, as the server sorts them
+  const row = conversations.peek().find((c) => c.id === id)
+  if (row) {
+    conversations.value = [
+      {
+        ...row,
+        updatedAt: at,
+        last: { excerpt: firstWords(body), deleted: false, mine: true, at },
+      },
+      ...conversations.peek().filter((c) => c.id !== id),
+    ]
+  }
+  return local
+}
+
+const dropPending = (local: number) => {
+  inFlight.delete(local)
+  const shown = thread.peek()
+  if (!shown) return
+  thread.value = {
+    ...shown,
+    messages: shown.messages.filter((m) => m.id !== local),
+  }
+}
+
+/**
+ * Sends a message, maybe an answer to another one, maybe with files. It is
+ * shown at once; the entry of the message then brings back the thread and
+ * the list of the server (reload). False when it was not sent, and it is
+ * taken back.
+ */
 export const sendMessage = async (
   id: string,
   body: string,
   replyTo = 0,
-  attachments: number[] = [],
+  attachments: Media[] = [],
 ) => {
-  try {
-    await api['POST/api/conversation/message'].fetch({
+  const local = showPending(id, body, replyTo, attachments)
+  const sent = sending.then(() =>
+    api['POST/api/conversation/message'].fetch({
       id,
       body,
       replyTo: replyTo || null,
-      attachments: attachments.length ? attachments : null,
+      attachments: attachments.length ? attachments.map((a) => a.id) : null,
     })
+  )
+  sending = sent.catch(() => {})
+  try {
+    await sent
   } catch (err) {
+    dropPending(local)
     if (tellLimit(err)) return false
     err instanceof Error && /Waiting|cannot write/.test(err.message)
       ? await openConversation(id)
@@ -240,7 +340,9 @@ export const sendMessage = async (
   }
   // Sent: the next words typed are told at once
   told = { id: '', at: 0 }
-  await Promise.all([openConversation(id), loadConversations()])
+  // The message of the server takes its place, even without the live stream
+  inFlight.delete(local)
+  openConversation(id).catch(() => {})
   return true
 }
 

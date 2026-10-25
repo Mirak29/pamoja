@@ -192,6 +192,14 @@ type Action = {
   focus?: string
 }
 
+// The helper is often not a member of the project, which the pages then do
+// not know: the repository comes from the API; a demo request finds it in
+// its project
+const pullUrl = (request: HelpRequest) =>
+  request.repository
+    ? `https://github.com/${request.repository}/pull/${request.pullRequest}`
+    : githubUrl(projects[request.project!], 'pull', request.pullRequest)
+
 // The requester and the helper talk in the thread of the request (§7.2)
 const contactOf = (other: Login): Action => ({
   label: t`Écrire à ${firstName(other)}`,
@@ -273,11 +281,7 @@ const promptOf = (
             ? {
               label: t`Ouvrir la PR #${request.pullRequest} sur GitHub`,
               variant: 'primary',
-              href: githubUrl(
-                projects[request.project],
-                'pull',
-                request.pullRequest,
-              ),
+              href: pullUrl(request),
             }
             : {
               label: 'Marquer comme livrée',
@@ -880,7 +884,8 @@ export const HelpDetail = ({ id }: { id: string }) => {
               {personOf(request.author).name}
             </A>
             <span>
-              {ago(request.at)} · {request.level} · {request.duration}
+              {[ago(request.at), request.level, request.duration]
+                .filter(Boolean).join(' · ')}
             </span>
             {!isMe(request.author) && (
               // The report dialog comes with PAM-516

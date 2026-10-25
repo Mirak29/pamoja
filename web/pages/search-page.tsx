@@ -1,5 +1,8 @@
 import { A, navigate, url } from '@01edu/signal-router'
 import { Search } from '/web/assets/icons.tsx'
+import { helpChanged } from '/web/fixtures/help.ts'
+import { peopleChanged } from '/web/fixtures/people.ts'
+import { projectsChanged } from '/web/fixtures/projects.ts'
 import { search } from '/web/ui/command-palette.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -9,6 +12,10 @@ import { counted } from '/web/lib/plural.ts'
 
 /** Full results of the global search, tolerant to typos (§10.4) */
 export const SearchPage = () => {
+  // What the search reads arrives from the API after the first render
+  projectsChanged.value
+  helpChanged.value
+  peopleChanged.value
   const q = url.params.q ?? ''
   const groups = q.trim() ? search(q, 50) : []
   const total = groups.reduce((sum, group) => sum + group.items.length, 0)

@@ -132,7 +132,9 @@ export const search = (query: string, limit: number) => {
         .map((help) => ({
           title: help.title,
           sub: `${help.type}${
-            help.project ? ` · ${projects[help.project].name}` : ''
+            help.project
+              ? ` · ${projects[help.project]?.name ?? help.project}`
+              : ''
           }`,
           href: `help/${help.id}`,
           lead: <LifeBuoy class='size-3.5' />,
