@@ -802,6 +802,15 @@ La page Projets listait tous les projets d'un coup : avec 61 projets, il fallait
 - **Livrable** : `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx` ; §12.7
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-531 · Passage de relais du défilement
+
+Arrivé en haut ou en bas d'un cadre (projets d'un profil, page Projets, Communautés, équipe, issues et PRs d'un projet, colonnes du board, colonne de droite de l'Accueil), la molette semblait bloquée : `overscroll-contain` interdisait de passer à la page, et même sans lui le navigateur garde tout le geste sur le cadre jusqu'au geste suivant. Désormais le reste du geste passe à ce qui contient le cadre, la page au bout, dans le même mouvement : le cadre finit sa course, la page prend le reste, en glissant pour un cran de molette et au doigt près pour un pavé tactile. Les crans rapprochés s'additionnent : aucun n'est perdu pendant une glisse. Les cadres n'interdisent plus l'enchaînement, ce qui laisse le tactile enchaîner lui-même ; les colonnes de la messagerie le gardent, la page n'y défilant pas. Une fenêtre modale garde son geste.
+
+Vérifié dans le navigateur (`?stress`, page Communautés) : au milieu d'un cadre le navigateur garde la main ; en bas, la page descend ; avec 20 px de place pour un geste de 35, le cadre finit et la page prend 15 px ; en haut, la page remonte ; trois crans rapides font descendre la page de 300 px en glissant ; rien ne bouge depuis une fenêtre modale.
+
+- **Livrable** : `web/lib/scroll-handoff.ts`, `web/app.tsx`, cadres des pages (sans `overscroll-contain`) ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
