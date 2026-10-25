@@ -30,6 +30,7 @@ import { me } from '/web/fixtures/people.ts'
 import { ago } from '/web/lib/time.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
@@ -180,16 +181,15 @@ export const NotificationsPage = () => {
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
-        {list.map((notification) => (
-          <Row key={notification.id} notification={notification} />
-        ))}
-        {olderNotifications.value && (
-          <div class='border-t border-line px-6 py-4'>
-            <Button variant='secondary' onClick={loadOlderNotifications}>
-              Charger plus
-            </Button>
-          </div>
-        )}
+        <InfiniteList
+          more={!!olderNotifications.value}
+          onMore={loadOlderNotifications}
+          end={list.length > 20 && 'Tu as tout vu.'}
+        >
+          {list.map((notification) => (
+            <Row key={notification.id} notification={notification} />
+          ))}
+        </InfiniteList>
         {!list.length && !olderNotifications.value && (
           <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
             <span class='font-display text-[17px] leading-[22px] font-semibold'>

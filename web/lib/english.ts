@@ -1585,6 +1585,10 @@ export const english: Record<string, string> = {
   'Charger plus': 'Load more',
   'restante': 'left',
   'restantes': 'left',
+  'Chargement…': 'Loading…',
+  'Tu as tout vu.': 'You have seen everything.',
+  'Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.':
+    'You have seen everything. Follow developers or communities to see more posts.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,

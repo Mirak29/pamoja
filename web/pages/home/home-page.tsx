@@ -48,6 +48,7 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { InfiniteList, useBatches } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { PostCard } from '/web/ui/post.tsx'
@@ -263,7 +264,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
     )
     items = [...items, ...events].sort((a, b) => b.at - a.at)
   }
-  items = items.slice(0, 30)
+  // Every item: the page shows them by batches (§12.7)
   if (tab === 'for-you') {
     const top = matchingRequests(me).find(({ request }) =>
       !dismissedHelp.value.includes(request.id)
@@ -625,6 +626,7 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
     'for-you'
   const items = feedItems(current)
+  const { shown, more, next } = useBatches(items, current)
   const { matches, waiting } = homeData()
   return (
     <Page
@@ -656,7 +658,14 @@ export const HomePage = () => {
             params: { feed: i ? key : null },
           }))}
         />
-        {items.map((item) => <div key={item.key}>{item.node}</div>)}
+        <InfiniteList
+          more={more}
+          onMore={next}
+          end='Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.'
+          class='flex flex-col gap-5'
+        >
+          {shown.map((item) => <div key={item.key}>{item.node}</div>)}
+        </InfiniteList>
         {!items.length && (
           <div class='mr-2 rounded-lg border border-dashed border-line-control px-6 py-8 text-center text-ink-muted'>
             {emptyTexts[current]}

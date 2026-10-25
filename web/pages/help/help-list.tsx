@@ -10,6 +10,7 @@ import { isMe, me } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { Button } from '/web/ui/button.tsx'
 import { HelpRequestCard } from '/web/ui/help-request-card.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { helpBatches, type HelpListTab, loadHelpBatch } from '/web/lib/help.ts'
@@ -90,21 +91,16 @@ export const HelpList = () => {
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
-        <div class='-mt-px'>
+        <InfiniteList
+          more={!!more}
+          onMore={() => loadHelpBatch(current.key)}
+          end={rows.length > 20 && 'Tu as tout vu.'}
+          class='-mt-px'
+        >
           {rows.map(({ request, score }) => (
             <HelpRequestCard key={request.id} request={request} score={score} />
           ))}
-        </div>
-        {more && (
-          <div class='border-t border-line px-6 py-4'>
-            <Button
-              variant='secondary'
-              onClick={() => loadHelpBatch(current.key)}
-            >
-              Charger plus
-            </Button>
-          </div>
-        )}
+        </InfiniteList>
         {!rows.length && more === '' && (
           <p class='px-6 py-10 text-center text-ink-muted'>{current.empty}</p>
         )}

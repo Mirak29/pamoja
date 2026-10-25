@@ -726,6 +726,21 @@ Vérifié dans le navigateur avec `deno task stress` (3 000 notifications, 1 500
 - **Livrable** : `api/lib/cursor.ts`, `api/notifications.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/routes.ts`, tests (`notifications_test.ts`, `help_test.ts`, `matching_test.ts`) ; `web/lib/notifications.ts`, `web/lib/help.ts`, `web/lib/session.ts`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/project/board-tab.tsx`, `web/ui/navigation.tsx`, `web/ui/header.tsx`, traductions ; §12.7
 - **Par** : @Mirak29
 
+### 2026-10-25 · PAM-530 · Listes chargées au défilement (InfiniteList)
+
+Les longues listes se chargent maintenant comme sur un réseau social : le lot suivant arrive tout seul un peu avant la fin de la liste (800 px), sans clic. Le bouton « Charger plus » reste sous la liste pour le clavier, les lecteurs d'écran et un navigateur qui ne sait pas suivre le défilement ; la fin de la liste est dite (« Tu as tout vu. »).
+
+- **Accueil** : le fil n'est plus coupé à 30 publications, il continue par lots de 20 jusqu'à la dernière.
+- **Explore** (développeurs, projets), **liste des communautés**, **posts et membres d'une communauté** : par lots de 20 ; un changement de filtre, d'onglet ou de communauté repart du premier lot.
+- **Notifications** et **demandes d'aide** : les lots du serveur de PAM-529 se chargent au défilement au lieu du seul bouton.
+
+La brique tient dans `web/ui/infinite-list.tsx` : `InfiniteList` pour une liste du serveur (s'il en reste, et comment lire la suite), `Batched` et `useBatches` pour une liste déjà en mémoire, comme les écrans encore sur données fictives. Le fil social de l'API (PAM-501) s'y branchera avec le curseur de `api/lib/cursor.ts`.
+
+Vérifié dans le navigateur avec `?stress` (2 000 posts, 3 000 développeurs) : 20 publications, puis le lot suivant au défilement sans perdre la position ; Explore par lots de 20, ramené au premier lot quand on choisit un skill ; notifications et « Pour moi » chargés au défilement. Le chargement automatique ne se voit que si l'onglet est affiché : le navigateur ne suit pas le défilement d'un onglet caché, le bouton prend alors le relais.
+
+- **Livrable** : `web/ui/infinite-list.tsx` ; `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

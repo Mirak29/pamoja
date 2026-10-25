@@ -10,6 +10,7 @@ import { posts, postsChanged } from '/web/fixtures/posts.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
 import { NewCommunityDialog } from '/web/pages/communities/new-community-dialog.tsx'
@@ -82,11 +83,13 @@ export const CommunitiesPage = () => {
         return (
           <section key={type} class='flex flex-col gap-4'>
             <Eyebrow>{label}</Eyebrow>
-            <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
-              {list.map((community) => (
+            <Batched
+              items={list}
+              class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
+              row={(community) => (
                 <CommunityCard key={community.slug} community={community} />
-              ))}
-            </div>
+              )}
+            />
           </section>
         )
       })}
