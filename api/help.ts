@@ -188,6 +188,7 @@ type HelpRow = {
   project: string | null
   pullRequest: number | null
   branch: string | null
+  repository: string | null
   category: string
   title: string
   description: string
@@ -206,7 +207,8 @@ type HelpRow = {
 const helpSelect = `
   SELECT helpRequest.helpRequestId, author.githubUsername AS author,
     project.slug AS project, pullRequest.number AS pullRequest,
-    pullRequest.branch, category, helpRequest.title, helpRequest.description,
+    pullRequest.branch, repository.fullName AS repository, category,
+    helpRequest.title, helpRequest.description,
     helpRequest.skills, expectedLevel, estimatedMinutes, videoUrl,
     helpRequest.status, helper.githubUsername AS helper,
     helpRequest.acceptedAt, helpRequest.source, helpRequest.createdAt
@@ -216,6 +218,7 @@ const helpSelect = `
   LEFT JOIN project ON project.projectId = helpRequest.projectId
   LEFT JOIN pullRequest
     ON pullRequest.pullRequestId = helpRequest.pullRequestId
+  LEFT JOIN repository ON repository.repositoryId = pullRequest.repositoryId
 `
 
 // Until the matching (PAM-209): the requests a developer wrote, accepted,
@@ -249,6 +252,7 @@ const shown = (row: HelpRow) => ({
   project: row.project ?? '',
   pullRequest: row.pullRequest ?? 0,
   branch: row.branch ?? '',
+  repository: row.repository ?? '',
   category: row.category,
   title: row.title,
   description: row.description,

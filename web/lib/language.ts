@@ -1,4 +1,4 @@
-import { options, type VNode } from 'preact'
+import { type ComponentChildren, options, type VNode } from 'preact'
 import { effect, signal } from '@preact/signals'
 import { english, englishTemplates } from '/web/lib/english.ts'
 
@@ -121,6 +121,18 @@ export const t = (parts: TemplateStringsArray, ...values: unknown[]) => {
   }
   return found.replace(/\{(\d+)\}/g, (_, i) => String(values[Number(i)]))
 }
+
+/**
+ * The parts of a line, joined by « · », the empty ones left out. They stay
+ * apart so that each one is translated on its own: joined into one string,
+ * « Review de code · Intermédiaire » matches no entry and stays in French.
+ * A member's name or a project goes in a `translate={false}` span.
+ *
+ * @example
+ * <span>{dotted([request.type, ago(request.at), request.level])}</span>
+ */
+export const dotted = (parts: ComponentChildren[]) =>
+  parts.filter(Boolean).flatMap((part, i) => (i ? [' · ', part] : [part]))
 
 // The props of an element that people read
 const readable = ['aria-label', 'alt', 'placeholder', 'title']

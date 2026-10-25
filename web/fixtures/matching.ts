@@ -1,5 +1,10 @@
 import { communities } from '/web/fixtures/communities.ts'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import {
+  type Login,
+  people,
+  type Person,
+  personOf,
+} from '/web/fixtures/people.ts'
 import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
@@ -82,7 +87,8 @@ export const match = (person: Person, request: Request) => {
       ? { label: translate('Disponible cette semaine'), points: 10 }
       : { label: translate('Peu disponible'), points: 4 },
   )
-  const author = people[request.author]
+  // A request read from the API may come from someone the pages do not know
+  const author = personOf(request.author)
   const shared = person.communities.find((slug) =>
     author.communities.includes(slug)
   )

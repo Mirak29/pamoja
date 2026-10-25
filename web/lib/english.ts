@@ -1530,6 +1530,7 @@ export const english: Record<string, string> = {
     'An image is 2 MB at most, a PDF 5 MB.',
   'Envoie les autres dans un message suivant.':
     'Send the others in another message.',
+  'Envoi en cours…': 'Sending…',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,

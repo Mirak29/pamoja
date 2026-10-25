@@ -111,7 +111,7 @@ export const reportTarget = (
       title: help.title,
       excerpt: cut(help.description),
       kindLabel: 'Demande d’aide',
-      where: help.project ? projects[help.project].name : '',
+      where: help.project ? projects[help.project]?.name ?? help.project : '',
       href: `help/${id}`,
       label: 'ta demande d’aide',
     }

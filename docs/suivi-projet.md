@@ -588,6 +588,45 @@ Corrigé après la relecture du 24 octobre :
 - **Livrable** : `web/pages/profile/reputation.tsx`, `web/pages/profile/collaboration-map.tsx` (globe), `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/land.ts`, `web/fixtures/reputation.ts` et `web/fixtures/people.ts` (profil chargé), `docs/identite/tokens.json` et `web/assets/styles/theme.css` (teintes métal), `web/lib/english.ts` ; après relecture, `build-config.ts` (`splitting`)
 - **Par** : @niangoos, relecture @Mirak29
 
+### 2026-10-25 · Une seule Preact dans le bundle, des pages qui tiennent avec de vrais utilisateurs
+
+Trouvé pendant le test de charge (5 000 développeurs, 1 200 conversations, 3 000 demandes d'aide). Deux corrections :
+
+- **Une seule Preact** : l'app pouvait rester blanche après une reconstruction du serveur de dev. Le loader esbuild lance un `deno info` par lot de paquets, sans `deno.json` quand on ne lui donne pas : interrogé seul, `@preact/signals` prenait Preact 11 comme pair et repointait vers elle son lien dans `node_modules`, que suit esbuild. Le bundle portait alors deux Preact, et les composants ne suivaient plus les signaux. Le loader reçoit maintenant `configPath` (option documentée de `@luca/esbuild-deno-loader`). Vérifié en reconstruction, lien amorcé sur Preact 11 : deux Preact à chaque build avant, une seule après, et le lien reste sur la 10.
+- **Des personnes que les fixtures ne connaissent pas** : l'accueil, Explorer › Projets et l'aide d'une communauté lisaient `people[login]` pour l'auteur d'une demande ou le propriétaire d'un projet venus de l'API. Avec un vrai utilisateur, la page plantait, puis toutes les pages suivantes restaient vides jusqu'au rechargement. Ces lectures passent par `personOf`, qui nomme quand même la personne. Vérifié dans le navigateur sur 20 écrans avec les données de charge.
+
+- **Livrable** : `build-config.ts`, `web/fixtures/matching.ts`, `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/project/join-dialog.tsx`, `web/ui/project-card.tsx`
+- **Par** : @Mirak29
+
+### 2026-10-25 · Messagerie fluide et pages qui tiennent avec de vrais volumes
+
+Suite du test de charge, avec des données réalistes (demandes `platform`, projets dont on n'est pas membre). Tout a été vérifié dans le navigateur, en ordinateur et à 375 px.
+
+- **Messagerie à hauteur d'écran** : la page ne défile plus, la liste et le fil défilent chacun de leur côté ; la zone d'écriture reste visible, sur téléphone au-dessus de la barre du bas. Une page s'y prête avec `<Page fill>`, que la mise en page lit par `:has([data-fill])`.
+- **Envoi immédiat** : le message s'affiche à la frappe d'Entrée (« Envoi… »), le champ se vide et garde le focus, les messages tapés d'affilée partent dans l'ordre. Avant, le champ restait désactivé le temps de relire le fil et toute la liste des conversations (200 ms de calcul pour 1 200 conversations, deux fois par message). Un échec retire le message et rend le texte.
+- **« Afficher les messages précédents »** garde le message lu en place : en haut du fil, le navigateur ne garde pas d'ancrage de défilement (CSS Scroll Anchoring §2.1).
+- **Lien vers la PR d'une demande** : chaque demande donne le dépôt de sa PR (`repository`) ; l'aidant, souvent pas membre du projet, ouvrait une page blanche après avoir accepté.
+- **Projets inconnus des pages** : le nom d'un projet dont on n'est pas membre est remplacé par son slug, au lieu de faire planter Explorer, l'aide d'une communauté et la recherche.
+- **Pages figées** : Explorer › Projets et Sur quoi travailler, l'aide et les projets d'une communauté et la recherche lisent les signaux des données de l'API et se mettent à jour quand elles arrivent.
+- **Cartes de demande** : plus de « · · » quand la durée ou le niveau manquent.
+
+- **Livrable** : `api/help.ts`, `api/routes.ts`, `web/ui/layout.tsx`, `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/search-page.tsx`, `web/pages/home/home-page.tsx`, `web/ui/help-request-card.tsx`, `web/ui/command-palette.tsx`, `web/fixtures/help.ts`, `web/fixtures/reports.ts`
+- **Par** : @Mirak29
+
+### 2026-10-25 · Corrections après relecture du test de charge
+
+Relecture de la branche du test de charge, quatre corrections et un outil rendu rejouable :
+
+- **Une conversation en remplaçait une autre** : envoyer un message puis ouvrir tout de suite une autre conversation pouvait laisser un cadre vide, quand la relecture de la première arrivait en dernier. Une réponse arrivée après un changement de conversation est maintenant ignorée (lecture du fil comme saut vers un résultat de recherche). Vérifié en retardant exprès la réponse de 2,5 s.
+- **Un envoi refusé restait dans la liste** : la liste affichait « Toi : … » pour un message refusé (limite, réseau). Elle reprend l'état du serveur après un échec, et le texte revient dans le champ.
+- **L'anglais des cartes** : les lignes « type · date · durée · niveau » étaient jointes en une seule chaîne, qu'aucune entrée de traduction ne reconnaissait. `dotted` (`web/lib/language.ts`) garde les morceaux séparés : chacun est traduit, et les noms de personnes et de projets restent tels quels. Vérifié : « 5 h ago · Intermediate · ~30 min », « Beta · Very active ».
+- **« Envoi… »** : un message en route disait « Uploading… » en anglais, la clé de l'envoi d'un fichier ; il dit « Envoi en cours… », « Sending… ».
+- **Test de charge rejouable** : `deno task stress` remplit la base de dev après le seed, une seule fois, et refuse la production avant d'ouvrir la base ; `?stress` ajoute les fixtures en volume dans le bundle de dev seulement, jusqu'à `?stress=0`. Le script est formaté : la CI bloquait dessus.
+- **Contexte des agents de code** : `AGENTS.md` et `.claude/launch.json` sortent du repo (gardés sur le disque, ignorés par git), comme `CLAUDE.md`.
+
+- **Livrable** : `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/lib/language.ts` (`dotted`), `web/ui/help-request-card.tsx`, `web/ui/project-card.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/communities/community-page.tsx`, `task-db-stress.ts`, `api/stress.ts`, `web/stress-fixtures.ts`, `web/debug-app.ts`, `deno.json`, `.gitignore`, `web/lib/english.ts` ; §14
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

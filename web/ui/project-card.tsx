@@ -1,6 +1,7 @@
 import { A } from '@01edu/signal-router'
 import { issues } from '/web/fixtures/issues.ts'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, personOf } from '/web/fixtures/people.ts'
+import { dotted } from '/web/lib/language.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
@@ -21,7 +22,8 @@ export const beginnerIssues = (project: Project) =>
  * <ProjectCard project={projects['senegal-maps']} />
  */
 export const ProjectCard = ({ project }: { project: Project }) => {
-  const owner = people[project.owner]
+  // The owner of an imported project is often not in the fixtures
+  const owner = personOf(project.owner)
   const beginner = beginnerIssues(project)
   return (
     <A
@@ -35,7 +37,15 @@ export const ProjectCard = ({ project }: { project: Project }) => {
             {project.name}
           </span>
           <span class='font-mono text-[11px] leading-4 font-medium tracking-[.06em] text-ink-muted uppercase'>
-            {project.stage} · {project.activity} · {owner.city}, {owner.country}
+            {dotted([
+              project.stage,
+              project.activity,
+              (owner.city || owner.country) && (
+                <span key='place' translate={false}>
+                  {[owner.city, owner.country].filter(Boolean).join(', ')}
+                </span>
+              ),
+            ])}
           </span>
         </div>
       </div>

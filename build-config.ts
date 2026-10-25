@@ -5,7 +5,11 @@ import type { BuildOptions } from 'npm:esbuild@0.25.5'
 
 export const config: BuildOptions = {
   entryPoints: { index: 'web/app.tsx' },
-  plugins: [...denoPlugins()],
+  // The loader asks `deno info` for each package, with --no-config unless it
+  // is given the config. Without deno.json, @preact/signals took Preact 11 as
+  // its peer and relinked node_modules to it: the bundle got a second Preact
+  // whose components never followed the signals, and the page stayed blank.
+  plugins: [...denoPlugins({ configPath: `${import.meta.dirname}/deno.json` })],
   format: 'esm',
   bundle: true,
   jsxFactory: 'h',

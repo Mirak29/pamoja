@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
 import { Send } from '/web/assets/icons.tsx'
 import { apply } from '/web/fixtures/applications.ts'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, personOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
@@ -28,7 +28,7 @@ const Choices = (
 )
 
 const JoinForm = ({ project }: { project: Project }) => {
-  const owner = people[project.owner].name.split(' ')[0]
+  const owner = personOf(project.owner).name.split(' ')[0]
   const [how, setHow] = useState<string[]>([])
   const [availability, setAvailability] = useState(availabilities[1])
   const [message, setMessage] = useState('')

@@ -3,16 +3,23 @@ import type { ComponentChildren, JSX } from 'preact'
 import { A, navigate, url } from '@01edu/signal-router'
 import { CircleDot, FolderGit2, LifeBuoy } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
-import { matchingRequests } from '/web/fixtures/help.ts'
+import { helpChanged, matchingRequests } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import {
   isMe,
   type Login,
   me,
   people,
+  peopleChanged,
   type Person,
+  personOf,
 } from '/web/fixtures/people.ts'
-import { needSkills, type Project, projects } from '/web/fixtures/projects.ts'
+import {
+  needSkills,
+  type Project,
+  projects,
+  projectsChanged,
+} from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
 import { OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
@@ -105,8 +112,7 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
-const Developers = () => {
-  const all = allPeople()
+const Developers = ({ all }: { all: Person[] }) => {
   const community = communities.find((c) => c.name === param('community'))
   const list = all.filter((p) =>
     (!param('skill') || p.skills.includes(param('skill'))) &&
@@ -178,12 +184,11 @@ const Developers = () => {
   )
 }
 
-const Projects = () => {
-  const all = allProjects()
+const Projects = ({ all }: { all: Project[] }) => {
   const list = all.filter((p) =>
     (!param('tech') || p.stack.includes(param('tech'))) &&
     (!param('stage') || p.stage === param('stage')) &&
-    (!param('country') || people[p.owner].country === param('country')) &&
+    (!param('country') || personOf(p.owner).country === param('country')) &&
     (!param('activity') || p.activity === param('activity')) &&
     (!param('contributors') || p.needs.length > 0) &&
     (!param('beginners') || beginnerIssues(p) > 0)
@@ -203,7 +208,9 @@ const Projects = () => {
             <FilterSelect
               name='country'
               label='Pays'
-              options={sorted(all.map((p) => people[p.owner].country))}
+              options={sorted(
+                all.map((p) => personOf(p.owner).country).filter(Boolean),
+              )}
             />
             <FilterSelect
               name='activity'
@@ -269,7 +276,9 @@ const workGroups = (): [string, Work[]][] => {
     icon: LifeBuoy,
     color: 'text-indigo',
     kind: request.type,
-    where: request.project ? projects[request.project].name : 'Sans projet',
+    where: request.project
+      ? projects[request.project]?.name ?? request.project
+      : 'Sans projet',
     title: request.title,
     reason: `Score ${score} / 100 · ${
       request.skills.filter((s) => me.skills.includes(s)).join(', ')
@@ -377,6 +386,11 @@ const tabs = [
 
 /** /explore, /explore/projects, /explore/work (§10.3) */
 export const ExplorePage = () => {
+  // Read here: the projects and requests of the API arrive after the first
+  // render, and the tabs list them
+  projectsChanged.value
+  helpChanged.value
+  peopleChanged.value
   const segment = url.relativePath.slice(1).split('/')[1] ?? ''
   const current = tabs.find(([key]) => key === segment)?.[0] ?? ''
   return (
@@ -391,8 +405,9 @@ export const ExplorePage = () => {
           href: key ? `explore/${key}` : 'explore',
         }))}
       />
-      {current === '' && <Developers />}
-      {current === 'projects' && <Projects />}
+      {/* Read the URL filters: they render again only when their props do */}
+      {current === '' && <Developers all={allPeople()} />}
+      {current === 'projects' && <Projects all={allProjects()} />}
       {current === 'work' && <WorkList />}
     </Page>
   )
