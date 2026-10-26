@@ -1,12 +1,18 @@
 import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
-import { Play } from '/web/assets/icons.tsx'
+import { ImagePlus, Play } from '/web/assets/icons.tsx'
 import { isMe, personOf } from '/web/fixtures/people.ts'
-import type { Project } from '/web/fixtures/projects.ts'
+import { type Project, projectsChanged } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
+import {
+  canEditGallery,
+  ManageScreenshots,
+  Screenshots,
+  ScreenshotViewer,
+} from '/web/pages/project/gallery.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -34,34 +40,31 @@ const About = ({ project }: { project: Project }) => (
   </Card>
 )
 
-const Label = ({ children }: { children: ComponentChildren }) => (
-  <span class='rounded-sm border border-line bg-surface-100 px-1.5 py-0.5 font-mono text-[11px] leading-[14px] font-medium text-ink-muted'>
-    {children}
-  </span>
-)
-
 const Gallery = ({ project }: { project: Project }) => {
+  // The project is mutated in place: the signal brings its new screenshots
+  projectsChanged.value
   const [playing, setPlaying] = useState(false)
   const video = project.demoVideo
   return (
     <Card class='gap-3.5 p-[22px]'>
-      <Eyebrow>Captures et démo</Eyebrow>
-      {!project.gallery.length && !video && (
+      <div class='flex flex-wrap items-center justify-between gap-3'>
+        <Eyebrow>Captures et démo</Eyebrow>
+        {canEditGallery(project) && !!project.shots?.length && (
+          <Button variant='secondary' size={32} params={{ dialog: 'captures' }}>
+            <ImagePlus class='size-4' />
+            Gérer les captures
+          </Button>
+        )}
+      </div>
+      {!(project.shots ?? project.gallery).length && !video &&
+        !canEditGallery(project) && (
         <span class='text-[14px] text-ink-muted'>
           Pas encore de captures ni de vidéo de démo.
         </span>
       )}
-      <div class='grid grid-cols-2 gap-3.5 sm:grid-cols-3'>
-        {project.gallery.map((caption) => (
-          <div
-            key={caption}
-            title={caption}
-            class='flex aspect-[4/3] min-w-0 items-end overflow-hidden rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
-          >
-            <Label>{caption}</Label>
-          </div>
-        ))}
-      </div>
+      <Screenshots project={project} />
+      <ScreenshotViewer project={project} />
+      <ManageScreenshots project={project} />
       {video && !playing && (
         <button
           type='button'

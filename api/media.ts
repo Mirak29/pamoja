@@ -305,6 +305,39 @@ const remove = (media: MediaRow[]) => {
   }
 }
 
+const setPosition = sql<undefined, { mediaId: number; position: number }>`
+  UPDATE media SET position = :position WHERE mediaId = :mediaId
+`.run
+
+/**
+ * Sets the media of a content to these, in this order: the uploads of the
+ * developer not attached yet join it, those of the content left out are
+ * deleted with their files. Everything is checked before anything changes.
+ */
+export const setMediaOf = (
+  me: number,
+  targetType: string,
+  targetId: number,
+  ids: number[],
+) => {
+  if (new Set(ids).size !== ids.length) throw badRequest('Twice the same file')
+  const current = listOf({ targetType, ids: JSON.stringify([targetId]) })
+  const attached = new Set(current.map((m) => m.mediaId))
+  for (const mediaId of ids) {
+    if (attached.has(mediaId)) continue
+    const media = getMedia(mediaId)
+    if (!media || media.ownerId !== me || media.targetType || media.hiddenAt) {
+      throw badRequest('No such upload')
+    }
+  }
+  ids.forEach((mediaId, position) =>
+    attached.has(mediaId)
+      ? setPosition({ mediaId, position })
+      : setTarget({ mediaId, targetType, targetId, position })
+  )
+  remove(current.filter((m) => !ids.includes(m.mediaId)))
+}
+
 /** Deletes the media of a content: rows and files */
 export const removeMediaOf = (targetType: string, targetId: number) =>
   remove(listOf({ targetType, ids: JSON.stringify([targetId]) }))

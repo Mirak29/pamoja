@@ -100,6 +100,7 @@ import {
   skills,
 } from '/api/vocabulary.ts'
 import { serveMedia, upload } from '/api/media.ts'
+import { setGallery } from '/api/project-gallery.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -592,6 +593,7 @@ const defs = {
         members: ARR(OBJ({ login: STR(), role: STR() })),
         followers: ARR(STR('Login')),
         needs: ARR(STR('Open need')),
+        gallery: ARR(media, 'Screenshots of the project page, in order'),
         repository: optional(OBJ({
           owner: STR(),
           name: STR(),
@@ -974,6 +976,22 @@ const defs = {
     output: media,
     description:
       'Upload a JPEG, PNG or WebP image (2 MB) or a PDF (5 MB), to attach',
+  }),
+
+  'POST/api/project/gallery': route({
+    authorize: withSession,
+    fn: (ctx, { project, media }) =>
+      setGallery(ctx.session.userId, project, media),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      media: ARR(
+        NUM('Id of an upload or of a screenshot already there'),
+        'The whole gallery, in order: 8 screenshots at most',
+      ),
+    }),
+    output: ARR(media),
+    description:
+      'Set the screenshots of a project page: owner and maintainers only',
   }),
 
   'GET/api/media': route({

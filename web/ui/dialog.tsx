@@ -13,6 +13,8 @@ const widths = {
   640: 'max-w-[640px]',
   680: 'max-w-[680px]',
   720: 'max-w-[720px]',
+  // The viewer of the screenshots of a project
+  960: 'max-w-[960px]',
 } as const
 
 const drawerWidths = {

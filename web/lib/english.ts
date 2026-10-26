@@ -1531,6 +1531,22 @@ export const english: Record<string, string> = {
   'Envoie les autres dans un message suivant.':
     'Send the others in another message.',
   'Envoi en cours…': 'Sending…',
+  // Screenshots of a project (PAM-425)
+  'Ajouter des captures': 'Add screenshots',
+  'Capture précédente': 'Previous screenshot',
+  'Capture suivante': 'Next screenshot',
+  'Ajoute des images JPEG, PNG ou WebP.': 'Add JPEG, PNG or WebP images.',
+  'Galerie pleine': 'Gallery full',
+  'Captures enregistrées': 'Screenshots saved',
+  'Captures non enregistrées': 'Screenshots not saved',
+  'Réessaie dans un instant.': 'Try again in a moment.',
+  'Captures du projet': 'Project screenshots',
+  'Principale': 'Main',
+  'Envoi en cours': 'Uploading',
+  'Clique ou dépose des images ici : JPEG, PNG ou WebP.':
+    'Click or drop images here: JPEG, PNG or WebP.',
+  'Enregistrement…': 'Saving…',
+  'Gérer les captures': 'Manage screenshots',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1771,4 +1787,17 @@ export const englishTemplates: Record<string, string> = {
   'PDF · {0}': 'PDF · {0}',
   '{0} ko': '{0} KB',
   '{0} Mo': '{0} MB',
+  'Jusqu’à {0} images : écrans, démo, version mobile.':
+    'Up to {0} images: screens, demo, mobile version.',
+  'Agrandir la capture {0} de {1}': 'Enlarge screenshot {0} of {1}',
+  'Capture {0} sur {1} · {2}': 'Screenshot {0} of {1} · {2}',
+  'Capture {0} de {1}': 'Screenshot {0} of {1}',
+  'Capture {0}': 'Screenshot {0}',
+  '{0} captures au plus : les suivantes ne sont pas ajoutées.':
+    '{0} screenshots at most: the next ones are not added.',
+  '{0} sur {1}. La première est mise en avant. Les images sont réduites et leurs métadonnées retirées avant l’envoi.':
+    '{0} of {1}. The first one is featured. Images are resized and their metadata removed before sending.',
+  'Avancer la capture {0}': 'Move screenshot {0} forward',
+  'Retirer la capture {0}': 'Remove screenshot {0}',
+  'Reculer la capture {0}': 'Move screenshot {0} back',
 }

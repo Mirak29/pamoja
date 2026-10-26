@@ -2,6 +2,7 @@ import { signal } from '@preact/signals'
 import { logActivity } from '/web/fixtures/activity.ts'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import type { Login } from '/web/fixtures/people.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 export type ProjectRole =
   | 'Propriétaire'
@@ -39,7 +40,13 @@ export type Project = {
   vision?: string
   releasedAt: number
   milestones: Milestone[]
+  /** Captions of the screenshots of a demo project, drawn as tiles */
   gallery: string[]
+  /**
+   * The screenshots uploaded for the project (PAM-425), once the server knows
+   * it: they take the place of the demo captions
+   */
+  shots?: Media[]
   /** Embedded by link only (cahier des charges §17.3) */
   demoVideo?: { provider: 'YouTube' | 'Loom' | 'Vimeo'; duration: string }
   /** Events imported with the project, before any live entry */

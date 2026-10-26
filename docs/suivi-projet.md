@@ -627,6 +627,13 @@ Relecture de la branche du test de charge, quatre corrections et un outil rendu 
 - **Livrable** : `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/lib/language.ts` (`dotted`), `web/ui/help-request-card.tsx`, `web/ui/project-card.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/communities/community-page.tsx`, `task-db-stress.ts`, `api/stress.ts`, `web/stress-fixtures.ts`, `web/debug-app.ts`, `deno.json`, `.gitignore`, `web/lib/english.ts` ; §14
 - **Par** : @Mirak29
 
+### 2026-10-26 · PAM-425 · Galerie du projet
+
+Le propriétaire et les mainteneurs d'un projet gèrent ses captures depuis l'Aperçu : ajout de plusieurs images d'un coup, par clic ou glisser-déposer (réduites et nettoyées de leurs métadonnées dans le navigateur, comme les messages), ordre, suppression, puis enregistrement de toute la galerie ; 8 captures au plus, la première mise en avant. Tout développeur connecté les voit, et une visionneuse les ouvre en grand (flèches, clavier, vignettes). Côté serveur, `setMediaOf` remplace les médias d'un contenu dans l'ordre et supprime ceux retirés. Vérifié dans le navigateur avec la connexion simulée sur une base seedée : ajout de trois images, ordre, enregistrement, visionneuse, rechargement.
+
+- **Livrable** : `api/project-gallery.ts`, `setMediaOf` dans `api/media.ts`, route `POST/api/project/gallery`, galerie dans `GET/api/projects`, `api/project-gallery_test.ts` (3 tests), `web/pages/project/gallery.tsx`, Aperçu du projet
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

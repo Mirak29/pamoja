@@ -250,7 +250,7 @@ En-tête : nom, description, technologies, lien GitHub, puis contributeurs, issu
 
 Onglets : Overview, Pulse, Canaux (§6.8), Pull Requests, Issues, Team, Activity, Board, Roadmap. L'Overview répond à : qu'est-ce que c'est, que se passe-t-il, qui construit, de quoi a-t-il besoin, puis-je aider.
 
-L'Overview affiche aussi une **galerie** (jusqu'à 8 captures d'écran) et une **vidéo de démo** intégrée par lien (§17.3).
+L'Overview affiche aussi une **galerie** (jusqu'à 8 captures d'écran) et une **vidéo de démo** intégrée par lien (§17.3). Le propriétaire et les mainteneurs gèrent la galerie : ajout de plusieurs images d'un coup (clic ou glisser-déposer), ordre, suppression, puis enregistrement ; la première capture est mise en avant. Chaque capture s'ouvre dans une visionneuse (flèches, clavier, vignettes).
 
 Un projet peut aussi être créé sans repo (« Create from scratch » : nom, description, vision, technologies, visibilité, besoins) et connecté à un repo plus tard.
 
@@ -986,6 +986,7 @@ Les avatars restent ceux de GitHub.
 - **Fichiers** : seuls les messages directs acceptent aussi un PDF, 5 Mo au plus, gardé avec son nom nettoyé (sans chemin ni caractère de contrôle) et servi en téléchargement (`Content-Disposition: attachment`), jamais ouvert dans la page.
 - **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande, au projet ou au message à l'enregistrement, par son propriétaire et une seule fois. Une image jamais rattachée est supprimée au bout de 24 h (vérifié chaque heure par le serveur).
 - **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement. Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Galerie d'un projet** : `POST/api/project/gallery` reçoit toute la galerie, dans l'ordre (8 captures au plus) : les nouveaux uploads du développeur y sont rattachés, une capture retirée est supprimée avec son fichier ; propriétaire et mainteneurs seulement. `GET/api/projects` renvoie la galerie de chaque projet ; une capture rattachée se lit par tout développeur connecté.
 - **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
 
 **Vidéos intégrées par lien**

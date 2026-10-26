@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { galleryOf } from '/api/project-gallery.ts'
 import { skillNamesOf } from '/api/skills.ts'
 
 // The projects of the signed-in developer, as the web shows them until the
@@ -120,6 +121,7 @@ export const listMyProjects = (userId: number) =>
       members: listMembers(row.projectId),
       followers: listFollowers(row.projectId).map((f) => f.login),
       needs: listNeeds(row.projectId).map((n) => n.title),
+      gallery: galleryOf(row.projectId),
       repository: repositoryId
         ? {
           owner: row.repoOwner!,
