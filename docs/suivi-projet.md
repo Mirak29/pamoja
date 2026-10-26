@@ -641,6 +641,13 @@ Un kit commun pour les images (`web/ui/media.tsx`) : `useMediaPicker` envoie les
 - **Livrable** : `web/ui/media.tsx`, formulaire et page de la demande d'aide, page « Modifier le profil » et couverture, `api/help.ts`, `coverOf` et `setCover` dans `api/media.ts`, `api/attached-media_test.ts` et `api/help_test.ts`
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-410 · Vidéos intégrées par lien
+
+Un lien YouTube, Loom ou Vimeo devient un lecteur intégré : la miniature d'abord, le lecteur au clic (`youtube-nocookie.com` pour YouTube), construit à partir de l'identifiant de la vidéo. Le serveur lit le titre et la miniature une fois par oEmbed, les garde en mémoire et sert lui-même la miniature, pour qu'aucun fournisseur ne soit contacté avant la lecture. Les pages n'autorisent que ces trois lecteurs (`frame-src`). Branché sur la demande d'aide (aperçu dans le formulaire, lecteur dans la page) et sur la vidéo de démo du projet, réglée dans le dialogue des captures (migration 011) ; le faux lecteur de démo est retiré. Vérifié dans le navigateur : une demande avec un lien YouTube, sa miniature et son lecteur, une vidéo de démo Vimeo.
+
+- **Livrable** : `api/video-links.ts`, `api/video.ts`, routes `GET/api/video/preview`, `GET/api/video/thumbnail` et `POST/api/project/video`, `migrations/011-project-demo-video.js`, `api/video_test.ts` (4 tests), `web/ui/video.tsx`, CSP de `prod-server.ts` et `task-dev.ts`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

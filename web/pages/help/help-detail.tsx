@@ -54,6 +54,7 @@ import { useEvent } from '/web/lib/realtime.ts'
 import { counted } from '/web/lib/plural.ts'
 import { LIMITS } from '/api/limits.ts'
 import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
@@ -930,6 +931,9 @@ export const HelpDetail = ({ id }: { id: string }) => {
             items={request.media ?? []}
             label={t`Captures de la demande`}
           />
+          {request.video && (
+            <VideoEmbed url={request.video} label='Vidéo du problème' />
+          )}
           <MediaViewer
             id='captures-aide'
             items={request.media ?? []}

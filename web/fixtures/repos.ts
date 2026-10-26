@@ -260,6 +260,7 @@ export const adoptProjects = (list: ApiProject[]) => {
     if (all[project.slug]?.demo) {
       // Its screenshots are real as soon as the server knows the project
       all[project.slug].shots = project.gallery
+      all[project.slug].demoVideoUrl = project.demoVideoUrl
       continue
     }
     const repo = project.repository
@@ -292,6 +293,7 @@ export const adoptProjects = (list: ApiProject[]) => {
       milestones: [],
       gallery: [],
       shots: project.gallery,
+      demoVideoUrl: project.demoVideoUrl,
       events: [],
       demo: false,
     }

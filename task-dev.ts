@@ -2,6 +2,7 @@ import { config } from './build-config.ts'
 import { context } from 'npm:esbuild@0.25.5'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
+import { VIDEO_FRAMES } from '/api/video-links.ts'
 
 const ctx = await context({
   ...config,
@@ -53,8 +54,15 @@ const fresh = async (response: Promise<Response>) => {
 const fromDisk = (request: Request) =>
   fresh(serveDir(request, { fsRoot: 'dist', quiet: true }))
 
-const index = (request: Request) =>
-  fromDisk(new Request(new URL('/index.html', request.url)))
+// A page frames the players of the embedded videos only (§17.3)
+const index = async (request: Request) => {
+  const res = await fromDisk(new Request(new URL('/index.html', request.url)))
+  res.headers.set(
+    'Content-Security-Policy',
+    `frame-src ${VIDEO_FRAMES.join(' ')}`,
+  )
+  return res
+}
 
 export default {
   fetch(request: Request) {

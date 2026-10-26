@@ -3,6 +3,7 @@ import '/api/lib/production.ts'
 import api from './api/server.ts'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import { BASE_URL } from '/api/lib/env.ts'
+import { VIDEO_FRAMES } from '/api/video-links.ts'
 
 const html = Deno.readTextFileSync(import.meta.dirname + '/dist/index.html')
   .replace(
@@ -13,7 +14,13 @@ const encoder = new TextEncoder()
 const indexHtml = encoder.encode(html)
 const port = Number(Deno.env.get('PORT')) || 8000
 const serveDirOpts = { fsRoot: import.meta.dirname + '/dist' }
-const htmlContent = { headers: { 'Content-Type': 'text/html' } }
+const htmlContent = {
+  headers: {
+    'Content-Type': 'text/html',
+    // A page frames the players of the embedded videos only (§17.3)
+    'Content-Security-Policy': `frame-src ${VIDEO_FRAMES.join(' ')}`,
+  },
+}
 Deno.serve({ port }, (req) => {
   const { pathname } = new URL(req.url)
 

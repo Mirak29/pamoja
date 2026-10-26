@@ -100,7 +100,8 @@ import {
   skills,
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
-import { setGallery } from '/api/project-gallery.ts'
+import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
+import { previewVideo, thumbnailOf } from '/api/video.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -596,6 +597,7 @@ const defs = {
         followers: ARR(STR('Login')),
         needs: ARR(STR('Open need')),
         gallery: ARR(media, 'Screenshots of the project page, in order'),
+        demoVideoUrl: STR('Link of the demo video, empty if none'),
         repository: optional(OBJ({
           owner: STR(),
           name: STR(),
@@ -995,6 +997,39 @@ const defs = {
     output: ARR(media),
     description:
       'Set the screenshots of a project page: owner and maintainers only',
+  }),
+
+  'POST/api/project/video': route({
+    authorize: withSession,
+    fn: (ctx, { project, url }) =>
+      setDemoVideo(ctx.session.userId, project, url),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      url: STR('YouTube, Loom or Vimeo link; empty removes the video'),
+    }),
+    output: OBJ({ url: STR('The link kept, empty if none') }),
+    description: 'Set the demo video of a project: owner and maintainers only',
+  }),
+
+  'GET/api/video/preview': route({
+    authorize: withSession,
+    fn: (_, { url }) => previewVideo(url),
+    input: OBJ({ url: STR('YouTube, Loom or Vimeo link') }),
+    output: OBJ({
+      provider: STR('YouTube, Loom or Vimeo'),
+      id: STR('Id of the video at the provider'),
+      embedUrl: STR('Address of the player, built from the id'),
+      title: STR('Title, empty if the provider did not say'),
+      thumbnailUrl: STR('Thumbnail of the provider, empty if none'),
+    }),
+    description: 'What a page shows of a video link before its player',
+  }),
+
+  'GET/api/video/thumbnail': route({
+    authorize: withSession,
+    fn: (_, { url }) => thumbnailOf(url),
+    input: OBJ({ url: STR('YouTube, Loom or Vimeo link') }),
+    description: 'The thumbnail of a video, served by Pamoja (§17.3)',
   }),
 
   'GET/api/media': route({

@@ -141,6 +141,8 @@ export const Project = createTable('project', {
   updatedAt: { type: 'REAL' },
   // Added by migrations/002: skill ids of the stack
   skills: { type: 'JSON', optional: true },
+  // Added by migrations/011: the link of the demo video (§17.3)
+  demoVideoUrl: { type: 'TEXT', optional: true },
 })
 unique('project_slug', 'project', 'slug')
 index('project_owner', 'project', 'ownerId, createdAt')

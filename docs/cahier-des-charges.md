@@ -995,7 +995,7 @@ Les avatars restent ceux de GitHub.
 Un lien YouTube, Loom ou Vimeo collé dans un post, une page projet (vidéo de démo), une demande d'aide (par exemple un Loom qui montre le bug) ou un message de canal s'affiche en lecteur intégré.
 
 - **Fournisseurs autorisés** : YouTube (lecteur `youtube-nocookie.com`), Loom, Vimeo. Tout autre lien reste un lien simple.
-- **Stockage** : uniquement les métadonnées (`provider`, identifiant de la vidéo, URL, titre, miniature), récupérées une fois côté serveur via oEmbed et mises en cache.
+- **Stockage** : uniquement le lien (`videoUrl` d'une demande d'aide, `demoVideoUrl` d'un projet, réglé par son propriétaire et ses mainteneurs avec `POST/api/project/video`). Le titre et la miniature sont demandés une fois au fournisseur (oEmbed) par `GET/api/video/preview` et gardés en mémoire ; la miniature est servie par Pamoja (`GET/api/video/thumbnail`), jamais lue chez le fournisseur par la page. Le lecteur est construit à partir de l'identifiant de la vidéo, jamais à partir du lien collé.
 - **Affichage** : la miniature s'affiche d'abord ; le lecteur (iframe) ne se charge qu'au clic. La page reste rapide et aucun tiers n'est contacté tant que la vidéo n'est pas lancée.
 - **Sécurité** : iframes limitées à ces domaines par la politique de sécurité de contenu (`frame-src`).
 

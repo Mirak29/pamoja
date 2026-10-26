@@ -47,6 +47,8 @@ export type Project = {
    * it: they take the place of the demo captions
    */
   shots?: Media[]
+  /** The link of the demo video, once the server knows the project */
+  demoVideoUrl?: string
   /** Embedded by link only (cahier des charges §17.3) */
   demoVideo?: { provider: 'YouTube' | 'Loom' | 'Vimeo'; duration: string }
   /** Events imported with the project, before any live entry */

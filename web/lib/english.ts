@@ -477,7 +477,6 @@ export const english: Record<string, string> = {
     'Context, what you expect, and how long it might take',
   'Le pays où tu vis': 'The country where you live',
   'Lien vidéo (facultatif)': 'Video link (optional)',
-  'Lire la vidéo de démo': 'Watch the demo video',
   'Liste': 'List',
   'Lu sur GitHub · à valider': 'Read from GitHub · needs verification',
   'Matching': 'Matching',
@@ -977,7 +976,6 @@ export const english: Record<string, string> = {
   'Toutes les preuves ·': 'All proofs ·',
   '· Voir les preuves': '· View proofs',
   'Vidéo de démo ·': 'Demo video ·',
-  'Lecture · Vidéo de démo ·': 'Play · Demo video ·',
   'Tes projets ·': 'Your projects ·',
   'Projets que tu suis ·': 'Projects you follow ·',
   'travaille sur la PR #84': 'is working on PR #84',
@@ -1537,10 +1535,8 @@ export const english: Record<string, string> = {
   'Captures enregistrées': 'Screenshots saved',
   'Captures non enregistrées': 'Screenshots not saved',
   'Réessaie dans un instant.': 'Try again in a moment.',
-  'Captures du projet': 'Project screenshots',
   'Principale': 'Main',
   'Enregistrement…': 'Saving…',
-  'Gérer les captures': 'Manage screenshots',
   'Les suivantes ne sont pas ajoutées.': 'The next ones are not added.',
   'Choisir une image': 'Choose an image',
   'Depuis ton ordinateur, glissées ici ou collées : JPEG, PNG ou WebP.':
@@ -1557,6 +1553,15 @@ export const english: Record<string, string> = {
   'Une photo large, depuis ton ordinateur ou glissée ici : JPEG, PNG ou WebP.':
     'A wide photo, from your computer or dropped here: JPEG, PNG or WebP.',
   'Couverture non enregistrée': 'Cover not saved',
+  'Vidéo du problème': 'Video of the problem',
+  'Vidéo de démo': 'Demo video',
+  'Lien YouTube, Loom ou Vimeo': 'YouTube, Loom or Vimeo link',
+  'Vidéo de démo (facultatif)': 'Demo video (optional)',
+  'Colle un lien YouTube, Loom ou Vimeo.':
+    'Paste a YouTube, Loom or Vimeo link.',
+  'Gérer les captures et la vidéo': 'Manage screenshots and video',
+  'Captures et vidéo du projet': 'Project screenshots and video',
+  'Vidéo': 'Video',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1811,4 +1816,5 @@ export const englishTemplates: Record<string, string> = {
   '{0}, image {1}': '{0}, image {1}',
   'Captures de {0}': 'Screenshots of {0}',
   'Captures de la demande': 'Screenshots of the request',
+  'Lire : {0}': 'Play: {0}',
 }

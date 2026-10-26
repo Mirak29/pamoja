@@ -171,7 +171,7 @@ Responsable : _à répartir_
 - [ ] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6)
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
 - [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
-- [ ] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3)
+- [x] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3) ; demande d'aide et vidéo de démo du projet, les posts avec PAM-427 — @niangoos
 - [ ] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]`
 - [ ] **PAM-412** · Non lus et notifications par canal (`ChannelState`), « seulement mes PRs » par défaut sur `#suivi` (§6.8)
 - [x] **PAM-413** · Page projet sur données fictives : en-tête, onglets, Aperçu, dialogue Rejoindre (§6.3, §6.6) `[démo]` — @niangoos
@@ -321,3 +321,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-25 · Test de charge rejouable : `deno task stress` remplit la base de dev après le seed (refusé en production), `?stress` ajoute des milliers de fixtures dans le bundle de dev seulement ; le contexte des agents de code (`AGENTS.md`, `.claude/`) reste hors du repo, comme `CLAUDE.md` · §14
 - 2026-10-26 · Galerie du projet (PAM-425) : la page enregistre toute la galerie d'un coup, dans l'ordre ; une capture retirée est supprimée avec son fichier ; 8 au plus, propriétaire et mainteneurs ; la vidéo de démo reste à PAM-410 · §6.3, §17.3
 - 2026-10-26 · Médias partout (PAM-426) : un kit commun d'envoi et de visionneuse pour toutes les images ; les captures d'une demande d'aide sont rattachées à sa création ; une photo de couverture uploadée est la couverture du profil, gardée sur le serveur, les couvertures prédéfinies restant dans la page jusqu'à PAM-302 ; ensuite PAM-410 (vidéos par lien) puis PAM-427 (posts enregistrés avec leurs images) · §9.2, §17.3
+- 2026-10-26 · Vidéos par lien (PAM-410) : seul le lien est gardé ; titre et miniature lus une fois par oEmbed, miniature servie par Pamoja pour qu'aucun fournisseur ne soit contacté avant la lecture ; lecteur construit depuis l'identifiant ; `frame-src` limité aux trois lecteurs sur les pages ; vidéo de démo d'un projet en base (migration 011) · §6.3, §16, §17.3
