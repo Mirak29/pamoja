@@ -15,7 +15,6 @@ import {
   Send,
   Tag,
   UserPlus,
-  X,
   Zap,
 } from '/web/assets/icons.tsx'
 import { activityKind, recentActivityOf } from '/web/fixtures/activity.ts'
@@ -59,7 +58,7 @@ import { LIMITS } from '/api/limits.ts'
 import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
 import { savePost } from '/web/lib/posts.ts'
-import { IMAGE_TYPES, useMediaPicker } from '/web/ui/media.tsx'
+import { IMAGE_TYPES, MediaThumbs, useMediaPicker } from '/web/ui/media.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -359,32 +358,7 @@ const Composer = () => {
           class='well w-full resize-y px-3 py-2.5 text-[16px] leading-[23px] text-ink'
         />
         <Counter value={text} limit={LIMITS.post} />
-        {picker.items.length > 0 && (
-          <div class='flex flex-wrap gap-2.5'>
-            {picker.items.map((item, i) => (
-              <span
-                key={item.local}
-                class='tile relative size-16 overflow-hidden rounded-[5px]'
-              >
-                <img
-                  src={item.preview}
-                  alt={t`Image ${i + 1}`}
-                  class={`size-full object-cover ${
-                    item.media ? '' : 'animate-skeleton'
-                  }`}
-                />
-                <button
-                  type='button'
-                  aria-label={t`Retirer l’image ${i + 1}`}
-                  onClick={() => picker.remove(item.local)}
-                  class='absolute top-0.5 right-0.5 flex size-[20px] cursor-pointer items-center justify-center rounded-sm border border-figure-edge bg-surface-100 text-ink'
-                >
-                  <X class='size-3' />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
+        <MediaThumbs picker={picker} />
         <div class='flex flex-wrap items-center gap-2'>
           <input
             ref={files}

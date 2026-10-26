@@ -101,6 +101,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import { createChannelMessage, listChannelMessages } from '/api/channels.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
 
@@ -134,6 +135,17 @@ const savedPost = OBJ({
   videoUrl: STR('Link of the video, empty if none'),
   createdAt: NUM('Publication, in seconds'),
 }, 'A post')
+
+const channelMessage = OBJ({
+  id: NUM('Id of the message'),
+  channel: STR('general, help or announcements'),
+  author: STR('Login of the author'),
+  authorName: STR('Name of the author'),
+  avatarUrl: STR('GitHub avatar of the author'),
+  body: STR('Markdown, a video by its link'),
+  media: ARR(media, 'The image: none or one'),
+  createdAt: NUM('Sent, in seconds'),
+}, 'A message of a project channel')
 
 // What anyone sees of a developer, and the developer of themselves
 const identity = {
@@ -1046,6 +1058,27 @@ const defs = {
     fn: () => listPosts(),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'POST/api/project/message/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createChannelMessage(ctx.session.userId, input),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, help or announcements'),
+      body: STR('Markdown, empty with an image'),
+      media: optional(ARR(NUM('Id of an upload'), 'One image at most')),
+    }),
+    output: channelMessage,
+    description: 'Write in a channel of a project, with an image',
+  }),
+
+  'GET/api/project/messages': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => listChannelMessages(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(channelMessage),
+    description: 'The latest messages of the channels the developer reads',
   }),
 
   'GET/api/video/preview': route({

@@ -1552,6 +1552,7 @@ export const english: Record<string, string> = {
     'A wide photo, from your computer or dropped here: JPEG, PNG or WebP.',
   'Couverture non enregistrée': 'Cover not saved',
   'Vidéo du problème': 'Video of the problem',
+  'Vidéo du message': 'Video of the message',
   'Vidéo de démo': 'Demo video',
   'Lien YouTube, Loom ou Vimeo': 'YouTube, Loom or Vimeo link',
   'Vidéo de démo (facultatif)': 'Demo video (optional)',
@@ -1648,7 +1649,9 @@ export const englishTemplates: Record<string, string> = {
   '{0}/{1} : issues et PRs importées, synchro toutes les 15 min.':
     '{0}/{1}: issues and PRs imported, synced every 15 min.',
   '« {0} » est dans {1}': '“{0}” is in {1}',
-  'Écrire dans #{0} (Markdown, `code`)': 'Write in #{0} (Markdown, `code`)',
+  'Écrire dans #{0} (Markdown, `code`, lien vidéo)':
+    'Write in #{0} (Markdown, `code`, video link)',
+  'Image de {0}': 'Image from {0}',
   'Écrire à {0}': 'Write to {0}',
   'Écris quelques mots à {0} : le contexte et ce que tu attends.':
     'Write a few words to {0}: the context and what you expect.',

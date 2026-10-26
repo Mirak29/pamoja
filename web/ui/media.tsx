@@ -6,6 +6,7 @@ import {
   CircleAlert,
   ImagePlus,
   Trash2,
+  X,
 } from '/web/assets/icons.tsx'
 import { t } from '/web/lib/language.ts'
 import { type Media, mediaUrl, uploadMedia } from '/web/lib/messages.ts'
@@ -226,6 +227,37 @@ export const MediaPicker = (
     </div>
   )
 }
+
+/** The images of a composer, small, each with its removal */
+export const MediaThumbs = ({ picker }: { picker: MediaPickerState }) =>
+  picker.items.length
+    ? (
+      <div class='flex flex-wrap gap-2.5'>
+        {picker.items.map((item, i) => (
+          <span
+            key={item.local}
+            class='tile relative size-16 overflow-hidden rounded-[5px]'
+          >
+            <img
+              src={item.preview}
+              alt={t`Image ${i + 1}`}
+              class={`size-full object-cover ${
+                item.media ? '' : 'animate-skeleton'
+              }`}
+            />
+            <button
+              type='button'
+              aria-label={t`Retirer l’image ${i + 1}`}
+              onClick={() => picker.remove(item.local)}
+              class='absolute top-0.5 right-0.5 flex size-[20px] cursor-pointer items-center justify-center rounded-sm border border-figure-edge bg-surface-100 text-ink'
+            >
+              <X class='size-3' />
+            </button>
+          </span>
+        ))}
+      </div>
+    )
+    : null
 
 // One image takes the width; two side by side; more in a grid
 const layouts = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-2']

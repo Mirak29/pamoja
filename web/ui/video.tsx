@@ -29,6 +29,10 @@ const previewOf = (url: string) => {
   return found
 }
 
+/** The first YouTube, Loom or Vimeo link of a text, embedded under it */
+export const videoIn = (text: string) =>
+  text.match(/https?:\/\/[^\s<>()]+/g)?.find((link) => videoOf(link))
+
 const frame =
   'aspect-video w-full overflow-hidden rounded-lg border border-figure-edge bg-surface-000 shadow-tile'
 

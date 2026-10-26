@@ -1,7 +1,9 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
-import { type Login, me } from '/web/fixtures/people.ts'
+import { hearOf, type Login, me } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 /** The four imposed channels of a project (cahier des charges §6.8) */
 export type Channel = 'general' | 'tracking' | 'help' | 'announcements'
@@ -25,6 +27,8 @@ export type Message = {
   author: Login | 'platform'
   kind?: AlertKind
   text: string
+  /** One uploaded image (§17.3); a video goes in the text by its link */
+  media?: Media[]
   pullRequest?: number
   at: number
   reactions?: { like?: Login[] }
@@ -157,18 +161,20 @@ export const markChannelRead = (project: ProjectSlug, channel: Channel) => {
   if (read.peek()[key] !== count) read.value = { ...read.peek(), [key]: count }
 }
 
+const emptyChannels = (): Record<Channel, Message[]> => ({
+  general: [],
+  tracking: [],
+  help: [],
+  announcements: [],
+})
+
 /** An alert the platform writes in #suivi, like the webhook handler will */
 export const postAlert = (
   project: ProjectSlug,
   kind: AlertKind,
   text: string,
 ) => {
-  const store = channels[project] ??= {
-    general: [],
-    tracking: [],
-    help: [],
-    announcements: [],
-  }
+  const store = channels[project] ??= emptyChannels()
   store.tracking.push({
     id: `alert-${project}-${store.tracking.length + 1}`,
     author: 'platform',
@@ -177,4 +183,29 @@ export const postAlert = (
     at: Date.now(),
     demo: true,
   })
+}
+
+// Messages saved on the server (PAM-428): read when the channels open
+export const channelsChanged = signal(0)
+
+/** A message saved on the server, in the channel it was written in */
+export const adoptChannelMessage = (
+  project: ProjectSlug,
+  saved: ApiOutput['GET/api/project/messages'][number],
+) => {
+  const store = channels[project] ??= emptyChannels()
+  const list = store[saved.channel as Channel]
+  const id = `s${saved.id}`
+  if (!list || list.some((message) => message.id === id)) return
+  hearOf(saved.author, saved.authorName, '')
+  list.push({
+    id,
+    author: saved.author as Login,
+    text: saved.body,
+    media: saved.media,
+    at: saved.createdAt * 1000,
+    demo: false,
+  })
+  list.sort((a, b) => a.at - b.at)
+  channelsChanged.value++
 }

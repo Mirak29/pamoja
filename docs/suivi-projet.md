@@ -655,6 +655,13 @@ Un post s'enregistre maintenant sur le serveur avec ses images et son lien vidé
 - **Livrable** : `api/posts.ts`, routes `POST/api/post/create` et `GET/api/posts`, `migrations/012-post-video.js`, `api/posts_test.ts` (2 tests), `web/lib/posts.ts`, rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `web/ui/post.tsx`, page du post
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-428 · Messages de canal enregistrés avec leur image
+
+Un message de `#général`, `#aide` ou `#annonces` s'enregistre sur le serveur avec une image (`POST/api/project/message/create`, 120 par heure) et produit l'entry `MESSAGE_CREATED` ; l'onglet Canaux relit les derniers messages des canaux que le développeur lit (`GET/api/project/messages`). Les droits suivent le §6.8 : les membres écrivent dans `#général` et `#aide`, le propriétaire et les mainteneurs dans `#annonces` ; les abonnés lisent `#annonces`. L'image n'est servie qu'aux lecteurs du canal. La rédaction du canal a un bouton image, accepte une capture collée et montre la vignette ; le message affiche son image, qui ouvre la visionneuse, et le lecteur de la première vidéo YouTube, Loom ou Vimeo de son texte. Les vignettes de rédaction de l'Accueil passent dans le kit (`MediaThumbs`). Vérifié dans le navigateur : un message avec une capture et un lien YouTube dans `#général`, relu après rechargement, la visionneuse.
+
+- **Livrable** : `api/channels.ts`, routes `POST/api/project/message/create` et `GET/api/project/messages`, lecture des images de canal dans `api/media.ts`, `api/channels_test.ts` (3 tests), `web/lib/channels.ts`, onglet Canaux, `videoIn` dans `web/ui/video.tsx`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
