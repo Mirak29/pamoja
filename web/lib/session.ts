@@ -12,6 +12,7 @@ import {
 } from '/api/vocabulary.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { api, type ApiOutput } from '/web/lib/api.ts'
+import { loadPosts } from '/web/lib/posts.ts'
 
 type User = ApiOutput['GET/api/user/me']
 
@@ -35,6 +36,7 @@ const setUser = (user: User) => {
   if (first) {
     loadProjects()
     loadHelpRequests()
+    loadPosts()
   }
   return user
 }

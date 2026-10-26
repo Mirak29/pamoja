@@ -100,6 +100,7 @@ import {
   skills,
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
+import { createPost, listPosts } from '/api/posts.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
 
@@ -119,6 +120,20 @@ const media = OBJ({
   bytes: NUM('Size'),
   name: STR('Name of a file, empty for an image'),
 }, 'An image or a file')
+
+// A post saved on the server (PAM-427): replies and reactions with PAM-501
+const savedPost = OBJ({
+  id: NUM('Id of the post'),
+  author: STR('Login of the author'),
+  authorName: STR('Name of the author'),
+  community: STR('Slug of the community, empty for the profile'),
+  type: STR('Type of the post'),
+  title: STR('Title, empty if none'),
+  body: STR('Markdown'),
+  media: ARR(media, 'Images, in order'),
+  videoUrl: STR('Link of the video, empty if none'),
+  createdAt: NUM('Publication, in seconds'),
+}, 'A post')
 
 // What anyone sees of a developer, and the developer of themselves
 const identity = {
@@ -1009,6 +1024,28 @@ const defs = {
     }),
     output: OBJ({ url: STR('The link kept, empty if none') }),
     description: 'Set the demo video of a project: owner and maintainers only',
+  }),
+
+  'POST/api/post/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createPost(ctx.session.userId, input),
+    input: OBJ({
+      community: STR('Slug of a community, empty for the profile'),
+      type: STR('A type of POST_TYPES'),
+      title: STR('Title, empty if none'),
+      body: STR('Markdown'),
+      media: optional(ARR(NUM('Id of an upload'), 'Four images at most')),
+      videoUrl: optional(STR('YouTube, Loom or Vimeo link, empty if none')),
+    }),
+    output: savedPost,
+    description: 'Publish a post with its images and its video',
+  }),
+
+  'GET/api/posts': route({
+    authorize: withSession,
+    fn: () => listPosts(),
+    output: ARR(savedPost),
+    description: 'The latest posts, newest first',
   }),
 
   'GET/api/video/preview': route({

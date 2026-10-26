@@ -20,7 +20,7 @@ import {
   ThumbsUp,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
-import { isMe, me, people } from '/web/fixtures/people.ts'
+import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
 import {
   acceptAnswer,
   childrenOf,
@@ -43,6 +43,8 @@ import { Cube } from '/web/ui/shapes.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { counted } from '/web/lib/plural.ts'
+import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -453,7 +455,7 @@ const ReplyRow = (
   const { post } = row
   const root = posts.find((p) => p.id === (post.root ?? post.id))
   const masked = post.hidden && !isMe(post.author)
-  const name = people[post.author].name
+  const name = personOf(post.author).name
   const canAccept = root && isMe(root.author) && root.type === 'Question' &&
     !root.acceptedReply && !isMe(post.author) && !masked
   return (
@@ -476,7 +478,7 @@ const ReplyRow = (
       >
         <Avatar
           name={name}
-          src={people[post.author].avatarUrl}
+          src={personOf(post.author).avatarUrl}
           size={32}
         />
       </A>
@@ -695,7 +697,7 @@ export const PostCard = (
 ) => {
   postsChanged.value
   const [open, setOpen] = useState(false)
-  const author = people[post.author]
+  const author = personOf(post.author)
   const community = communities.find((c) => c.slug === post.community)
   const parent = post.parent && posts.find((p) => p.id === post.parent)
   const project = post.link && projects[post.link]
@@ -773,20 +775,17 @@ export const PostCard = (
             </A>
           )}
           <PostBody body={post.body} />
-          {!!post.images && (
-            <div class='grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2.5 pr-[3px]'>
-              {Array.from({ length: post.images }, (_, i) => (
-                <div
-                  key={i}
-                  class='flex aspect-[16/10] items-end rounded-[8px] border border-figure-edge bg-surface-000 p-1.5 shadow-tile'
-                >
-                  <span class='rounded-sm bg-surface-100 px-1 py-px font-mono text-[10px] leading-[14px] font-medium text-ink-muted'>
-                    capture-{i + 1}.png
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <MediaGrid
+            id={`images-${post.id}`}
+            items={post.media ?? []}
+            label={t`Images du post`}
+          />
+          <MediaViewer
+            id={`images-${post.id}`}
+            items={post.media ?? []}
+            label={t`Images du post`}
+          />
+          {post.video && <VideoEmbed url={post.video} />}
           {project && (
             <A
               href={`project/${project.slug}`}

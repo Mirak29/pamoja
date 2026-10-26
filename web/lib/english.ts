@@ -84,7 +84,6 @@ export const english: Record<string, string> = {
   'La boucle': 'The loop',
   'Le nom de ton projet': 'Your project name',
   'Langages pas encore lus sur GitHub.': 'Languages not yet read from GitHub.',
-  'Lien YouTube ou Loom': 'YouTube or Loom link',
   'Modifier le profil': 'Edit profile',
   'Notifications du canal': 'Channel notifications',
   'Nouvelle carte': 'New card',
@@ -108,7 +107,6 @@ export const english: Record<string, string> = {
   'Republié': 'Reposted',
   'Rien pour l’instant.': 'Nothing here yet.',
   'Retirer la capture': 'Remove screenshot',
-  'Retirer l’image': 'Remove image',
   'Score minimum': 'Minimum score',
   'Signaler': 'Report',
   'Sur quoi tu travailles ? Une question, une astuce, un bout de code…':
@@ -1562,6 +1560,7 @@ export const english: Record<string, string> = {
   'Gérer les captures et la vidéo': 'Manage screenshots and video',
   'Captures et vidéo du projet': 'Project screenshots and video',
   'Vidéo': 'Video',
+  'Post non publié': 'Post not published',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1683,7 +1682,6 @@ export const englishTemplates: Record<string, string> = {
   '{0} · {1} par GitHub · {2}': '{0} · {1} by GitHub · {2}',
   'La communauté « {0} » n’existe pas.': 'The “{0}” community does not exist.',
   'Signalé par {0} · {1}': 'Reported by {0} · {1}',
-  'Vidéo : {0}': 'Video: {0}',
   'Aucun développeur « {0} » sur Pamoja.': 'No developer “{0}” on Pamoja.',
   'Demande d’aide : {0}': 'Help request: {0}',
   'Le projet « {0} » n’existe pas ou n’est plus public.':
@@ -1817,4 +1815,5 @@ export const englishTemplates: Record<string, string> = {
   'Captures de {0}': 'Screenshots of {0}',
   'Captures de la demande': 'Screenshots of the request',
   'Lire : {0}': 'Play: {0}',
+  'Images du post': 'Images of the post',
 }

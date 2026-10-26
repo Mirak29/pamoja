@@ -10,7 +10,7 @@ import {
   ThumbsUp,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
-import { isMe, me, people } from '/web/fixtures/people.ts'
+import { isMe, me, personOf } from '/web/fixtures/people.ts'
 import {
   descendantCount,
   type Post,
@@ -34,6 +34,8 @@ import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { overLimit } from '/web/lib/limits.ts'
+import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 const reactions = [
   ['like', ThumbsUp, 'J’aime'],
@@ -42,7 +44,7 @@ const reactions = [
 ] as const
 
 const Article = ({ post }: { post: Post }) => {
-  const author = people[post.author]
+  const author = personOf(post.author)
   const community = communities.find((c) => c.slug === post.community)
   const parent = post.parent && posts.find((p) => p.id === post.parent)
   const project = post.link && projects[post.link]
@@ -100,25 +102,17 @@ const Article = ({ post }: { post: Post }) => {
         </span>
       </A>
       <PostBody body={post.body} size='large' />
-      {!!post.images && (
-        <div class='grid grid-cols-4 gap-3'>
-          {Array.from(
-            { length: post.images },
-            (_, i) => (
-              <div key={i} class='tile flex aspect-[4/3] items-end p-1.5'>
-                <span class='rounded-sm bg-surface-100 px-1 py-px font-mono text-[10px] leading-[14px] font-medium text-ink-muted'>
-                  capture-{i + 1}.png
-                </span>
-              </div>
-            ),
-          )}
-        </div>
-      )}
-      {post.video && (
-        <span class='font-mono text-[13px] leading-5 text-ink-muted'>
-          {t`Vidéo : ${post.video}`}
-        </span>
-      )}
+      <MediaGrid
+        id={`images-${post.id}`}
+        items={post.media ?? []}
+        label={t`Images du post`}
+      />
+      <MediaViewer
+        id={`images-${post.id}`}
+        items={post.media ?? []}
+        label={t`Images du post`}
+      />
+      {post.video && <VideoEmbed url={post.video} />}
       {project && (
         <A
           href={`project/${project.slug}`}
@@ -253,8 +247,8 @@ export const PostPage = () => {
     <Page
       title={post.title ||
         (post.parent
-          ? t`Réponse de ${people[post.author].name}`
-          : t`Post de ${people[post.author].name}`)}
+          ? t`Réponse de ${personOf(post.author).name}`
+          : t`Post de ${personOf(post.author).name}`)}
       heading={!post.title}
       class='mr-2 grid items-start gap-8 pt-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
     >

@@ -2,11 +2,18 @@ import { signal } from '@preact/signals'
 import { hoursAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import {
+  hearOf,
+  type Login,
+  people,
+  type Person,
+} from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import { t } from '/web/lib/language.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 export type PostType =
   | 'Discussion'
@@ -33,7 +40,8 @@ export type Post = {
   root?: string
   acceptedReply?: string
   link?: ProjectSlug
-  images?: number
+  /** Uploaded images, 4 at most (§17.3) */
+  media?: Media[]
   /** Embedded by link only: YouTube, Loom or Vimeo (§17.3) */
   video?: string
   bookmarks?: Login[]
@@ -254,7 +262,6 @@ export const posts: Post[] = [
     hoursAgo: 28,
     reactions: { like: ['awa', 'amina', 'abdou', 'fatou'] },
     link: 'africommerce',
-    images: 2,
   }),
 ]
 
@@ -368,16 +375,21 @@ export const replyTo = (parent: Post, login: Login, body: string) => {
 
 export type PostDraft = Pick<
   Post,
-  'community' | 'type' | 'title' | 'body' | 'images' | 'video'
+  'community' | 'type' | 'title' | 'body' | 'media' | 'video'
 >
 
 /** POST/api/post/create: publishing in a community joins it */
-export const publishPost = (draft: PostDraft, author: Person) => {
+export const publishPost = (
+  draft: PostDraft,
+  author: Person,
+  /** The id and the time the server gave it */
+  saved?: { id: string; at: number },
+) => {
   const post: Post = {
     ...draft,
-    id: nextId(),
+    id: saved?.id ?? nextId(),
     author: author.login as Login,
-    at: Date.now(),
+    at: saved?.at ?? Date.now(),
     reactions: {},
     reposts: [],
     demo: false,
@@ -422,5 +434,35 @@ export const acceptAnswer = (question: Post, answer: Post) => {
     body: `« ${title} ». Entraide : ${counted(count, 'preuve')}.`,
     href: `post/${question.id}`,
   })
+  changed()
+}
+
+/** A post saved on the server (PAM-427) keeps its id, prefixed */
+export const savedId = (id: number) => `s${id}`
+
+/**
+ * Brings the posts read from GET/api/posts into the feed, newest first; a
+ * post already shown stays as it is
+ */
+export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
+  for (const saved of [...list].reverse()) {
+    const id = savedId(saved.id)
+    if (posts.some((post) => post.id === id)) continue
+    hearOf(saved.author, saved.authorName, '')
+    posts.unshift({
+      id,
+      community: saved.community,
+      author: saved.author as Login,
+      type: saved.type as PostType,
+      title: saved.title,
+      body: saved.body,
+      at: saved.createdAt * 1000,
+      reactions: {},
+      reposts: [],
+      media: saved.media,
+      video: saved.videoUrl || undefined,
+      demo: false,
+    })
+  }
   changed()
 }

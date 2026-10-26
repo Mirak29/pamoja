@@ -648,6 +648,13 @@ Un lien YouTube, Loom ou Vimeo devient un lecteur intégré : la miniature d'abo
 - **Livrable** : `api/video-links.ts`, `api/video.ts`, routes `GET/api/video/preview`, `GET/api/video/thumbnail` et `POST/api/project/video`, `migrations/011-project-demo-video.js`, `api/video_test.ts` (4 tests), `web/ui/video.tsx`, CSP de `prod-server.ts` et `task-dev.ts`
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-427 · Posts enregistrés avec leurs images et leur vidéo
+
+Un post s'enregistre maintenant sur le serveur avec ses images et son lien vidéo (`POST/api/post/create`, 20 par heure, migration 012) et le fil lit les derniers (`GET/api/posts`). La rédaction de l'Accueil choisit les images sur l'ordinateur, par glisser-déposer ou collage, avec leurs vignettes ; le dialogue « Nouveau post » reprend le kit, vérifie le lien vidéo et en montre l'aperçu. Les posts affichent leurs images dans une grille qui ouvre la visionneuse, et leur vidéo dans le lecteur intégré, à la place des tuiles « capture-1.png ». Vérifié dans le navigateur : un post avec deux images depuis l'Accueil, un post avec une vidéo YouTube depuis le dialogue, le fil après rechargement, la visionneuse.
+
+- **Livrable** : `api/posts.ts`, routes `POST/api/post/create` et `GET/api/posts`, `migrations/012-post-video.js`, `api/posts_test.ts` (2 tests), `web/lib/posts.ts`, rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `web/ui/post.tsx`, page du post
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -1,9 +1,13 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
-import { Send, X } from '/web/assets/icons.tsx'
+import { CircleAlert, Send } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import { me } from '/web/fixtures/people.ts'
-import { type PostType, publishPost } from '/web/fixtures/posts.ts'
+import type { PostType } from '/web/fixtures/posts.ts'
+import { savePost } from '/web/lib/posts.ts'
+import { videoOf } from '/api/video-links.ts'
+import { MediaPicker, useMediaPicker } from '/web/ui/media.tsx'
+import { VideoEmbed } from '/web/ui/video.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import {
@@ -45,14 +49,18 @@ const NewPost = (
   const [community, setCommunity] = useState(initial ?? '')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [images, setImages] = useState(0)
+  // Uploaded as soon as they are picked (§17.3)
+  const picker = useMediaPicker(4)
   const [video, setVideo] = useState('')
+  const [sending, setSending] = useState(false)
+  const link = video.trim()
+  const badVideo = !!link && !videoOf(link)
   const { check, clear, control, field } = useFieldErrors<'title' | 'body'>(
     'post',
   )
 
-  const publish = () => {
-    if (type === HELP) return
+  const publish = async () => {
+    if (type === HELP || sending || picker.uploading || badVideo) return
     const valid = check({
       title: !title.trim() && 'Donne un titre à ton post.',
       body: !body.trim() && 'Écris le contenu du post.',
@@ -61,14 +69,25 @@ const NewPost = (
       return
     }
     const joined = !community || me.communities.includes(community)
-    const post = publishPost({
+    setSending(true)
+    const post = await savePost({
       community,
       type,
       title: title.trim(),
       body: body.trim(),
-      images,
-      video: video.trim() || undefined,
-    }, me)
+      media: picker.media,
+      video: link || undefined,
+    }).catch(() => undefined)
+    setSending(false)
+    if (!post) {
+      notify({
+        title: 'Post non publié',
+        body: 'Réessaie dans un instant.',
+        icon: CircleAlert,
+        tone: 'warning',
+      })
+      return
+    }
     const name = communities.find((c) => c.slug === community)?.name
     navigate({ href: `post/${post.id}` })
     notify({
@@ -152,54 +171,40 @@ const NewPost = (
                   setBody(event.currentTarget.value)
                   clear('body')
                 }}
+                onPaste={picker.onPaste}
                 compact
               />
             </Field>
-            <div class='flex flex-col gap-2 text-[13px] font-semibold'>
-              <span>Images (4 maximum)</span>
-              <div class='grid grid-cols-4 gap-3 pb-1'>
-                {[0, 1, 2, 3].map((i) =>
-                  i < images
-                    ? (
-                      <div
-                        key={i}
-                        class='tile relative flex aspect-[4/3] items-end p-1.5'
-                      >
-                        <span class='rounded-sm bg-surface-100 px-1 py-px font-mono text-[10px] leading-[14px] font-medium text-ink-muted'>
-                          capture-{i + 1}.png
-                        </span>
-                        <button
-                          type='button'
-                          aria-label='Retirer l’image'
-                          onClick={() => setImages(images - 1)}
-                          class='absolute top-1 right-1 flex size-[22px] cursor-pointer items-center justify-center rounded-sm border border-figure-edge bg-surface-100 text-ink'
-                        >
-                          <X class='size-3' />
-                        </button>
-                      </div>
-                    )
-                    : (
-                      <button
-                        key={i}
-                        type='button'
-                        onClick={() => setImages(Math.min(4, images + 1))}
-                        class='aspect-[4/3] cursor-pointer rounded-md border border-dashed border-line-control text-[12px] leading-none font-medium text-ink-muted'
-                      >
-                        + Image
-                      </button>
-                    )
-                )}
-              </div>
+            <div class='flex flex-col gap-2'>
+              <span class='text-[13px] font-semibold'>Images (4 maximum)</span>
+              <MediaPicker picker={picker} />
             </div>
-            <Field label='Lien vidéo (facultatif)'>
+            <Field
+              label='Lien vidéo (facultatif)'
+              error={badVideo
+                ? 'Colle un lien YouTube, Loom ou Vimeo.'
+                : undefined}
+              errorId='post-video-error'
+            >
               <Input
+                type='url'
                 value={video}
-                placeholder='Lien YouTube ou Loom'
+                placeholder='Lien YouTube, Loom ou Vimeo'
+                aria-invalid={badVideo || undefined}
+                aria-describedby={badVideo ? 'post-video-error' : undefined}
                 onInput={(event) => setVideo(event.currentTarget.value)}
               />
             </Field>
+            {link && !badVideo && <VideoEmbed url={link} />}
             <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
-              <Button size={40} onClick={publish}>Publier</Button>
+              <Button
+                size={40}
+                onClick={publish}
+                aria-busy={sending}
+                disabled={picker.uploading || badVideo}
+              >
+                {sending ? 'Publication…' : 'Publier'}
+              </Button>
               <Button variant='secondary' size={40} params={{ dialog: null }}>
                 Annuler
               </Button>
