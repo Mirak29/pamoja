@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { match, type Matched } from '/web/fixtures/matching.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
 import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
@@ -87,6 +88,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [demoImage('paiement-api-go')],
     at: hoursAgo(5),
     demo: true,
   },
@@ -102,6 +104,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~45 min',
     status: 'open',
+    media: [demoImage('horaires-architecture')],
     at: hoursAgo(20),
     demo: true,
   },
@@ -117,6 +120,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~1 h',
     status: 'open',
+    media: [demoImage('sqlite-locked')],
     at: hoursAgo(30),
     issue: 44,
     demo: true,
@@ -133,6 +137,10 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [
+      demoImage('carte-tuiles-mobile'),
+      demoImage('carte-tuiles-reseau'),
+    ],
     at: hoursAgo(3),
     demo: true,
   },

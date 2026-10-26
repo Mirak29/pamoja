@@ -274,6 +274,23 @@ export const posts: Post[] = [
     reactions: { like: ['awa', 'amina', 'abdou', 'fatou'] },
     link: 'africommerce',
   }),
+  // Kept at the top of the demo feed: the demo everyone clicks
+  post({
+    id: 'po11',
+    community: 'open-source',
+    author: 'kofi',
+    type: 'Release',
+    title: 'AfriCommerce 1.0 : la démo complète',
+    body:
+      'Paiement à la livraison, confirmation par SMS et tableau de bord des vendeurs : tout est dans la vidéo. Trois minutes, promis, ça vaut le coup.',
+    hoursAgo: 0.05,
+    reactions: {
+      like: ['awa', 'moussa', 'fatou', 'amina'],
+      thanks: ['abdou', 'yao'],
+    },
+    link: 'africommerce',
+    video: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  }),
   post({
     id: 'po10',
     community: 'devops',

@@ -189,7 +189,7 @@ Responsable : _à répartir_
 - [x] **PAM-426** · Médias partout, le kit : sélecteur (ordinateur, glisser-déposer, collage), aperçus, ordre, visionneuse ; captures d'une demande d'aide et photo de couverture de bout en bout ; la galerie du projet passe sur le kit (§9.2, §17.3) — @niangoos
 - [x] **PAM-427** · Posts enregistrés avec leurs images et leur vidéo : `POST/api/post/create`, `GET/api/posts`, rédaction de l'Accueil et dialogue « Nouveau post » branchés, images et vidéo affichées dans le fil et sur la page du post ; réponses, réactions et onglets restent à PAM-501 (§10.1, §17.3) — @niangoos
 - [x] **PAM-428** · Messages de canal enregistrés avec leur image : `POST/api/project/message/create`, `GET/api/project/messages`, droits d'écriture et de lecture par canal, image servie aux seuls lecteurs du canal, vidéo intégrée depuis le premier lien du message ; fils, réactions et temps réel restent à PAM-406 (§6.8, §17.3) — @niangoos
-- [x] **PAM-429** · Médias de démo : captures dessinées pour les projets de démo (`web/assets/mocks`, copiées dans `dist`), posts du fil avec images et vidéos YouTube, une capture dans `#général` d'OpenPay Africa (§12.7, §17.3) — @niangoos
+- [x] **PAM-429** · Médias de démo : captures dessinées pour les projets de démo (`web/assets/mocks`, copiées dans `dist`), posts du fil avec images et vidéos YouTube, captures des demandes d'aide, une capture dans `#général` d'OpenPay Africa (§12.7, §17.3) — @niangoos
 - [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
