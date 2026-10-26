@@ -662,6 +662,13 @@ Un message de `#général`, `#aide` ou `#annonces` s'enregistre sur le serveur a
 - **Livrable** : `api/channels.ts`, routes `POST/api/project/message/create` et `GET/api/project/messages`, lecture des images de canal dans `api/media.ts`, `api/channels_test.ts` (3 tests), `web/lib/channels.ts`, onglet Canaux, `videoIn` dans `web/ui/video.tsx`
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-429 · Médias de démo dans le fil et les canaux
+
+Le fil de démo montre de vraies images et de vraies vidéos. Sept captures sont dessinées pour les projets fictifs (carte et régions de Senegal Maps, écrans et ventes d'AfriCommerce, pipeline CI, tests du ledger, affiche du meetup Go d'Abidjan). Elles sont rangées dans `web/assets/mocks`, copiées dans `dist/mocks` par `task-dev.ts` et `task-prod.ts`, et servies avec les pages sans passer par l'upload. Cinq posts reçoivent des images, trois une vidéo YouTube publique sur leur sujet (tutoriel GitHub Actions, talk de Rob Pike, Docker en 100 secondes), et un message de `#général` d'OpenPay Africa a sa capture. Le post de Senegal Maps dit maintenant 12 régions sur 14. Vérifié dans le navigateur : le fil avec ses images et ses lecteurs, sans image cassée.
+
+- **Livrable** : `web/assets/mocks/*.webp`, `web/fixtures/media.ts`, `copyMocks` dans `build-config.ts`, `mediaUrl` dans `web/lib/messages.ts`, fixtures des posts et des canaux
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

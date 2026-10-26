@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { hearOf, type Login, me } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
@@ -62,6 +63,16 @@ export const channels: Partial<
         text: 'Parfait. La PR #81 est prête, je cherche un reviewer Go.',
         at: hoursAgo(6),
         reactions: { like: ['fatou'] },
+        demo: true,
+      },
+      {
+        id: 'm9',
+        author: 'fatou',
+        text:
+          'La réconciliation passe en local, voici la sortie des tests. Je pousse sur la PR #84.',
+        media: [demoImage('ledger-tests')],
+        at: hoursAgo(5),
+        reactions: { like: ['abdou'] },
         demo: true,
       },
     ],

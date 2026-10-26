@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import { hoursAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import {
   hearOf,
@@ -114,8 +115,9 @@ export const posts: Post[] = [
     type: 'Vitrine',
     title: 'Senegal Maps v1.2 : les points d’eau sont en ligne',
     body:
-      'Forages et bornes fontaines de 14 régions, en open data. Les contributions sont ouvertes : il manque encore Kaolack et Kolda.',
+      'Forages et bornes fontaines de 12 régions sur 14, en open data. Les contributions sont ouvertes : il manque encore Kaolack et Kolda.',
     hoursAgo: 50,
+    media: [demoImage('senegal-maps-carte'), demoImage('senegal-maps-regions')],
     reactions: {
       like: ['abdou', 'fatou', 'moussa'],
       thanks: ['kofi', 'yao'],
@@ -148,8 +150,10 @@ export const posts: Post[] = [
     type: 'Ressource',
     title: 'Un pipeline CI à 0 € pour vos projets Go',
     body:
-      'GitHub Actions, cache des modules, tests en parallèle et déploiement sur un petit VPS. Le gabarit complet est dans k8s-starter-africa.',
+      'GitHub Actions, cache des modules, tests en parallèle et déploiement sur un petit VPS : le build passe de 6 à 2 minutes. Le gabarit complet est dans k8s-starter-africa, et la vidéo qui m’a servi de base est en dessous.',
     hoursAgo: 70,
+    media: [demoImage('ci-pipeline')],
+    video: 'https://www.youtube.com/watch?v=R8_veQiYBjI',
     reactions: { useful: ['abdou', 'kofi', 'zeinab', 'moussa'] },
   }),
   ...replies({ id: 'po4', community: 'devops' }, 70, [
@@ -186,8 +190,10 @@ export const posts: Post[] = [
     type: 'Opportunité',
     title: 'Meetup Go à Abidjan le 24 octobre',
     body:
-      'On parle concurrence et revue de code, à Cocody. Places limitées, inscris-toi en commentaire.',
+      'On parle concurrence et revue de code, à Cocody. Places limitées, inscris-toi en commentaire. Pour se préparer, le talk de Rob Pike sur la concurrence.',
     hoursAgo: 30,
+    media: [demoImage('meetup-go-abidjan')],
+    video: 'https://www.youtube.com/watch?v=oV9rvDllKEg',
     reactions: { like: ['yao'] },
   }),
   ...replies({ id: 'po6', community: 'cote-divoire-developers' }, 30, [
@@ -248,6 +254,7 @@ export const posts: Post[] = [
     body:
       'Le job de réconciliation du ledger passe enfin, en local comme en CI. La PR #84 est approuvée, merci pour les reviews rapides.',
     hoursAgo: 5,
+    media: [demoImage('ledger-tests')],
     reactions: { like: ['abdou'] },
     link: 'openpay-africa',
   }),
@@ -260,8 +267,24 @@ export const posts: Post[] = [
     body:
       'AfriCommerce accepte maintenant le paiement à la livraison avec confirmation par SMS. Les vendeurs de Makola testent depuis lundi.',
     hoursAgo: 28,
+    media: [
+      demoImage('africommerce-ecrans'),
+      demoImage('africommerce-ventes'),
+    ],
     reactions: { like: ['awa', 'amina', 'abdou', 'fatou'] },
     link: 'africommerce',
+  }),
+  post({
+    id: 'po10',
+    community: 'devops',
+    author: 'wanjiru',
+    type: 'Ressource',
+    title: 'Docker en 100 secondes',
+    body:
+      'Pour ceux qui débutent avec les conteneurs : l’essentiel en moins de deux minutes, avant d’ouvrir le gabarit CI d’Amina.',
+    hoursAgo: 12,
+    reactions: { useful: ['amina', 'yao'], thanks: ['kofi'] },
+    video: 'https://www.youtube.com/watch?v=Gjnup-PuquQ',
   }),
 ]
 
