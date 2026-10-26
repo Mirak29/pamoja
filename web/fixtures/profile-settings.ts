@@ -26,6 +26,8 @@ export const profileCovers = [
   ['grille', 'Grille'],
   ['plaques', 'Plaques'],
   ['uni', 'Uni'],
+  // A photo uploaded by the developer (§9.2, §17.3)
+  ['photo', 'Photo'],
 ] as const
 
 export const profileSections = [

@@ -634,6 +634,13 @@ Le propriétaire et les mainteneurs d'un projet gèrent ses captures depuis l'Ap
 - **Livrable** : `api/project-gallery.ts`, `setMediaOf` dans `api/media.ts`, route `POST/api/project/gallery`, galerie dans `GET/api/projects`, `api/project-gallery_test.ts` (3 tests), `web/pages/project/gallery.tsx`, Aperçu du projet
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-426 · Médias partout, le kit
+
+Un kit commun pour les images (`web/ui/media.tsx`) : `useMediaPicker` envoie les images dès qu'elles sont choisies (depuis l'ordinateur, glissées ou collées dans un champ de texte), avec un aperçu pendant l'envoi, l'ordre et le retrait ; `MediaGrid` et `MediaViewer` les affichent et les ouvrent en grand (flèches, clavier, vignettes). Branché de bout en bout : la demande d'aide envoie ses captures (4 au plus, rattachées dans la transaction de création, renvoyées avec chaque demande) à la place des fausses tuiles « capture-1.png » ; la photo de couverture du profil (`POST/api/user/cover`) devient la couverture ; la galerie du projet passe sur le kit. Vérifié dans le navigateur sur une base seedée : demande publiée avec deux captures et visionneuse, couverture photo, galerie.
+
+- **Livrable** : `web/ui/media.tsx`, formulaire et page de la demande d'aide, page « Modifier le profil » et couverture, `api/help.ts`, `coverOf` et `setCover` dans `api/media.ts`, `api/attached-media_test.ts` et `api/help_test.ts`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

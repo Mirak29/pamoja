@@ -53,6 +53,7 @@ import { loadHelpDetail, playOnServer, sendOnServer } from '/web/lib/help.ts'
 import { useEvent } from '/web/lib/realtime.ts'
 import { counted } from '/web/lib/plural.ts'
 import { LIMITS } from '/api/limits.ts'
+import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
 
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
@@ -924,21 +925,16 @@ export const HelpDetail = ({ id }: { id: string }) => {
           {request.branch && (
             <BranchLine branch={request.branch} job={request.job} />
           )}
-          {!!request.captures?.length && (
-            <div class='grid grid-cols-4 gap-3.5'>
-              {request.captures.map((capture, i) => (
-                <div
-                  key={capture}
-                  class='flex aspect-[4/3] items-end rounded-md border border-figure-edge bg-surface-000 bg-cover bg-center p-1.5 shadow-tile'
-                  style={{ backgroundImage: `url(${capture})` }}
-                >
-                  <span class='rounded-sm bg-surface-100 px-1 py-px font-mono text-[10px] leading-[14px] font-medium text-ink-muted'>
-                    capture-{i + 1}.png
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <MediaGrid
+            id='captures-aide'
+            items={request.media ?? []}
+            label={t`Captures de la demande`}
+          />
+          <MediaViewer
+            id='captures-aide'
+            items={request.media ?? []}
+            label={t`Captures de la demande`}
+          />
         </Section>
         <section class='slab overflow-hidden'>
           <div class='flex px-5 pt-[18px] pb-4'>

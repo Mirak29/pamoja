@@ -14,6 +14,7 @@ import {
   helpLevels,
 } from '/api/vocabulary.ts'
 import { t } from '/web/lib/language.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
 export const helpTypes: string[] = Object.values(helpCategories)
@@ -52,8 +53,8 @@ export type HelpRequest = {
   /** Failing CI job, for a request born from a #suivi alert */
   job?: string
   video?: string
-  /** Screenshot URLs, 4 at most */
-  captures?: string[]
+  /** Screenshots, 4 at most (§17.3) */
+  media?: Media[]
   /** Developers who withdrew or were released: excluded from next waves */
   withdrawn?: Login[]
   wave?: number
@@ -225,6 +226,7 @@ export const adoptHelpRequests = (list: ApiHelp[]) => {
       branch: help.branch || undefined,
       repository: help.repository || undefined,
       video: help.videoUrl || undefined,
+      media: help.media,
       demo: help.demo,
     })
     known || helpRequests.unshift(request)

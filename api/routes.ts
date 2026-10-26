@@ -99,13 +99,25 @@ import {
   reportReasons,
   skills,
 } from '/api/vocabulary.ts'
-import { serveMedia, upload } from '/api/media.ts'
+import { serveMedia, setCover, upload } from '/api/media.ts'
 import { setGallery } from '/api/project-gallery.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
   'How help requests reach the developer (§7.4)',
 )
+
+// An uploaded image or file (§17.3): read at GET/api/media?key=
+const media = OBJ({
+  id: NUM('Id of the media'),
+  key: STR('Random key of the file'),
+  mime: STR('image/jpeg, image/png, image/webp or application/pdf'),
+  image: BOOL('An image, shown; a file otherwise, downloaded'),
+  width: NUM('Width in pixels, 0 for a file'),
+  height: NUM('Height in pixels, 0 for a file'),
+  bytes: NUM('Size'),
+  name: STR('Name of a file, empty for an image'),
+}, 'An image or a file')
 
 // What anyone sees of a developer, and the developer of themselves
 const identity = {
@@ -118,6 +130,7 @@ const identity = {
   country: STR('ISO code of an African country, or as written'),
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
+  cover: ARR(media, 'The photo of the cover: none or one (§9.2)'),
 }
 
 const currentUser = {
@@ -153,18 +166,6 @@ const person = OBJ({
   avatarUrl: STR('GitHub avatar'),
 }, 'The other developer')
 
-// An uploaded image or file (§17.3): read at GET/api/media?key=
-const media = OBJ({
-  id: NUM('Id of the media'),
-  key: STR('Random key of the file'),
-  mime: STR('image/jpeg, image/png, image/webp or application/pdf'),
-  image: BOOL('An image, shown; a file otherwise, downloaded'),
-  width: NUM('Width in pixels, 0 for a file'),
-  height: NUM('Height in pixels, 0 for a file'),
-  bytes: NUM('Size'),
-  name: STR('Name of a file, empty for an image'),
-}, 'An image or a file')
-
 // A conversation is known by its public id, its address (PAM-125): the
 // number of the database never reaches the page
 const conversationKey = STR('Public id of the conversation, its address')
@@ -192,6 +193,7 @@ const helpRequestFields = {
   expectedLevel: STR('A key of helpLevels, empty if none'),
   estimatedMinutes: NUM('Estimated duration, 0 if none'),
   videoUrl: STR('Video showing the problem, empty if none'),
+  media: ARR(media, 'Screenshots shown with the request, in order'),
   status: STR('Status of the lifecycle (§7.2)'),
   helper: STR('Login of the helper who accepted, empty if none'),
   acceptedAt: NUM('Acceptance, in seconds, 0 if none'),
@@ -672,6 +674,7 @@ const defs = {
       project: STR('Slug of a project of the developer, empty if none'),
       pullRequest: NUM('Open PR of that project, 0 if none'),
       videoUrl: STR('Web link of a video, empty if none'),
+      media: optional(ARR(NUM('Id of an upload'), 'Four images at most')),
     }),
     output: helpRequest,
     description: 'Publish a help request, from the form or from a PR',
@@ -1158,6 +1161,14 @@ const defs = {
     }, 'The whole editable profile: an empty field is emptied'),
     output: profileSaved,
     description: 'Save the profile',
+  }),
+
+  'POST/api/user/cover': route({
+    authorize: withSession,
+    fn: (ctx, { media }) => setCover(ctx.session.userId, media),
+    input: OBJ({ media: NUM('Id of an upload, 0 removes the photo') }),
+    output: ARR(media),
+    description: 'Set or remove the photo of the cover of the profile',
   }),
 
   'POST/api/user/skills/update': route({

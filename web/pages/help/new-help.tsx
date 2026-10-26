@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
-import { CircleAlert, GitPullRequest, Send, X } from '/web/assets/icons.tsx'
+import { CircleAlert, GitPullRequest, Send } from '/web/assets/icons.tsx'
 import {
   adoptHelpRequests,
   durationLabel,
@@ -32,6 +32,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
+import { MediaPicker, useMediaPicker } from '/web/ui/media.tsx'
 
 const levels: string[] = Object.values(helpLevels)
 const durations = helpDurations.map(durationLabel)
@@ -51,7 +52,6 @@ type Form =
     | 'branch'
     | 'job'
     | 'video'
-    | 'captures'
   >
   & { origin: string }
 
@@ -118,7 +118,6 @@ const initialForm = (): Form => {
     skills: [],
     level: 'Intermédiaire',
     duration: '~30 min',
-    captures: [],
     origin: '',
   }
   const number = Number(url.params.pr ?? url.params.ci)
@@ -172,62 +171,6 @@ export const BranchLine = (
         Job <code class='font-mono text-[13px] leading-5 text-ink'>{job}</code>
       </span>
     )}
-  </div>
-)
-
-// Images are resized and uploaded with POST/api/media/upload (PAM-409);
-// here they stay in the browser
-const Captures = (
-  { captures, onChange }: {
-    captures: string[]
-    onChange: (captures: string[]) => void
-  },
-) => (
-  <div class='flex flex-col gap-2 text-[13px] font-semibold'>
-    <span>{t`Captures (${MAX_CAPTURES} maximum)`}</span>
-    <div class='grid grid-cols-4 gap-3.5 pb-1'>
-      {Array.from({ length: MAX_CAPTURES }, (_, i) => {
-        const capture = captures[i]
-        if (capture) {
-          return (
-            <div
-              key={capture}
-              class='relative flex aspect-[4/3] items-end rounded-md border border-figure-edge bg-surface-000 bg-cover bg-center p-1.5 shadow-tile'
-              style={{ backgroundImage: `url(${capture})` }}
-            >
-              <span class='rounded-sm bg-surface-100 px-1 py-px font-mono text-[10px] leading-[14px] font-medium text-ink-muted'>
-                capture-{i + 1}.png
-              </span>
-              <button
-                type='button'
-                onClick={() => onChange(captures.filter((c) => c !== capture))}
-                aria-label='Retirer la capture'
-                class='absolute top-1 right-1 flex size-[22px] cursor-pointer items-center justify-center rounded-sm border border-figure-edge bg-surface-100 text-ink'
-              >
-                <X class='size-3' />
-              </button>
-            </div>
-          )
-        }
-        return (
-          <label
-            key={i}
-            class='flex aspect-[4/3] cursor-pointer items-center justify-center rounded-md border border-dashed border-line-control text-[12px] leading-none font-medium text-ink-muted'
-          >
-            + Capture
-            <input
-              type='file'
-              accept='image/png,image/jpeg,image/webp'
-              class='sr-only'
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0]
-                file && onChange([...captures, URL.createObjectURL(file)])
-              }}
-            />
-          </label>
-        )
-      })}
-    </div>
   </div>
 )
 
@@ -306,6 +249,8 @@ export const NewHelp = () => {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState<Errors>({})
   const [sending, setSending] = useState(false)
+  // Screenshots of the problem, uploaded as soon as they are picked (§17.3)
+  const picker = useMediaPicker(MAX_CAPTURES)
   const update = (patch: Partial<Form>) => {
     const fixed = { ...errors }
     'title' in patch && delete fixed.title
@@ -377,10 +322,11 @@ export const NewHelp = () => {
         project: form.project ?? '',
         pullRequest: form.pullRequest ?? 0,
         videoUrl: video,
+        media: picker.ids,
       })
       const [request] = adoptHelpRequests([created])
-      // Kept on this page until the upload of images (PAM-409)
-      Object.assign(request, { captures: form.captures, job: form.job })
+      // The failing job of a #suivi alert stays on this page
+      Object.assign(request, { job: form.job })
       navigate({ href: `help/${request.id}` })
       notify({
         title: 'Demande publiée',
@@ -439,6 +385,7 @@ export const NewHelp = () => {
               onInput={(event) =>
                 update({ description: event.currentTarget.value })}
               placeholder='Contexte, ce que tu as essayé, ce que tu attends'
+              onPaste={picker.onPaste}
             />
           </Field>
           <div class='grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5'>
@@ -512,10 +459,15 @@ export const NewHelp = () => {
               ))}
             </Choices>
           </div>
-          <Captures
-            captures={form.captures ?? []}
-            onChange={(captures) => update({ captures })}
-          />
+          <div class='flex flex-col gap-2'>
+            <span class='text-[13px] font-semibold'>
+              {t`Captures (${MAX_CAPTURES} maximum)`}
+            </span>
+            <MediaPicker
+              picker={picker}
+              hint='Une erreur, un écran : depuis ton ordinateur, glissées ici ou collées dans la description.'
+            />
+          </div>
           <Field
             label='Lien vidéo (facultatif)'
             error={errors.video}
@@ -532,7 +484,12 @@ export const NewHelp = () => {
             />
           </Field>
           <div class='flex flex-wrap gap-3.5 border-t border-line pt-5'>
-            <Button size={40} onClick={publish} aria-busy={sending}>
+            <Button
+              size={40}
+              onClick={publish}
+              aria-busy={sending}
+              disabled={picker.uploading}
+            >
               {sending ? 'Publication…' : 'Publier la demande'}
             </Button>
             <Button

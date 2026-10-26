@@ -6,6 +6,7 @@ import type { GithubUser } from '/api/github-oauth.ts'
 import { Profile, User, UserIntent } from '/api/schema.ts'
 import { addGithubSkills, setDeclaredSkills, skillsOf } from '/api/skills.ts'
 import { type MatchingMode, parseLocation } from '/api/vocabulary.ts'
+import { coverOf } from '/api/media.ts'
 
 // A developer is identified by `githubId`, never by the username, which can
 // change on GitHub (§14.1)
@@ -179,6 +180,7 @@ export const getCurrentUser = (userId: number) => {
     country: user.country ?? '',
     city: user.city ?? '',
     website: user.website ?? '',
+    cover: coverOf(userId),
     matchingMode: user.matchingMode,
     // What the matching reads besides the mode (§7.3, §7.4)
     ...matchingFiltersOf(user.matchingFilters),

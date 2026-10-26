@@ -522,7 +522,7 @@ Précisions (`api/profile.ts`, lu par `GET/api/user`, public) : le profil ne don
 
 ### 9.2 Personnalisation
 
-Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+Cover (Le fil, Grille, Plaques, Uni, ou une photo uploadée par le développeur, gardée sur le serveur et prioritaire sur les couvertures prédéfinies), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
 
 ### 9.3 Vitrines visuelles
 
@@ -986,6 +986,7 @@ Les avatars restent ceux de GitHub.
 - **Fichiers** : seuls les messages directs acceptent aussi un PDF, 5 Mo au plus, gardé avec son nom nettoyé (sans chemin ni caractère de contrôle) et servi en téléchargement (`Content-Disposition: attachment`), jamais ouvert dans la page.
 - **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande, au projet ou au message à l'enregistrement, par son propriétaire et une seule fois. Une image jamais rattachée est supprimée au bout de 24 h (vérifié chaque heure par le serveur).
 - **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement. Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Partout la même façon de faire** : un sélecteur commun (ordinateur, glisser-déposer, ou capture collée dans un champ de texte), des aperçus pendant l'envoi, l'ordre et le retrait avant l'enregistrement, puis une grille dont chaque image s'ouvre dans une visionneuse (flèches, clavier, vignettes). Il sert à la galerie du projet, aux captures d'une demande d'aide (`media` de `POST/api/help/create`, rattachées dans la même transaction que la demande) et à la photo de couverture (`POST/api/user/cover`, une seule, 0 la retire ; renvoyée dans `cover` du profil).
 - **Galerie d'un projet** : `POST/api/project/gallery` reçoit toute la galerie, dans l'ordre (8 captures au plus) : les nouveaux uploads du développeur y sont rattachés, une capture retirée est supprimée avec son fichier ; propriétaire et mainteneurs seulement. `GET/api/projects` renvoie la galerie de chaque projet ; une capture rattachée se lit par tout développeur connecté.
 - **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
 

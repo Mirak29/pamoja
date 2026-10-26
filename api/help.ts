@@ -11,6 +11,7 @@ import {
   VIDEO_URL_MAX,
 } from '/api/help-rules.ts'
 import { sendWave } from '/api/matching.ts'
+import { attach, mediaOf, type shownMedia } from '/api/media.ts'
 import { HelpRequest } from '/api/schema.ts'
 import { skillIdsOf, skillNamesOf } from '/api/skills.ts'
 import type { HelpCategory, HelpLevel } from '/api/vocabulary.ts'
@@ -75,7 +76,12 @@ export type HelpInput = {
   project: string
   pullRequest: number
   videoUrl: string
+  /** Uploads shown with the request: screenshots of an error (§17.3) */
+  media?: number[] | null
 }
+
+/** Images of a help request (§17.3) */
+export const HELP_MEDIA_MAX = 4
 
 /** The project and PR of a request: the requester must be a member (§7.1) */
 const placeOf = (userId: number, input: HelpInput) => {
@@ -142,6 +148,12 @@ const countRequests = sql<Window, { me: number; since: number }>`
  */
 export const createHelpRequest = (userId: number, input: HelpInput) => {
   const { title, description, videoUrl, skills } = checked(input)
+  const media = input.media ?? []
+  if (media.length > HELP_MEDIA_MAX) {
+    throw new respond.BadRequestError({
+      message: `${HELP_MEDIA_MAX} images at most`,
+    })
+  }
   within(countRequests, HELP_RATE, userId, 'Too many help requests today')
   const helpRequestId = db.transaction(() => {
     const { projectId, pullRequestId } = placeOf(userId, input)
@@ -168,6 +180,7 @@ export const createHelpRequest = (userId: number, input: HelpInput) => {
       updatedAt: at,
       videoUrl: videoUrl || null,
     })
+    attach(userId, media, 'help_request', helpRequestId)
     // Read by the search reindexing, sent to nobody (§13.3)
     Entry.insert.HELP_REQUEST_CREATED({
       userId,
@@ -246,7 +259,7 @@ const getOne = sql<HelpRow, number>`${helpSelect}
   WHERE helpRequest.helpRequestId = ?
 `.get
 
-const shown = (row: HelpRow) => ({
+const shown = (row: HelpRow, media: ShownMedia[] = []) => ({
   id: row.helpRequestId,
   author: row.author,
   project: row.project ?? '',
@@ -260,6 +273,7 @@ const shown = (row: HelpRow) => ({
   expectedLevel: row.expectedLevel ?? '',
   estimatedMinutes: row.estimatedMinutes ?? 0,
   videoUrl: row.videoUrl ?? '',
+  media,
   status: row.status,
   helper: row.helper ?? '',
   acceptedAt: row.acceptedAt ?? 0,
@@ -267,13 +281,21 @@ const shown = (row: HelpRow) => ({
   demo: row.source === 'demo',
 })
 
+type ShownMedia = ReturnType<typeof shownMedia>
+
+// The requests with their images, read in one query for the list
+const withMedia = (rows: HelpRow[]) => {
+  const media = mediaOf('help_request', rows.map((r) => r.helpRequestId))
+  return rows.map((row) => shown(row, media.get(row.helpRequestId)))
+}
+
 export const listHelpRequests = (userId: number) =>
-  listVisible({ userId }).map(shown)
+  withMedia(listVisible({ userId }))
 
 export const listHelpActivity = (userId: number) =>
-  listActivity({ userId }).map(shown)
+  withMedia(listActivity({ userId }))
 
 export const getHelpRequest = (helpRequestId: number) => {
   const row = getOne(helpRequestId)
-  return row && shown(row)
+  return row && withMedia([row])[0]
 }

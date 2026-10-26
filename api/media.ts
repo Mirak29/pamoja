@@ -338,6 +338,16 @@ export const setMediaOf = (
   remove(current.filter((m) => !ids.includes(m.mediaId)))
 }
 
+/** The photo of the cover of a profile (§9.2): none or one */
+export const coverOf = (userId: number) =>
+  mediaOf('profile_cover', [userId]).get(userId) ?? []
+
+/** Sets the photo of the cover of the developer, or removes it with 0 */
+export const setCover = (me: number, mediaId: number) => {
+  setMediaOf(me, 'profile_cover', me, mediaId ? [mediaId] : [])
+  return coverOf(me)
+}
+
 /** Deletes the media of a content: rows and files */
 export const removeMediaOf = (targetType: string, targetId: number) =>
   remove(listOf({ targetType, ids: JSON.stringify([targetId]) }))
