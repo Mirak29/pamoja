@@ -30,7 +30,8 @@ export const english: Record<string, string> = {
   'Ajouter un bloc de code': 'Add a code block',
   'Ajouter un skill': 'Add a skill',
   'Ajouter un skill (essaie « postgres »)': 'Add a skill (try “postgres”)',
-  'Ajouter une image (4 maximum)': 'Add an image (up to 4)',
+  'Ajouter une image (4 maximum) ; une vidéo se colle en lien dans le texte':
+    'Add an image (up to 4); paste a video as a link in the text',
   'Ajouter une technologie': 'Add a technology',
   'Ajoutée au board': 'Added to the board',
   'Alertes GitHub et CI/CD, écrites par la plateforme':
@@ -109,8 +110,8 @@ export const english: Record<string, string> = {
   'Retirer la capture': 'Remove screenshot',
   'Score minimum': 'Minimum score',
   'Signaler': 'Report',
-  'Sur quoi tu travailles ? Une question, une astuce, un bout de code…':
-    'What are you working on? A question, a tip, a code snippet…',
+  'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…':
+    'What are you working on? A question, a tip, some code, a video link…',
   'Synchro live': 'Live sync',
   'Seulement mes PRs': 'Only my pull requests',
   'Tape une techno (essaie « postgres »)': 'Type a technology (try “postgres”)',
@@ -1516,6 +1517,9 @@ export const english: Record<string, string> = {
   'Joindre une image ou un PDF': 'Attach an image or a PDF',
   'Image jointe': 'Attached image',
   'Format non accepté': 'Format not accepted',
+  'Les vidéos se partagent par lien': 'Videos are shared by link',
+  'Colle un lien YouTube, Loom ou Vimeo dans le texte.':
+    'Paste a YouTube, Loom or Vimeo link in the text.',
   'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
     'Send a JPEG, PNG or WebP image, or a PDF.',
   'Image illisible': 'Unreadable image',

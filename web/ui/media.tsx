@@ -51,7 +51,13 @@ export const useMediaPicker = (max: number, initial: Media[] = []) => {
   const [items, setItems] = useState<Item[]>(() => initial.map(fromMedia))
   const add = (files: File[]) => {
     const images = files.filter((file) => IMAGE_TYPES.includes(file.type))
-    if (images.length < files.length) {
+    if (files.some((file) => file.type.startsWith('video/'))) {
+      // Videos are never uploaded: they are embedded by their link (§17.3)
+      warn(
+        'Les vidéos se partagent par lien',
+        'Colle un lien YouTube, Loom ou Vimeo dans le texte.',
+      )
+    } else if (images.length < files.length) {
       warn('Format non accepté', 'Ajoute des images JPEG, PNG ou WebP.')
     }
     const room = max - items.length

@@ -190,6 +190,7 @@ Responsable : _à répartir_
 - [x] **PAM-427** · Posts enregistrés avec leurs images et leur vidéo : `POST/api/post/create`, `GET/api/posts`, rédaction de l'Accueil et dialogue « Nouveau post » branchés, images et vidéo affichées dans le fil et sur la page du post ; réponses, réactions et onglets restent à PAM-501 (§10.1, §17.3) — @niangoos
 - [x] **PAM-428** · Messages de canal enregistrés avec leur image : `POST/api/project/message/create`, `GET/api/project/messages`, droits d'écriture et de lecture par canal, image servie aux seuls lecteurs du canal, vidéo intégrée depuis le premier lien du message ; fils, réactions et temps réel restent à PAM-406 (§6.8, §17.3) — @niangoos
 - [x] **PAM-429** · Médias de démo : captures dessinées pour les projets de démo (`web/assets/mocks`, copiées dans `dist`), posts du fil avec images et vidéos YouTube, captures des demandes d'aide, une capture dans `#général` d'OpenPay Africa (§12.7, §17.3) — @niangoos
+- [x] **PAM-430** · Vidéo d'un post par le lien collé dans son texte : aperçu dans la rédaction de l'Accueil et le dialogue « Nouveau post », message clair pour un fichier vidéo (§17.3) — @niangoos
 - [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
@@ -328,3 +329,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-26 · Posts enregistrés (PAM-427) : une première partie de PAM-501, pour que les images et la vidéo d'un post soient vraies et visibles de tous ; la vitrine de démo de Kofi perd ses fausses images ; un auteur réel, absent des fixtures, s'affiche par son nom · §10.1, §17.3
 - 2026-10-26 · Messages de canal enregistrés (PAM-428) : une première partie de PAM-406, pour que l'image d'un message soit vraie ; la vidéo d'un message vient du premier lien de son texte, sans colonne en plus ; un projet inconnu du serveur garde ses messages dans la page · §6.8, §17.3
 - 2026-10-26 · Médias de démo (PAM-429) : des captures dessinées pour les projets fictifs, servies avec les pages et jamais uploadées, plutôt que des photos d'ailleurs ; les vidéos sont de vraies vidéos publiques sur le sujet du post · §17.3
+- 2026-10-26 · Vidéo d'un post par le lien de son texte (PAM-430) : un lien collé suffit, comme dans les canaux, sans champ à trouver ; un fichier vidéo n'est jamais uploadé et l'interface le dit · §17.3

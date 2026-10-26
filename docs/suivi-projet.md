@@ -669,6 +669,13 @@ Le fil et les demandes d'aide de démo montrent de vraies images et de vraies vi
 - **Livrable** : `web/assets/mocks/*.webp`, `web/fixtures/media.ts`, `copyMocks` dans `build-config.ts`, `mediaUrl` dans `web/lib/messages.ts`, fixtures des posts, des demandes d'aide et des canaux
 - **Par** : @niangoos
 
+### 2026-10-26 · PAM-430 · Vidéo d'un post par le lien collé dans son texte
+
+Un lien YouTube, Loom ou Vimeo collé dans le texte d'un post devient sa vidéo, comme dans les canaux : la rédaction de l'Accueil, qui n'avait pas de champ vidéo, en montre l'aperçu dès le collage et l'enregistre avec le post ; le dialogue « Nouveau post » le prend quand son champ vidéo est vide. Un fichier vidéo choisi, glissé ou collé ne part pas et un message dit de coller un lien. Le texte d'aide de la rédaction le rappelle. Vérifié dans le navigateur : un lien YouTube collé, son aperçu, le post relu après rechargement avec son lecteur, et le message pour un fichier `.mp4`.
+
+- **Livrable** : rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `useMediaPicker` dans `web/ui/media.tsx`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
