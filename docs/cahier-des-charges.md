@@ -250,7 +250,7 @@ En-tête : nom, description, technologies, lien GitHub, puis contributeurs, issu
 
 Onglets : Overview, Pulse, Canaux (§6.8), Pull Requests, Issues, Team, Activity, Board, Roadmap. L'Overview répond à : qu'est-ce que c'est, que se passe-t-il, qui construit, de quoi a-t-il besoin, puis-je aider.
 
-L'Overview affiche aussi une **galerie** (jusqu'à 8 captures d'écran) et une **vidéo de démo** intégrée par lien (§17.3).
+L'Overview affiche aussi une **galerie** (jusqu'à 8 captures d'écran) et une **vidéo de démo** intégrée par lien (§17.3). Le propriétaire et les mainteneurs gèrent la galerie : ajout de plusieurs images d'un coup (clic ou glisser-déposer), ordre, suppression, puis enregistrement ; la première capture est mise en avant. Chaque capture s'ouvre dans une visionneuse (flèches, clavier, vignettes).
 
 Un projet peut aussi être créé sans repo (« Create from scratch » : nom, description, vision, technologies, visibilité, besoins) et connecté à un repo plus tard.
 
@@ -522,7 +522,7 @@ Précisions (`api/profile.ts`, lu par `GET/api/user`, public) : le profil ne don
 
 ### 9.2 Personnalisation
 
-Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+Cover (Le fil, Grille, Plaques, Uni, ou une photo uploadée par le développeur, gardée sur le serveur et prioritaire sur les couvertures prédéfinies), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
 
 ### 9.3 Vitrines visuelles
 
@@ -985,7 +985,11 @@ Les avatars restent ceux de GitHub.
 - **Upload** : route `POST/api/media/upload`, déclarée sans `input` (lecture du `FormData` dans le handler). Formats JPEG, PNG, WebP ; type vérifié sur les premiers octets du fichier, pas sur l'extension ; 2 Mo maximum ; 20 uploads par utilisateur et par heure.
 - **Fichiers** : seuls les messages directs acceptent aussi un PDF, 5 Mo au plus, gardé avec son nom nettoyé (sans chemin ni caractère de contrôle) et servi en téléchargement (`Content-Disposition: attachment`), jamais ouvert dans la page.
 - **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande, au projet ou au message à l'enregistrement, par son propriétaire et une seule fois. Une image jamais rattachée est supprimée au bout de 24 h (vérifié chaque heure par le serveur).
-- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement. Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement, l'image d'un message de canal aux lecteurs de ce canal (§6.8). Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Partout la même façon de faire** : un sélecteur commun (ordinateur, glisser-déposer, ou capture collée dans un champ de texte), des aperçus pendant l'envoi, l'ordre et le retrait avant l'enregistrement, puis une grille dont chaque image s'ouvre dans une visionneuse (flèches, clavier, vignettes). Il sert à la galerie du projet, aux captures d'une demande d'aide (`media` de `POST/api/help/create`, rattachées dans la même transaction que la demande) et à la photo de couverture (`POST/api/user/cover`, une seule, 0 la retire ; renvoyée dans `cover` du profil).
+- **Posts** : `POST/api/post/create` enregistre un post avec ses images (4 au plus, rattachées dans la même transaction) et son lien vidéo (`videoUrl`, migration 012) ; `GET/api/posts` renvoie les 50 derniers, que le fil affiche. Un lien YouTube, Loom ou Vimeo collé dans le texte d'un post devient sa vidéo, avec l'aperçu dès la rédaction ; un fichier vidéo glissé ou collé est refusé avec ce conseil. Les réponses, réactions et onglets du fil viennent avec PAM-501.
+- **Canaux** : `POST/api/project/message/create` enregistre un message de `#général`, `#aide` ou `#annonces` avec son image (une au plus), selon les droits d'écriture du §6.8, et produit l'entry `MESSAGE_CREATED` ; `GET/api/project/messages` renvoie les derniers messages des canaux que le développeur lit. La vidéo d'un message est le premier lien YouTube, Loom ou Vimeo de son texte, intégré sous le message. Les fils, réactions et le temps réel viennent avec PAM-406.
+- **Galerie d'un projet** : `POST/api/project/gallery` reçoit toute la galerie, dans l'ordre (8 captures au plus) : les nouveaux uploads du développeur y sont rattachés, une capture retirée est supprimée avec son fichier ; propriétaire et mainteneurs seulement. `GET/api/projects` renvoie la galerie de chaque projet ; une capture rattachée se lit par tout développeur connecté.
 - **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
 
 **Vidéos intégrées par lien**
@@ -993,7 +997,7 @@ Les avatars restent ceux de GitHub.
 Un lien YouTube, Loom ou Vimeo collé dans un post, une page projet (vidéo de démo), une demande d'aide (par exemple un Loom qui montre le bug) ou un message de canal s'affiche en lecteur intégré.
 
 - **Fournisseurs autorisés** : YouTube (lecteur `youtube-nocookie.com`), Loom, Vimeo. Tout autre lien reste un lien simple.
-- **Stockage** : uniquement les métadonnées (`provider`, identifiant de la vidéo, URL, titre, miniature), récupérées une fois côté serveur via oEmbed et mises en cache.
+- **Stockage** : uniquement le lien (`videoUrl` d'une demande d'aide, `demoVideoUrl` d'un projet, réglé par son propriétaire et ses mainteneurs avec `POST/api/project/video`). Le titre et la miniature sont demandés une fois au fournisseur (oEmbed) par `GET/api/video/preview` et gardés en mémoire ; la miniature est servie par Pamoja (`GET/api/video/thumbnail`), jamais lue chez le fournisseur par la page. Le lecteur est construit à partir de l'identifiant de la vidéo, jamais à partir du lien collé.
 - **Affichage** : la miniature s'affiche d'abord ; le lecteur (iframe) ne se charge qu'au clic. La page reste rapide et aucun tiers n'est contacté tant que la vidéo n'est pas lancée.
 - **Sécurité** : iframes limitées à ces domaines par la politique de sécurité de contenu (`frame-src`).
 

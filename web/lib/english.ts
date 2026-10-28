@@ -30,7 +30,8 @@ export const english: Record<string, string> = {
   'Ajouter un bloc de code': 'Add a code block',
   'Ajouter un skill': 'Add a skill',
   'Ajouter un skill (essaie « postgres »)': 'Add a skill (try “postgres”)',
-  'Ajouter une image (4 maximum)': 'Add an image (up to 4)',
+  'Ajouter une image (4 maximum) ; une vidéo se colle en lien dans le texte':
+    'Add an image (up to 4); paste a video as a link in the text',
   'Ajouter une technologie': 'Add a technology',
   'Ajoutée au board': 'Added to the board',
   'Alertes GitHub et CI/CD, écrites par la plateforme':
@@ -84,7 +85,6 @@ export const english: Record<string, string> = {
   'La boucle': 'The loop',
   'Le nom de ton projet': 'Your project name',
   'Langages pas encore lus sur GitHub.': 'Languages not yet read from GitHub.',
-  'Lien YouTube ou Loom': 'YouTube or Loom link',
   'Modifier le profil': 'Edit profile',
   'Notifications du canal': 'Channel notifications',
   'Nouvelle carte': 'New card',
@@ -108,11 +108,10 @@ export const english: Record<string, string> = {
   'Republié': 'Reposted',
   'Rien pour l’instant.': 'Nothing here yet.',
   'Retirer la capture': 'Remove screenshot',
-  'Retirer l’image': 'Remove image',
   'Score minimum': 'Minimum score',
   'Signaler': 'Report',
-  'Sur quoi tu travailles ? Une question, une astuce, un bout de code…':
-    'What are you working on? A question, a tip, a code snippet…',
+  'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…':
+    'What are you working on? A question, a tip, some code, a video link…',
   'Synchro live': 'Live sync',
   'Seulement mes PRs': 'Only my pull requests',
   'Tape une techno (essaie « postgres »)': 'Type a technology (try “postgres”)',
@@ -477,7 +476,6 @@ export const english: Record<string, string> = {
     'Context, what you expect, and how long it might take',
   'Le pays où tu vis': 'The country where you live',
   'Lien vidéo (facultatif)': 'Video link (optional)',
-  'Lire la vidéo de démo': 'Watch the demo video',
   'Liste': 'List',
   'Lu sur GitHub · à valider': 'Read from GitHub · needs verification',
   'Matching': 'Matching',
@@ -989,7 +987,6 @@ export const english: Record<string, string> = {
   'Toutes les preuves ·': 'All proofs ·',
   '· Voir les preuves': '· View proofs',
   'Vidéo de démo ·': 'Demo video ·',
-  'Lecture · Vidéo de démo ·': 'Play · Demo video ·',
   'Tes projets ·': 'Your projects ·',
   'Projets que tu suis ·': 'Projects you follow ·',
   'travaille sur la PR #84': 'is working on PR #84',
@@ -1532,6 +1529,9 @@ export const english: Record<string, string> = {
   'Joindre une image ou un PDF': 'Attach an image or a PDF',
   'Image jointe': 'Attached image',
   'Format non accepté': 'Format not accepted',
+  'Les vidéos se partagent par lien': 'Videos are shared by link',
+  'Colle un lien YouTube, Loom ou Vimeo dans le texte.':
+    'Paste a YouTube, Loom or Vimeo link in the text.',
   'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
     'Send a JPEG, PNG or WebP image, or a PDF.',
   'Image illisible': 'Unreadable image',
@@ -1543,6 +1543,41 @@ export const english: Record<string, string> = {
   'Envoie les autres dans un message suivant.':
     'Send the others in another message.',
   'Envoi en cours…': 'Sending…',
+  // Screenshots of a project (PAM-425)
+  'Ajouter des captures': 'Add screenshots',
+  'Ajoute des images JPEG, PNG ou WebP.': 'Add JPEG, PNG or WebP images.',
+  'Captures enregistrées': 'Screenshots saved',
+  'Captures non enregistrées': 'Screenshots not saved',
+  'Réessaie dans un instant.': 'Try again in a moment.',
+  'Principale': 'Main',
+  'Enregistrement…': 'Saving…',
+  'Les suivantes ne sont pas ajoutées.': 'The next ones are not added.',
+  'Choisir une image': 'Choose an image',
+  'Depuis ton ordinateur, glissées ici ou collées : JPEG, PNG ou WebP.':
+    'From your computer, dropped here or pasted: JPEG, PNG or WebP.',
+  'Image précédente': 'Previous image',
+  'Image suivante': 'Next image',
+  'Écrans, démo, version mobile : glissées ici ou choisies sur ton ordinateur.':
+    'Screens, demo, mobile version: dropped here or chosen on your computer.',
+  'La première est mise en avant. Les images sont réduites et leurs métadonnées retirées avant l’envoi.':
+    'The first one is featured. Images are resized and their metadata removed before sending.',
+  'Une erreur, un écran : depuis ton ordinateur, glissées ici ou collées dans la description.':
+    'An error, a screen: from your computer, dropped here or pasted in the description.',
+  'Photo': 'Photo',
+  'Une photo large, depuis ton ordinateur ou glissée ici : JPEG, PNG ou WebP.':
+    'A wide photo, from your computer or dropped here: JPEG, PNG or WebP.',
+  'Couverture non enregistrée': 'Cover not saved',
+  'Vidéo du problème': 'Video of the problem',
+  'Vidéo du message': 'Video of the message',
+  'Vidéo de démo': 'Demo video',
+  'Lien YouTube, Loom ou Vimeo': 'YouTube, Loom or Vimeo link',
+  'Vidéo de démo (facultatif)': 'Demo video (optional)',
+  'Colle un lien YouTube, Loom ou Vimeo.':
+    'Paste a YouTube, Loom or Vimeo link.',
+  'Gérer les captures et la vidéo': 'Manage screenshots and video',
+  'Captures et vidéo du projet': 'Project screenshots and video',
+  'Vidéo': 'Video',
+  'Post non publié': 'Post not published',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1630,7 +1665,9 @@ export const englishTemplates: Record<string, string> = {
   '{0}/{1} : issues et PRs importées, synchro toutes les 15 min.':
     '{0}/{1}: issues and PRs imported, synced every 15 min.',
   '« {0} » est dans {1}': '“{0}” is in {1}',
-  'Écrire dans #{0} (Markdown, `code`)': 'Write in #{0} (Markdown, `code`)',
+  'Écrire dans #{0} (Markdown, `code`, lien vidéo)':
+    'Write in #{0} (Markdown, `code`, video link)',
+  'Image de {0}': 'Image from {0}',
   'Écrire à {0}': 'Write to {0}',
   'Écris quelques mots à {0} : le contexte et ce que tu attends.':
     'Write a few words to {0}: the context and what you expect.',
@@ -1664,7 +1701,6 @@ export const englishTemplates: Record<string, string> = {
   '{0} · {1} par GitHub · {2}': '{0} · {1} by GitHub · {2}',
   'La communauté « {0} » n’existe pas.': 'The “{0}” community does not exist.',
   'Signalé par {0} · {1}': 'Reported by {0} · {1}',
-  'Vidéo : {0}': 'Video: {0}',
   'Aucun développeur « {0} » sur Pamoja.': 'No developer “{0}” on Pamoja.',
   'Demande d’aide : {0}': 'Help request: {0}',
   'Le projet « {0} » n’existe pas ou n’est plus public.':
@@ -1783,4 +1819,20 @@ export const englishTemplates: Record<string, string> = {
   'PDF · {0}': 'PDF · {0}',
   '{0} ko': '{0} KB',
   '{0} Mo': '{0} MB',
+  'Jusqu’à {0} images : écrans, démo, version mobile.':
+    'Up to {0} images: screens, demo, mobile version.',
+  'Agrandir la capture {0} de {1}': 'Enlarge screenshot {0} of {1}',
+  '{0} images au plus': '{0} images at most',
+  'Image {0}': 'Image {0}',
+  'Avancer l’image {0}': 'Move image {0} forward',
+  'Retirer l’image {0}': 'Remove image {0}',
+  'Reculer l’image {0}': 'Move image {0} back',
+  'Ajouter des images ({0} sur {1})': 'Add images ({0} of {1})',
+  'Agrandir l’image {0} : {1}': 'Enlarge image {0}: {1}',
+  '{0} · {1} sur {2}': '{0} · {1} of {2}',
+  '{0}, image {1}': '{0}, image {1}',
+  'Captures de {0}': 'Screenshots of {0}',
+  'Captures de la demande': 'Screenshots of the request',
+  'Lire : {0}': 'Play: {0}',
+  'Images du post': 'Images of the post',
 }

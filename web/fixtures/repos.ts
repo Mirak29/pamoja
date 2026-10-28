@@ -257,7 +257,12 @@ const stageNames: Record<string, Project['stage']> = {
 export const adoptProjects = (list: ApiProject[]) => {
   const all = projects as Record<string, Project>
   for (const project of list) {
-    if (all[project.slug]?.demo) continue
+    if (all[project.slug]?.demo) {
+      // Its screenshots are real as soon as the server knows the project
+      all[project.slug].shots = project.gallery
+      all[project.slug].demoVideoUrl = project.demoVideoUrl
+      continue
+    }
     const repo = project.repository
     const key = project.slug as ProjectSlug
     all[project.slug] = {
@@ -287,6 +292,8 @@ export const adoptProjects = (list: ApiProject[]) => {
       activity: 'Calme',
       milestones: [],
       gallery: [],
+      shots: project.gallery,
+      demoVideoUrl: project.demoVideoUrl,
       events: [],
       demo: false,
     }

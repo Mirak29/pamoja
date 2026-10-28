@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { match, type Matched } from '/web/fixtures/matching.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
 import {
   type Login,
@@ -20,6 +21,7 @@ import {
   helpLevels,
 } from '/api/vocabulary.ts'
 import { t } from '/web/lib/language.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 /** Kinds of help a request asks for, and a developer accepts (§7.1) */
 export const helpTypes: string[] = Object.values(helpCategories)
@@ -58,8 +60,8 @@ export type HelpRequest = {
   /** Failing CI job, for a request born from a #suivi alert */
   job?: string
   video?: string
-  /** Screenshot URLs, 4 at most */
-  captures?: string[]
+  /** Screenshots, 4 at most (§17.3) */
+  media?: Media[]
   /** Developers who withdrew or were released: excluded from next waves */
   withdrawn?: Login[]
   wave?: number
@@ -92,6 +94,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [demoImage('paiement-api-go')],
     at: hoursAgo(5),
     demo: true,
   },
@@ -107,6 +110,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~45 min',
     status: 'open',
+    media: [demoImage('horaires-architecture')],
     at: hoursAgo(20),
     demo: true,
   },
@@ -122,6 +126,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~1 h',
     status: 'open',
+    media: [demoImage('sqlite-locked')],
     at: hoursAgo(30),
     issue: 44,
     demo: true,
@@ -138,6 +143,10 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [
+      demoImage('carte-tuiles-mobile'),
+      demoImage('carte-tuiles-reseau'),
+    ],
     at: hoursAgo(3),
     demo: true,
   },
@@ -244,6 +253,7 @@ export const adoptHelpRequests = (list: ApiHelp[]) => {
       branch: help.branch || undefined,
       repository: help.repository || undefined,
       video: help.videoUrl || undefined,
+      media: help.media,
       demo: help.demo,
     })
     known || helpRequests.unshift(request)

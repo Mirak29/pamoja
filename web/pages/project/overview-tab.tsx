@@ -1,17 +1,23 @@
 import type { ComponentChildren } from 'preact'
-import { useState } from 'preact/hooks'
 import { A } from '@01edu/signal-router'
-import { Play } from '/web/assets/icons.tsx'
+import { ImagePlus, Play } from '/web/assets/icons.tsx'
 import { isMe, personOf } from '/web/fixtures/people.ts'
-import type { Project } from '/web/fixtures/projects.ts'
+import { type Project, projectsChanged } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
+import {
+  canEditGallery,
+  ManageScreenshots,
+  Screenshots,
+  ScreenshotViewer,
+} from '/web/pages/project/gallery.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { t } from '/web/lib/language.ts'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 const Card = (
   { class: className, children }: {
@@ -34,60 +40,41 @@ const About = ({ project }: { project: Project }) => (
   </Card>
 )
 
-const Label = ({ children }: { children: ComponentChildren }) => (
-  <span class='rounded-sm border border-line bg-surface-100 px-1.5 py-0.5 font-mono text-[11px] leading-[14px] font-medium text-ink-muted'>
-    {children}
-  </span>
-)
-
 const Gallery = ({ project }: { project: Project }) => {
-  const [playing, setPlaying] = useState(false)
-  const video = project.demoVideo
+  // The project is mutated in place: the signal brings its new screenshots
+  projectsChanged.value
+  // A project the server knows has its real video; a demo one, its tile
+  const known = !!project.shots
+  const video = known ? project.demoVideoUrl : undefined
+  const demo = known ? undefined : project.demoVideo
   return (
     <Card class='gap-3.5 p-[22px]'>
-      <Eyebrow>Captures et démo</Eyebrow>
-      {!project.gallery.length && !video && (
+      <div class='flex flex-wrap items-center justify-between gap-3'>
+        <Eyebrow>Captures et démo</Eyebrow>
+        {canEditGallery(project) && (
+          <Button variant='secondary' size={32} params={{ dialog: 'captures' }}>
+            <ImagePlus class='size-4' />
+            Gérer les captures et la vidéo
+          </Button>
+        )}
+      </div>
+      {!(project.shots ?? project.gallery).length && !video && !demo &&
+        !canEditGallery(project) && (
         <span class='text-[14px] text-ink-muted'>
           Pas encore de captures ni de vidéo de démo.
         </span>
       )}
-      <div class='grid grid-cols-2 gap-3.5 sm:grid-cols-3'>
-        {project.gallery.map((caption) => (
-          <div
-            key={caption}
-            title={caption}
-            class='flex aspect-[4/3] min-w-0 items-end overflow-hidden rounded-md border border-figure-edge bg-surface-000 p-2 shadow-tile'
-          >
-            <Label>{caption}</Label>
-          </div>
-        ))}
-      </div>
-      {video && !playing && (
-        <button
-          type='button'
-          onClick={() => setPlaying(true)}
-          aria-label='Lire la vidéo de démo'
-          class='flex aspect-video w-[calc(100%-8px)] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-figure-edge bg-surface-000 text-ink shadow-tile'
-        >
+      <Screenshots project={project} />
+      <ScreenshotViewer project={project} />
+      <ManageScreenshots project={project} />
+      {video && <VideoEmbed url={video} label='Vidéo de démo' />}
+      {demo && (
+        <div class='flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg border border-figure-edge bg-surface-000 text-ink shadow-tile'>
           <span class='key key-primary size-16 rounded-full'>
             <Play class='size-7' />
           </span>
           <span class='rounded-sm border border-line bg-surface-100 px-1.5 py-0.5 font-mono text-[12px] leading-4 font-medium text-ink-muted'>
-            Vidéo de démo · {video.provider} · {video.duration}
-          </span>
-        </button>
-      )}
-      {video && playing && (
-        // The provider player (iframe) takes this place with PAM-410
-        <div class='flex aspect-video w-[calc(100%-8px)] flex-col justify-end gap-2 rounded-lg border border-figure-edge bg-[#0E0E13] p-4 text-[#EDEDF3] shadow-tile'>
-          <span class='font-mono text-[12px] leading-4 font-medium'>
-            Lecture · Vidéo de démo · {video.provider}
-          </span>
-          <div class='h-1 overflow-hidden rounded-full bg-[#2C2C37]'>
-            <div class='h-full w-[8%] bg-[#8C96FF]' />
-          </div>
-          <span class='font-mono text-[11px] leading-[14px] font-medium text-[#A2A2B2]'>
-            0:12 / {video.duration}
+            Vidéo de démo · {demo.provider} · {demo.duration}
           </span>
         </div>
       )}

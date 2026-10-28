@@ -178,7 +178,11 @@ const Hero = ({ login, write }: { login: Login; write?: string }) => {
   const person: Person = people[login]
   return (
     <section class='slab mr-2 overflow-hidden'>
-      <Cover cover={settingsOf(login).cover} />
+      {/* An uploaded photo is the cover: it lives on the server */}
+      <Cover
+        cover={person.cover?.length ? 'photo' : settingsOf(login).cover}
+        photo={person.cover?.[0]}
+      />
       <div class='flex flex-col gap-3 px-6 pb-6'>
         <div class='relative -mt-12 flex flex-wrap items-end justify-between gap-4'>
           <Portrait

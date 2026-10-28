@@ -627,6 +627,55 @@ Relecture de la branche du test de charge, quatre corrections et un outil rendu 
 - **Livrable** : `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/lib/language.ts` (`dotted`), `web/ui/help-request-card.tsx`, `web/ui/project-card.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/communities/community-page.tsx`, `task-db-stress.ts`, `api/stress.ts`, `web/stress-fixtures.ts`, `web/debug-app.ts`, `deno.json`, `.gitignore`, `web/lib/english.ts` ; §14
 - **Par** : @Mirak29
 
+### 2026-10-26 · PAM-425 · Galerie du projet
+
+Le propriétaire et les mainteneurs d'un projet gèrent ses captures depuis l'Aperçu : ajout de plusieurs images d'un coup, par clic ou glisser-déposer (réduites et nettoyées de leurs métadonnées dans le navigateur, comme les messages), ordre, suppression, puis enregistrement de toute la galerie ; 8 captures au plus, la première mise en avant. Tout développeur connecté les voit, et une visionneuse les ouvre en grand (flèches, clavier, vignettes). Côté serveur, `setMediaOf` remplace les médias d'un contenu dans l'ordre et supprime ceux retirés. Vérifié dans le navigateur avec la connexion simulée sur une base seedée : ajout de trois images, ordre, enregistrement, visionneuse, rechargement.
+
+- **Livrable** : `api/project-gallery.ts`, `setMediaOf` dans `api/media.ts`, route `POST/api/project/gallery`, galerie dans `GET/api/projects`, `api/project-gallery_test.ts` (3 tests), `web/pages/project/gallery.tsx`, Aperçu du projet
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-426 · Médias partout, le kit
+
+Un kit commun pour les images (`web/ui/media.tsx`) : `useMediaPicker` envoie les images dès qu'elles sont choisies (depuis l'ordinateur, glissées ou collées dans un champ de texte), avec un aperçu pendant l'envoi, l'ordre et le retrait ; `MediaGrid` et `MediaViewer` les affichent et les ouvrent en grand (flèches, clavier, vignettes). Branché de bout en bout : la demande d'aide envoie ses captures (4 au plus, rattachées dans la transaction de création, renvoyées avec chaque demande) à la place des fausses tuiles « capture-1.png » ; la photo de couverture du profil (`POST/api/user/cover`) devient la couverture ; la galerie du projet passe sur le kit. Vérifié dans le navigateur sur une base seedée : demande publiée avec deux captures et visionneuse, couverture photo, galerie.
+
+- **Livrable** : `web/ui/media.tsx`, formulaire et page de la demande d'aide, page « Modifier le profil » et couverture, `api/help.ts`, `coverOf` et `setCover` dans `api/media.ts`, `api/attached-media_test.ts` et `api/help_test.ts`
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-410 · Vidéos intégrées par lien
+
+Un lien YouTube, Loom ou Vimeo devient un lecteur intégré : la miniature d'abord, le lecteur au clic (`youtube-nocookie.com` pour YouTube), construit à partir de l'identifiant de la vidéo. Le serveur lit le titre et la miniature une fois par oEmbed, les garde en mémoire et sert lui-même la miniature, pour qu'aucun fournisseur ne soit contacté avant la lecture. Les pages n'autorisent que ces trois lecteurs (`frame-src`). Branché sur la demande d'aide (aperçu dans le formulaire, lecteur dans la page) et sur la vidéo de démo du projet, réglée dans le dialogue des captures (migration 011) ; le faux lecteur de démo est retiré. Vérifié dans le navigateur : une demande avec un lien YouTube, sa miniature et son lecteur, une vidéo de démo Vimeo.
+
+- **Livrable** : `api/video-links.ts`, `api/video.ts`, routes `GET/api/video/preview`, `GET/api/video/thumbnail` et `POST/api/project/video`, `migrations/011-project-demo-video.js`, `api/video_test.ts` (4 tests), `web/ui/video.tsx`, CSP de `prod-server.ts` et `task-dev.ts`
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-427 · Posts enregistrés avec leurs images et leur vidéo
+
+Un post s'enregistre maintenant sur le serveur avec ses images et son lien vidéo (`POST/api/post/create`, 20 par heure, migration 012) et le fil lit les derniers (`GET/api/posts`). La rédaction de l'Accueil choisit les images sur l'ordinateur, par glisser-déposer ou collage, avec leurs vignettes ; le dialogue « Nouveau post » reprend le kit, vérifie le lien vidéo et en montre l'aperçu. Les posts affichent leurs images dans une grille qui ouvre la visionneuse, et leur vidéo dans le lecteur intégré, à la place des tuiles « capture-1.png ». Vérifié dans le navigateur : un post avec deux images depuis l'Accueil, un post avec une vidéo YouTube depuis le dialogue, le fil après rechargement, la visionneuse.
+
+- **Livrable** : `api/posts.ts`, routes `POST/api/post/create` et `GET/api/posts`, `migrations/012-post-video.js`, `api/posts_test.ts` (2 tests), `web/lib/posts.ts`, rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `web/ui/post.tsx`, page du post
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-428 · Messages de canal enregistrés avec leur image
+
+Un message de `#général`, `#aide` ou `#annonces` s'enregistre sur le serveur avec une image (`POST/api/project/message/create`, 120 par heure) et produit l'entry `MESSAGE_CREATED` ; l'onglet Canaux relit les derniers messages des canaux que le développeur lit (`GET/api/project/messages`). Les droits suivent le §6.8 : les membres écrivent dans `#général` et `#aide`, le propriétaire et les mainteneurs dans `#annonces` ; les abonnés lisent `#annonces`. L'image n'est servie qu'aux lecteurs du canal. La rédaction du canal a un bouton image, accepte une capture collée et montre la vignette ; le message affiche son image, qui ouvre la visionneuse, et le lecteur de la première vidéo YouTube, Loom ou Vimeo de son texte. Les vignettes de rédaction de l'Accueil passent dans le kit (`MediaThumbs`). Vérifié dans le navigateur : un message avec une capture et un lien YouTube dans `#général`, relu après rechargement, la visionneuse.
+
+- **Livrable** : `api/channels.ts`, routes `POST/api/project/message/create` et `GET/api/project/messages`, lecture des images de canal dans `api/media.ts`, `api/channels_test.ts` (3 tests), `web/lib/channels.ts`, onglet Canaux, `videoIn` dans `web/ui/video.tsx`
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-429 · Médias de démo dans le fil et les canaux
+
+Le fil et les demandes d'aide de démo montrent de vraies images et de vraies vidéos. Douze captures sont dessinées pour les projets fictifs (carte et régions de Senegal Maps, écrans et ventes d'AfriCommerce, pipeline CI, tests du ledger, affiche du meetup Go d'Abidjan, et pour les demandes d'aide : le code Go à relire, les deux architectures des horaires, l'erreur « database is locked », les tuiles grises et le panneau réseau de la carte). Elles sont rangées dans `web/assets/mocks`, copiées dans `dist/mocks` par `task-dev.ts` et `task-prod.ts`, et servies avec les pages sans passer par l'upload. Cinq posts reçoivent des images, trois une vidéo YouTube publique sur leur sujet (tutoriel GitHub Actions, talk de Rob Pike, Docker en 100 secondes) ; un post « AfriCommerce 1.0 : la démo complète », en haut du fil, cache un rickroll. Les quatre demandes d'aide ouvertes ont leurs captures, et un message de `#général` d'OpenPay Africa a sa capture. Le post de Senegal Maps dit maintenant 12 régions sur 14. Vérifié dans le navigateur : le fil avec ses images et ses lecteurs, les captures d'une demande d'aide, sans image cassée.
+
+- **Livrable** : `web/assets/mocks/*.webp`, `web/fixtures/media.ts`, `copyMocks` dans `build-config.ts`, `mediaUrl` dans `web/lib/messages.ts`, fixtures des posts, des demandes d'aide et des canaux
+- **Par** : @niangoos
+
+### 2026-10-26 · PAM-430 · Vidéo d'un post par le lien collé dans son texte
+
+Un lien YouTube, Loom ou Vimeo collé dans le texte d'un post devient sa vidéo, comme dans les canaux : la rédaction de l'Accueil, qui n'avait pas de champ vidéo, en montre l'aperçu dès le collage et l'enregistre avec le post ; le dialogue « Nouveau post » le prend quand son champ vidéo est vide. Un fichier vidéo choisi, glissé ou collé ne part pas et un message dit de coller un lien. Le texte d'aide de la rédaction le rappelle. Vérifié dans le navigateur : un lien YouTube collé, son aperçu, le post relu après rechargement avec son lecteur, et le message pour un fichier `.mp4`.
+
+- **Livrable** : rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `useMediaPicker` dans `web/ui/media.tsx`
+- **Par** : @niangoos
+
 ### 2026-10-28 · PAM-223 · Filtres du matching par skills, projets et communautés
 
 Les réglages du matching ont trois filtres de plus, enregistrés dans `Profile.matchingFilters` avec le mode, le score minimum et les types d'aide (`POST/api/notification/preferences`, relus par `GET/api/user/me`). Chacun dit « seulement » : vide, toutes les demandes passent ; rempli, `rank()` écarte une demande qui ne touche aucun des skills choisis, qui n'est pas d'un des projets choisis (ou n'a pas de projet), ou dont l'auteur n'est membre d'aucune des communautés choisies. La page propose les skills du développeur, ses projets construits ou suivis et ses communautés ; le bloc « Tes skills », qui ne s'enregistrait pas, laisse sa place. Le compte « N demandes ouvertes passent ce seuil » suit les filtres. Une page plus ancienne qui n'envoie pas les filtres les remet à vide. Vérifié dans le navigateur : 3 demandes, 1 avec TypeScript seul, 3 avec Go en plus, les choix relus après rechargement.

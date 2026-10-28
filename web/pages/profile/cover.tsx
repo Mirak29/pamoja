@@ -1,5 +1,6 @@
 import type { ProfileCover } from '/web/fixtures/profile-settings.ts'
 import { Plates } from '/web/ui/plates.tsx'
+import { type Media, mediaUrl } from '/web/lib/messages.ts'
 
 const sizes = {
   large: {
@@ -21,10 +22,24 @@ const sizes = {
  * the live preview.
  */
 export const Cover = (
-  { cover, small }: { cover: ProfileCover; small?: boolean },
+  { cover, small, photo }: {
+    cover: ProfileCover
+    small?: boolean
+    /** The uploaded photo, for the « photo » cover */
+    photo?: Media
+  },
 ) => {
   const size = sizes[small ? 'small' : 'large']
   const frame = `${size.box} border-b border-figure-edge`
+  if (cover === 'photo' && photo) {
+    return (
+      <img
+        src={mediaUrl(photo.key)}
+        alt=''
+        class={`${frame} block w-full object-cover`}
+      />
+    )
+  }
   if (cover === 'grille') {
     return (
       <div
