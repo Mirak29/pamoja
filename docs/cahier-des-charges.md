@@ -394,7 +394,7 @@ Précisions :
 - **Ce que dit une notification** : le serveur garde le type, l'auteur de l'action et ce dont elle parle (demande, titre, score, skills, durée, début du message) ; la page en écrit la phrase dans sa langue. Une notification a lieu à chaque étape d'une demande qui concerne l'autre côté : match, acceptation, désistement, libération, annulation, aide livrée, « pas utile », message du fil, demande expirée, relances (§7.2).
 - **Toast** : il arrive par l'entry `NOTIFICATION_CREATED` du destinataire ; un match montre skills, score et durée, et mène à la demande.
 - **Lecture** : seul le destinataire marque sa notification lue.
-- **Préférences** : mode, score minimum et types d'aide acceptés sont enregistrés (`Profile.matchingFilters`) et appliqués par le matching ; les filtres par skills, projets et communautés suivent (PAM-223).
+- **Préférences** : mode, score minimum, types d'aide acceptés et filtres sont enregistrés (`Profile.matchingFilters`) et appliqués par le matching. Les filtres par skills, projets et communautés disent « seulement » : vide, tout passe ; rempli, une demande doit toucher un des skills choisis, être d'un des projets choisis (une demande sans projet ne passe pas ce filtre), et venir d'un auteur membre d'une des communautés choisies. La page les propose parmi les skills du développeur, ses projets (construits ou suivis) et ses communautés ; le serveur garde les skills du vocabulaire et jusqu'à 30 slugs par filtre.
 
 ### 7.5 Vérification d'une review
 

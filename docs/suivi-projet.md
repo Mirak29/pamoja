@@ -627,6 +627,13 @@ Relecture de la branche du test de charge, quatre corrections et un outil rendu 
 - **Livrable** : `web/lib/messages.ts`, `web/pages/messages-page.tsx`, `web/lib/language.ts` (`dotted`), `web/ui/help-request-card.tsx`, `web/ui/project-card.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-detail.tsx`, `web/pages/communities/community-page.tsx`, `task-db-stress.ts`, `api/stress.ts`, `web/stress-fixtures.ts`, `web/debug-app.ts`, `deno.json`, `.gitignore`, `web/lib/english.ts` ; §14
 - **Par** : @Mirak29
 
+### 2026-10-28 · PAM-223 · Filtres du matching par skills, projets et communautés
+
+Les réglages du matching ont trois filtres de plus, enregistrés dans `Profile.matchingFilters` avec le mode, le score minimum et les types d'aide (`POST/api/notification/preferences`, relus par `GET/api/user/me`). Chacun dit « seulement » : vide, toutes les demandes passent ; rempli, `rank()` écarte une demande qui ne touche aucun des skills choisis, qui n'est pas d'un des projets choisis (ou n'a pas de projet), ou dont l'auteur n'est membre d'aucune des communautés choisies. La page propose les skills du développeur, ses projets construits ou suivis et ses communautés ; le bloc « Tes skills », qui ne s'enregistrait pas, laisse sa place. Le compte « N demandes ouvertes passent ce seuil » suit les filtres. Une page plus ancienne qui n'envoie pas les filtres les remet à vide. Vérifié dans le navigateur : 3 demandes, 1 avec TypeScript seul, 3 avec Go en plus, les choix relus après rechargement.
+
+- **Livrable** : `matchingFiltersOf` et `updateMatching` dans `api/user.ts`, `kept` dans `api/matching.ts`, contrôle des filtres dans `api/routes.ts`, 2 tests dans `api/matching_test.ts`, réglages, `saveMatching` et `matchingRequests` côté web
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

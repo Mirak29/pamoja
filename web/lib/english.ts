@@ -935,6 +935,18 @@ export const english: Record<string, string> = {
   'Tu les suis : tu lis leur #suivi et leurs #annonces, sans écrire.':
     'You follow them: you read their #tracking and #announcements, without writing.',
   '· connecté via GitHub': '· connected through GitHub',
+  'Filtres': 'Filters',
+  'Sans sélection, toutes les demandes passent. Avec, seulement celles qui touchent un des choix de chaque filtre.':
+    'With nothing picked, every request goes through. With picks, only those that match one pick of each filter.',
+  'Seulement ces skills': 'Only these skills',
+  'Seulement ces projets': 'Only these projects',
+  'Seulement les auteurs de ces communautés':
+    'Only authors from these communities',
+  'Ajoute des skills à ton profil pour filtrer.':
+    'Add skills to your profile to filter.',
+  'Rejoins ou suis un projet pour filtrer.':
+    'Join or follow a project to filter.',
+  'Rejoins une communauté pour filtrer.': 'Join a community to filter.',
   'Ton profil, tes preuves, tes posts et tes réglages t’appartiennent.':
     'Your profile, proofs, posts and settings belong to you.',
   'Exporter mes données': 'Export my data',

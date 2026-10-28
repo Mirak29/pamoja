@@ -125,6 +125,12 @@ const currentUser = {
   matchingMode,
   minScore: NUM('Score under which a help request does not reach them'),
   helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+  onlySkills: ARR(STR('Technology'), 'Only requests on these skills, or all'),
+  onlyProjects: ARR(STR('Slug'), 'Only requests of these projects, or all'),
+  onlyCommunities: ARR(
+    STR('Slug'),
+    'Only requests whose author is in these communities, or all',
+  ),
   skills: ARR(
     OBJ({
       name: STR('Technology of the vocabulary'),
@@ -284,6 +290,15 @@ const assertFits = (fields: Parameters<typeof tooLong>[0]) => {
 }
 
 // Only names of the vocabulary are saved: a developer never creates one
+// At most 30 slugs, each as a slug is written
+const assertSlugs = (slugs: string[], what: string) => {
+  if (
+    slugs.length > 30 || slugs.some((slug) => !/^[a-z0-9-]{1,64}$/.test(slug))
+  ) {
+    throw new respond.BadRequestError({ message: `Invalid ${what}` })
+  }
+}
+
 const assertKnown = (names: string[], known: string[], what: string) => {
   const unknown = names.filter((name) => !known.includes(name))
   if (unknown.length) {
@@ -806,6 +821,9 @@ const defs = {
     authorize: withSession,
     fn: (ctx, input) => {
       assertKnown(input.helpTypes, Object.keys(helpCategories), 'help types')
+      assertKnown(input.onlySkills ?? [], skills, 'skills')
+      assertSlugs(input.onlyProjects ?? [], 'projects')
+      assertSlugs(input.onlyCommunities ?? [], 'communities')
       updateMatching(ctx.session.userId, input)
       return getCurrentUser(ctx.session.userId)!
     },
@@ -813,6 +831,15 @@ const defs = {
       matchingMode,
       minScore: NUM('0 to 100'),
       helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+      onlySkills: optional(
+        ARR(STR('Technology'), 'Only requests on these skills, empty for all'),
+      ),
+      onlyProjects: optional(
+        ARR(STR('Slug'), 'Only requests of these projects, empty for all'),
+      ),
+      onlyCommunities: optional(
+        ARR(STR('Slug'), 'Only authors of these communities, empty for all'),
+      ),
     }, 'How help requests reach the developer'),
     output: profileSaved,
     description: 'Save the matching preferences',
