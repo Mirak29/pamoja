@@ -102,6 +102,7 @@ import {
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
 import { pulseOf } from '/api/pulse.ts'
+import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
 import { createChannelMessage, listChannelMessages } from '/api/channels.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
@@ -1086,6 +1087,43 @@ const defs = {
     fn: () => listPosts(),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'GET/api/project/channels': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => channelStatesOf(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      channel: STR('general, tracking, help or announcements'),
+      lastReadAt: NUM('Read up to this time, in seconds; 0 if never'),
+      notify: STR('all, mentions, mine or none'),
+    })),
+    description: 'What I read in the channels I read, and their settings',
+  }),
+
+  'POST/api/project/channel/read': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel }) => {
+      markRead(ctx.session.userId, project, channel)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+    }),
+    description: 'Mark a channel read up to now',
+  }),
+
+  'POST/api/project/channel/notify': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel, notify }) => {
+      setNotify(ctx.session.userId, project, channel, notify)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+      notify: STR('all, mentions, mine (#suivi only) or none'),
+    }),
+    description: 'Choose what reaches me from a channel',
   }),
 
   'GET/api/project/pulse': route({

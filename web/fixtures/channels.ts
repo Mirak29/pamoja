@@ -3,6 +3,7 @@ import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { demoImage } from '/web/fixtures/media.ts'
 import { hearOf, type Login, me } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
+import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
 import type { Media } from '/web/lib/messages.ts'
 
@@ -150,26 +151,80 @@ export const channels: Partial<
   },
 }
 
-// Messages read per channel during the session, until ChannelState
-// (PAM-412): a count of the messages of others already seen
-const read = signal<Record<string, number>>({})
+/** What reaches a developer from a channel: all, @mentions, their PRs, none */
+export type Notify = 'all' | 'mentions' | 'mine' | 'none'
 
-const fromOthers = (project: ProjectSlug, channel: Channel) =>
-  (channels[project]?.[channel] ?? []).filter((m) => m.author !== me.login)
-    .length
+// Per « project:channel »: read up to this time (ms) and the setting. Saved
+// on the server for a project it knows (PAM-412), in the session otherwise
+const lastRead = signal<Record<string, number>>({})
+const settingOf = signal<Record<string, Notify>>({})
 
-/** Messages of others not read yet in a channel */
-export const unreadIn = (project: ProjectSlug, channel: Channel) =>
-  Math.max(
-    0,
-    fromOthers(project, channel) - (read.value[`${project}:${channel}`] ?? 0),
+/** The setting of a channel; #suivi speaks only of my PRs by default */
+export const notifyOf = (project: ProjectSlug, channel: Channel): Notify =>
+  settingOf.value[`${project}:${channel}`] ??
+    (channel === 'tracking' ? 'mine' : 'all')
+
+// A message that counts for the setting: an @mention of me, an alert on
+// one of my PRs
+const reaches = (message: Message, notify: Notify) =>
+  notify === 'all' ||
+  (notify === 'mentions' &&
+    new RegExp(`(^|[^\\w.@])@${me.login}(?![\\w-])`, 'i').test(message.text)) ||
+  (notify === 'mine' && !!message.pullRequest &&
+    pullRequests.some((pr) =>
+      pr.number === message.pullRequest && pr.author === me.login
+    ))
+
+// Messages of others written after the last read of the channel
+const newOf = (project: ProjectSlug, channel: Channel) =>
+  (channels[project]?.[channel] ?? []).filter((m) =>
+    m.author !== me.login &&
+    m.at > (lastRead.value[`${project}:${channel}`] ?? 0)
   )
 
-/** The channel on screen is read up to its last message */
+/** Messages of others not read yet in a channel, as its setting counts them */
+export const unreadIn = (project: ProjectSlug, channel: Channel) => {
+  const notify = notifyOf(project, channel)
+  return notify === 'none'
+    ? 0
+    : newOf(project, channel).filter((m) => reaches(m, notify)).length
+}
+
+/**
+ * The channel on screen is read up to now; true when something new was
+ * read, for the server to know it too
+ */
 export const markChannelRead = (project: ProjectSlug, channel: Channel) => {
   const key = `${project}:${channel}`
-  const count = fromOthers(project, channel)
-  if (read.peek()[key] !== count) read.value = { ...read.peek(), [key]: count }
+  const fresh = newOf(project, channel).length > 0 || !lastRead.peek()[key]
+  if (fresh) lastRead.value = { ...lastRead.peek(), [key]: Date.now() }
+  return fresh
+}
+
+/** Chooses what reaches the developer from a channel */
+export const setNotifyOf = (
+  project: ProjectSlug,
+  channel: Channel,
+  notify: Notify,
+) => {
+  settingOf.value = { ...settingOf.peek(), [`${project}:${channel}`]: notify }
+}
+
+/** What the server kept of the channels of a project */
+export const adoptChannelStates = (
+  project: ProjectSlug,
+  states: ApiOutput['GET/api/project/channels'],
+) => {
+  const read = { ...lastRead.peek() }
+  const settings = { ...settingOf.peek() }
+  for (const state of states) {
+    const key = `${project}:${state.channel}`
+    // A read in this page, not yet known by the server, is kept
+    read[key] = Math.max(read[key] ?? 0, state.lastReadAt * 1000)
+    settings[key] = state.notify as Notify
+  }
+  lastRead.value = read
+  settingOf.value = settings
 }
 
 const emptyChannels = (): Record<Channel, Message[]> => ({

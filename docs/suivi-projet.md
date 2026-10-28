@@ -697,6 +697,13 @@ Le Pulse d'un projet connu du serveur est maintenant compté par `GET/api/projec
 - **Livrable** : `api/pulse.ts`, route `GET/api/project/pulse`, `api/pulse_test.ts` (2 tests), `web/lib/pulse.ts`, `projectPulse` et onglet Pulse
 - **Par** : @niangoos
 
+### 2026-10-28 · PAM-412 · Non-lus et réglage par canal
+
+Les non-lus des canaux ne se perdent plus au rechargement et suivent le développeur d'un appareil à l'autre. `ChannelState` garde, pour chaque canal qu'il lit, l'heure de sa dernière lecture et son réglage (`GET/api/project/channels`, `POST/api/project/channel/read`, `POST/api/project/channel/notify`) ; `#suivi` est lisible par les membres et les abonnés. La page compte les messages des autres arrivés après la dernière lecture, selon le réglage : « Rien » n'affiche pas de pastille, « Mentions » ne compte que les messages qui mentionnent `@login`, « Seulement mes PRs », le réglage par défaut de `#suivi`, ne compte que les alertes sur ses PRs. La page projet charge messages et lectures pour que le badge « Canaux » soit juste avant d'ouvrir l'onglet ; un projet inconnu du serveur garde ses lectures dans la page. Corrigé pendant le test : une lecture faite avant que la page sache le projet enregistré n'était jamais envoyée. Vérifié dans le navigateur : badge à 3 (2 messages de #général, l'alerte de la PR #81 dans #suivi), canaux lus après rechargement, un second appareil sans non-lus, réglage gardé.
+
+- **Livrable** : `api/channel-state.ts`, routes `GET/api/project/channels`, `POST/api/project/channel/read` et `POST/api/project/channel/notify`, lecture de `#suivi` dans `rightsIn`, 2 tests dans `api/channels_test.ts`, `unreadIn`, `notifyOf` et `adoptChannelStates` dans les fixtures, `readChannel` et `saveNotify`, onglet Canaux et page projet
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

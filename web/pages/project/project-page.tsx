@@ -13,6 +13,8 @@ import {
   applicationsChanged,
 } from '/web/fixtures/applications.ts'
 import { unreadIn } from '/web/fixtures/channels.ts'
+import { loadChannelMessages, loadChannelStates } from '/web/lib/channels.ts'
+import { useEffect } from 'preact/hooks'
 import {
   helpChanged,
   helpRequests,
@@ -324,6 +326,14 @@ export const ProjectPage = () => {
   applicationsChanged.value
   const [, slug = '', tab = ''] = url.relativePath.slice(1).split('/')
   const project = projects[slug as ProjectSlug]
+  // A project the server knows: its channel messages and what I read there,
+  // for the unread badge before the channels open (PAM-412)
+  const saved = !!(project as Project | undefined)?.shots
+  useEffect(() => {
+    if (!saved) return
+    loadChannelMessages(slug as ProjectSlug)
+    loadChannelStates(slug as ProjectSlug)
+  }, [slug, saved])
   if (!project) return <NotFound slug={slug} />
   const current = (tabs.some(([key]) => key === tab) ? tab : '') as TabKey
   const Content = tabContents[current]

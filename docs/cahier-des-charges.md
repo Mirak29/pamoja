@@ -305,7 +305,7 @@ Chaque projet est organisé comme un serveur Discord, avec **quatre canaux impos
 - « CI en échec » → bouton **Demander de l'aide**, qui crée une demande Debugging pré-remplie (PR, branche, lien du job en échec).
 - « PR sans review depuis 2 jours » → bouton **Demander une review**, qui ouvre « Request Review » sur cette PR.
 
-**Non lus et notifications** : compteur de messages non lus par canal. Chaque membre règle chaque canal : tout, mentions seulement, rien ; pour `#suivi`, une option « seulement mes PRs ». Par défaut, `#suivi` est réglé sur « seulement mes PRs ».
+**Non lus et notifications** : compteur de messages non lus par canal. Chaque membre règle chaque canal : tout, mentions seulement, rien ; pour `#suivi`, une option « seulement mes PRs ». Par défaut, `#suivi` est réglé sur « seulement mes PRs ». `ChannelState` garde, par développeur et par canal qu'il lit, l'heure de sa dernière lecture et ce réglage (`GET/api/project/channels`, `POST/api/project/channel/read`, `POST/api/project/channel/notify`) ; une lecture ne recule jamais. Le compteur suit le réglage en attendant les notifications de canal : « Rien » n'en affiche pas, « Mentions » ne compte que les messages qui mentionnent `@login`, « Seulement mes PRs » que les alertes sur ses PRs. `#suivi` se lit par les membres et les abonnés.
 
 **Limite** : pour un projet en synchro par rafraîchissement (niveau 1, §5.4), `#suivi` se met à jour toutes les 15 minutes. Le temps réel suppose la synchro live.
 

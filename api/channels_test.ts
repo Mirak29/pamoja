@@ -189,3 +189,68 @@ Deno.test('channels: checked before anything is saved', async () => {
     [],
   )
 })
+
+Deno.test('channels: what each one read, kept per channel (PAM-412)', async () => {
+  restore()
+  const { abdou, awa, yao } = await team()
+  const states = async (who: typeof abdou) =>
+    (await who.call('/api/project/channels?project=openpay-africa')).json as {
+      channel: string
+      lastReadAt: number
+      notify: string
+    }[]
+  // Never opened: nothing read; #suivi speaks only of my PRs by default
+  assertEquals(
+    (await states(abdou)).map((s) => [s.channel, s.lastReadAt, s.notify]),
+    [
+      ['general', 0, 'all'],
+      ['help', 0, 'all'],
+      ['announcements', 0, 'all'],
+      ['tracking', 0, 'mine'],
+    ],
+  )
+  const read = { project: 'openpay-africa', channel: 'general' }
+  assertEquals(
+    (await abdou.call('/api/project/channel/read', read)).status,
+    204,
+  )
+  const [general] = await states(abdou)
+  assertEquals(general.lastReadAt > 0, true)
+  // A follower reads #suivi and #annonces only; a stranger nothing
+  assertEquals((await states(awa)).map((s) => s.channel), [
+    'tracking',
+    'announcements',
+  ])
+  assertEquals((await awa.call('/api/project/channel/read', read)).status, 403)
+  assertEquals(await states(yao), [])
+})
+
+Deno.test('channels: what reaches me from a channel', async () => {
+  restore()
+  const { abdou } = await team()
+  const notify = (channel: string, value: string) =>
+    abdou.call('/api/project/channel/notify', {
+      project: 'openpay-africa',
+      channel,
+      notify: value,
+    })
+  assertEquals((await notify('general', 'none')).status, 204)
+  assertEquals((await notify('tracking', 'all')).status, 204)
+  // « Only my PRs » is for #suivi
+  assertEquals((await notify('help', 'mine')).status, 400)
+  assertEquals((await notify('help', 'loud')).status, 400)
+  // Reading keeps the setting
+  await abdou.call('/api/project/channel/read', {
+    project: 'openpay-africa',
+    channel: 'general',
+  })
+  const saved =
+    (await abdou.call('/api/project/channels?project=openpay-africa'))
+      .json as { channel: string; notify: string }[]
+  assertEquals(saved.map((s) => [s.channel, s.notify]), [
+    ['general', 'none'],
+    ['help', 'all'],
+    ['announcements', 'all'],
+    ['tracking', 'all'],
+  ])
+})

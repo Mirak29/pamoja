@@ -26,8 +26,9 @@ import {
   type Channel,
   channels,
   channelsChanged,
-  markChannelRead,
   type Message,
+  type Notify,
+  notifyOf,
   unreadIn,
 } from '/web/fixtures/channels.ts'
 import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
@@ -45,7 +46,11 @@ import { counted } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { overLimit } from '/web/lib/limits.ts'
-import { loadChannelMessages, sendChannelMessage } from '/web/lib/channels.ts'
+import {
+  readChannel,
+  saveNotify,
+  sendChannelMessage,
+} from '/web/lib/channels.ts'
 import type { Media } from '/web/lib/messages.ts'
 import {
   IMAGE_TYPES,
@@ -90,7 +95,12 @@ const alertIcons: Record<AlertKind, [IconComponent, string]> = {
   import: [FolderGit2, 'text-indigo'],
 }
 
-const notifyOptions = ['Tout', 'Mentions', 'Seulement mes PRs', 'Rien']
+const notifyOptions: [Notify, string][] = [
+  ['all', 'Tout'],
+  ['mentions', 'Mentions'],
+  ['mine', 'Seulement mes PRs'],
+  ['none', 'Rien'],
+]
 
 type Reply = NonNullable<Message['replies']>[number]
 
@@ -462,27 +472,37 @@ const Presence = ({ channelName }: { channelName: string }) => {
   )
 }
 
-// Per channel notification setting, saved with POST/api/project/channel/notify
-// (PAM-412). #suivi defaults to "only my PRs" (§6.8)
-const NotifySelect = ({ tracking }: { tracking: boolean }) => {
-  const [value, setValue] = useState(tracking ? 'Seulement mes PRs' : 'Tout')
-  return (
-    <label class='flex items-center gap-1.5 text-[12px] text-ink-muted'>
-      <Bell class='size-3.5' />
-      <select
-        aria-label='Notifications du canal'
-        value={value}
-        onChange={(event) => setValue(event.currentTarget.value)}
-        class='well h-8 px-2 text-[13px] leading-none text-ink'
-      >
-        {notifyOptions
-          .filter((option) => tracking || option !== 'Seulement mes PRs')
-          .map((option) => <option key={option} value={option}>{option}
-          </option>)}
-      </select>
-    </label>
-  )
-}
+// What reaches me from a channel: it counts the unread too. #suivi defaults
+// to « only my PRs » (§6.8); saved for a project the server knows (PAM-412)
+const NotifySelect = (
+  { project, channel, saved }: {
+    project: ProjectSlug
+    channel: Channel
+    saved: boolean
+  },
+) => (
+  <label class='flex items-center gap-1.5 text-[12px] text-ink-muted'>
+    <Bell class='size-3.5' />
+    <select
+      aria-label='Notifications du canal'
+      value={notifyOf(project, channel)}
+      onChange={(event) =>
+        saveNotify(
+          project,
+          channel,
+          event.currentTarget.value as Notify,
+          saved,
+        )}
+      class='well h-8 px-2 text-[13px] leading-none text-ink'
+    >
+      {notifyOptions
+        .filter(([value]) => channel === 'tracking' || value !== 'mine')
+        .map(([value, label]) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
+    </select>
+  </label>
+)
 
 /** Four imposed channels, like a Discord server (§6.8) */
 export const ChannelsTab = ({ project }: { project: Project }) => {
@@ -490,11 +510,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
   const [path, key, name, purpose] = channelList.find(([p]) => p === segment) ??
     channelList[0]
   const slug = project.slug as ProjectSlug
-  // A project the server knows keeps its messages there (PAM-428)
+  // A project the server knows keeps its messages and what I read there
+  // (PAM-428, PAM-412): the project page loads them, for its badge too
   const saved = !!project.shots
-  useEffect(() => {
-    saved && loadChannelMessages(slug)
-  }, [slug, saved])
   channelsChanged.value
   const store = channels[slug]
   const messagesOf = (channel: Channel, path: string) => [
@@ -503,11 +521,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
   ]
   const messages = messagesOf(key, path)
   // The channel on screen is read, new messages included
-  useEffect(() => markChannelRead(project.slug as ProjectSlug, key), [
-    project.slug,
-    key,
-    messages.length,
-  ])
+  useEffect(() => {
+    readChannel(slug, key, saved)
+  }, [slug, key, messages.length, saved])
 
   const isOwner = project.owner === me.login
   const isMember = isOwner || project.members.some((m) => m.login === me.login)
@@ -577,7 +593,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
               {purpose}
             </span>
           </div>
-          <NotifySelect key={path} tracking={key === 'tracking'} />
+          <NotifySelect project={slug} channel={key} saved={saved} />
         </div>
         <div class='flex flex-1 flex-col gap-0.5 p-2.5'>
           {messages.map((message) => (

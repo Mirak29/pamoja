@@ -93,8 +93,9 @@ const shown = (rows: MessageRow[]) => {
   }))
 }
 
-// The channels a developer reads and writes in a project (§6.8)
-const rightsIn = (me: number, slug: string) => {
+// The channels a developer reads and writes in a project (§6.8); #suivi is
+// read by members and followers, written by the platform only
+export const rightsIn = (me: number, slug: string) => {
   const project = getProject(slug)
   if (!project) throw new respond.NotFoundError({ message: 'No such project' })
   const role = getRole({ projectId: project.projectId, userId: me })?.role
@@ -102,7 +103,11 @@ const rightsIn = (me: number, slug: string) => {
   const leads = role === 'owner' || role === 'maintainer'
   return {
     projectId: project.projectId,
-    reads: role ? CHANNELS : follows ? ['announcements'] : [],
+    reads: role
+      ? [...CHANNELS, 'tracking']
+      : follows
+      ? ['tracking', 'announcements']
+      : [],
     writes: role ? leads ? CHANNELS : ['general', 'help'] : [],
   }
 }
