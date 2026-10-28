@@ -690,6 +690,13 @@ Le rendu Markdown lisait déjà le texte en éléments, jamais en HTML : rien de
 - **Livrable** : `web/lib/member-links.ts` et son test, `web/ui/rich-text.tsx` et son test, `web/ui/video.tsx`, `websiteHref`, page profil, aperçu de lien des messages, `readmeSummary` et « À propos » du projet
 - **Par** : @niangoos
 
+### 2026-10-28 · PAM-306 · Pulse déterministe
+
+Le Pulse d'un projet connu du serveur est maintenant compté par `GET/api/project/pulse`, en SQL, sur les 7 derniers jours ou depuis un instant donné (`since`, ramené entre 90 jours et maintenant) : PRs mergées (`mergedAt`), issues fermées (par leur dernière mise à jour), membres arrivés (`PROJECT_MEMBER_JOINED`), reviews demandées (demandes d'aide « Review de code »), PRs ouvertes sans review non rejetée, releases (`RELEASE_PUBLISHED` ou la dernière release lue par le rafraîchissement). L'onglet Pulse relit ces chiffres à chaque ouverture et le résumé automatique, affiché sans IA, s'en sert ; les projets de démo gardent leurs chiffres fictifs. Corrigé en route : le client de l'API écrit `null` dans une adresse, la page n'envoie donc que le slug. Vérifié dans le navigateur sur un projet inséré dans une base de test : 3 PRs mergées, 2 issues fermées, 2 PRs en attente, 1 release, comme attendu.
+
+- **Livrable** : `api/pulse.ts`, route `GET/api/project/pulse`, `api/pulse_test.ts` (2 tests), `web/lib/pulse.ts`, `projectPulse` et onglet Pulse
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

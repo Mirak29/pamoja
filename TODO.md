@@ -140,7 +140,7 @@ Responsable : _à répartir_
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
-- [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
+- [x] **PAM-306** · Pulse déterministe (§6.4) `[démo]` — @niangoos
 - [ ] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]`
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
 - [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
@@ -332,3 +332,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-26 · Vidéo d'un post par le lien de son texte (PAM-430) : un lien collé suffit, comme dans les canaux, sans champ à trouver ; un fichier vidéo n'est jamais uploadé et l'interface le dit · §17.3
 - 2026-10-28 · Filtres du matching (PAM-223) : « seulement » plutôt que « sauf » ou un bonus de score ; un filtre vide laisse tout passer ; une demande sans projet ne passe pas un filtre de projets ; les types d'aide restent un bonus de score · §7.4
 - 2026-10-28 · Markdown sécurisé (PAM-118) : pas de sanitizer HTML, puisque le rendu ne lit jamais de HTML ; une seule règle pour les liens écrits par un membre (`http`/`https` seulement, nouvel onglet, `noopener noreferrer nofollow ugc`), appliquée au Markdown, au site du profil, au lien vidéo et à l'aperçu de lien ; le résumé d'un README importé passe par le même Markdown · §16
+- 2026-10-28 · Pulse déterministe (PAM-306) : six comptes en SQL sur les données GitHub synchronisées et les entries ; une issue fermée compte par sa dernière mise à jour (pas de date de fermeture gardée) ; « depuis la dernière visite » prévu par le paramètre `since`, la page montre les 7 derniers jours ; Health, DNA et Story restent à PAM-308 · §6.4

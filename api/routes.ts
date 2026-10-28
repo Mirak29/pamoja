@@ -101,6 +101,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import { pulseOf } from '/api/pulse.ts'
 import { createChannelMessage, listChannelMessages } from '/api/channels.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
@@ -1085,6 +1086,27 @@ const defs = {
     fn: () => listPosts(),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'GET/api/project/pulse': route({
+    authorize: withSession,
+    // A query string carries text: the time is read as a number
+    fn: (_, { project, since }) =>
+      pulseOf(project, since ? Number(since) || null : null),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      since: optional(STR('From this time, in seconds; the last 7 days')),
+    }),
+    output: OBJ({
+      since: NUM('Start of the period counted, in seconds'),
+      merged: NUM('PRs merged'),
+      issuesClosed: NUM('Issues closed'),
+      newContributors: NUM('Members who joined'),
+      reviewsAsked: NUM('Code reviews asked for on Pamoja'),
+      waitingReview: NUM('Open PRs without a review, now'),
+      releases: NUM('Releases published'),
+    }, 'What happened in a project (§6.4)'),
+    description: 'The deterministic Pulse of a project',
   }),
 
   'POST/api/project/message/create': route({

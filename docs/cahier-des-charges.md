@@ -258,7 +258,7 @@ Un projet peut aussi être créé sans repo (« Create from scratch » : nom, de
 
 Comprendre un projet en quelques secondes. Deux couches :
 
-- **Pulse déterministe** (toujours affiché) : sur les 7 derniers jours, ou depuis la dernière visite, compte des PRs mergées, issues fermées, contributeurs arrivés, reviews demandées, PRs en attente de review, releases. Calculé par requêtes sur les entries et les données GitHub synchronisées.
+- **Pulse déterministe** (toujours affiché) : sur les 7 derniers jours, ou depuis la dernière visite, compte des PRs mergées, issues fermées, contributeurs arrivés, reviews demandées, PRs en attente de review, releases. Calculé par requêtes sur les entries et les données GitHub synchronisées. `GET/api/project/pulse` (paramètre `since` en secondes pour la dernière visite, ramené entre 90 jours et maintenant) compte : les PRs dont `mergedAt` tombe dans la période ; les issues fermées dont la dernière mise à jour y tombe ; les membres arrivés (`PROJECT_MEMBER_JOINED`) ; les demandes d'aide « Review de code » du projet ; les PRs ouvertes sans review non rejetée, à l'instant ; les releases (`RELEASE_PUBLISHED`, ou la dernière release lue par le rafraîchissement). Les projets de démo gardent leurs chiffres fictifs.
 - **Résumé IA** (3 à 5 phrases) : « Le développement est actif. Le principal goulot est la review. » Pré-calculé (§11). Absent si l'IA ne répond pas, sans casser la page.
 
 ### 6.5 Project DNA, Health et Story
