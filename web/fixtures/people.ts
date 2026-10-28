@@ -8,6 +8,7 @@ import {
 import type { ApiOutput } from '/web/lib/api.ts'
 import { translate } from '/web/lib/language.ts'
 import type { Media } from '/web/lib/messages.ts'
+import { webHref } from '/web/lib/member-links.ts'
 export type Person = {
   login: string
   name: string
@@ -301,7 +302,7 @@ export const placeOf = (person: Person) =>
 
 /** A website as written on a profile, with or without its protocol */
 export const websiteHref = (website: string) =>
-  /^https?:\/\//.test(website) ? website : `https://${website}`
+  webHref(/^https?:\/\//i.test(website) ? website : `https://${website}`)
 
 export const websiteLabel = (website: string) =>
   website.replace(/^https?:\/\//, '').replace(/\/$/, '')

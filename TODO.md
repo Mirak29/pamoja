@@ -78,7 +78,7 @@ Responsable : _à répartir_
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
 - [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [x] **PAM-117** · CI : fmt, lint, tests sur chaque PR — @Mirak29
-- [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
+- [x] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16) — @niangoos
 - [x] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7) — @niangoos
 - [x] **PAM-120** · Accessibilité du socle (QA du 10 oct.) : un dialogue garde le focus et le rend à son déclencheur à la fermeture ; une action en ligne qui remplace son bouton (accepter, rejoindre, publier, déplacer une carte) pose le focus sur ce qui le remplace et l'annonce ; lien « Aller au contenu » ; un `h1` par page ; erreurs de formulaire reliées au champ (`aria-invalid`, `aria-describedby`) et focus sur le premier champ en erreur ; boutons répétés nommés avec leur objet (« Rejoindre React », « Inviter Moussa », « Monter la section Badges ») (§12.7) — @Mirak29
 - [x] **PAM-122** · Socle, retours QA 2 : toasts visibles au-dessus d'un dialogue ouvert (QA-09), recherche identifiable à 320 px (QA-12), un seul `h1` sur connexion, onboarding et 404 (QA-13), pluriel de la liste des PRs (QA-14), fins de ligne LF imposées par `.gitattributes` (§12.7) — @Mirak29
@@ -331,3 +331,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-26 · Médias de démo (PAM-429) : des captures dessinées pour les projets fictifs, servies avec les pages et jamais uploadées, plutôt que des photos d'ailleurs ; les vidéos sont de vraies vidéos publiques sur le sujet du post · §17.3
 - 2026-10-26 · Vidéo d'un post par le lien de son texte (PAM-430) : un lien collé suffit, comme dans les canaux, sans champ à trouver ; un fichier vidéo n'est jamais uploadé et l'interface le dit · §17.3
 - 2026-10-28 · Filtres du matching (PAM-223) : « seulement » plutôt que « sauf » ou un bonus de score ; un filtre vide laisse tout passer ; une demande sans projet ne passe pas un filtre de projets ; les types d'aide restent un bonus de score · §7.4
+- 2026-10-28 · Markdown sécurisé (PAM-118) : pas de sanitizer HTML, puisque le rendu ne lit jamais de HTML ; une seule règle pour les liens écrits par un membre (`http`/`https` seulement, nouvel onglet, `noopener noreferrer nofollow ugc`), appliquée au Markdown, au site du profil, au lien vidéo et à l'aperçu de lien ; le résumé d'un README importé passe par le même Markdown · §16

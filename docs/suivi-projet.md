@@ -683,6 +683,13 @@ Les réglages du matching ont trois filtres de plus, enregistrés dans `Profile.
 - **Livrable** : `matchingFiltersOf` et `updateMatching` dans `api/user.ts`, `kept` dans `api/matching.ts`, contrôle des filtres dans `api/routes.ts`, 2 tests dans `api/matching_test.ts`, réglages, `saveMatching` et `matchingRequests` côté web
 - **Par** : @niangoos
 
+### 2026-10-28 · PAM-118 · Rendu Markdown sécurisé pour tous les contenus
+
+Le rendu Markdown lisait déjà le texte en éléments, jamais en HTML : rien de ce qu'écrit un membre ne peut s'exécuter, et aucune page n'injecte de HTML. PAM-118 finit le travail sur les liens et étend le rendu au README. Une règle unique (`web/lib/member-links.ts`) fait d'un lien écrit par un membre une adresse `http` ou `https` normalisée, sinon il reste du texte, et lui donne un nouvel onglet avec `rel="noopener noreferrer nofollow ugc"`. Elle sert au Markdown (liens nommés et liens nus), au site web du profil, au lien d'une vidéo non intégrable et à l'aperçu de lien des messages. Le résumé d'un README importé perd ses balises HTML et s'affiche avec le même Markdown ; les textes des projets de démo restent des phrases traduites. Vérifié dans le navigateur : un post avec un lien nommé, un lien nu et un lien `javascript:` resté texte ; le site du profil.
+
+- **Livrable** : `web/lib/member-links.ts` et son test, `web/ui/rich-text.tsx` et son test, `web/ui/video.tsx`, `websiteHref`, page profil, aperçu de lien des messages, `readmeSummary` et « À propos » du projet
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

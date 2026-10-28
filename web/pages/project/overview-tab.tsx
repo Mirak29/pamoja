@@ -18,6 +18,7 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { t } from '/web/lib/language.ts'
 import { VideoEmbed } from '/web/ui/video.tsx'
+import { Markdown } from '/web/ui/rich-text.tsx'
 
 const Card = (
   { class: className, children }: {
@@ -29,9 +30,22 @@ const Card = (
 const About = ({ project }: { project: Project }) => (
   <Card class='gap-3 p-[22px]'>
     <Eyebrow>À propos</Eyebrow>
-    <p class='text-[16px] leading-[26px] text-pretty'>
-      {project.about ?? project.description}
-    </p>
+    {
+      // A README read from GitHub is Markdown; the texts of the demo
+      // projects are translated sentences
+      project.about && !project.demo
+        ? (
+          <Markdown
+            text={project.about}
+            class='gap-2.5 text-[16px] leading-[26px] text-pretty'
+          />
+        )
+        : (
+          <p class='text-[16px] leading-[26px] text-pretty'>
+            {project.about ?? project.description}
+          </p>
+        )
+    }
     {project.vision && (
       <p class='rounded-md border border-line-strong bg-surface-000 py-3 pr-3.5 pl-6 text-pretty text-ink-muted inset-shadow-well'>
         <span class='font-semibold text-ink'>Vision.</span> {project.vision}
