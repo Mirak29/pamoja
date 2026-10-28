@@ -1,11 +1,15 @@
 import {
   adoptChannelMessage,
   adoptChannelStates,
+  adoptTracking,
   type Channel,
+  channels,
+  channelsChanged,
   markChannelRead,
   type Notify,
   setNotifyOf,
 } from '/web/fixtures/channels.ts'
+import type { Login } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import { api } from '/web/lib/api.ts'
 import type { Media } from '/web/lib/messages.ts'
@@ -34,6 +38,7 @@ export const sendChannelMessage = async (
       channel,
       body: text,
       media: media.map((m) => m.id),
+      alert: null,
     }),
   )
 
@@ -75,4 +80,51 @@ export const saveNotify = (
   return saved &&
     api['POST/api/project/channel/notify'].fetch({ project, channel, notify })
       .catch(() => {})
+}
+
+// Projects whose channels this page read: a new entry reads them again
+const opened = new Set<ProjectSlug>()
+
+/** The alerts of #suivi and their threads (PAM-411) */
+export const loadTracking = (project: ProjectSlug) => {
+  opened.add(project)
+  return api['GET/api/project/tracking'].fetch({ project }).then(
+    (alerts) => adoptTracking(project, alerts),
+    () => {},
+  )
+}
+
+/** The channels of the projects opened, read again after GitHub or a message */
+export const reloadOpenedChannels = () => {
+  for (const project of opened) {
+    loadTracking(project)
+    loadChannelMessages(project)
+  }
+}
+
+/** An answer under an alert of #suivi, saved, then shown at once */
+export const answerAlert = async (
+  project: ProjectSlug,
+  alertId: string,
+  text: string,
+) => {
+  const saved = await api['POST/api/project/message/create'].fetch({
+    project,
+    channel: 'tracking',
+    body: text,
+    media: [],
+    alert: Number(alertId.slice(1)),
+  })
+  const alert = channels[project]?.tracking.find((m) => m.id === alertId)
+  const id = `s${saved.id}`
+  if (alert && !alert.replies?.some((reply) => reply.id === id)) {
+    alert.replies = [...alert.replies ?? [], {
+      id,
+      author: saved.author as Login,
+      text: saved.body,
+      at: saved.createdAt * 1000,
+      demo: false,
+    }]
+  }
+  channelsChanged.value++
 }

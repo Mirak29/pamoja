@@ -13,7 +13,11 @@ import {
   applicationsChanged,
 } from '/web/fixtures/applications.ts'
 import { unreadIn } from '/web/fixtures/channels.ts'
-import { loadChannelMessages, loadChannelStates } from '/web/lib/channels.ts'
+import {
+  loadChannelMessages,
+  loadChannelStates,
+  loadTracking,
+} from '/web/lib/channels.ts'
 import { useEffect } from 'preact/hooks'
 import {
   helpChanged,
@@ -333,6 +337,7 @@ export const ProjectPage = () => {
     if (!saved) return
     loadChannelMessages(slug as ProjectSlug)
     loadChannelStates(slug as ProjectSlug)
+    loadTracking(slug as ProjectSlug)
   }, [slug, saved])
   if (!project) return <NotFound slug={slug} />
   const current = (tabs.some(([key]) => key === tab) ? tab : '') as TabKey

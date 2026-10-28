@@ -6,6 +6,7 @@ import {
   Bell,
   CircleAlert,
   CircleCheck,
+  CircleDot,
   CircleX,
   Clock,
   Flag,
@@ -47,6 +48,7 @@ import { t, translate } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { overLimit } from '/web/lib/limits.ts'
 import {
+  answerAlert,
   readChannel,
   saveNotify,
   sendChannelMessage,
@@ -61,6 +63,7 @@ import {
 } from '/web/ui/media.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
+import { textOf } from '/web/lib/tracking.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -93,6 +96,8 @@ const alertIcons: Record<AlertKind, [IconComponent, string]> = {
   waiting: [Clock, 'text-warning'],
   sync: [Zap, 'text-indigo'],
   import: [FolderGit2, 'text-indigo'],
+  issue: [CircleDot, 'text-indigo'],
+  push: [Zap, 'text-ink-muted'],
 }
 
 const notifyOptions: [Notify, string][] = [
@@ -192,7 +197,8 @@ const MessageRow = (
     (liked ? 1 : 0)
   const replies = repliesOf(message).length
   const action = canAct && alertAction(project, message)
-  const video = videoIn(message.text)
+  const text = textOf(message)
+  const video = videoIn(text)
   return (
     <div class='flex gap-3 rounded-md p-2.5 hover:bg-surface-000'>
       <Author message={message} />
@@ -205,7 +211,7 @@ const MessageRow = (
           {message.demo && <DemoBadge />}
         </div>
         <div class='text-[15px] leading-6 text-pretty'>
-          <Markdown text={message.text} class='gap-1.5' />
+          <Markdown text={text} class='gap-1.5' />
         </div>
         {(message.media?.length || video) && (
           <div class='flex max-w-[480px] flex-col gap-2 py-1'>
@@ -375,7 +381,11 @@ const Composer = (
 }
 
 const Thread = (
-  { message, canReply }: { message: Message; canReply: boolean },
+  { project, message, canReply }: {
+    project: ProjectSlug
+    message: Message
+    canReply: boolean
+  },
 ) => (
   <section class='slab col-span-full flex min-w-0 flex-col overflow-hidden min-[1180px]:col-auto'>
     <div class='flex items-center gap-2 border-b border-line py-3.5 pr-4 pl-5'>
@@ -400,7 +410,7 @@ const Thread = (
         </span>
       </span>
       <div class='text-[14px] leading-[22px]'>
-        <Markdown text={message.text} class='gap-1.5' />
+        <Markdown text={textOf(message)} class='gap-1.5' />
       </div>
     </div>
     <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
@@ -432,13 +442,27 @@ const Thread = (
         label='Réponse'
         square
         onSend={(text) =>
-          sendReply(message.id, {
-            id: `r${Date.now()}`,
-            author: me.login,
-            text,
-            at: Date.now(),
-            demo: false,
-          })}
+          // An alert of the server keeps its thread there (PAM-411)
+          message.alert
+            ? answerAlert(project, message.id, text).then(
+              () => true,
+              () => {
+                notify({
+                  title: 'Réponse non envoyée',
+                  body: 'Réessaie dans un instant.',
+                  icon: CircleAlert,
+                  tone: 'warning',
+                })
+                return false
+              },
+            )
+            : sendReply(message.id, {
+              id: `r${Date.now()}`,
+              author: me.login,
+              text,
+              at: Date.now(),
+              demo: false,
+            })}
       />
     )}
   </section>
@@ -648,7 +672,16 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
             </div>
           )}
       </section>
-      {thread && <Thread message={thread} canReply={isMember || following} />}
+      {
+        // Members answer in a thread; followers read #suivi (§6.8)
+        thread && (
+          <Thread
+            project={slug}
+            message={thread}
+            canReply={isMember || (following && !thread.alert)}
+          />
+        )
+      }
     </div>
   )
 }

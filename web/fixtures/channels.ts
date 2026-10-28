@@ -22,6 +22,11 @@ export type AlertKind =
   | 'waiting'
   | 'sync'
   | 'import'
+  | 'issue'
+  | 'push'
+
+/** An alert of #suivi read from the server: facts, written by the page */
+export type TrackingAlert = ApiOutput['GET/api/project/tracking'][number]
 
 export type Message = {
   id: string
@@ -32,6 +37,8 @@ export type Message = {
   /** One uploaded image (§17.3); a video goes in the text by its link */
   media?: Media[]
   pullRequest?: number
+  /** An alert of #suivi read from the server (PAM-411) */
+  alert?: TrackingAlert
   at: number
   reactions?: { like?: Login[] }
   replies?: {
@@ -273,5 +280,55 @@ export const adoptChannelMessage = (
     demo: false,
   })
   list.sort((a, b) => a.at - b.at)
+  channelsChanged.value++
+}
+
+// The kind of each entry #suivi shows, for its icon (§6.8)
+const alertKinds: Record<string, AlertKind> = {
+  PR_OPENED: 'pr',
+  PR_REVIEWED: 'review',
+  PR_MERGED: 'merge',
+  PR_CLOSED: 'pr',
+  PR_REVIEW_STALE: 'waiting',
+  ISSUE_UPDATED: 'issue',
+  RELEASE_PUBLISHED: 'release',
+  CI_FAILED: 'ci-failed',
+  CI_FIXED: 'ci-fixed',
+  COMMITS_PUSHED: 'push',
+}
+
+/**
+ * The alerts of #suivi read from the server, with their threads, in the
+ * channel; those of the page (an import) stay
+ */
+export const adoptTracking = (
+  project: ProjectSlug,
+  alerts: ApiOutput['GET/api/project/tracking'],
+) => {
+  const store = channels[project] ??= emptyChannels()
+  const local = store.tracking.filter((message) => !message.alert)
+  const read = alerts.map((alert): Message => {
+    for (const reply of alert.replies) {
+      hearOf(reply.author, reply.authorName, '')
+    }
+    return {
+      id: `e${alert.id}`,
+      author: 'platform',
+      kind: alertKinds[alert.kind] ?? 'sync',
+      text: '',
+      pullRequest: alert.pullRequest || undefined,
+      alert,
+      at: alert.at * 1000,
+      replies: alert.replies.map((reply) => ({
+        id: `s${reply.id}`,
+        author: reply.author as Login,
+        text: reply.body,
+        at: reply.createdAt * 1000,
+        demo: false,
+      })),
+      demo: false,
+    }
+  })
+  store.tracking = [...local, ...read].sort((a, b) => a.at - b.at)
   channelsChanged.value++
 }

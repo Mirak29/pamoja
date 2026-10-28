@@ -300,6 +300,8 @@ Chaque projet est organisé comme un serveur Discord, avec **quatre canaux impos
 - release publiée ; issue ouverte ou fermée ;
 - pushes regroupés (« 3 commits sur main ») pour éviter le bruit.
 
+**Lecture** : `GET/api/project/tracking` renvoie les 100 dernières alertes du projet, lues dans les entries GitHub (PR ouverte, review, merge, fermeture, PR sans review, issue ouverte, fermée ou rouverte, release, CI en échec ou réparée, pushes), avec leurs faits (numéro, titre, auteur, état de la review, job et branche de la CI, commits) et le fil de chacune ; la page en écrit la phrase dans sa langue. Une nouvelle entry GitHub ou un message relit `#suivi` en temps réel. Les membres répondent en fil sous une alerte (`ProjectMessage.parentEntryId`, `alert` de `POST/api/project/message/create`) ; les abonnés lisent. La vérification « PR sans review depuis 2 jours » tourne toutes les 30 minutes et ne signale une PR qu'une fois (`PR_REVIEW_STALE`).
+
 **Alertes actionnables** : une alerte ne fait pas qu'informer, elle mène à la boucle d'aide (§7).
 
 - « CI en échec » → bouton **Demander de l'aide**, qui crée une demande Debugging pré-remplie (PR, branche, lien du job en échec).

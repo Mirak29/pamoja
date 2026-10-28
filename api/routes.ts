@@ -102,6 +102,7 @@ import {
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
 import { pulseOf } from '/api/pulse.ts'
+import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
 import { createChannelMessage, listChannelMessages } from '/api/channels.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
@@ -140,7 +141,8 @@ const savedPost = OBJ({
 
 const channelMessage = OBJ({
   id: NUM('Id of the message'),
-  channel: STR('general, help or announcements'),
+  channel: STR('general, help, announcements, or tracking for an answer'),
+  alert: NUM('The alert of #suivi it answers, 0 for none'),
   author: STR('Login of the author'),
   authorName: STR('Name of the author'),
   avatarUrl: STR('GitHub avatar of the author'),
@@ -1126,6 +1128,30 @@ const defs = {
     description: 'Choose what reaches me from a channel',
   }),
 
+  'GET/api/project/tracking': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => listTracking(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      id: NUM('Id of the entry'),
+      kind: STR('PR_OPENED, PR_REVIEWED, CI_FAILED… the type of the entry'),
+      at: NUM('When, in seconds'),
+      actor: STR('Login of who acted, when on Pamoja, or empty'),
+      pullRequest: NUM('Number of the PR, 0 if none'),
+      title: STR('Title of the PR or the issue'),
+      author: STR('GitHub login of the author of the PR, or empty'),
+      issue: NUM('Number of the issue, 0 if none'),
+      tag: STR('Tag of a release'),
+      state: STR('State of a review, or what an issue did'),
+      name: STR('Job of a CI run'),
+      branch: STR('Branch of a CI run or a push'),
+      count: NUM('Commits of a push'),
+      commits: ARR(STR('First line of a commit'), 'The last commits pushed'),
+      replies: ARR(channelMessage, 'The thread under the alert'),
+    })),
+    description: 'The alerts of #suivi and their threads (§6.8)',
+  }),
+
   'GET/api/project/pulse': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
@@ -1155,6 +1181,7 @@ const defs = {
       channel: STR('general, help or announcements'),
       body: STR('Markdown, empty with an image'),
       media: optional(ARR(NUM('Id of an upload'), 'One image at most')),
+      alert: optional(NUM('Alert of #suivi answered, in channel tracking')),
     }),
     output: channelMessage,
     description: 'Write in a channel of a project, with an image',

@@ -704,6 +704,13 @@ Les non-lus des canaux ne se perdent plus au rechargement et suivent le dévelop
 - **Livrable** : `api/channel-state.ts`, routes `GET/api/project/channels`, `POST/api/project/channel/read` et `POST/api/project/channel/notify`, lecture de `#suivi` dans `rightsIn`, 2 tests dans `api/channels_test.ts`, `unreadIn`, `notifyOf` et `adoptChannelStates` dans les fixtures, `readChannel` et `saveNotify`, onglet Canaux et page projet
 - **Par** : @niangoos
 
+### 2026-10-28 · PAM-411 · Canal #suivi
+
+`#suivi` montre maintenant les vraies alertes d'un projet connu du serveur, lues dans les entries que les webhooks et la synchro écrivent : PR ouverte, review (approuvée, changements demandés, commentée), merge, fermeture, PR sans review depuis 2 jours, issue ouverte, fermée ou rouverte, release, CI en échec ou réparée, pushes regroupés (`GET/api/project/tracking`, 100 dernières). Le serveur donne les faits, la page écrit la phrase en français ou en anglais (`web/lib/tracking.ts`). Les boutons « Demander de l'aide » et « Demander une review » s'y appliquent comme aux alertes de démo. Les membres répondent en fil sous une alerte (`ProjectMessage.parentEntryId`), les abonnés lisent ; une réponse reste dans son fil, hors des canaux. Une vérification planifiée signale une fois chaque PR ouverte sans review depuis 2 jours (`PR_REVIEW_STALE`, que rien ne produisait). Une nouvelle entry GitHub ou un message relit les canaux ouverts en temps réel. Vérifié dans le navigateur sur un projet de test : PR ouverte, changements demandés, CI en échec, 3 commits poussés, deux PRs signalées sans review au démarrage du serveur, « Demander une review », une réponse en fil gardée après rechargement.
+
+- **Livrable** : `api/tracking.ts`, route `GET/api/project/tracking`, réponses sous une alerte dans `api/channels.ts`, `api/tracking_test.ts` (3 tests), `web/lib/tracking.ts`, `adoptTracking`, `loadTracking`, `answerAlert` et `reloadOpenedChannels`, onglet Canaux, page projet, `web/lib/live-data.ts`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
