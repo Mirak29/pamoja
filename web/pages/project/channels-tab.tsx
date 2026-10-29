@@ -27,6 +27,7 @@ import {
   type Channel,
   channels,
   channelsChanged,
+  likesOf,
   type Message,
   type Notify,
   notifyOf,
@@ -49,9 +50,11 @@ import { LIMITS } from '/api/limits.ts'
 import { overLimit } from '/web/lib/limits.ts'
 import {
   answerAlert,
+  answerMessage,
   readChannel,
   saveNotify,
   sendChannelMessage,
+  toggleLike,
 } from '/web/lib/channels.ts'
 import type { Media } from '/web/lib/messages.ts'
 import {
@@ -109,8 +112,8 @@ const notifyOptions: [Notify, string][] = [
 
 type Reply = NonNullable<Message['replies']>[number]
 
-// Messages of a project the server does not know, and replies, written
-// during the session until the threads are saved (PAM-406)
+// Messages and replies of a project the server does not know, or under a
+// demo message, kept for the session
 const sentMessages = signal<Record<string, Message[]>>({})
 const sentReplies = signal<Record<string, Reply[]>>({})
 
@@ -189,12 +192,11 @@ const MessageRow = (
     canAct: boolean
   },
 ) => {
-  // Its own subscription: an alert loses its action once help is asked
+  // Its own subscriptions: an alert loses its action once help is asked,
+  // a +1 changes the message in place
   helpChanged.value
-  const likes = message.reactions?.like ?? []
-  const [liked, setLiked] = useState(likes.some(isMe))
-  const count = likes.length - (likes.some(isMe) ? 1 : 0) +
-    (liked ? 1 : 0)
+  channelsChanged.value
+  const { count, mine: liked } = likesOf(message)
   const replies = repliesOf(message).length
   const action = canAct && alertAction(project, message)
   const text = textOf(message)
@@ -239,19 +241,24 @@ const MessageRow = (
           </Button>
         )}
         <div class='flex items-center gap-2'>
-          <button
-            type='button'
-            onClick={() => setLiked(!liked)}
-            aria-label='Réagir +1'
-            aria-pressed={liked}
-            class={`h-[26px] cursor-pointer rounded-[5px] border px-[9px] font-mono text-[12px] leading-none font-medium text-ink ${
-              liked
-                ? 'border-indigo bg-indigo-soft shadow-[1.73px_1px_0_0_var(--indigo)]'
-                : 'border-line shadow-[1.73px_1px_0_0_var(--line)]'
-            }`}
-          >
-            +1{count ? ` · ${count}` : ''}
-          </button>
+          {
+            // An alert of the server is an entry: no +1 is kept on it
+            !message.alert && (
+              <button
+                type='button'
+                onClick={() => toggleLike(message)}
+                aria-label='Réagir +1'
+                aria-pressed={liked}
+                class={`h-[26px] cursor-pointer rounded-[5px] border px-[9px] font-mono text-[12px] leading-none font-medium text-ink ${
+                  liked
+                    ? 'border-indigo bg-indigo-soft shadow-[1.73px_1px_0_0_var(--indigo)]'
+                    : 'border-line shadow-[1.73px_1px_0_0_var(--line)]'
+                }`}
+              >
+                +1{count ? ` · ${count}` : ''}
+              </button>
+            )
+          }
           <A
             params={{ thread: message.id }}
             class='inline-flex h-[26px] items-center gap-1 rounded-md px-2 text-[12px] leading-none font-medium text-ink-muted no-underline hover:text-indigo hover:no-underline'
@@ -381,8 +388,9 @@ const Composer = (
 }
 
 const Thread = (
-  { project, message, canReply }: {
+  { project, channel, message, canReply }: {
     project: ProjectSlug
+    channel: Channel
     message: Message
     canReply: boolean
   },
@@ -442,20 +450,23 @@ const Thread = (
         label='Réponse'
         square
         onSend={(text) =>
-          // An alert of the server keeps its thread there (PAM-411)
-          message.alert
-            ? answerAlert(project, message.id, text).then(
-              () => true,
-              () => {
-                notify({
-                  title: 'Réponse non envoyée',
-                  body: 'Réessaie dans un instant.',
-                  icon: CircleAlert,
-                  tone: 'warning',
-                })
-                return false
-              },
-            )
+          // A message or an alert of the server keeps its thread there
+          // (PAM-406, PAM-411)
+          message.alert || message.id.startsWith('s')
+            ? (message.alert
+              ? answerAlert(project, message.id, text)
+              : answerMessage(project, channel, message.id, text)).then(
+                () => true,
+                () => {
+                  notify({
+                    title: 'Réponse non envoyée',
+                    body: 'Réessaie dans un instant.',
+                    icon: CircleAlert,
+                    tone: 'warning',
+                  })
+                  return false
+                },
+              )
             : sendReply(message.id, {
               id: `r${Date.now()}`,
               author: me.login,
@@ -673,12 +684,13 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
           )}
       </section>
       {
-        // Members answer in a thread; followers read #suivi (§6.8)
+        // Members answer in a thread; followers read (§6.8)
         thread && (
           <Thread
             project={slug}
+            channel={key}
             message={thread}
-            canReply={isMember || (following && !thread.alert)}
+            canReply={isMember}
           />
         )
       }

@@ -929,6 +929,13 @@ GitHub renvoie maintenant vers `/login/github` ; `/connexion/github` y est redir
 - **Livrable** : `migrations/010-conversation-public-id.js`, `api/lib/ids.ts`, `api/messages.ts`, `api/routes.ts`, `api/profile.ts`, `api/github-oauth.ts`, `api/installation.ts` ; `web/lib/addresses.ts`, `web/app.tsx`, `web/lib/messages.ts`, `web/lib/profile.ts`, `web/pages/messages-page.tsx`, liens de toutes les pages ; tests `web/lib/addresses_test.ts` et 1 de plus dans `api/messages_test.ts` ; cahier des charges §5.3, §10.6, §12.2, §14.5, §16
 - **Par** : @Mirak29
 
+### 2026-10-29 · PAM-406 · Fils et réactions des canaux
+
+Les fils sous un message de `#général`, `#aide` ou `#annonces` et le « +1 » sont maintenant enregistrés pour un projet connu du serveur, comme les messages (PAM-428) et les fils sous une alerte de `#suivi` (PAM-411). Seuls les membres répondent en fil, sur un seul niveau et dans le canal du message ; tout lecteur du canal donne un +1, une fois. La page lit les fils et les +1 avec les messages, et un +1 s'affiche tout de suite avant la réponse du serveur. Vérifié dans le navigateur : un +1 ajouté à celui d'un autre membre, une réponse en fil, les deux toujours là après rechargement, la réponse absente du fil principal.
+
+- **Livrable** : `api/channels.ts`, `api/routes.ts` (`POST/api/project/message/like`, `parent` à la création), `api/tracking.ts` ; `web/fixtures/channels.ts`, `web/lib/channels.ts`, `web/pages/project/channels-tab.tsx` ; 1 test de plus dans `api/channels_test.ts` ; cahier des charges §6.8
+- **Par** : @niangoos
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

@@ -167,7 +167,7 @@ Responsable : _à répartir_
 - [ ] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6)
 - [ ] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7)
 - [ ] **PAM-405** · Roadmap et milestones (§6.7)
-- [ ] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8)
+- [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
 - [ ] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6)
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
 - [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
@@ -335,3 +335,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-28 · Pulse déterministe (PAM-306) : six comptes en SQL sur les données GitHub synchronisées et les entries ; une issue fermée compte par sa dernière mise à jour (pas de date de fermeture gardée) ; « depuis la dernière visite » prévu par le paramètre `since`, la page montre les 7 derniers jours ; Health, DNA et Story restent à PAM-308 · §6.4
 - 2026-10-28 · Non-lus par canal (PAM-412) : le serveur garde l'heure de dernière lecture et le réglage, la page compte les messages des autres après cette heure ; le réglage règle aussi le compteur (Rien, Mentions, Seulement mes PRs) en attendant les notifications de canal · §6.8
 - 2026-10-28 · Canal #suivi (PAM-411) : lu dans les entries GitHub, sans table propre ; le serveur donne les faits et la page écrit la phrase ; réponses en fil sous une alerte, par les membres seulement ; PR sans review signalée une fois, vérifiée toutes les 30 min · §6.8, §13.3
+- 2026-10-29 · Fils et réactions des canaux (PAM-406) : un fil sous un message, sur un seul niveau, ouvert aux membres seulement, même sous #annonces ; la seule réaction est « +1 », donnée par tout lecteur du canal ; un +1 n'a pas d'entry et n'est pas diffusé en temps réel · §6.8

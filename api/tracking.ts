@@ -70,7 +70,7 @@ export const listTracking = (me: number, slug: string) => {
   }
   const rows = listAlerts(projectId)
   const replies = new Map<number, ReturnType<typeof repliesUnder>>()
-  for (const reply of repliesUnder(projectId, rows.map((row) => row.id))) {
+  for (const reply of repliesUnder(me, projectId, rows.map((row) => row.id))) {
     replies.set(reply.alert, [...replies.get(reply.alert) ?? [], reply])
   }
   return rows.map((row) => {

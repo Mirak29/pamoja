@@ -41,6 +41,8 @@ export type Message = {
   alert?: TrackingAlert
   at: number
   reactions?: { like?: Login[] }
+  /** The +1 the server counted, for a message it keeps (PAM-406) */
+  likes?: { count: number; mine: boolean }
   replies?: {
     id: string
     author: Login
@@ -261,25 +263,52 @@ export const postAlert = (
 // Messages saved on the server (PAM-428): read when the channels open
 export const channelsChanged = signal(0)
 
-/** A message saved on the server, in the channel it was written in */
-export const adoptChannelMessage = (
-  project: ProjectSlug,
-  saved: ApiOutput['GET/api/project/messages'][number],
-) => {
+type Saved = ApiOutput['GET/api/project/messages'][number]
+
+/** The +1 of a message, counted by the server or by the page */
+export const likesOf = (message: Message) =>
+  message.likes ?? {
+    count: message.reactions?.like?.length ?? 0,
+    mine: !!message.reactions?.like?.includes(me.login),
+  }
+
+/**
+ * A message saved on the server, in the channel it was written in, or in
+ * the thread it answers; one already shown takes its new +1
+ */
+export const adoptChannelMessage = (project: ProjectSlug, saved: Saved) => {
   const store = channels[project] ??= emptyChannels()
   const list = store[saved.channel as Channel]
+  if (!list) return
   const id = `s${saved.id}`
-  if (!list || list.some((message) => message.id === id)) return
   hearOf(saved.author, saved.authorName, '')
-  list.push({
-    id,
-    author: saved.author as Login,
-    text: saved.body,
-    media: saved.media,
-    at: saved.createdAt * 1000,
-    demo: false,
-  })
-  list.sort((a, b) => a.at - b.at)
+  if (saved.parent) {
+    const parent = list.find((message) => message.id === `s${saved.parent}`)
+    if (!parent || parent.replies?.some((reply) => reply.id === id)) return
+    parent.replies = [...parent.replies ?? [], {
+      id,
+      author: saved.author as Login,
+      text: saved.body,
+      at: saved.createdAt * 1000,
+      demo: false,
+    }]
+  } else {
+    const likes = { count: saved.likes, mine: saved.liked }
+    const known = list.find((message) => message.id === id)
+    if (known) known.likes = likes
+    else {
+      list.push({
+        id,
+        author: saved.author as Login,
+        text: saved.body,
+        media: saved.media,
+        at: saved.createdAt * 1000,
+        likes,
+        demo: false,
+      })
+      list.sort((a, b) => a.at - b.at)
+    }
+  }
   channelsChanged.value++
 }
 
