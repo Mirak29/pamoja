@@ -1,6 +1,8 @@
 import { sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
+// The entry table must exist before the queries below are prepared
+import '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
 import { Project } from '/api/schema.ts'
 

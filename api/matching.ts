@@ -17,7 +17,7 @@ const ACTIVE_WITHIN = 14 * DAY
 
 // What backs a skill, in percent: proven on Pamoja, read from GitHub, or
 // declared. Whole numbers: no rounding error in the sum
-const sourceWeight: Record<string, number> = {
+export const sourceWeight: Record<string, number> = {
   platform_activity: 100,
   github: 85,
   declared: 70,

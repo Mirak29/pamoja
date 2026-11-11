@@ -132,6 +132,24 @@ const initialForm = (): Form => {
       origin: t`Pré-rempli depuis la PR #${pr.number}`,
     })
   }
+  // A first step of « Sur quoi puis-je travailler ? » (§10.3): someone to
+  // guide a first contribution on that issue
+  if (url.params.mentor) {
+    const about = url.params.about ?? ''
+    Object.assign(form, {
+      type: 'Mentorat',
+      title: t`Me guider sur ma première contribution : ${about}`,
+      description:
+        t`C’est ma première contribution open source. J’aimerais quelqu’un pour me guider : par quoi commencer, faire le changement sur une branche de mon fork, ouvrir la PR. Lien : ${
+          url.params.mentor.startsWith('/')
+            ? `${location.origin}${url.params.mentor}`
+            : url.params.mentor
+        }`,
+      level: 'Débutant',
+      duration: '~30 min',
+      origin: 'Pré-rempli depuis ton premier pas',
+    })
+  }
   if (pr && url.params.ci) {
     Object.assign(form, {
       type: 'Debug',

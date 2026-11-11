@@ -219,6 +219,8 @@ export const PullRequest = createTable('pullRequest', {
   skillsSha: { type: 'TEXT', optional: true },
 })
 unique('pull_request_number', 'pullRequest', 'repositoryId, number')
+// Has a developer contributed already: a PR of theirs merged (§10.3)
+index('pull_request_author', 'pullRequest', 'authorGithubId, mergedAt')
 // The PRs of a project by batches, the open ones first (§12.7): an index
 // on an expression, used when the query writes the same one
 index(
@@ -521,6 +523,20 @@ index('notification_inbox', 'notification', 'userId, readAt, createdAt')
 index('notification_recent', 'notification', 'userId, createdAt')
 // A tab of the inbox, by category (§12.7)
 index('notification_category', 'notification', 'userId, category, createdAt')
+
+// The conversation of a developer with the Assistant (§11): read by them
+// only, erased by « Nouvelle conversation »
+export const AssistantMessage = createTable('assistantMessage', {
+  assistantMessageId: { type: 'INTEGER', primary: true },
+  userId: { type: 'INTEGER', join: User },
+  // user or assistant
+  role: { type: 'TEXT' },
+  content: { type: 'TEXT' },
+  // What an answer shows besides its text: cards, actions, fallback
+  extras: { type: 'JSON', optional: true },
+  createdAt: { type: 'REAL' },
+})
+index('assistant_message_user', 'assistantMessage', 'userId')
 
 // Badges themselves are constants of the code (§8.2)
 export const BadgeProgress = createTable('badgeProgress', {

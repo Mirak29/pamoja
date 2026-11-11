@@ -53,6 +53,8 @@ import {
   readNotification,
 } from '/api/notifications.ts'
 import { previewWave } from '/api/matching.ts'
+import { listWork } from '/api/work.ts'
+import { ask, clearAssistant, getAssistant } from '/api/assistant.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
   createHelpRequest,
@@ -227,6 +229,55 @@ const conversationKey = STR('Public id of the conversation, its address')
 const cursorFrom = (first: string) =>
   STR(`Cursor of the next batch, empty for the ${first} (§12.7)`)
 const nextCursor = STR('Cursor of the next batch, empty at the end')
+
+// A thing to work on (§10.3): what, where, how well it fits, where to go
+const workItem = OBJ({
+  id: STR('Key of the item'),
+  title: STR('What to do'),
+  project: STR('Project, empty without one'),
+  projectSlug: STR('Slug of the project, empty without one'),
+  type: STR('Help category, need type or good first issue'),
+  score: NUM('How well it fits the developer, out of 100'),
+  skills: ARR(STR('Skill of the developer it asks')),
+  href: STR('Where to do it: a page of Pamoja or GitHub'),
+})
+
+// What the Assistant shows (§11): cards to open, actions to do
+const assistantExtras = {
+  cards: ARR(
+    OBJ({
+      title: STR('What it is about'),
+      project: STR('Project, empty without one'),
+      projectHref: STR('The page of the project, empty without one'),
+      type: STR('What it is, in words'),
+      score: NUM('Match with the developer out of 100, 0 without one'),
+      href: STR('Where it opens: a page of Pamoja or GitHub'),
+    }),
+    'What the answer cites, from the context of the server',
+  ),
+  actions: ARR(
+    OBJ({
+      label: STR('The label of the button'),
+      href: STR('The page of Pamoja it opens'),
+    }),
+    'What the developer can do, from the catalog of the server',
+  ),
+  fallback: BOOL('Without the model: the point, without a sentence'),
+  parts: ARR(
+    OBJ({
+      text: STR('A piece of the answer'),
+      href: STR('Where it leads; empty for plain text'),
+    }),
+    'The answer with its links in place; empty for a fallback',
+  ),
+}
+const assistantMessage = OBJ({
+  id: NUM('Id of the message'),
+  role: STR('user or assistant'),
+  content: STR('The text; empty for a fallback'),
+  ...assistantExtras,
+  createdAt: NUM('When, in seconds'),
+})
 
 // Issues and PRs of a project, by batches (§12.7)
 const issueBatch = OBJ({
@@ -839,6 +890,48 @@ const defs = {
       next: nextCursor,
     }),
     description: 'The open requests the developer was matched with',
+  }),
+  'GET/api/work': route({
+    authorize: withSession,
+    fn: (ctx) => listWork(ctx.session.userId),
+    output: OBJ({
+      help: ARR(workItem, 'Help that matches, best score first'),
+      needs: ARR(workItem, 'Needs of projects, best match first'),
+      issues: ARR(
+        workItem,
+        'Good first issues and documentation, best match first',
+      ),
+      newcomer: BOOL('No PR of theirs merged yet: they never contributed'),
+      firstStep: optional(workItem),
+    }),
+    description: 'What the developer can work on, computed without AI (§10.3)',
+  }),
+  'GET/api/assistant': route({
+    authorize: withSession,
+    fn: (ctx, { page }) => getAssistant(ctx.session.userId, page ?? ''),
+    input: OBJ({ page: optional(STR('The page open, for its context')) }),
+    output: OBJ({
+      messages: ARR(assistantMessage, 'The conversation, oldest first'),
+      point: OBJ(assistantExtras),
+    }),
+    description:
+      'The conversation with the Assistant, and the point of the developer computed without AI (§11)',
+  }),
+  'POST/api/assistant/ask': route({
+    authorize: withSession,
+    fn: (ctx, { question, page }) =>
+      ask(ctx.session.userId, question, page ?? ''),
+    input: OBJ({
+      question: STR('The question of the developer, 500 characters at most'),
+      page: optional(STR('The page open, for its context')),
+    }),
+    output: assistantMessage,
+    description: 'Asks the Assistant: the answer, kept with the question (§11)',
+  }),
+  'POST/api/assistant/clear': route({
+    authorize: withSession,
+    fn: (ctx) => clearAssistant(ctx.session.userId),
+    description: 'Erases the conversation with the Assistant for good',
   }),
   'GET/api/help/preview': route({
     authorize: withSession,
