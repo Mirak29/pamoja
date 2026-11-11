@@ -945,6 +945,10 @@ export const english: Record<string, string> = {
   'Rejoins ou suis un projet pour filtrer.':
     'Join or follow a project to filter.',
   'Rejoins une communauté pour filtrer.': 'Join a community to filter.',
+  'un reviewer': 'a reviewer',
+  'commit poussé': 'commit pushed',
+  'commits poussés': 'commits pushed',
+  'Réponse non envoyée': 'Reply not sent',
   'Ton profil, tes preuves, tes posts et tes réglages t’appartiennent.':
     'Your profile, proofs, posts and settings belong to you.',
   'Exporter mes données': 'Export my data',
@@ -1583,6 +1587,29 @@ export const english: Record<string, string> = {
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
 // in their order in the French sentence
 export const englishTemplates: Record<string, string> = {
+  'PR #{0} « {1} » approuvée par {2}.': 'PR #{0} “{1}” approved by {2}.',
+  'Changements demandés sur la PR #{0} « {1} » par {2}.':
+    'Changes requested on PR #{0} “{1}” by {2}.',
+  'Review de {0} sur la PR #{1} « {2} ».': 'Review by {0} on PR #{1} “{2}”.',
+  'Issue #{0} fermée : « {1} ».': 'Issue #{0} closed: “{1}”.',
+  'Issue #{0} rouverte : « {1} ».': 'Issue #{0} reopened: “{1}”.',
+  'Issue #{0} ouverte : « {1} ».': 'Issue #{0} opened: “{1}”.',
+  'CI en échec sur la PR #{0} « {1} » : le job {2} échoue sur {3}.':
+    'CI failing on PR #{0} “{1}”: job {2} fails on {3}.',
+  'CI en échec sur {0} : le job {1} échoue.':
+    'CI failing on {0}: job {1} fails.',
+  'CI réparée sur la PR #{0} « {1} » : le job {2} repasse au vert.':
+    'CI fixed on PR #{0} “{1}”: job {2} is green again.',
+  'CI réparée sur {0} : le job {1} repasse au vert.':
+    'CI fixed on {0}: job {1} is green again.',
+  '{0} sur {1} par {2}.': '{0} on {1} by {2}.',
+  '{0} sur {1}.': '{0} on {1}.',
+  'PR #{0} ouverte par {1} : « {2} ».': 'PR #{0} opened by {1}: “{2}”.',
+  'PR #{0} « {1} » mergée.': 'PR #{0} “{1}” merged.',
+  'PR #{0} « {1} » fermée sans merge.': 'PR #{0} “{1}” closed without merging.',
+  'La PR #{0} « {1} » attend une review depuis 2 jours.':
+    'PR #{0} “{1}” has been waiting 2 days for a review.',
+  'Release {0} publiée.': 'Release {0} published.',
   ' · {0} par GitHub': ' · {0} by GitHub',
   'A aidé {0} : {1}': 'Helped {0}: {1}',
   'A demandé : {0}': 'Asked for help: {0}',

@@ -2,9 +2,11 @@ import { issues } from '/web/fixtures/issues.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { counted } from '/web/lib/plural.ts'
+import { livePulses } from '/web/lib/pulse.ts'
 
-// What GET/api/project/pulse, health and story will return (PAM-306 to
-// PAM-308), computed here from the fixtures
+// The Pulse of a project: the counts of GET/api/project/pulse for a project
+// the server knows (PAM-306), the fixtures for the demo projects; health
+// and story stay computed here until PAM-308
 
 type Weekly = {
   merged: number
@@ -89,16 +91,19 @@ export type HealthIndicator = {
 }
 
 export const projectPulse = (project: Project) => {
+  const live = project.demo ? undefined : livePulses.value[project.slug]
   const open = pullRequests.filter((pr) =>
     pr.project === project.slug && pr.state === 'open'
   )
-  const waiting = open.filter((pr) => pr.review === 'waiting').length
+  const waiting = live?.waitingReview ??
+    open.filter((pr) => pr.review === 'waiting').length
   const ciFailed = open.some((pr) => pr.ci === 'failed')
   const blockers = issues.filter((issue) =>
     issue.project === project.slug && issue.state === 'open' &&
     issue.labels.includes('blocked')
   )
-  const week = weekly[project.slug] ?? (project.demo ? quietWeek : emptyWeek)
+  const week = live ??
+    weekly[project.slug] ?? (project.demo ? quietWeek : emptyWeek)
   const beginners =
     issues.filter((issue) =>
       issue.project === project.slug && issue.state === 'open' &&
