@@ -290,7 +290,7 @@ Chaque projet est organisé comme un serveur Discord, avec **quatre canaux impos
 | `#aide` | Membres et plateforme | Membres | Demandes d'aide du projet, leurs changements d'état et leurs échanges |
 | `#annonces` | Owner et Maintainers | Membres et abonnés | Releases, nouveaux besoins, arrivées dans l'équipe |
 
-**Messages** : Markdown avec une image ou une vidéo intégrée par lien (§17.3), réactions, réponses en **fil de discussion** sous un message ou sous une alerte. Stockés dans `ProjectMessage` ; chaque message produit une entry `MESSAGE_CREATED`. Pas de voix ni de vidéo en direct.
+**Messages** : Markdown avec une image ou une vidéo intégrée par lien (§17.3), réactions, réponses en **fil de discussion** sous un message ou sous une alerte. Stockés dans `ProjectMessage` ; chaque message produit une entry `MESSAGE_CREATED`. Pas de voix ni de vidéo en direct. Un fil n'a qu'un niveau et reste dans le canal de son message ; seuls les membres y répondent, même sous `#annonces` (`parent` de `POST/api/project/message/create`), les abonnés lisent. La réaction est un « +1 », que donne tout lecteur du canal (`POST/api/project/message/like`) ; `MessageReaction` garde son emoji pour en ajouter d'autres sans migration. `GET/api/project/messages` renvoie les derniers messages, puis les réponses de leurs fils, chacun avec son nombre de +1. Une réponse relit les canaux en temps réel par son `MESSAGE_CREATED` ; un +1 n'a pas d'entry et s'y ajoute à la lecture suivante.
 
 **`#suivi`** n'a pas de stockage propre : c'est l'affichage des entries produites par les webhooks et la synchro (§5.5, §13.3). Alertes affichées :
 

@@ -158,6 +158,60 @@ Deno.test('channels: #annonces is written by the leads, read by followers', asyn
   )
 })
 
+Deno.test('channels: members answer in a thread, readers give a +1 (PAM-406)', async () => {
+  restore()
+  const { abdou, fatou, awa, yao } = await team()
+  const news = (await abdou.call(
+    '/api/project/message/create',
+    message('announcements', 'Release v0.4'),
+  )).json
+  const reply = (body: string, parent: number, channel = 'announcements') => ({
+    ...message(channel, body),
+    parent,
+  })
+  // A member answers an announcement she cannot post; a follower reads it
+  const answer = await fatou.call(
+    '/api/project/message/create',
+    reply('Bravo !', news.id),
+  )
+  assertEquals([answer.status, answer.json.parent], [200, news.id])
+  assertEquals(
+    (await awa.call('/api/project/message/create', reply('Merci', news.id)))
+      .status,
+    403,
+  )
+  // A thread stays in its channel, and never goes one level deeper
+  for (
+    const input of [
+      reply('Ailleurs', news.id, 'general'),
+      reply('Plus bas', answer.json.id),
+    ]
+  ) {
+    assertEquals(
+      (await fatou.call('/api/project/message/create', input)).status,
+      403,
+    )
+  }
+  const read = (await awa.call('/api/project/messages?project=openpay-africa'))
+    .json
+  assertEquals(
+    read.map((m: { body: string; parent: number }) => [m.body, m.parent]),
+    [['Release v0.4', 0], ['Bravo !', news.id]],
+  )
+
+  // A +1 once per developer, taken back, by the readers of the channel
+  const like = (who: typeof awa, on: boolean) =>
+    who.call('/api/project/message/like', { message: news.id, on })
+  assertEquals((await like(awa, true)).json, { likes: 1, liked: true })
+  assertEquals((await like(awa, true)).json, { likes: 1, liked: true })
+  assertEquals((await like(fatou, true)).json, { likes: 2, liked: true })
+  assertEquals((await like(awa, false)).json, { likes: 1, liked: false })
+  assertEquals((await like(yao, true)).status, 404)
+  const [seen] =
+    (await fatou.call('/api/project/messages?project=openpay-africa')).json
+  assertEquals([seen.likes, seen.liked], [1, true])
+})
+
 Deno.test('channels: checked before anything is saved', async () => {
   restore()
   const { abdou, fatou } = await team()
