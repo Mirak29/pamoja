@@ -1,7 +1,13 @@
 import { useState } from 'preact/hooks'
 import { Download, Github, Info } from '/web/assets/icons.tsx'
 import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
-import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
+import { communities } from '/web/fixtures/communities.ts'
+import { isMe, me, peopleChanged, type Person } from '/web/fixtures/people.ts'
+import {
+  type Project,
+  projects,
+  projectsChanged,
+} from '/web/fixtures/projects.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { proofsOf } from '/web/fixtures/reputation.ts'
 import {
@@ -18,7 +24,6 @@ import {
   settingsChanged,
   updateSettings,
 } from '/web/fixtures/settings.ts'
-import { skills } from '/web/fixtures/skills.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -76,6 +81,30 @@ const Choices = (
 
 const toggle = (list: string[], value: string) =>
   list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
+
+const Empty = ({ children }: { children: string }) => (
+  <span class='text-[13px] font-normal text-ink-muted'>{children}</span>
+)
+
+// The projects built or followed, and the communities joined: what the
+// matching filters offer (§7.4)
+const keptProjects = () =>
+  Object.values(projects as Record<string, Project>).filter((project) =>
+    project.owner === me.login ||
+    project.members.some((member) => isMe(member.login)) ||
+    project.followers.some(isMe)
+  )
+
+const myCommunities = () =>
+  communities.filter((community) => me.communities.includes(community.slug))
+
+type Filter = 'onlySkills' | 'onlyProjects' | 'onlyCommunities'
+
+/** Keeps or lets go of a skill, a project or a community, saved at once */
+const keep = (filter: Filter, value: string) => {
+  updateSettings((s) => s[filter] = toggle(s[filter], value))
+  saveMatching({ [filter]: settings[filter] })
+}
 
 /** Profile, proofs, posts and settings of the developer, as a JSON file */
 // Session data only lives in this page until the API exists: reloading
@@ -147,6 +176,7 @@ const languages: [LanguagePreference, string][] = [
 export const SettingsPage = () => {
   settingsChanged.value
   peopleChanged.value
+  projectsChanged.value
   const person: Person = me
   const passing = matchingRequests(me, settings.minScore).length
   const setPerson = (change: () => void) => {
@@ -263,18 +293,6 @@ export const SettingsPage = () => {
               : 'demande ouverte passe'} ce seuil aujourd’hui
           </span>
         </div>
-        <Choices label='Tes skills'>
-          {skills.map((skill) => (
-            <OptionButton
-              key={skill}
-              pressed={person.skills.includes(skill)}
-              onClick={() =>
-                setPerson(() => person.skills = toggle(person.skills, skill))}
-            >
-              {skill}
-            </OptionButton>
-          ))}
-        </Choices>
         <Choices label='Types d’aide que tu acceptes'>
           {helpTypes.map((type) => (
             <OptionButton
@@ -294,6 +312,52 @@ export const SettingsPage = () => {
               {type}
             </OptionButton>
           ))}
+        </Choices>
+        <div class='flex flex-col gap-1 border-t border-line pt-4'>
+          <span class='text-[15px] font-semibold'>Filtres</span>
+          <span class='text-[13px] leading-5 text-ink-muted'>
+            Sans sélection, toutes les demandes passent. Avec, seulement celles
+            qui touchent un des choix de chaque filtre.
+          </span>
+        </div>
+        <Choices label='Seulement ces skills'>
+          {person.skills.length
+            ? person.skills.map((skill) => (
+              <OptionButton
+                key={skill}
+                pressed={settings.onlySkills.includes(skill)}
+                onClick={() => keep('onlySkills', skill)}
+              >
+                {skill}
+              </OptionButton>
+            ))
+            : <Empty>Ajoute des skills à ton profil pour filtrer.</Empty>}
+        </Choices>
+        <Choices label='Seulement ces projets'>
+          {keptProjects().length
+            ? keptProjects().map((project) => (
+              <OptionButton
+                key={project.slug}
+                pressed={settings.onlyProjects.includes(project.slug)}
+                onClick={() => keep('onlyProjects', project.slug)}
+              >
+                {project.name}
+              </OptionButton>
+            ))
+            : <Empty>Rejoins ou suis un projet pour filtrer.</Empty>}
+        </Choices>
+        <Choices label='Seulement les auteurs de ces communautés'>
+          {myCommunities().length
+            ? myCommunities().map((community) => (
+              <OptionButton
+                key={community.slug}
+                pressed={settings.onlyCommunities.includes(community.slug)}
+                onClick={() => keep('onlyCommunities', community.slug)}
+              >
+                {community.name}
+              </OptionButton>
+            ))
+            : <Empty>Rejoins une communauté pour filtrer.</Empty>}
         </Choices>
       </section>
       <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>

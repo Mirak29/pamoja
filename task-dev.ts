@@ -1,4 +1,4 @@
-import { config } from './build-config.ts'
+import { config, copyMocks } from './build-config.ts'
 import { context } from 'npm:esbuild@0.25.5'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
@@ -15,6 +15,7 @@ await ctx.watch()
 
 Deno.mkdirSync('dist', { recursive: true })
 Deno.copyFileSync('web/index.html', 'dist/index.html')
+copyMocks()
 
 // Tailwind compiles the CSS next to the bundle, the piped stdin makes it stop
 // with this process when `deno serve --watch` restarts

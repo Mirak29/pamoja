@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { ExternalLink, Play } from '/web/assets/icons.tsx'
 import { videoOf } from '/api/video-links.ts'
 import { api } from '/web/lib/api.ts'
+import { memberLink, webHref } from '/web/lib/member-links.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 /*
@@ -48,12 +49,14 @@ export const VideoEmbed = (
     video && previewOf(url).then(setPreview)
   }, [url])
   if (!video) {
-    // Not an embeddable video: the link itself, opened elsewhere
+    // Not an embeddable video: the link itself, opened elsewhere; not even
+    // a link unless it is a web address (§16)
+    const href = webHref(url)
+    if (!href) return null
     return (
       <a
-        href={url}
-        target='_blank'
-        rel='noopener noreferrer'
+        href={href}
+        {...memberLink}
         class='inline-flex items-center gap-2 text-[14px]'
       >
         <ExternalLink class='size-4' />

@@ -69,6 +69,7 @@ import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
+import { memberLink } from '/web/lib/member-links.ts'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
@@ -678,8 +679,7 @@ const LinkCard = (
 ) => (
   <a
     href={preview.url}
-    target='_blank'
-    rel='noopener noreferrer nofollow ugc'
+    {...memberLink}
     translate={false}
     class='flex max-w-[360px] flex-col gap-0.5 rounded-lg border border-line-strong border-l-4 border-l-indigo bg-surface-000 px-3 py-2 text-ink no-underline hover:no-underline'
   >

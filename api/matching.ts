@@ -144,13 +144,41 @@ const listFollowers = sql<
     AND followerId IN (SELECT value FROM json_each(:users))
 `.all
 
+const getProjectSlug = sql<{ slug: string }, number>`
+  SELECT slug FROM project WHERE projectId = ?
+`.get
+
+const listAuthorCommunities = sql<{ slug: string }, number>`
+  SELECT community.slug FROM communityMember
+  JOIN community ON community.communityId = communityMember.communityId
+  WHERE communityMember.userId = ?
+`.all
+
+// What the filters of a developer compare with: the skills asked, the
+// project and the communities of the author
+type Asked = { skills: string[]; project?: string; communities: string[] }
+
+// A developer keeps only the requests on one of the skills, projects and
+// communities they chose; an empty filter keeps everything (§7.4)
+const kept = (
+  filters: ReturnType<typeof matchingFiltersOf>,
+  asked: Asked,
+) =>
+  (!filters.onlySkills.length ||
+    asked.skills.some((skill) => filters.onlySkills.includes(skill))) &&
+  (!filters.onlyProjects.length ||
+    (!!asked.project && filters.onlyProjects.includes(asked.project))) &&
+  (!filters.onlyCommunities.length ||
+    asked.communities.some((slug) => filters.onlyCommunities.includes(slug)))
+
 const json = <T>(value: string | null, fallback: T): T =>
   value ? JSON.parse(value) as T : fallback
 
 /**
  * Every developer who has at least one of the skills asked, best first, with
  * the reasons of their score. Excluded: the requester, a matching set to Off,
- * a score under the minimum the developer chose, and `exclude`.
+ * a request outside the skills, projects or communities the developer kept,
+ * a score under the minimum they chose, and `exclude`.
  */
 export const rank = (
   need: Need,
@@ -191,11 +219,17 @@ export const rank = (
       ? listFollowers({ users, projectId: need.projectId }).map((r) => r.userId)
       : [],
   )
+  const asked: Asked = {
+    skills: skillNamesOf(need.skills),
+    project: need.projectId ? getProjectSlug(need.projectId)?.slug : undefined,
+    communities: listAuthorCommunities(need.authorId).map((r) => r.slug),
+  }
 
   const ranked: Candidate[] = []
   for (const profile of listProfiles(users)) {
     if (profile.matchingMode === 'off') continue
     const filters = matchingFiltersOf(profile.matchingFilters)
+    if (!kept(filters, asked)) continue
     const held = weights.get(profile.userId)!
     const reasons: Reason[] = []
     const skillWeight = [...held.values()].reduce((sum, w) => sum + w, 0)

@@ -7,7 +7,7 @@ import type { PostType } from '/web/fixtures/posts.ts'
 import { savePost } from '/web/lib/posts.ts'
 import { videoOf } from '/api/video-links.ts'
 import { MediaPicker, useMediaPicker } from '/web/ui/media.tsx'
-import { VideoEmbed } from '/web/ui/video.tsx'
+import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import {
@@ -53,8 +53,10 @@ const NewPost = (
   const picker = useMediaPicker(4)
   const [video, setVideo] = useState('')
   const [sending, setSending] = useState(false)
-  const link = video.trim()
-  const badVideo = !!link && !videoOf(link)
+  const typed = video.trim()
+  const badVideo = !!typed && !videoOf(typed)
+  // A link pasted in the text counts when the field is empty
+  const link = typed || videoIn(body) || ''
   const { check, clear, control, field } = useFieldErrors<'title' | 'body'>(
     'post',
   )
