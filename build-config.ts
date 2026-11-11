@@ -19,3 +19,11 @@ export const config: BuildOptions = {
   chunkNames: 'chunks/[name]-[hash]',
   outdir: 'dist',
 } as const
+
+/** The demo images of the fixtures, served next to the bundle */
+export const copyMocks = () => {
+  Deno.mkdirSync('dist/mocks', { recursive: true })
+  for (const { name } of Deno.readDirSync('web/assets/mocks')) {
+    Deno.copyFileSync(`web/assets/mocks/${name}`, `dist/mocks/${name}`)
+  }
+}

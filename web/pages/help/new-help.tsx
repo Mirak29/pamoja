@@ -33,6 +33,8 @@ import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { MediaPicker, useMediaPicker } from '/web/ui/media.tsx'
+import { videoOf } from '/api/video-links.ts'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 const levels: string[] = Object.values(helpLevels)
 const durations = helpDurations.map(durationLabel)
@@ -480,9 +482,12 @@ export const NewHelp = () => {
               aria-describedby={errors.video ? 'help-video-error' : undefined}
               value={form.video ?? ''}
               onInput={(event) => update({ video: event.currentTarget.value })}
-              placeholder='Lien YouTube ou Loom'
+              placeholder='Lien YouTube, Loom ou Vimeo'
             />
           </Field>
+          {form.video && videoOf(form.video) && (
+            <VideoEmbed url={form.video.trim()} label='Vidéo du problème' />
+          )}
           <div class='flex flex-wrap gap-3.5 border-t border-line pt-5'>
             <Button
               size={40}

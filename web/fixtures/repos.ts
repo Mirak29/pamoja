@@ -260,6 +260,7 @@ export const adoptProjects = (list: ApiProject[]) => {
     if (all[project.slug]?.demo) {
       // Its screenshots are real as soon as the server knows the project
       all[project.slug].shots = project.gallery
+      all[project.slug].demoVideoUrl = project.demoVideoUrl
       continue
     }
     const repo = project.repository
@@ -292,6 +293,7 @@ export const adoptProjects = (list: ApiProject[]) => {
       milestones: [],
       gallery: [],
       shots: project.gallery,
+      demoVideoUrl: project.demoVideoUrl,
       events: [],
       demo: false,
     }
@@ -335,9 +337,13 @@ export const adoptProjects = (list: ApiProject[]) => {
   projectsChanged.value++
 }
 
-/** The first paragraphs of a README, without its headings, badges or code */
+/**
+ * The first paragraphs of a README, without its headings, badges, code or
+ * HTML: Markdown, shown by the Markdown of the members (§16)
+ */
 export const readmeSummary = (readme: string) =>
-  readme.replace(/```[\s\S]*?```/g, '').split(/\n\s*\n/)
+  readme.replace(/```[\s\S]*?```/g, '').replace(/<[^>]*>/g, '')
+    .split(/\n\s*\n/)
     .map((block) => block.trim())
     .filter((block) =>
       block && !block.startsWith('#') && !block.startsWith('![') &&

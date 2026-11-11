@@ -10,6 +10,9 @@ import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { MediaPicker, MediaViewer, useMediaPicker } from '/web/ui/media.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { videoOf } from '/api/video-links.ts'
+import { Field, Input } from '/web/ui/input.tsx'
+import { VideoEmbed } from '/web/ui/video.tsx'
 
 // The screenshots of a project page (PAM-425, §6.3, §17.3): shown to all,
 // opened in a viewer, set by the owner and the maintainers
@@ -105,19 +108,31 @@ export const ManageScreenshots = ({ project }: { project: Project }) => {
   projectsChanged.value
   const open = url.params.dialog === 'captures'
   const picker = useMediaPicker(GALLERY_MAX, project.shots)
+  const [video, setVideo] = useState('')
   const [saving, setSaving] = useState(false)
   // A fresh copy of the gallery each time the dialog opens
   useEffect(() => {
-    open && picker.reset(project.shots)
+    if (!open) return
+    picker.reset(project.shots)
+    setVideo(project.demoVideoUrl ?? '')
   }, [open])
   if (!open || !canEditGallery(project)) return null
+  const link = video.trim()
+  const badVideo = !!link && !videoOf(link)
   const save = async () => {
+    if (badVideo) return
     setSaving(true)
     try {
       project.shots = await api['POST/api/project/gallery'].fetch({
         project: project.slug,
         media: picker.ids,
       })
+      if (link !== (project.demoVideoUrl ?? '')) {
+        project.demoVideoUrl = (await api['POST/api/project/video'].fetch({
+          project: project.slug,
+          url: link,
+        })).url
+      }
       projectsChanged.value++
       notify({ title: 'Captures enregistrées', body: project.name })
       navigate({ params: { dialog: null } })
@@ -133,7 +148,7 @@ export const ManageScreenshots = ({ project }: { project: Project }) => {
     }
   }
   return (
-    <Dialog id='captures' title='Captures du projet' width={720}>
+    <Dialog id='captures' title='Captures et vidéo du projet' width={720}>
       <div class='flex flex-col gap-4 p-[22px]'>
         <span class='text-[13px] text-ink-muted'>
           La première est mise en avant. Les images sont réduites et leurs
@@ -144,6 +159,21 @@ export const ManageScreenshots = ({ project }: { project: Project }) => {
           featured
           hint='Écrans, démo, version mobile : glissées ici ou choisies sur ton ordinateur.'
         />
+        <Field
+          label='Vidéo de démo (facultatif)'
+          error={badVideo ? 'Colle un lien YouTube, Loom ou Vimeo.' : undefined}
+          errorId='demo-video-error'
+        >
+          <Input
+            type='url'
+            value={video}
+            placeholder='Lien YouTube, Loom ou Vimeo'
+            aria-invalid={badVideo || undefined}
+            aria-describedby={badVideo ? 'demo-video-error' : undefined}
+            onInput={(event) => setVideo(event.currentTarget.value)}
+          />
+        </Field>
+        {link && !badVideo && <VideoEmbed url={link} label='Vidéo de démo' />}
         <div class='flex justify-end gap-2.5'>
           <Button
             variant='secondary'
@@ -151,7 +181,10 @@ export const ManageScreenshots = ({ project }: { project: Project }) => {
           >
             Annuler
           </Button>
-          <Button onClick={save} disabled={saving || picker.uploading}>
+          <Button
+            onClick={save}
+            disabled={saving || picker.uploading || badVideo}
+          >
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
         </div>

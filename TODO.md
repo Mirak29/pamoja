@@ -78,7 +78,7 @@ Responsable : _à répartir_
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
 - [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [x] **PAM-117** · CI : fmt, lint, tests sur chaque PR — @Mirak29
-- [ ] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16)
+- [x] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16) — @niangoos
 - [x] **PAM-119** · Écrans publics sur données fictives : landing, connexion GitHub, 404 (§6.1, §12.7) — @niangoos
 - [x] **PAM-120** · Accessibilité du socle (QA du 10 oct.) : un dialogue garde le focus et le rend à son déclencheur à la fermeture ; une action en ligne qui remplace son bouton (accepter, rejoindre, publier, déplacer une carte) pose le focus sur ce qui le remplace et l'annonce ; lien « Aller au contenu » ; un `h1` par page ; erreurs de formulaire reliées au champ (`aria-invalid`, `aria-describedby`) et focus sur le premier champ en erreur ; boutons répétés nommés avec leur objet (« Rejoindre React », « Inviter Moussa », « Monter la section Badges ») (§12.7) — @Mirak29
 - [x] **PAM-122** · Socle, retours QA 2 : toasts visibles au-dessus d'un dialogue ouvert (QA-09), recherche identifiable à 320 px (QA-12), un seul `h1` sur connexion, onboarding et 404 (QA-13), pluriel de la liste des PRs (QA-14), fins de ligne LF imposées par `.gitattributes` (§12.7) — @Mirak29
@@ -113,7 +113,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 - [x] **PAM-212** · Confirmation du demandeur → `REVIEW_HELP_CONFIRMED` avec les `fields` figés (§8.3) `[démo]`
 - [x] **PAM-213** · Évaluateur de badges : `BadgeProgress`, anti-abus, diversité par badge (§8.2, §8.4)
 - [x] **PAM-214** · Tests : webhooks, cycle de vie, acceptation simultanée, contrôles d'installation, anti-abus, matching, `trigger` (§12.8)
-- [ ] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4)
+- [x] **PAM-223** · Préférences de matching, suite : filtres par skills, projets et communautés (§7.4) — @niangoos
 - [x] **PAM-215** · Écran Onboarding sur données fictives : 5 étapes avec progression (profil, skills, intentions, matching, import) (§6.1) — @niangoos
 - [x] **PAM-216** · Écrans Aide sur données fictives : liste (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets), nouvelle demande, détail avec frise du cycle de vie et matching (§7.1 – §7.3) `[démo]` — @niangoos
 - [x] **PAM-217** · Écran Notifications sur données fictives : centre par catégories, actions directes, toast « Ce projet a besoin de toi » (§7.4) `[démo]` — @niangoos
@@ -140,7 +140,7 @@ Responsable : _à répartir_
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
-- [ ] **PAM-306** · Pulse déterministe (§6.4) `[démo]`
+- [x] **PAM-306** · Pulse déterministe (§6.4) `[démo]` — @niangoos
 - [ ] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]`
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
 - [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
@@ -167,13 +167,13 @@ Responsable : _à répartir_
 - [ ] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6)
 - [ ] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7)
 - [ ] **PAM-405** · Roadmap et milestones (§6.7)
-- [ ] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8)
+- [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
 - [ ] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6)
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
 - [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
-- [ ] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3)
-- [ ] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]`
-- [ ] **PAM-412** · Non lus et notifications par canal (`ChannelState`), « seulement mes PRs » par défaut sur `#suivi` (§6.8)
+- [x] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3) ; demande d'aide et vidéo de démo du projet, les posts avec PAM-427 — @niangoos
+- [x] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]` — @niangoos
+- [x] **PAM-412** · Non lus et notifications par canal (`ChannelState`), « seulement mes PRs » par défaut sur `#suivi` (§6.8) — @niangoos
 - [x] **PAM-413** · Page projet sur données fictives : en-tête, onglets, Aperçu, dialogue Rejoindre (§6.3, §6.6) `[démo]` — @niangoos
 - [x] **PAM-414** · Onglet Pulse sur données fictives : Pulse, résumé IA, Health, DNA, Story (§6.4, §6.5) `[démo]` — @niangoos
 - [x] **PAM-415** · Onglet Canaux sur données fictives : quatre canaux, messages, fils, alertes `#suivi` actionnables, présence (§6.8) `[démo]` — @niangoos
@@ -187,6 +187,10 @@ Responsable : _à répartir_
 - [x] **PAM-424** · Projet sans données et provenance, retours QA 2 : l'événement de synchro de l'Accueil garde son projet (QA-03) ; Pulse sans historique inventé, langages réels du repo, résumé indisponible au lieu d'un chargement sans fin (QA-04, QA-05) ; pas de faux lien GitHub sans repo et une action pour le lier (QA-06) ; non-lus des canaux mémorisés et sans ses propres messages (QA-07) ; les actions simulées sont marquées Démo, jamais « Vérifié par GitHub » (QA-10) (§6.3, §6.4, §6.8, §12.7) — @Mirak29
 - [x] **PAM-425** · Galerie du projet : ajout de captures (redimensionnées dans le navigateur), ordre, suppression, visionneuse, `POST/api/project/gallery` réservé au propriétaire et aux mainteneurs (§6.3, §17.3) — @niangoos
 - [x] **PAM-426** · Médias partout, le kit : sélecteur (ordinateur, glisser-déposer, collage), aperçus, ordre, visionneuse ; captures d'une demande d'aide et photo de couverture de bout en bout ; la galerie du projet passe sur le kit (§9.2, §17.3) — @niangoos
+- [x] **PAM-427** · Posts enregistrés avec leurs images et leur vidéo : `POST/api/post/create`, `GET/api/posts`, rédaction de l'Accueil et dialogue « Nouveau post » branchés, images et vidéo affichées dans le fil et sur la page du post ; réponses, réactions et onglets restent à PAM-501 (§10.1, §17.3) — @niangoos
+- [x] **PAM-428** · Messages de canal enregistrés avec leur image : `POST/api/project/message/create`, `GET/api/project/messages`, droits d'écriture et de lecture par canal, image servie aux seuls lecteurs du canal, vidéo intégrée depuis le premier lien du message ; fils, réactions et temps réel restent à PAM-406 (§6.8, §17.3) — @niangoos
+- [x] **PAM-429** · Médias de démo : captures dessinées pour les projets de démo (`web/assets/mocks`, copiées dans `dist`), posts du fil avec images et vidéos YouTube, captures des demandes d'aide, une capture dans `#général` d'OpenPay Africa (§12.7, §17.3) — @niangoos
+- [x] **PAM-430** · Vidéo d'un post par le lien collé dans son texte : aperçu dans la rédaction de l'Accueil et le dialogue « Nouveau post », message clair pour un fichier vidéo (§17.3) — @niangoos
 - [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
@@ -321,3 +325,14 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-25 · Test de charge rejouable : `deno task stress` remplit la base de dev après le seed (refusé en production), `?stress` ajoute des milliers de fixtures dans le bundle de dev seulement ; le contexte des agents de code (`AGENTS.md`, `.claude/`) reste hors du repo, comme `CLAUDE.md` · §14
 - 2026-10-26 · Galerie du projet (PAM-425) : la page enregistre toute la galerie d'un coup, dans l'ordre ; une capture retirée est supprimée avec son fichier ; 8 au plus, propriétaire et mainteneurs ; la vidéo de démo reste à PAM-410 · §6.3, §17.3
 - 2026-10-26 · Médias partout (PAM-426) : un kit commun d'envoi et de visionneuse pour toutes les images ; les captures d'une demande d'aide sont rattachées à sa création ; une photo de couverture uploadée est la couverture du profil, gardée sur le serveur, les couvertures prédéfinies restant dans la page jusqu'à PAM-302 ; ensuite PAM-410 (vidéos par lien) puis PAM-427 (posts enregistrés avec leurs images) · §9.2, §17.3
+- 2026-10-26 · Vidéos par lien (PAM-410) : seul le lien est gardé ; titre et miniature lus une fois par oEmbed, miniature servie par Pamoja pour qu'aucun fournisseur ne soit contacté avant la lecture ; lecteur construit depuis l'identifiant ; `frame-src` limité aux trois lecteurs sur les pages ; vidéo de démo d'un projet en base (migration 011) · §6.3, §16, §17.3
+- 2026-10-26 · Posts enregistrés (PAM-427) : une première partie de PAM-501, pour que les images et la vidéo d'un post soient vraies et visibles de tous ; la vitrine de démo de Kofi perd ses fausses images ; un auteur réel, absent des fixtures, s'affiche par son nom · §10.1, §17.3
+- 2026-10-26 · Messages de canal enregistrés (PAM-428) : une première partie de PAM-406, pour que l'image d'un message soit vraie ; la vidéo d'un message vient du premier lien de son texte, sans colonne en plus ; un projet inconnu du serveur garde ses messages dans la page · §6.8, §17.3
+- 2026-10-26 · Médias de démo (PAM-429) : des captures dessinées pour les projets fictifs, servies avec les pages et jamais uploadées, plutôt que des photos d'ailleurs ; les vidéos sont de vraies vidéos publiques sur le sujet du post · §17.3
+- 2026-10-26 · Vidéo d'un post par le lien de son texte (PAM-430) : un lien collé suffit, comme dans les canaux, sans champ à trouver ; un fichier vidéo n'est jamais uploadé et l'interface le dit · §17.3
+- 2026-10-28 · Filtres du matching (PAM-223) : « seulement » plutôt que « sauf » ou un bonus de score ; un filtre vide laisse tout passer ; une demande sans projet ne passe pas un filtre de projets ; les types d'aide restent un bonus de score · §7.4
+- 2026-10-28 · Markdown sécurisé (PAM-118) : pas de sanitizer HTML, puisque le rendu ne lit jamais de HTML ; une seule règle pour les liens écrits par un membre (`http`/`https` seulement, nouvel onglet, `noopener noreferrer nofollow ugc`), appliquée au Markdown, au site du profil, au lien vidéo et à l'aperçu de lien ; le résumé d'un README importé passe par le même Markdown · §16
+- 2026-10-28 · Pulse déterministe (PAM-306) : six comptes en SQL sur les données GitHub synchronisées et les entries ; une issue fermée compte par sa dernière mise à jour (pas de date de fermeture gardée) ; « depuis la dernière visite » prévu par le paramètre `since`, la page montre les 7 derniers jours ; Health, DNA et Story restent à PAM-308 · §6.4
+- 2026-10-28 · Non-lus par canal (PAM-412) : le serveur garde l'heure de dernière lecture et le réglage, la page compte les messages des autres après cette heure ; le réglage règle aussi le compteur (Rien, Mentions, Seulement mes PRs) en attendant les notifications de canal · §6.8
+- 2026-10-28 · Canal #suivi (PAM-411) : lu dans les entries GitHub, sans table propre ; le serveur donne les faits et la page écrit la phrase ; réponses en fil sous une alerte, par les membres seulement ; PR sans review signalée une fois, vérifiée toutes les 30 min · §6.8, §13.3
+- 2026-10-29 · Fils et réactions des canaux (PAM-406) : un fil sous un message, sur un seul niveau, ouvert aux membres seulement, même sous #annonces ; la seule réaction est « +1 », donnée par tout lecteur du canal ; un +1 n'a pas d'entry et n'est pas diffusé en temps réel · §6.8
