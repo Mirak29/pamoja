@@ -5,6 +5,7 @@ pamoja.db-wal
 
 # uploaded images and files (§17.3)
 media/
+qa/load/sessions.json
 
 # build output
 dist/

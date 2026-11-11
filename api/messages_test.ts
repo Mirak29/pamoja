@@ -5,7 +5,15 @@ import { entries } from '/api/entry-types.ts'
 import { Entry } from '/api/entries.ts'
 import { cleanMedia, MEDIA_DIR } from '/api/media.ts'
 import { previewMessage } from '/api/messages.ts'
-import { Media, Profile, Project, User } from '/api/schema.ts'
+import {
+  Conversation,
+  ConversationMember,
+  DirectMessage,
+  Media,
+  Profile,
+  Project,
+  User,
+} from '/api/schema.ts'
 import { createSession } from '/api/session.ts'
 import server from '/api/server.ts'
 import { request } from '/api/testing.ts'
@@ -60,7 +68,7 @@ const write = (from: Dev, to: Dev, body = 'Salut !') =>
   from.call('/api/conversation/start', { githubId: to.githubId, body })
 
 const list = async (who: Dev) =>
-  (await who.call('/api/conversations')).json as {
+  (await who.call('/api/conversations?before=')).json.items as {
     id: number
     status: string
     incoming: boolean
@@ -902,4 +910,68 @@ Deno.test('messages: the preview of the first link, in an accepted conversation 
   const [first] = (await open(sena, request)).messages
   await previewMessage(first.id, deps)
   assertEquals((await open(sena, request)).messages[0].preview, null)
+})
+
+Deno.test('messages: the list by batches of 20, the counter up to 99 (§12.7)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  const at = now()
+  // 45 conversations of Kadi, each with 3 messages she has not read
+  const others: Dev[] = []
+  for (let i = 0; i < 45; i++) others.push(await dev(`dev${i}`))
+  for (const [i, other] of others.entries()) {
+    const conversationId = Conversation.insert({
+      startedBy: other.userId,
+      status: 'accepted',
+      createdAt: at,
+      // Some at the same second: the id decides between them
+      updatedAt: at - Math.floor(i / 2),
+      publicId: `c${String(i).padStart(11, '0')}`,
+    })
+    ConversationMember.insert({ conversationId, userId: kadi.userId })
+    ConversationMember.insert({ conversationId, userId: other.userId })
+    for (let m = 0; m < 3; m++) {
+      DirectMessage.insert({
+        conversationId,
+        authorId: other.userId,
+        body: `Message ${m}`,
+        createdAt: at - i,
+      })
+    }
+  }
+  const seen: string[] = []
+  let before = ''
+  let batches = 0
+  do {
+    const { json } = await kadi.call(
+      `/api/conversations?before=${encodeURIComponent(before)}`,
+    )
+    assertEquals(
+      json.items.every((c: { unread: number }) => c.unread === 3),
+      true,
+    )
+    // 135 unread messages: the counter stops at 99, and comes with the
+    // latest batch only
+    assertEquals(json.unread, before ? 0 : 99)
+    seen.push(...json.items.map((c: { id: string }) => c.id))
+    before = json.next
+    batches++
+  } while (before)
+  assertEquals([batches, seen.length, new Set(seen).size], [3, 45, 45])
+  // « Écrire » finds a conversation the page has not read yet
+  const last = others[44]
+  assertEquals(
+    (await kadi.get('/api/conversation/with', { login: last.login } as never))
+      .json.id,
+    'c00000000044',
+  )
+  const stranger = await dev('stranger')
+  assertEquals(
+    (await kadi.get(
+      '/api/conversation/with',
+      { login: stranger.login } as never,
+    ))
+      .json.id,
+    '',
+  )
 })

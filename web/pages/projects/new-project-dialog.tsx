@@ -3,7 +3,8 @@ import { useEffect, useState } from 'preact/hooks'
 import { A, navigate } from '@01edu/signal-router'
 import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
-import { createProject, readmeSummary } from '/web/fixtures/repos.ts'
+import { readmeSummary } from '/api/lib/readme.ts'
+import { createProject } from '/web/fixtures/repos.ts'
 import {
   api,
   type ApiOutput,

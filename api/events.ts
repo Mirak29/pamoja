@@ -85,7 +85,9 @@ export const openEvents = (userId: number) => {
   return new Response(body, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      // no-transform: never compressed, which would hold the events back in
+      // a buffer (§12.7)
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
     },
   })

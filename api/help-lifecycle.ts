@@ -3,13 +3,14 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { entryNames } from '/api/entry-types.ts'
-import { getHelpRequest } from '/api/help.ts'
+import { getHelpRequest, getHelpRequests } from '/api/help.ts'
 import { MESSAGE_MAX, OPEN_FOR, RELEASE_AFTER } from '/api/help-rules.ts'
 import { explain, matchesFor, sendWave } from '/api/matching.ts'
 import { createNotification } from '/api/notifications.ts'
 import { evaluateBadges } from '/api/badges.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { HelpMessage } from '/api/schema.ts'
+import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 
 // The lifecycle of a help request (§7.2). Each transition is one
@@ -579,22 +580,36 @@ export const getHelpDetail = (userId: number, helpRequestId: number) => {
  * « Pour moi »: the open requests the developer was matched with (§7.3)
  */
 
+// By batches, best score first (§12.7)
 const listForMe = sql<
   { helpRequestId: number; score: number; reasons: string },
-  number
+  Slice & { userId: number }
 >`
   SELECT helpMatch.helpRequestId, score, reasons FROM helpMatch
   JOIN helpRequest ON helpRequest.helpRequestId = helpMatch.helpRequestId
-  WHERE helpMatch.userId = ? AND helpMatch.status = 'notified'
+  WHERE helpMatch.userId = :userId AND helpMatch.status = 'notified'
     AND helpRequest.status = 'open'
+    AND ${after('score', 'helpMatch.helpRequestId')}
   ORDER BY score DESC, helpMatch.helpRequestId DESC
-  LIMIT 100
+  LIMIT :limit
 `.all
 
-export const listHelpForMe = (userId: number) =>
-  listForMe(userId).flatMap(({ helpRequestId, score, reasons }) => {
-    const request = getHelpRequest(helpRequestId)
-    return request
-      ? [{ ...request, score, reasons: explain(JSON.parse(reasons)) }]
-      : []
-  })
+/** A batch of the open requests matched with the developer, from a cursor */
+export const listHelpForMe = (userId: number, before = '') => {
+  const { items, next } = readBatch(
+    before,
+    (slice) => listForMe({ ...slice, userId }),
+    (row) => ({ value: row.score, id: row.helpRequestId }),
+  )
+  // The requests of the batch in one read, their images in another
+  const requests = getHelpRequests(items.map((row) => row.helpRequestId))
+  return {
+    items: items.flatMap(({ helpRequestId, score, reasons }) => {
+      const request = requests.get(helpRequestId)
+      return request
+        ? [{ ...request, score, reasons: explain(JSON.parse(reasons)) }]
+        : []
+    }),
+    next,
+  }
+}

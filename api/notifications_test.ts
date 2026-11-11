@@ -1,7 +1,7 @@
 import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
-import { Profile, User, UserIntent } from '/api/schema.ts'
+import { Notification, Profile, User, UserIntent } from '/api/schema.ts'
 import { createSession } from '/api/session.ts'
 import { setDeclaredSkills } from '/api/skills.ts'
 import { request } from '/api/testing.ts'
@@ -52,7 +52,7 @@ const form = {
 }
 
 const inbox = async (session: string) =>
-  (await call('/api/notifications', session)).json as {
+  (await call('/api/notifications?before=&category=', session)).json.items as {
     id: number
     type: string
     actor: string
@@ -139,4 +139,70 @@ Deno.test('notifications: the matching preferences are saved and applied', async
   })
   await call('/api/help/create', abdou.session, { ...form, title: 'Encore' })
   assertEquals(await inbox(moussa.session), [])
+})
+
+Deno.test('notifications: by batches of 20, every unread one counted (§12.7)', async () => {
+  restore()
+  const abdou = await dev('abdou')
+  const at = now()
+  // 45 at the same second: the id decides between them
+  for (let i = 0; i < 45; i++) {
+    Notification.insert({
+      userId: abdou.userId,
+      type: 'help_match',
+      category: i % 3 ? 'for-you' : 'system',
+      actorId: null,
+      payload: { title: `N${i}` },
+      readAt: i < 5 ? at : null,
+      createdAt: i < 40 ? at : at - 60,
+    })
+  }
+  type Batch = {
+    items: { title: string }[]
+    next: string
+    unread: { category: string; count: number }[]
+  }
+  const read = async (before: string) =>
+    (await call(
+      `/api/notifications?category=&before=${encodeURIComponent(before)}`,
+      abdou.session,
+    )).json as Batch
+  const titles: string[] = []
+  let before = ''
+  let batches = 0
+  do {
+    const batch = await read(before)
+    titles.push(...batch.items.map((n) => n.title))
+    // Not only the batch: every unread one, by category
+    assertEquals(
+      batch.unread.sort((a, b) => a.category.localeCompare(b.category)),
+      [{ category: 'for-you', count: 27 }, { category: 'system', count: 13 }],
+    )
+    before = batch.next
+    batches++
+  } while (before)
+  // Each one once, newest first: three batches of 20, 20, 5
+  assertEquals(batches, 3)
+  assertEquals(new Set(titles).size, 45)
+  assertEquals(titles[0], 'N39')
+  assertEquals(titles.at(-1), 'N40')
+  assertEquals(
+    (await call('/api/notifications?before=nope&category=', abdou.session))
+      .status,
+    400,
+  )
+  // A tab reads its category only: 15 system ones, in one batch
+  const system = (await call(
+    '/api/notifications?before=&category=system',
+    abdou.session,
+  )).json
+  assertEquals([system.items.length, system.next], [15, ''])
+  assertEquals(
+    (await call(
+      '/api/notifications?before=&category=communities',
+      abdou.session,
+    ))
+      .json.items,
+    [],
+  )
 })

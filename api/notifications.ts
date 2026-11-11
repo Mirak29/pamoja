@@ -1,17 +1,21 @@
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
+import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
 import { Notification } from '/api/schema.ts'
 
 // A notification for one developer (§7.4): a row of their inbox, and an entry
 // that reaches their open pages. The center and the toast come with PAM-210.
 
-export type NotificationCategory =
-  | 'for-you'
-  | 'projects'
-  | 'communities'
-  | 'social'
-  | 'system'
+export const NOTIFICATION_CATEGORIES = [
+  'for-you',
+  'projects',
+  'communities',
+  'social',
+  'system',
+] as const
+
+export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number]
 
 export const createNotification = (
   { userId, type, category, actorId, payload }: {
@@ -52,14 +56,32 @@ type Row = {
   createdAt: number
 }
 
-const listInbox = sql<Row, number>`
-  SELECT notificationId, type, category, actor.githubUsername AS actor,
-    payload, readAt, notification.createdAt
-  FROM notification
-  LEFT JOIN user AS actor ON actor.userId = notification.actorId
-  WHERE notification.userId = ?
-  ORDER BY notification.createdAt DESC, notificationId DESC
-  LIMIT 100
+// By batches, newest first (§12.7)
+// One query by tab, each from its own index: all of them, or one category.
+// A tab filtered by the page would read batches of every category to find
+// its own, up to the whole inbox (§12.7)
+const inbox = (where: string) =>
+  sql<Row, Slice & { userId: number; category?: string }>`
+    SELECT notificationId, type, category, actor.githubUsername AS actor,
+      payload, readAt, notification.createdAt
+    FROM notification
+    LEFT JOIN user AS actor ON actor.userId = notification.actorId
+    WHERE notification.userId = :userId ${where}
+      AND ${after('notification.createdAt', 'notificationId')}
+    ORDER BY notification.createdAt DESC, notificationId DESC
+    LIMIT :limit
+  `.all
+const listInbox = inbox('')
+const listCategory = inbox('AND notification.category = :category')
+
+// Every unread one, not only those of the batch: the counters of the menu
+// and of the tabs. Through the index of the unread ones: without ANALYZE,
+// SQLite would walk the whole inbox by category
+const countUnread = sql<{ category: string; count: number }, number>`
+  SELECT category, count(*) AS count
+  FROM notification INDEXED BY notification_inbox
+  WHERE userId = ? AND readAt IS NULL
+  GROUP BY category
 `.all
 
 // What a notification says: the page writes the sentence in its language
@@ -86,8 +108,25 @@ const shown = (row: Row) => {
   }
 }
 
-export const listNotifications = (userId: number) =>
-  listInbox(userId).map(shown)
+/**
+ * A batch of the inbox, of a category or all of them, from a cursor, with
+ * every unread one counted
+ */
+export const listNotifications = (
+  userId: number,
+  before = '',
+  category = '',
+) => {
+  const { items, next } = readBatch(
+    before,
+    (slice) =>
+      category
+        ? listCategory({ ...slice, userId, category })
+        : listInbox({ ...slice, userId }),
+    (row) => ({ value: row.createdAt, id: row.notificationId }),
+  )
+  return { items: items.map(shown), next, unread: countUnread(userId) }
+}
 
 const setRead = sql<undefined, { userId: number; id: number; at: number }>`
   UPDATE notification SET readAt = :at

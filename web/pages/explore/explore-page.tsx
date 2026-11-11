@@ -21,6 +21,7 @@ import {
   projectsChanged,
 } from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
 import { githubUrl } from '/web/lib/links.ts'
@@ -112,6 +113,9 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
+// From the first batch again when the filters change (§12.7)
+const filtersKey = () => url.relativePath + JSON.stringify(url.params)
+
 const Developers = ({ all }: { all: Person[] }) => {
   const community = communities.find((c) => c.name === param('community'))
   const list = all.filter((p) =>
@@ -170,11 +174,12 @@ const Developers = ({ all }: { all: Person[] }) => {
         label={counted(list.length, 'développeur')}
         keys={['skill', 'country', 'community', 'intent', 'available']}
       />
-      <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
-        {list.map((person) => (
-          <DeveloperCard key={person.login} person={person} />
-        ))}
-      </div>
+      <Batched
+        items={list}
+        reset={filtersKey()}
+        class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
+        row={(person) => <DeveloperCard key={person.login} person={person} />}
+      />
       {!list.length && (
         <Empty>
           Personne ne correspond à ces filtres. Essaie d’en retirer un.
@@ -245,11 +250,12 @@ const Projects = ({ all }: { all: Project[] }) => {
           'beginners',
         ]}
       />
-      <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'>
-        {list.map((project) => (
-          <ProjectCard key={project.slug} project={project} />
-        ))}
-      </div>
+      <Batched
+        items={list}
+        reset={filtersKey()}
+        class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'
+        row={(project) => <ProjectCard key={project.slug} project={project} />}
+      />
       {!list.length && <Empty>Aucun projet ne correspond à ces filtres.</Empty>}
     </>
   )

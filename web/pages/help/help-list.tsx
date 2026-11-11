@@ -9,14 +9,16 @@ import { isMe, me } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { Button } from '/web/ui/button.tsx'
 import { HelpRequestCard } from '/web/ui/help-request-card.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
+import { helpLists, type HelpListTab, loadHelpBatch } from '/web/lib/help.ts'
 
 const myProjects = Object.values(projects)
   .filter((p) => isMe(p.owner) || p.members.some((m) => isMe(m.login)))
   .map((p) => p.slug as string)
 
-const tabs = [
+const tabs: { key: HelpListTab; label: string; empty: string }[] = [
   {
     key: 'for-me',
     label: 'Pour moi',
@@ -61,6 +63,9 @@ export const HelpList = () => {
   }
   const current = tabs.find((t) => t.key === url.params.tab) ?? tabs[0]
   const rows = lists[current.key]
+  // By batches of 20 (§12.7): the list reads the first when the tab opens.
+  // A batch that failed leaves « Charger plus » to try again
+  const batches = helpLists.cursors.value
   return (
     <Page title='Aide' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
@@ -76,16 +81,23 @@ export const HelpList = () => {
           key,
           label,
           params: { tab: i ? key : null },
-          count: lists[key].length,
+          // Known once every batch of the tab is read
+          count: batches[key] === '' ? lists[key].length : undefined,
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
-        <div class='-mt-px'>
+        <InfiniteList
+          key={current.key}
+          more={helpLists.more(current.key)}
+          onMore={() => loadHelpBatch(current.key)}
+          end='Tu as tout vu.'
+          class='-mt-px'
+        >
           {rows.map(({ request, score }) => (
             <HelpRequestCard key={request.id} request={request} score={score} />
           ))}
-        </div>
-        {!rows.length && (
+        </InfiniteList>
+        {!rows.length && batches[current.key] === '' && (
           <p class='px-6 py-10 text-center text-ink-muted'>{current.empty}</p>
         )}
       </div>

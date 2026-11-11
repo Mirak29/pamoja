@@ -1,22 +1,15 @@
-import { onEvent, onReconnect } from '/web/lib/realtime.ts'
-import { loadHelpRequests, loadProjects } from '/web/lib/session.ts'
+import { debounced, onEvent, onReconnect } from '/web/lib/realtime.ts'
+import { reloadHelpRequests } from '/web/lib/help.ts'
+import { loadProjects } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
 
 // The data of the developer follows its entries without a refresh (§13): an
 // entry makes the page read it again. A burst of entries, like a merge with
 // its CI, is read once.
 
-const debounced = (load: () => unknown) => {
-  let pending: ReturnType<typeof setTimeout> | undefined
-  return () => {
-    clearTimeout(pending)
-    pending = setTimeout(load, 300)
-  }
-}
-
 // The projects follow GitHub: a PR, an issue, the CI, a release, a push, the
 // 15 min sync
-const reloadProjects = debounced(loadProjects)
+const reloadProjects = debounced(loadProjects, 1500)
 onEvent([
   'PROJECT_UPDATED',
   'PROJECT_MEMBER_JOINED',
@@ -51,7 +44,7 @@ onEvent([
 ], reloadChannels)
 
 // The help requests follow their lifecycle (§7.2)
-const reloadHelp = debounced(loadHelpRequests)
+const reloadHelp = debounced(reloadHelpRequests)
 onEvent([
   'HELP_REQUEST_MATCHED',
   'HELP_REQUEST_ACCEPTED',

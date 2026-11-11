@@ -1,3 +1,4 @@
+import { badgeCount } from '/web/lib/plural.ts'
 import { Fragment } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
@@ -33,14 +34,16 @@ import {
   type Conversation,
   conversations,
   conversationsLoaded,
-  conversationWith,
   deleteMessage,
   editMessage,
+  findConversationWith,
   loadOlder,
+  loadOlderConversations,
   markUnread,
   type Media,
   mediaUrl,
   type Message,
+  olderConversations,
   online,
   openAt,
   openConversation,
@@ -67,11 +70,13 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Input, Textarea } from '/web/ui/input.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
 import { memberLink } from '/web/lib/member-links.ts'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 // Direct messages (§10.6): the conversations on the left, the one open on
 // the right; on a phone, one or the other. Like Discord: edit, delete,
@@ -186,7 +191,7 @@ const Row = ({ conversation, active }: {
                 : 'bg-indigo text-on-indigo'
             }`}
           >
-            {conversation.unread > 9 ? '9+' : conversation.unread}
+            {badgeCount(conversation.unread)}
           </span>
         )}
       </span>
@@ -265,7 +270,7 @@ const List = ({ openId }: { openId: string | null }) => {
         Messages
       </h1>
       <SearchBox onResults={setResults} />
-      <div class='flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain'>
+      <ScrollFrame contain class='flex min-h-0 flex-1 flex-col'>
         {results
           ? (
             <>
@@ -292,9 +297,14 @@ const List = ({ openId }: { openId: string | null }) => {
                   ))}
                 </>
               )}
-              {others.map((c) => (
-                <Row key={c.id} conversation={c} active={c.id === openId} />
-              ))}
+              <InfiniteList
+                more={!!olderConversations.value}
+                onMore={loadOlderConversations}
+              >
+                {others.map((c) => (
+                  <Row key={c.id} conversation={c} active={c.id === openId} />
+                ))}
+              </InfiniteList>
               {archived.length > 0 && (
                 <>
                   <button
@@ -323,7 +333,7 @@ const List = ({ openId }: { openId: string | null }) => {
               )}
             </>
           )}
-      </div>
+      </ScrollFrame>
     </section>
   )
 }
@@ -1126,7 +1136,9 @@ const Open = ({ id }: { id: string }) => {
           stick.current =
             box.scrollHeight - box.scrollTop - box.clientHeight < 80
         }}
-        class='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4'
+        // A column that keeps its gesture, as a ScrollFrame `contain`
+        data-scroller='contain'
+        class='relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4'
       >
         <div ref={content} class='flex flex-col gap-3'>
           {shown.more && !shown.jumpedTo && (
@@ -1216,10 +1228,16 @@ const New = ({ githubId }: { githubId: number }) => {
     setLogin(null)
     loadProfileOfGithubId(githubId).then(setLogin)
   }, [githubId])
-  const existing = login ? conversationWith(login) : undefined
+  // A conversation they share opens instead, older than the batches read
+  // included: the server knows it
+  const [shared, setShared] = useState<string | null>(null)
   useEffect(() => {
-    existing && navigate({ href: `messages/${existing.id}`, replace: true })
-  }, [existing?.id])
+    setShared(null)
+    login &&
+      findConversationWith(login).then((id) =>
+        id ? navigate({ href: `messages/${id}`, replace: true }) : setShared('')
+      )
+  }, [login])
   if (login === undefined) {
     return (
       <GhostSlab>
@@ -1227,7 +1245,7 @@ const New = ({ githubId }: { githubId: number }) => {
       </GhostSlab>
     )
   }
-  if (!login || existing) return null
+  if (!login || shared !== '') return null
   const person = personOf(login)
   return (
     <section class='slab flex h-full min-w-0 flex-col overflow-hidden'>
@@ -1342,18 +1360,16 @@ export const MessagesPage = () => {
   const avec = String(url.params.avec ?? '')
   useEffect(() => {
     if (!avec) return
-    const existing = conversationWith(avec)
-    if (existing) {
-      return void navigate({ href: `messages/${existing.id}`, replace: true })
-    }
-    loadProfile(avec).then(() => {
+    findConversationWith(avec).then(async (id) => {
+      if (id) return navigate({ href: `messages/${id}`, replace: true })
+      await loadProfile(avec)
       const known = personOf(avec).githubId
       navigate({
         href: known ? `messages/new/${known}` : 'messages',
         replace: true,
       })
     })
-  }, [avec, conversationsLoaded.value])
+  }, [avec])
   const right = openId
     ? <Open id={openId} />
     : githubId && conversationsLoaded.value

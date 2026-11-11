@@ -30,10 +30,17 @@ import { me } from '/web/fixtures/people.ts'
 import { ago } from '/web/lib/time.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
+import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
-import { readAll, readOne } from '/web/lib/notifications.ts'
+import {
+  loadNotificationBatch,
+  notificationLists,
+  readAll,
+  readOne,
+  unreadCount,
+} from '/web/lib/notifications.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -148,8 +155,17 @@ export const NotificationsPage = () => {
     .sort((a, b) => b.at - a.at)
   const current = categories.find(([key]) => key === url.params.category) ??
     categories[0]
-  const list = mine.filter((n) => !current[1] || n.category === current[1])
-  const unread = mine.filter((n) => !n.read).length
+  // A tab reads its first batch when it opens; all of them come with the
+  // session (§12.7). It shows the rows of the server its batches reached,
+  // not those another tab read further down
+  const tab = current[1] ?? ''
+  const list = mine.filter((n) =>
+    (!tab || n.category === tab) &&
+    (!n.id.startsWith('s') || notificationLists.shows(tab, n.at))
+  )
+  const more = notificationLists.more(tab)
+  // Counted by the server too: older batches may not be read yet
+  const unread = unreadCount()
   return (
     <Page title='Notifications' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
@@ -169,17 +185,21 @@ export const NotificationsPage = () => {
           key,
           label,
           params: { category: i ? key : null },
-          unread:
-            mine.filter((n) =>
-              !n.read && (!category || n.category === category)
-            ).length,
+          unread: unreadCount(category ?? undefined),
         }))}
       />
       <div class='slab mr-2 overflow-hidden'>
-        {list.map((notification) => (
-          <Row key={notification.id} notification={notification} />
-        ))}
-        {!list.length && (
+        <InfiniteList
+          key={tab}
+          more={more}
+          onMore={() => loadNotificationBatch(tab)}
+          end='Tu as tout vu.'
+        >
+          {list.map((notification) => (
+            <Row key={notification.id} notification={notification} />
+          ))}
+        </InfiniteList>
+        {!list.length && !more && (
           <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
             <span class='font-display text-[17px] leading-[22px] font-semibold'>
               Rien de neuf ici

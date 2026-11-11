@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { A } from '@01edu/signal-router'
 import { ImagePlus, Play } from '/web/assets/icons.tsx'
 import { isMe, personOf } from '/web/fixtures/people.ts'
@@ -19,6 +20,7 @@ import { Progress } from '/web/ui/progress.tsx'
 import { t } from '/web/lib/language.ts'
 import { VideoEmbed } from '/web/ui/video.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const Card = (
   { class: className, children }: {
@@ -170,26 +172,41 @@ const Team = ({ project }: { project: Project }) => {
   const more = Math.max(0, project.contributors - project.members.length)
   return (
     <Card class='gap-3 p-5'>
-      <Eyebrow>Équipe</Eyebrow>
-      {project.members.map(({ login, role }) => (
-        <A
-          key={login}
-          href={`@${login}`}
-          class='flex items-center gap-3 text-ink no-underline hover:no-underline'
-        >
-          <Avatar
-            name={personOf(login).name}
-            src={personOf(login).avatarUrl}
-            size={34}
-          />
-          <span class='flex flex-col'>
-            <span class='font-display text-[14px] leading-5 font-semibold'>
-              {personOf(login).name}
-            </span>
-            <span class='text-[12px] leading-4 text-ink-muted'>{role}</span>
-          </span>
-        </A>
-      ))}
+      <Eyebrow>
+        {project.members.length > 6
+          ? t`Équipe · ${project.members.length}`
+          : 'Équipe'}
+      </Eyebrow>
+      {
+        /* About six people high: the others scroll inside, by batches, so a
+        large team does not stretch the page (§12.7) */
+      }
+      <ScrollFrame class='-mr-2 max-h-[300px] pr-2'>
+        <Batched
+          items={project.members}
+          reset={project.slug}
+          class='flex flex-col gap-3'
+          row={({ login, role }) => (
+            <A
+              key={login}
+              href={`@${login}`}
+              class='flex items-center gap-3 text-ink no-underline hover:no-underline'
+            >
+              <Avatar
+                name={personOf(login).name}
+                src={personOf(login).avatarUrl}
+                size={34}
+              />
+              <span class='flex flex-col'>
+                <span class='font-display text-[14px] leading-5 font-semibold'>
+                  {personOf(login).name}
+                </span>
+                <span class='text-[12px] leading-4 text-ink-muted'>{role}</span>
+              </span>
+            </A>
+          )}
+        />
+      </ScrollFrame>
       {more > 0 && (
         <span class='text-[13px] text-ink-muted'>
           + {counted(more, 'contributeur')} sur GitHub

@@ -48,6 +48,7 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { InfiniteList, useBatches } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { PostCard } from '/web/ui/post.tsx'
@@ -202,7 +203,8 @@ const HelpInsert = (
   </article>
 )
 
-type FeedItem = { at: number; key: string; node: JSX.Element }
+// `node` is built only for the items a batch shows
+type FeedItem = { at: number; key: string; node: () => JSX.Element }
 
 /** Posts, reposts, GitHub events and a matching help request (§6.2) */
 const feedItems = (tab: FeedTab): FeedItem[] => {
@@ -240,7 +242,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
     .map(({ at, post, repostBy }) => ({
       at,
       key: post.id,
-      node: <PostCard key={post.id} post={post} repostBy={repostBy} />,
+      node: () => <PostCard post={post} repostBy={repostBy} />,
     }))
   if (tab === 'for-you' || tab === 'following') {
     const events = mine.flatMap((project) =>
@@ -251,7 +253,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
         .map((entry) => ({
           at: entry.at,
           key: `${project.slug}-${entry.at}-${entry.text}`,
-          node: (
+          node: () => (
             <GithubEvent
               project={project}
               text={entry.text}
@@ -263,7 +265,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
     )
     items = [...items, ...events].sort((a, b) => b.at - a.at)
   }
-  items = items.slice(0, 30)
+  // Every item: the page shows them by batches (§12.7)
   if (tab === 'for-you') {
     const top = matchingRequests(me).find(({ request }) =>
       !dismissedHelp.value.includes(request.id)
@@ -272,7 +274,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
       items.splice(Math.min(1, items.length), 0, {
         at: 0,
         key: `help-${top.request.id}`,
-        node: <HelpInsert request={top.request} score={top.score} />,
+        node: () => <HelpInsert request={top.request} score={top.score} />,
       })
     }
   }
@@ -507,7 +509,8 @@ const Rail = () => {
   return (
     <aside
       aria-label='Pour toi'
-      class='sticky top-24 hidden max-h-[calc(100vh-112px)] flex-col gap-6 overflow-y-auto overscroll-contain pr-2.5 pb-4 [scrollbar-color:transparent_transparent] [scrollbar-width:thin] hover:[scrollbar-color:var(--line-control)_transparent] min-[1100px]:flex'
+      data-scroller=''
+      class='sticky top-24 hidden max-h-[calc(100vh-112px)] flex-col gap-6 overflow-y-auto pr-2.5 pb-4 [scrollbar-color:transparent_transparent] [scrollbar-width:thin] hover:[scrollbar-color:var(--line-control)_transparent] min-[1100px]:flex'
     >
       <RailSection title={matchTitle} accent>
         {matches.slice(0, 3).map(({ request, score }) => (
@@ -625,6 +628,7 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
     'for-you'
   const items = feedItems(current)
+  const { shown, more, next } = useBatches(items, current)
   const { matches, waiting } = homeData()
   return (
     <Page
@@ -656,7 +660,14 @@ export const HomePage = () => {
             params: { feed: i ? key : null },
           }))}
         />
-        {items.map((item) => <div key={item.key}>{item.node}</div>)}
+        <InfiniteList
+          more={more}
+          onMore={next}
+          end='Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.'
+          class='flex flex-col gap-5'
+        >
+          {shown.map((item) => <div key={item.key}>{item.node()}</div>)}
+        </InfiniteList>
         {!items.length && (
           <div class='mr-2 rounded-lg border border-dashed border-line-control px-6 py-8 text-center text-ink-muted'>
             {emptyTexts[current]}

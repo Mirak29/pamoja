@@ -6,7 +6,9 @@ import { counted } from '/web/lib/plural.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { type Login, me } from '/web/fixtures/people.ts'
-import type { ApiOutput } from '/web/lib/api.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
+import { assign, batchedLists, replaceTop, upsert } from '/web/lib/batches.ts'
+import type { Issue } from '/web/fixtures/issues.ts'
 import {
   type Project,
   type ProjectRole,
@@ -233,6 +235,101 @@ const bringRepo = (key: ProjectSlug, repo: Repo) => {
 }
 
 type ApiProject = ApiOutput['GET/api/projects'][number]
+type ApiRepo = NonNullable<ApiProject['repository']>
+type ApiIssue = ApiRepo['issues']['items'][number]
+type ApiPull = ApiRepo['pullRequests']['items'][number]
+
+const toIssue = (key: ProjectSlug, issue: ApiIssue): Issue => ({
+  number: issue.number,
+  project: key,
+  title: issue.title,
+  labels: issue.labels,
+  author: issue.authorLogin as Login,
+  comments: issue.comments,
+  state: issue.state === 'closed' ? 'closed' : 'open',
+  at: issue.createdAt * 1000,
+  demo: false,
+})
+
+const toPull = (key: ProjectSlug, pull: ApiPull): PullRequest => ({
+  number: pull.number,
+  project: key,
+  title: pull.title,
+  author: pull.authorLogin as Login,
+  branch: pull.branch,
+  state: pull.state as PullRequest['state'],
+  // A review seen on GitHub: no longer waiting (§6.4)
+  review: pull.reviewed ? 'received' : 'waiting',
+  ci: 'ok',
+  at: pull.createdAt * 1000,
+  skills: pull.skills,
+  demo: false,
+})
+
+/*
+ * The issues and PRs of a project of the API come by batches of 20 (§12.7):
+ * the first with the project, the next ones as its tabs scroll. The issues
+ * for a first contribution have batches of their own, filtered by the server.
+ */
+
+/** A list of a project: its open issues, those for beginners, its PRs */
+export type ProjectList = 'issues' | 'beginners' | 'pulls'
+
+/** The order of the PR tab, as the server sorts them: open ones first */
+export const pullOrder = (pull: { state: string; number: number }) =>
+  (pull.state === 'open' ? 1e9 : 0) + pull.number
+
+const issueOrder = (issue: Issue) => issue.number
+
+type Row = { project: string; number: number }
+const rowId = (row: Row) => `${row.project}#${row.number}`
+
+/** The cursors of the lists of the projects, by `${slug} ${list}` */
+export const projectLists = batchedLists<`${string} ${ProjectList}`>(
+  async (at, before) => {
+    const [slug, list] = at.split(' ') as [ProjectSlug, ProjectList]
+    if (list === 'pulls') {
+      const batch = await api['GET/api/project/pulls'].fetch({ slug, before })
+      const fresh = batch.items.map((p) => toPull(slug, p))
+      assign(pullRequests, upsert(pullRequests, fresh, rowId))
+      projectsChanged.value++
+      return { next: batch.next, orders: fresh.map(pullOrder) }
+    }
+    const filter = list === 'beginners' ? 'good-first-issue' : ''
+    const batch = await api['GET/api/project/issues']
+      .fetch({ slug, before, filter })
+    const fresh = batch.items.map((i) => toIssue(slug, i))
+    assign(issues, upsert(issues, fresh, rowId))
+    projectsChanged.value++
+    return { next: batch.next, orders: fresh.map(issueOrder) }
+  },
+)
+
+/** The next batch of a list of a project of the API */
+export const loadProjectList = (slug: string, list: ProjectList) =>
+  projectLists.load(`${slug} ${list}`)
+
+// A first batch read again with the project: what it no longer holds of
+// its range is gone on GitHub
+const replaceFirst = <T extends Row>(
+  list: T[],
+  slug: string,
+  name: ProjectList,
+  fresh: T[],
+  order: (row: T) => number,
+  next: string,
+) => {
+  assign(
+    list,
+    replaceTop(list, fresh, {
+      idOf: rowId,
+      order,
+      next,
+      among: (row) => row.project === slug,
+    }),
+  )
+  projectLists.first(`${slug} ${name}`, { next, orders: fresh.map(order) })
+}
 
 export const roleNames: Record<string, ProjectRole> = {
   owner: 'Propriétaire',
@@ -276,9 +373,13 @@ export const adoptProjects = (list: ApiProject[]) => {
       languages: repo?.languages.map(({ name, share }) => [name, share]),
       description: project.description,
       vision: project.vision || undefined,
-      about: repo?.readme ? readmeSummary(repo.readme) : undefined,
+      about: repo?.about || undefined,
       contributors: repo?.contributors ?? project.members.length,
-      openIssues: repo?.issues.filter((i) => i.state === 'open').length ?? 0,
+      // Counted by the server: only the first batch travels with the project
+      openIssues: repo?.openIssues ?? 0,
+      beginnerIssues: repo?.beginnerIssues ?? 0,
+      openPullRequests: repo?.openPullRequests ?? 0,
+      waitingReview: repo?.waitingReview ?? 0,
       release: repo?.release || '—',
       releasedAt: (repo?.releasedAt || project.createdAt) * 1000,
       members: project.members.map(({ login, role }) => ({
@@ -298,55 +399,24 @@ export const adoptProjects = (list: ApiProject[]) => {
       demo: false,
     }
     boards[key] ??= []
-    // The GitHub issues and PRs replace those already shown for it
-    for (const list of [issues, pullRequests] as { project: string }[][]) {
-      for (let i = list.length - 1; i >= 0; i--) {
-        list[i].project === key && list.splice(i, 1)
-      }
-    }
-    for (const issue of repo?.issues ?? []) {
-      issues.push({
-        number: issue.number,
-        project: key,
-        title: issue.title,
-        labels: issue.labels,
-        author: issue.authorLogin as Login,
-        comments: issue.comments,
-        state: issue.state === 'closed' ? 'closed' : 'open',
-        at: issue.createdAt * 1000,
-        demo: false,
-      })
-    }
-    for (const pull of repo?.pullRequests ?? []) {
-      pullRequests.push({
-        number: pull.number,
-        project: key,
-        title: pull.title,
-        author: pull.authorLogin as Login,
-        branch: pull.branch,
-        state: pull.state as PullRequest['state'],
-        // A review seen on GitHub: no longer waiting (§6.4)
-        review: pull.reviewed ? 'received' : 'waiting',
-        ci: 'ok',
-        at: pull.createdAt * 1000,
-        skills: pull.skills,
-        demo: false,
-      })
-    }
+    // The first batch of the GitHub issues and PRs replaces the one shown;
+    // the older batches the tabs read stay, with their cursor
+    replaceFirst(
+      issues,
+      key,
+      'issues',
+      (repo?.issues.items ?? []).map((i) => toIssue(key, i)),
+      issueOrder,
+      repo?.issues.next ?? '',
+    )
+    replaceFirst(
+      pullRequests,
+      key,
+      'pulls',
+      (repo?.pullRequests.items ?? []).map((p) => toPull(key, p)),
+      pullOrder,
+      repo?.pullRequests.next ?? '',
+    )
   }
   projectsChanged.value++
 }
-
-/**
- * The first paragraphs of a README, without its headings, badges, code or
- * HTML: Markdown, shown by the Markdown of the members (§16)
- */
-export const readmeSummary = (readme: string) =>
-  readme.replace(/```[\s\S]*?```/g, '').replace(/<[^>]*>/g, '')
-    .split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .filter((block) =>
-      block && !block.startsWith('#') && !block.startsWith('![') &&
-      !block.startsWith('[![') && !block.startsWith('<')
-    )
-    .join('\n\n').slice(0, 600)

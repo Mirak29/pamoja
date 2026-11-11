@@ -1,3 +1,4 @@
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { signal } from '@preact/signals'
 import { A } from '@01edu/signal-router'
 import { Check, Send } from '/web/assets/icons.tsx'
@@ -31,6 +32,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const roles: [ProjectRole, string][] = [
   ['Propriétaire', 'Gère le projet, ses réglages et la synchro.'],
@@ -85,51 +87,58 @@ const PersonLink = (
   </A>
 )
 
-/** Members and their role, which the owner changes (except their own) */
+/**
+ * Members and their role, which the owner changes (except their own). About
+ * ten rows high: the others scroll inside, by batches (§12.7)
+ */
 export const MemberRows = (
   { project, isOwner }: { project: Project; isOwner: boolean },
 ) => (
-  <>
-    {project.members.map((member) => {
-      const person = personOf(member.login)
-      return (
-        <div
-          key={member.login}
-          class='flex flex-wrap items-center gap-3.5 border-t border-line px-5 py-3.5'
-        >
-          <PersonLink
-            login={member.login}
-            size={38}
-            detail={`@${member.login} · ${placeOf(person)}`}
-          />
-          {isOwner && member.role !== 'Propriétaire'
-            ? (
-              <select
-                aria-label={t`Rôle de ${person.name}`}
-                value={member.role}
-                onChange={(event) => {
-                  member.role = event.currentTarget.value as ProjectRole
-                  logActivity(
-                    project.slug as ProjectSlug,
-                    `${person.name} devient ${member.role}`,
-                  )
-                }}
-                class='well h-9 px-2.5 text-[14px] leading-none text-ink'
-              >
-                {roles.slice(1).map(([role]) => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            )
-            : (
-              <span class='tile inline-flex h-7 items-center rounded-[5px] px-2.5 text-[13px] leading-none font-semibold whitespace-nowrap'>
-                {member.role}
-              </span>
-            )}
-        </div>
-      )
-    })}
-  </>
+  <ScrollFrame class='max-h-[640px]'>
+    <Batched
+      items={project.members}
+      reset={project.slug}
+      row={(member) => {
+        const person = personOf(member.login)
+        return (
+          <div
+            key={member.login}
+            class='flex flex-wrap items-center gap-3.5 border-t border-line px-5 py-3.5'
+          >
+            <PersonLink
+              login={member.login}
+              size={38}
+              detail={`@${member.login} · ${placeOf(person)}`}
+            />
+            {isOwner && member.role !== 'Propriétaire'
+              ? (
+                <select
+                  aria-label={t`Rôle de ${person.name}`}
+                  value={member.role}
+                  onChange={(event) => {
+                    member.role = event.currentTarget.value as ProjectRole
+                    logActivity(
+                      project.slug as ProjectSlug,
+                      `${person.name} devient ${member.role}`,
+                    )
+                  }}
+                  class='well h-9 px-2.5 text-[14px] leading-none text-ink'
+                >
+                  {roles.slice(1).map(([role]) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              )
+              : (
+                <span class='tile inline-flex h-7 items-center rounded-[5px] px-2.5 text-[13px] leading-none font-semibold whitespace-nowrap'>
+                  {member.role}
+                </span>
+              )}
+          </div>
+        )
+      }}
+    />
+  </ScrollFrame>
 )
 
 const Members = (

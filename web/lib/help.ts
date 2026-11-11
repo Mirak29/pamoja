@@ -9,6 +9,46 @@ import { counted } from '/web/lib/plural.ts'
 import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
+import { batchedLists } from '/web/lib/batches.ts'
+
+/*
+ * The tabs of the help page come by batches of 20 (§12.7): the first when a
+ * tab opens, the next ones on demand. The requests join those of the pages.
+ */
+
+export type HelpListTab = 'for-me' | 'mine' | 'accepted' | 'projects'
+
+const readBatch = async (tab: HelpListTab, before: string) => {
+  if (tab === 'for-me') {
+    const batch = await api['GET/api/help/for-me'].fetch({ before })
+    adoptHelpRequests(batch.items)
+      .forEach((request, i) => request.myScore = batch.items[i].score)
+    return { next: batch.next }
+  }
+  const batch = await api['GET/api/help'].fetch({ tab, before })
+  adoptHelpRequests(batch.items)
+  return { next: batch.next }
+}
+
+/**
+ * The cursors of the tabs: each tab filters the requests of the pages, its
+ * batches bring its own (§12.7)
+ */
+export const helpLists = batchedLists(readBatch)
+
+/** The next batch of a tab, the first one if none was read; once at a time */
+export const loadHelpBatch = (tab: HelpListTab) => helpLists.load(tab)
+
+/**
+ * The newest requests again, after a change: the first batch of all of them
+ * and of « Pour moi ». The older batches already read keep their cursor.
+ */
+export const reloadHelpRequests = () =>
+  Promise.all([
+    api['GET/api/help'].fetch({ tab: '', before: '' })
+      .then((batch) => adoptHelpRequests(batch.items)),
+    readBatch('for-me', '').then((batch) => helpLists.first('for-me', batch)),
+  ]).catch(() => {})
 
 // A real help request plays its lifecycle on the server (§7.2); the demo ones
 // keep playing it in the page (actOnHelp). The page reads the answer as the

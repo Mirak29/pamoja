@@ -1582,6 +1582,13 @@ export const english: Record<string, string> = {
   'Captures et vidéo du projet': 'Project screenshots and video',
   'Vidéo': 'Video',
   'Post non publié': 'Post not published',
+  'Charger plus': 'Load more',
+  'restante': 'left',
+  'restantes': 'left',
+  'Chargement…': 'Loading…',
+  'Tu as tout vu.': 'You have seen everything.',
+  'Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.':
+    'You have seen everything. Follow developers or communities to see more posts.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
@@ -1862,4 +1869,7 @@ export const englishTemplates: Record<string, string> = {
   'Captures de la demande': 'Screenshots of the request',
   'Lire : {0}': 'Play: {0}',
   'Images du post': 'Images of the post',
+  'Afficher plus de réponses · {0}': 'Show more replies · {0}',
+  'En train de construire · {0}': 'Currently building · {0}',
+  'Équipe · {0}': 'Team · {0}',
 }

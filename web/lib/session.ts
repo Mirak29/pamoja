@@ -1,6 +1,6 @@
 import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
-import { adoptHelpRequests } from '/web/fixtures/help.ts'
+import { reloadHelpRequests } from '/web/lib/help.ts'
 import { adoptUser, me } from '/web/fixtures/people.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -38,7 +38,7 @@ const setUser = (user: User) => {
   currentUser.value = user
   if (first) {
     loadProjects()
-    loadHelpRequests()
+    reloadHelpRequests()
     loadPosts()
   }
   return user
@@ -47,19 +47,6 @@ const setUser = (user: User) => {
 /** The projects of the developer, imported ones included (§5.4) */
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
-
-/**
- * The help requests the developer wrote, accepted, or of their projects, and
- * those the matching sent them, with their score (§7.3)
- */
-export const loadHelpRequests = () =>
-  Promise.all([
-    api['GET/api/help'].fetch().then(adoptHelpRequests),
-    api['GET/api/help/for-me'].fetch().then((list) => {
-      const adopted = adoptHelpRequests(list)
-      adopted.forEach((request, i) => request.myScore = list[i].score)
-    }),
-  ]).catch(() => {})
 
 api['GET/api/user/me'].fetch().then(
   setUser,

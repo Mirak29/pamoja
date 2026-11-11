@@ -22,63 +22,63 @@ Une tâche abandonnée ou fusionnée va dans la section « Fermé sans réalisat
 Vérification de la stack annoncée par rapport au code de Tournament et correction des écarts : build esbuild au lieu de Vite, routes de `@01edu/api` sans paramètre de chemin, réglages SQLite à appliquer soi-même, permissions GitHub.
 
 - **Livrable** : retour technique transmis à l'équipe.
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Cahier des charges de référence
 
 Rédaction du cahier des charges en 20 sections : produit, règles métier, architecture, modèle de données, routes, sécurité, démo. Les faits techniques sont vérifiés dans le code source de `@01edu`.
 
 - **Livrable** : `docs/cahier-des-charges.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Conception de l'intégration GitHub
 
 GitHub App en lecture seule, repos publics uniquement, aucun token utilisateur stocké, import en deux niveaux (vitrine sans installation, synchro live avec installation), webhooks dans une file qui survit aux redémarrages.
 
 - **Livrable** : `docs/cahier-des-charges.md` §5
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Intégration d'une relecture externe
 
 Corrections issues d'une relecture : trois contrôles de droits à l'installation de l'app, cycle de vie complet d'une demande d'aide, réputation fondée sur des preuves figées et des règles anti-abus, modération, critères d'acceptation par bloc.
 
 - **Livrable** : `docs/cahier-des-charges.md` §4, §5, §7, §8, §10.5
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Choix d'infrastructure
 
 Hébergement chez Systalink (imposé), Caddy comme reverse proxy, Meilisearch pour la recherche, images uploadées et vidéos intégrées par lien.
 
 - **Livrable** : `docs/cahier-des-charges.md` §10.4, §17
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Organisation des projets en canaux
 
 Quatre canaux imposés par projet, façon Discord : `#général`, `#suivi`, `#aide`, `#annonces`. Les alertes GitHub et CI/CD de `#suivi` mènent à la boucle d'aide (« Demander de l'aide », « Demander une review »).
 
 - **Livrable** : `docs/cahier-des-charges.md` §6.8
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Nom et inscription au concours
 
 Choix du nom Pamoja (« ensemble » en swahili) et rédaction des textes du formulaire CADEV : description et stack.
 
 - **Livrable** : `docs/cadev-inscription.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Mise en place du suivi de projet
 
 Création du repo, de la todo (identifiants `PAM-xxx`, planning, critères d'acceptation, règles de mise à jour, journal des décisions) et du `CLAUDE.md` partagé avec niangoos.
 
 - **Livrable** : `TODO.md`, `CLAUDE.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Brief du prototype
 
 Brief autonome pour Claude Design : 47 écrans, 11 parcours jouables, données fictives cohérentes, règles métier visibles, panneau de démo.
 
 - **Livrable** : `docs/brief-prototype-claude-design.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ## Réalisé
 
@@ -87,21 +87,21 @@ Brief autonome pour Claude Design : 47 écrans, 11 parcours jouables, données f
 Projet sur 10 jours, du mercredi 7 au vendredi 16 octobre 2026, avec un planning par bloc.
 
 - **Livrable** : `TODO.md` (section Planning)
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-007 · Valider l'identité visuelle
 
 Design system Pamoja (couleurs clair et sombre, typographie, logo, composants), complété par le système isométrique issu du prototype : dalles, touches, puits, formes par type d'objet.
 
 - **Livrable** : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb), `docs/identite/`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-008 · Produire le prototype complet
 
 Prototype interactif Pamoja v2 réalisé avec Claude Design : pages, parcours, données fictives et panneau de démo. Ses écarts validés sont reportés dans le cahier des charges.
 
 - **Livrable** : `docs/prototype/` (avec la liste de ce que le code ne reprend pas)
-- **Par** : Abdou, avec Claude Design
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-101 · Initialiser le projet Deno
 
@@ -446,7 +446,7 @@ encore validé pour gel avant le back.** Aucun correctif applicatif livré par c
 audit ; les tâches de validation en production restent ouvertes.
 
 - **Livrable** : `docs/qa/2026-10-10/rapport-qa-front.md` et captures associées
-- **Par** : Codex, à la demande d'Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-10 · PAM-222 · Boucle d'aide, retours QA 2
 
@@ -710,6 +710,136 @@ Les non-lus des canaux ne se perdent plus au rechargement et suivent le dévelop
 
 - **Livrable** : `api/tracking.ts`, route `GET/api/project/tracking`, réponses sous une alerte dans `api/channels.ts`, `api/tracking_test.ts` (3 tests), `web/lib/tracking.ts`, `adoptTracking`, `loadTracking`, `answerAlert` et `reloadOpenedChannels`, onglet Canaux, page projet, `web/lib/live-data.ts`
 - **Par** : @niangoos
+### 2026-10-25 · PAM-529 · Longues listes, corrections rapides
+
+Avec les données du test de charge, plusieurs listes s'affichaient en entier ou étaient coupées sans le dire. Corrigé :
+
+- **Notifications** : le serveur n'en rendait que 100, sans moyen de voir les plus anciennes. Elles arrivent maintenant par lots de 20, et « Charger plus » lit les suivantes. Les compteurs (menu, cloche, onglets) viennent du serveur, qui compte toutes les non lues et pas seulement celles déjà chargées : « Toutes 1002 » avec 20 notifications affichées. La cloche de l'en-tête affiche « 9+ » comme le menu, au lieu de « 1002 ».
+- **Demandes d'aide** : le serveur en rendait 200, toutes mélangées. Chaque onglet (Pour moi, Mes demandes, Acceptées par moi, Demandes des projets) lit maintenant ses propres lots de 20, à son ouverture puis avec « Charger plus » ; « Pour moi » est trié par score. Le compteur d'un onglet n'apparaît qu'une fois tout lu, pour ne jamais afficher un faux total.
+- **Page d'un post** : les 500 réponses d'un fil s'affichaient d'un coup. Il y en a maintenant 20 au premier niveau, puis « Afficher plus de réponses · 480 restantes ».
+- **Board** : une colonne grandissait avec ses cartes. Elle ne dépasse plus la hauteur de l'écran (480 px au moins), et ses cartes défilent à l'intérieur.
+
+Le lot suivant se demande par curseur (la date ou le score, et l'id du dernier élément reçu), jamais par numéro de page : une notification qui arrive entre deux lots ne décale ni ne répète rien. Trouvé en écrivant le test : `Number.MAX_VALUE`, un entier pour JavaScript, est lié en entier 64 bits par le pilote SQLite et déborde ; le curseur de départ utilise `Number.MAX_SAFE_INTEGER`.
+
+Vérifié dans le navigateur avec `deno task stress` (3 000 notifications, 1 500 demandes « Pour moi ») et `?stress` (fil de 500 réponses) : lots de 20, compteurs exacts, « Charger plus » sur chaque liste, colonnes du board bornées.
+
+- **Livrable** : `api/lib/cursor.ts`, `api/notifications.ts`, `api/help.ts`, `api/help-lifecycle.ts`, `api/routes.ts`, tests (`notifications_test.ts`, `help_test.ts`, `matching_test.ts`) ; `web/lib/notifications.ts`, `web/lib/help.ts`, `web/lib/session.ts`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/project/board-tab.tsx`, `web/ui/navigation.tsx`, `web/ui/header.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-530 · Listes chargées au défilement (InfiniteList)
+
+Les longues listes se chargent maintenant comme sur un réseau social : le lot suivant arrive tout seul un peu avant la fin de la liste (800 px), sans clic. Le bouton « Charger plus » reste sous la liste pour le clavier, les lecteurs d'écran et un navigateur qui ne sait pas suivre le défilement ; la fin de la liste est dite (« Tu as tout vu. »).
+
+- **Accueil** : le fil n'est plus coupé à 30 publications, il continue par lots de 20 jusqu'à la dernière.
+- **Explore** (développeurs, projets), **liste des communautés**, **posts et membres d'une communauté** : par lots de 20 ; un changement de filtre, d'onglet ou de communauté repart du premier lot.
+- **Notifications** et **demandes d'aide** : les lots du serveur de PAM-529 se chargent au défilement au lieu du seul bouton.
+
+La brique tient dans `web/ui/infinite-list.tsx` : `InfiniteList` pour une liste du serveur (s'il en reste, et comment lire la suite), `Batched` et `useBatches` pour une liste déjà en mémoire, comme les écrans encore sur données fictives. Le fil social de l'API (PAM-501) s'y branchera avec le curseur de `api/lib/cursor.ts`.
+
+Vérifié dans le navigateur avec `?stress` (2 000 posts, 3 000 développeurs) : 20 publications, puis le lot suivant au défilement sans perdre la position ; Explore par lots de 20, ramené au premier lot quand on choisit un skill ; notifications et « Pour moi » chargés au défilement. Le chargement automatique ne se voit que si l'onglet est affiché : le navigateur ne suit pas le défilement d'un onglet caché, le bouton prend alors le relais.
+
+- **Livrable** : `web/ui/infinite-list.tsx` ; `web/pages/home/home-page.tsx`, `web/pages/explore/explore-page.tsx`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/notifications.tsx`, `web/pages/help/help-list.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Charge du serveur
+
+À la relecture de PAM-529 et PAM-530, une partie de la charge restait : ces tâches limitaient surtout l'affichage. Audit mesuré sur la base de `deno task stress` (5 000 développeurs, 1 200 conversations, un dépôt de 3 000 issues et 2 000 PRs), plans de requête SQLite compris, puis corrections, chacune vérifiée.
+
+Ce que l'audit a trouvé :
+
+- `GET/api/projects` renvoyait 909 Ko : tous les projets avec tous leurs membres, issues, PRs et le README entier, relu par chaque membre à chaque événement de PR ou de CI.
+- `GET/api/conversations` renvoyait les 1 200 conversations en 148 ms, en calculant le dernier message et les non lus de chacune, et elle était relue à chaque message.
+- Les requêtes par lots de PAM-529 lisaient toutes les lignes de l'utilisateur puis les triaient avant d'en garder 20 (`USE TEMP B-TREE FOR ORDER BY`) ; « Acceptées par moi » parcourait toute la table, faute d'index ; la liste de toutes les demandes d'aide, lue à chaque connexion, parcourait toute la table à cause d'un `OR`.
+- Aucune réponse n'était compressée : la compression de `Deno.serve` est désactivée par défaut.
+
+Ce qui a changé :
+
+- **Index composés** qui suivent chaque requête par lots (notifications, onglets de l'aide, « Pour moi », fil d'une conversation, issues et PRs d'un projet, dont un index sur expression pour les PRs ouvertes d'abord) ; les `OR` deviennent des `UNION` de lectures d'index limitées au lot (aide, activité d'un profil). Plus aucun tri de la liste entière dans les plans : la liste de toutes les demandes d'aide prend 0,3 ms.
+- **Projets** : la liste porte des comptes exacts (issues ouvertes, good first issues, PRs ouvertes, PRs en attente de review), le premier lot d'issues ouvertes et de PRs, et le résumé du README. Les onglets Issues et PRs lisent la suite par lots au défilement (`GET/api/project/issues`, `GET/api/project/pulls`) ; un rechargement garde les lots déjà lus. 909 Ko deviennent 96 Ko, 3,6 Ko compressés.
+- **Conversations** : par lots de 20 ; les ids du lot d'abord, puis le détail de ces 20 seulement. Le compteur du menu vient du serveur et s'arrête à 99, puisque le menu affiche « 9+ ». « Écrire » depuis un profil retrouve une conversation plus ancienne que les lots lus (`GET/api/conversation/with`). 433 Ko en 148 ms deviennent 7 Ko en 6 ms, 0,8 Ko compressés.
+- **Temps réel** : un message relit le premier lot de la liste, pas toute la liste. Un onglet caché ne relit rien et relit une fois en redevenant visible. Un événement de projet fait attendre chaque membre un moment au hasard (jusqu'à 1,5 s) avant de relire. La réputation n'est relue que pour le profil à l'écran, plus pour tous ceux vus depuis l'ouverture.
+- **Compression** par Deno en dev comme en production, jamais pour le flux SSE (`no-transform`). **Cache** : morceaux du bundle hachés gardés un an, page et fichiers sans hash revalidés par ETag. Caddy ne compresse pas une seconde fois (§17.4).
+
+Vérifié dans le navigateur sur la base de charge : conversations par lots, y compris au défilement de leur colonne, compteur « 9+ » du serveur, « Écrire » vers une conversation non chargée, onglets d'un dépôt de 3 000 issues avec « 1334 PRs ouvertes · 1334 en attente de review » pour 40 PRs chargées. Sources consultées : la documentation SQLite sur le [planificateur](https://www.sqlite.org/queryplanner.html) et sur les [nombreuses petites requêtes](https://www.sqlite.org/np1queryprob.html), et la [documentation de `Deno.serve`](https://docs.deno.com/runtime/fundamentals/http_server/) sur la compression automatique.
+
+- **Livrable** : `api/schema.ts` (index), `api/help.ts`, `api/messages.ts`, `api/projects.ts`, `api/routes.ts`, `api/events.ts`, `prod-server.ts`, `.env-dev`, tests (`projects_test.ts`, `messages_test.ts`, `import_test.ts`, `help_test.ts`) ; `web/lib/messages.ts`, `web/lib/realtime.ts` (`whenShown`), `web/lib/live-data.ts`, `web/lib/notifications.ts`, `web/lib/reputation.ts`, `web/fixtures/repos.ts`, `web/fixtures/projects.ts`, `web/ui/infinite-list.tsx` (défilement d'une colonne), `web/ui/project-card.tsx`, `web/pages/messages-page.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx` ; §12.7, §15, §17.4
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Retour sur les listes : notifications, bouton, profil
+
+Corrigé après un retour sur la branche :
+
+- **Un onglet des notifications vide ou presque proposait « Charger plus »**, et la page lisait en fond les lots de toutes les catégories pour tenter de le remplir (vérifié : `before=…_20`, `_40`, `_60`… pour l'onglet Communautés vide), jusqu'à toute la boîte. Le filtre par catégorie se faisait dans la page. Chaque onglet lit maintenant sa catégorie côté serveur (`GET/api/notifications?category=`, index par catégorie) avec ses propres lots : l'onglet Communautés vide fait une requête et dit « Rien de neuf ici », l'onglet Social montre sa notification sans bouton.
+- **Le bouton « Charger plus » restait affiché** même quand la liste se chargeait seule. Il est maintenant caché tant qu'il n'a pas le focus (clavier, lecteur d'écran) et « Chargement… » s'affiche pendant la lecture. Il ne réapparaît que si la liste ne peut pas se charger seule.
+- **Garde-fous dans la brique** : une liste dont le dernier lot n'a ajouté aucune ligne cesse de charger seule (le bouton reprend la main), ce qui empêche toute lecture en chaîne ; un verrou évite deux lectures à la fois ; la position est vérifiée une fois à la main après chaque lot, en plus de l'observateur.
+- **Projets d'un profil** : la liste « En train de construire » s'affichait en entier. Elle tient dans un cadre d'environ trois cartes, qui défile à l'intérieur et se charge par lots, avec le nombre de projets dans le titre (« En train de construire · 61 »).
+
+Vérifié dans le navigateur sur la base de charge, en naviguant dans l'app comme dans le retour : onglets Communautés et Social sans bouton ni lecture en chaîne, « Toutes » chargé au défilement avec le bouton caché, Explore chargé au défilement après le passage par les notifications, cadre des projets du profil chargé à son défilement (20 puis 40 cartes).
+
+- **Livrable** : `api/notifications.ts`, `api/routes.ts`, `api/schema.ts`, `api/notifications_test.ts` ; `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/ui/infinite-list.tsx`, `web/pages/profile/profile-page.tsx`, traductions ; §12.7, §15
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Page Messages trop longue, sections d'un projet dans des cadres
+
+- **La page Messages défilait sur un grand vide** : 1 771 px de haut pour un écran de 768. Le bouton « Charger plus » caché de la liste des conversations est placé en position absolue ; sans ancêtre positionné, il sortait de la colonne qui défile et rallongeait toute la page. Le pied de liste est maintenant `relative` : le bouton reste dans sa liste. La page Messages retrouve la hauteur de l'écran ; le cadre des projets d'un profil avait le même défaut.
+- **Page projet** : comme les projets d'un profil, les longues sections tiennent dans un cadre qui défile à l'intérieur et se charge par lots : l'équipe dans l'aperçu (environ six personnes, « Équipe · 400 »), les membres de l'onglet Équipe (et des Réglages, qui réutilisent la liste), les listes des onglets Issues et PRs. Sur le dépôt de test (400 membres, 3 000 issues, 2 000 PRs), l'aperçu passe de 20 482 à 1 594 px de haut, l'onglet Équipe de 27 862 à 1 702 px, Issues et PRs vers 1 600 px.
+
+- **Livrable** : `web/ui/infinite-list.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/project/team-tab.tsx`, `web/pages/project/issues-tab.tsx`, `web/pages/project/pull-requests-tab.tsx`, traductions ; §12.7
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Page Projets dans des cadres
+
+La page Projets listait tous les projets d'un coup : avec 61 projets, il fallait faire défiler toute la page pour arriver à « Projets que tu suis ». « Tes projets » tient maintenant dans un cadre d'environ deux rangées de cartes, qui défile à l'intérieur et se charge par lots ; « Projets que tu suis » suit la même logique dans son propre cadre. Vérifié sur la base de charge : la page passe à 1 251 px de haut, les projets suivis sont visibles juste sous le cadre, et le défilement du cadre charge les cartes suivantes (20 puis 40).
+
+- **Livrable** : `web/pages/projects/projects-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Communautés dans des cadres
+
+- **Page Communautés** : les trois sortes (technologies, pays, domaines) étaient empilées en entier, et une longue sorte repoussait les suivantes. Chacune tient maintenant dans un cadre d'environ deux rangées, qui défile par lots, avec le nombre dans le titre (« Technologies · 103 »). Vérifié avec `?stress` (300 communautés de plus) : les trois sections se suivent, la page fait 2 027 px.
+- **Page d'une communauté** : les onglets Projets et Aide s'affichaient en entier ; ils se chargent par lots, comme les posts et les membres. Ces onglets n'ont qu'une liste chacun : ils défilent avec la page, comme un fil, sans cadre qui ajouterait une seconde barre de défilement.
+
+- **Livrable** : `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
+### 2026-10-25 · PAM-531 · Passage de relais du défilement
+
+Arrivé en haut ou en bas d'un cadre (projets d'un profil, page Projets, Communautés, équipe, issues et PRs d'un projet, colonnes du board, colonne de droite de l'Accueil), la molette semblait bloquée : `overscroll-contain` interdisait de passer à la page, et même sans lui le navigateur garde tout le geste sur le cadre jusqu'au geste suivant. Désormais le reste du geste passe à ce qui contient le cadre, la page au bout, dans le même mouvement : le cadre finit sa course, la page prend le reste, en glissant pour un cran de molette et au doigt près pour un pavé tactile. Les crans rapprochés s'additionnent : aucun n'est perdu pendant une glisse. Les cadres n'interdisent plus l'enchaînement, ce qui laisse le tactile enchaîner lui-même ; les colonnes de la messagerie le gardent, la page n'y défilant pas. Une fenêtre modale garde son geste.
+
+Vérifié dans le navigateur (`?stress`, page Communautés) : au milieu d'un cadre le navigateur garde la main ; en bas, la page descend ; avec 20 px de place pour un geste de 35, le cadre finit et la page prend 15 px ; en haut, la page remonte ; trois crans rapides font descendre la page de 300 px en glissant ; rien ne bouge depuis une fenêtre modale.
+
+- **Livrable** : `web/lib/scroll-handoff.ts`, `web/app.tsx`, cadres des pages (sans `overscroll-contain`) ; §12.7
+- **Par** : @Mirak29
+
+### 2026-11-11 · PAM-531 · Relecture des listes : bugs et nettoyage
+
+Relecture complète de la branche (`/simplify` puis `/code-review`), puis correction de tout ce qu'elle a relevé.
+
+- **Bugs** :
+  - une demande de message refusée restait dans la liste ;
+  - une liste pouvait cesser de se charger seule après un changement d'onglet ;
+  - le glissement du défilement pouvait revenir en arrière sans l'événement `scrollend` ;
+  - une notification supprimée côté serveur restait affichée ;
+  - un onglet d'aide restait vide, sans bouton, après une erreur réseau ;
+  - l'en-tête d'un projet de l'API comptait les lignes chargées (« 20 issues ouvertes ») au lieu des compteurs du serveur (2 250).
+- **Une seule mécanique de lots côté navigateur** (`web/lib/batches.ts`), utilisée par les notifications, l'aide, les messages, les issues et les PRs : un curseur par liste, un lot à la fois, un lot raté réessayé avec « Charger plus ». Une première page relue retire ce qui a disparu de sa plage. Chaque onglet montre les lignes jusqu'où ses propres lots sont allés, jamais celles qu'un autre onglet a lues plus bas, sous un trou. Chaque onglet ou filtre a sa propre liste (`key`), qui repart de zéro.
+- **Cadres défilants** : un composant `ScrollFrame` remplace les cadres écrits à la main. Il est positionné, pour que rien de caché n'en sorte, et marqué `data-scroller`, pour que les listes et le passage du défilement le trouvent sans relire les styles de la page à chaque cran de molette.
+- **Serveur** :
+  - un helper commun de lots (`readBatch`, `after`, `BATCH`) ;
+  - les issues « good first issue » filtrées par le serveur, avec leurs propres lots ;
+  - les onglets issues et PRs dans l'ordre du serveur ;
+  - « Pour moi » lu en 2 requêtes par lot au lieu de 2 par demande ;
+  - les onglets de l'aide lisent chaque source par son index, au lieu de trier toutes les demandes des projets ;
+  - les compteurs des projets lus en une requête groupée, et le README plus lu en entier ;
+  - le compteur de messages calculé avec la première page seulement ;
+  - le compteur de notifications non lues lu par son index ;
+  - la migration 013 retire deux index devenus inutiles.
+- **Petits nettoyages** : `readmeSummary` partagé entre l'API et l'aperçu d'import, un seul `debounced` pour les rechargements en temps réel, badge « 9+ » et schémas de curseur factorisés, cartes du fil construites seulement pour le lot affiché.
+
+Vérifié sur une copie de la base de `deno task stress` : lots de notifications et onglet Projets, filtre « good first issue » (2 250 / 450, réponse en 10 ms), PRs sans doublon, onglet d'aide en erreur puis réessayé, demande refusée qui disparaît. Le format, le lint, les types et les 183 tests passent.
+
+- **Livrable** : `web/lib/batches.ts`, `web/ui/scroll-frame.tsx`, `web/ui/infinite-list.tsx`, `web/lib/scroll-handoff.ts`, `api/lib/cursor.ts`, `api/lib/readme.ts`, `api/help.ts`, `api/projects.ts`, `migrations/013-drop-prefix-indexes.js` ; §12.7
+- **Par** : @Mirak29
 
 ## Audits QA
 
@@ -935,6 +1065,13 @@ Les fils sous un message de `#général`, `#aide` ou `#annonces` et le « +1 » 
 
 - **Livrable** : `api/channels.ts`, `api/routes.ts` (`POST/api/project/message/like`, `parent` à la création), `api/tracking.ts` ; `web/fixtures/channels.ts`, `web/lib/channels.ts`, `web/pages/project/channels-tab.tsx` ; 1 test de plus dans `api/channels_test.ts` ; cahier des charges §6.8
 - **Par** : @niangoos
+
+### 2026-10-26 · Diagnostic des tests de charge HTTP locaux
+
+Préparation de sessions distinctes pour 1 000 comptes synthétiques, scénario k6 mêlant lectures et écritures répétables, et nettoyage des sessions. Après un test à 1 000 VU avec un p95 de 25,8 s et 1,56 % d'échecs, ajout du drapeau local `PAMOJA_LOAD_TEST=1` : les événements informatifs HTTP ne calculent plus leurs piles d'appels et ne s'écrivent plus dans le terminal, tandis que les avertissements et les erreurs restent visibles. La procédure utilise le build de production local sans les watchers. L'effet sur la charge et la cause des refus TCP restent à mesurer ; aucun gain n'est encore confirmé.
+
+- **Livrable** : `api/lib/log.ts`, `qa/load/pamoja.js`, `qa/load/README.md`, `task-db-load-sessions.ts`, tâches de sessions dans `deno.json` et exclusion des cookies dans `.gitignore`
+- **Par** : @Mirak29
 
 ## Fermé sans réalisation
 

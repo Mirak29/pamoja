@@ -8,7 +8,8 @@ import { Cube } from '/web/ui/shapes.tsx'
 
 /** Open good first issues of a project */
 export const beginnerIssues = (project: Project) =>
-  issues.filter((issue) =>
+  // Counted by the server for a project of the API (§12.7)
+  project.beginnerIssues ?? issues.filter((issue) =>
     issue.project === project.slug && issue.state === 'open' &&
     issue.labels.includes('good first issue')
   ).length

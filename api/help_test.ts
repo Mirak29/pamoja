@@ -4,6 +4,7 @@ import { now } from '@01edu/time'
 import { languageOfFile, skillsOfFiles } from '/api/pull-skills.ts'
 import { readPullRequestSkills } from '/api/pull-skills.ts'
 import {
+  HelpRequest,
   Project,
   ProjectMember,
   PullRequest,
@@ -124,8 +125,10 @@ Deno.test('help: a request from a PR is published, open for 7 days', async () =>
     db.prepare('SELECT count(*) AS n FROM entry WHERE type = 22').get(),
     { n: 1 },
   )
-  const list = await call('/api/help', session)
-  assertEquals(list.json.map((h: { id: number }) => h.id), [created.json.id])
+  const list = await call('/api/help?tab=&before=', session)
+  assertEquals(list.json.items.map((h: { id: number }) => h.id), [
+    created.json.id,
+  ])
 })
 
 Deno.test('help: ten requests a day at most (§16)', async () => {
@@ -224,7 +227,10 @@ Deno.test('help: only a member asks for help on a project', async () => {
   })
   assertEquals(res.status, 403)
   // And the requests of another developer are not listed
-  assertEquals((await call('/api/help', session)).json, [])
+  assertEquals((await call('/api/help?tab=&before=', session)).json, {
+    items: [],
+    next: '',
+  })
 })
 
 Deno.test('help: a request needs a session', async () => {
@@ -260,6 +266,7 @@ Deno.test('pull skills: read once per head commit, shown on the PR', async () =>
   await readPullRequestSkills()
   const pulls = async () =>
     (await call('/api/projects', session)).json[0].repository.pullRequests
+      .items
   // The merged PR is not read
   assertEquals((await pulls()).map((p: { skills: string[] }) => p.skills), [
     ['Go', 'SQL'],
@@ -313,7 +320,7 @@ Deno.test('help: screenshots shown with the request, 4 at most (§17.3)', async 
   })
   assertEquals(created.status, 200)
   assertEquals(created.json.media.map((m: { id: number }) => m.id), shots)
-  const listed = (await call('/api/help', session)).json
+  const listed = (await call('/api/help?tab=&before=', session)).json.items
   assertEquals(listed[0].media.length, 2)
   // Five, or an upload already attached: refused, nothing published
   const five = []
@@ -333,5 +340,64 @@ Deno.test('help: screenshots shown with the request, 4 at most (§17.3)', async 
     media: [shots[0]],
   })
   assertEquals(again.status, 400)
-  assertEquals((await call('/api/help', session)).json.length, 1)
+  assertEquals(
+    (await call('/api/help?tab=&before=', session)).json.items.length,
+    1,
+  )
+})
+
+Deno.test('help: the lists by tab, by batches of 20 (§12.7)', async () => {
+  const { session, me, projectId } = await setup()
+  const other = User.insert({
+    githubId: 4242,
+    githubUsername: 'kofi',
+    avatarUrl: '',
+    source: 'demo',
+    createdAt: at,
+    updatedAt: at,
+  })
+  const add = (authorId: number, title: string, extra = {}) =>
+    HelpRequest.insert({
+      authorId,
+      category: 'code_review',
+      title,
+      description: '',
+      skills: [],
+      status: 'open',
+      expiresAt: at + 86_400,
+      source: 'demo',
+      // All at the same second: the id decides between them
+      createdAt: at,
+      updatedAt: at,
+      ...extra,
+    })
+  for (let i = 0; i < 25; i++) add(me.userId, `Mine ${i}`)
+  add(other, 'Accepted', { acceptedBy: me.userId, status: 'accepted' })
+  add(other, 'Of my project', { projectId })
+  add(other, 'Elsewhere')
+  const all = async (tab: string) => {
+    const titles: string[] = []
+    let before = ''
+    let batches = 0
+    do {
+      const { json } = await call(
+        `/api/help?tab=${tab}&before=${encodeURIComponent(before)}`,
+        session,
+      )
+      titles.push(...json.items.map((h: { title: string }) => h.title))
+      before = json.next
+      batches++
+    } while (before)
+    return { titles, batches }
+  }
+  const mine = await all('mine')
+  assertEquals([mine.titles.length, mine.batches], [25, 2])
+  assertEquals(new Set(mine.titles).size, 25)
+  assertEquals((await all('accepted')).titles, ['Accepted'])
+  assertEquals((await all('projects')).titles, ['Of my project'])
+  // All of them together, never the others' elsewhere
+  const together = await all('')
+  assertEquals(together.titles.length, 27)
+  assert(!together.titles.includes('Elsewhere'))
+  assertEquals((await call('/api/help?tab=other&before=', session)).status, 400)
 })

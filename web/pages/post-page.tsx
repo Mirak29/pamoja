@@ -196,7 +196,7 @@ const Replies = ({ post }: { post: Post }) => {
       )}
       <div class='flex flex-col gap-3 px-5 pb-[18px]'>
         {count
-          ? <Thread root={post} maxDepth={8} />
+          ? <Thread root={post} maxDepth={8} pageSize={20} />
           : (
             <span class='text-[14px] text-ink-muted'>
               Pas encore de réponse. Lance la discussion.

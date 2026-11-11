@@ -186,6 +186,8 @@ const Header = (
   // Its own subscription: the requests may arrive after the projects, and a
   // child with the same props is not rendered again
   helpChanged.value
+  // A project of the API holds a batch of its issues and PRs: the server
+  // counts them all (§12.7)
   const openPullRequests = pullRequests.filter((pr) =>
     pr.project === project.slug && pr.state === 'open'
   )
@@ -245,12 +247,14 @@ const Header = (
         >
           <Stat value={project.contributors} one='contributeur' />
           <Stat
-            value={openIssues.length}
+            value={project.demo ? openIssues.length : project.openIssues}
             one='issue ouverte'
             many='issues ouvertes'
           />
           <Stat
-            value={openPullRequests.length}
+            value={project.demo
+              ? openPullRequests.length
+              : project.openPullRequests ?? 0}
             one='PR ouverte'
             many='PRs ouvertes'
           />

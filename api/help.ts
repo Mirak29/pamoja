@@ -2,6 +2,7 @@ import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
+import { after, readBatch, readCursor, type Slice } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import {
   DESCRIPTION_MAX,
@@ -234,26 +235,101 @@ const helpSelect = `
   LEFT JOIN repository ON repository.repositoryId = pullRequest.repositoryId
 `
 
-// Until the matching (PAM-209): the requests a developer wrote, accepted,
-// or that concern one of their projects
-const listVisible = sql<HelpRow, { userId: number }>`${helpSelect}
-  WHERE helpRequest.authorId = :userId
-    OR helpRequest.acceptedBy = :userId
-    OR helpRequest.targetUserId = :userId
-    OR helpRequest.projectId IN (
-      SELECT projectId FROM projectMember WHERE userId = :userId
-    )
-  ORDER BY helpRequest.createdAt DESC
-  LIMIT 200
+// The requests a developer sees on the help page, by tab: those they wrote,
+// accepted, or of their projects; all of them together for the other pages.
+// Each way of being concerned reads its own index, newest first, at most a
+// batch: never the whole table as an OR would, nor every request of their
+// projects sorted afterwards as an IN would (§12.7)
+
+type Key = { helpRequestId: number; createdAt: number }
+
+const newestBy = <P extends Record<string, number>>(
+  column: string,
+  where = '',
+) =>
+  sql<Key, Slice & { key: number } & P>`
+    SELECT helpRequestId, createdAt FROM helpRequest
+    WHERE ${column} = :key ${where}
+      AND ${after('createdAt', 'helpRequestId')}
+    ORDER BY createdAt DESC, helpRequestId DESC
+    LIMIT :limit
+  `.all
+
+const byAuthor = newestBy('authorId')
+const byHelper = newestBy('acceptedBy')
+const byTarget = newestBy('targetUserId')
+const byProject = newestBy('projectId')
+// Of their projects, not their own
+const byProjectOthers = newestBy<{ userId: number }>(
+  'projectId',
+  'AND authorId != :userId',
+)
+
+const projectsOf = sql<{ projectId: number }, number>`
+  SELECT projectId FROM projectMember WHERE userId = ?
 `.all
 
-// The latest requests a developer wrote or accepted: the Activity of their
-// profile (§9.1)
-const listActivity = sql<HelpRow, { userId: number }>`${helpSelect}
-  WHERE helpRequest.authorId = :userId OR helpRequest.acceptedBy = :userId
-  ORDER BY helpRequest.createdAt DESC
-  LIMIT 10
+// The newest of several lists, each request once
+const newestOf = (lists: Key[][], limit: number) => {
+  const seen = new Set<number>()
+  return lists.flat()
+    .sort((a, b) =>
+      b.createdAt - a.createdAt || b.helpRequestId - a.helpRequestId
+    )
+    .filter(({ helpRequestId }) =>
+      !seen.has(helpRequestId) && seen.add(helpRequestId)
+    )
+    .slice(0, limit)
+}
+
+const listByIds = sql<HelpRow, string>`${helpSelect}
+  WHERE helpRequest.helpRequestId IN (SELECT value FROM json_each(?))
 `.all
+
+// The rows of the requests, in the order of their keys
+const rowsOf = (keys: { helpRequestId: number }[]) => {
+  const rows = new Map(
+    listByIds(JSON.stringify(keys.map((key) => key.helpRequestId)))
+      .map((row) => [row.helpRequestId, row]),
+  )
+  return keys.flatMap((key) => rows.get(key.helpRequestId) ?? [])
+}
+
+type TabSlice = Slice & { userId: number }
+
+const ofMe = ({ userId, ...slice }: TabSlice) => ({ ...slice, key: userId })
+
+const listTab: Record<
+  '' | 'mine' | 'accepted' | 'projects',
+  (
+    slice: TabSlice,
+  ) => HelpRow[]
+> = {
+  '': (slice) =>
+    rowsOf(newestOf([
+      byAuthor(ofMe(slice)),
+      byHelper(ofMe(slice)),
+      byTarget(ofMe(slice)),
+      ...projectsOf(slice.userId).map(({ projectId }) =>
+        byProject({ ...ofMe(slice), key: projectId })
+      ),
+    ], slice.limit)),
+  mine: (slice) => rowsOf(byAuthor(ofMe(slice))),
+  accepted: (slice) => rowsOf(byHelper(ofMe(slice))),
+  projects: (slice) =>
+    rowsOf(newestOf(
+      projectsOf(slice.userId).map(({ projectId }) =>
+        byProjectOthers({
+          ...ofMe(slice),
+          key: projectId,
+          userId: slice.userId,
+        })
+      ),
+      slice.limit,
+    )),
+}
+export type HelpTab = keyof typeof listTab
+export const HELP_TABS = Object.keys(listTab) as HelpTab[]
 
 const getOne = sql<HelpRow, number>`${helpSelect}
   WHERE helpRequest.helpRequestId = ?
@@ -289,11 +365,36 @@ const withMedia = (rows: HelpRow[]) => {
   return rows.map((row) => shown(row, media.get(row.helpRequestId)))
 }
 
-export const listHelpRequests = (userId: number) =>
-  withMedia(listVisible({ userId }))
+/** A batch of the requests of a tab, from a cursor, with their images */
+export const listHelpRequests = (
+  userId: number,
+  tab: HelpTab = '',
+  before = '',
+) => {
+  const { items, next } = readBatch(
+    before,
+    (slice) => listTab[tab]({ ...slice, userId }),
+    (row) => ({ value: row.createdAt, id: row.helpRequestId }),
+  )
+  return { items: withMedia(items), next }
+}
 
-export const listHelpActivity = (userId: number) =>
-  withMedia(listActivity({ userId }))
+// The latest requests a developer wrote or accepted: the Activity of their
+// profile (§9.1), from the two indexes
+export const listHelpActivity = (userId: number) => {
+  const slice = { ...readCursor(''), limit: 10, key: userId }
+  return withMedia(
+    rowsOf(newestOf([byAuthor(slice), byHelper(slice)], slice.limit)),
+  )
+}
+
+/** Requests by their ids, with their images, read together */
+export const getHelpRequests = (ids: number[]) => {
+  const rows = withMedia(
+    rowsOf(ids.map((helpRequestId) => ({ helpRequestId }))),
+  )
+  return new Map(rows.map((request) => [request.id, request]))
+}
 
 export const getHelpRequest = (helpRequestId: number) => {
   const row = getOne(helpRequestId)

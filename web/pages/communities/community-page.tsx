@@ -38,6 +38,7 @@ import {
 import { Button } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { ProjectCard } from '/web/ui/project-card.tsx'
@@ -311,11 +312,14 @@ export const CommunityPage = () => {
       />
       {current === '' && (
         <section class='slab mr-2 overflow-hidden'>
-          <div class='-mt-px'>
-            {list.map((post) => (
+          <Batched
+            items={list}
+            reset={slug}
+            class='-mt-px'
+            row={(post) => (
               <PostRow key={post.id} post={post} community={community} />
-            ))}
-          </div>
+            )}
+          />
           {!list.length && (
             <EmptyState
               action={
@@ -337,19 +341,23 @@ export const CommunityPage = () => {
         </span>
       )}
       {current === 'members' && (
-        <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'>
-          {members.map((person) => (
-            <DeveloperCard key={person.login} person={person} />
-          ))}
-        </div>
+        <Batched
+          items={members}
+          reset={slug}
+          class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
+          row={(person) => <DeveloperCard key={person.login} person={person} />}
+        />
       )}
       {current === 'projects' && (
         <>
-          <div class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'>
-            {projectList.map((project) => (
+          <Batched
+            items={projectList}
+            reset={slug}
+            class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'
+            row={(project) => (
               <ProjectCard key={project.slug} project={project} />
-            ))}
-          </div>
+            )}
+          />
           {!projectList.length && (
             <Empty>Aucun projet lié à cette communauté pour l’instant.</Empty>
           )}
@@ -357,11 +365,12 @@ export const CommunityPage = () => {
       )}
       {current === 'help' && (
         <section class='slab mr-2 overflow-hidden'>
-          <div class='-mt-px'>
-            {help.map((request) => (
-              <HelpRow key={request.id} request={request} />
-            ))}
-          </div>
+          <Batched
+            items={help}
+            reset={slug}
+            class='-mt-px'
+            row={(request) => <HelpRow key={request.id} request={request} />}
+          />
           {!help.length && (
             <div class='px-5 py-6 text-[14px] text-ink-muted'>
               Aucune demande d’aide ouverte ici.

@@ -219,6 +219,13 @@ export const PullRequest = createTable('pullRequest', {
   skillsSha: { type: 'TEXT', optional: true },
 })
 unique('pull_request_number', 'pullRequest', 'repositoryId, number')
+// The PRs of a project by batches, the open ones first (§12.7): an index
+// on an expression, used when the query writes the same one
+index(
+  'pull_request_tab',
+  'pullRequest',
+  "repositoryId, (state = 'open'), number",
+)
 
 export const Issue = createTable('issue', {
   issueId: { type: 'INTEGER', primary: true },
@@ -237,6 +244,8 @@ export const Issue = createTable('issue', {
   comments: { type: 'INTEGER', optional: true },
 })
 unique('issue_number', 'issue', 'repositoryId, number')
+// The open issues of a project by batches, newest first (§12.7)
+index('issue_open', 'issue', 'repositoryId, state, number')
 
 // Detects « CI réparée » after a failure (§6.8)
 export const CiRun = createTable('ciRun', {
@@ -434,7 +443,13 @@ export const HelpRequest = createTable('helpRequest', {
   lastWaveAt: { type: 'REAL', optional: true },
 })
 index('help_request_status', 'helpRequest', 'status')
-index('help_request_author', 'helpRequest', 'authorId')
+// The tabs of the help page, read by batches newest first (§12.7): equality
+// then the order, so SQLite reads 20 rows instead of sorting them all (the
+// rowid closes each index, which breaks the ties)
+index('help_request_by_author', 'helpRequest', 'authorId, createdAt')
+index('help_request_by_helper', 'helpRequest', 'acceptedBy, createdAt')
+index('help_request_by_project', 'helpRequest', 'projectId, createdAt')
+index('help_request_by_target', 'helpRequest', 'targetUserId, createdAt')
 index('help_request_pull', 'helpRequest', 'pullRequestId')
 
 export const Review = createTable('review', {
@@ -468,8 +483,13 @@ export const HelpMatch = createTable('helpMatch', {
   status: { type: 'TEXT' },
 })
 unique('help_match', 'helpMatch', 'helpRequestId, userId')
-// « Pour moi », and the daily cap of matching notifications (§7.3)
-index('help_match_user', 'helpMatch', 'userId, status')
+// « Pour moi » by batches, best score first (§12.7), and the daily cap of
+// matching notifications (§7.3)
+index(
+  'help_match_for_me',
+  'helpMatch',
+  'userId, status, score, helpRequestId',
+)
 index('help_match_notified', 'helpMatch', 'notifiedAt')
 
 // Only the requester and the accepted helper read and write it (§7.2)
@@ -497,6 +517,10 @@ export const Notification = createTable('notification', {
   createdAt: { type: 'REAL' },
 })
 index('notification_inbox', 'notification', 'userId, readAt, createdAt')
+// The inbox by batches, newest first (§12.7)
+index('notification_recent', 'notification', 'userId, createdAt')
+// A tab of the inbox, by category (§12.7)
+index('notification_category', 'notification', 'userId, category, createdAt')
 
 // Badges themselves are constants of the code (§8.2)
 export const BadgeProgress = createTable('badgeProgress', {
@@ -658,6 +682,8 @@ export const DirectMessage = createTable('directMessage', {
   linkPreview: { type: 'JSON', optional: true },
 })
 index('direct_message_list', 'directMessage', 'conversationId, createdAt')
+// A conversation by pages of 50, by id (§10.6): the rowid closes the index
+index('direct_message_thread', 'directMessage', 'conversationId')
 // The limits count what a developer sent lately (§16)
 index('direct_message_author', 'directMessage', 'authorId, createdAt')
 

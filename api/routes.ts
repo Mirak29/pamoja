@@ -15,7 +15,11 @@ import {
   listRepositories,
   previewRepository,
 } from '/api/import.ts'
-import { listMyProjects } from '/api/projects.ts'
+import {
+  listMyProjects,
+  listProjectIssues,
+  listProjectPulls,
+} from '/api/projects.ts'
 import { badgesOf, evaluateBadges } from '/api/badges.ts'
 import { proofsOf } from '/api/proofs.ts'
 import { getPublicProfile, getPublicProfileOfGithubId } from '/api/profile.ts'
@@ -24,6 +28,7 @@ import {
   acceptConversation,
   archiveConversation,
   conversationIdOf,
+  conversationWith,
   declineConversation,
   deleteMessage,
   editMessage,
@@ -43,6 +48,7 @@ import {
 } from '/api/messages.ts'
 import {
   listNotifications,
+  NOTIFICATION_CATEGORIES,
   readAllNotifications,
   readNotification,
 } from '/api/notifications.ts'
@@ -51,6 +57,7 @@ import { skillIdsOf } from '/api/skills.ts'
 import {
   createHelpRequest,
   getHelpRequest,
+  HELP_TABS,
   listHelpRequests,
   projectIdOf,
 } from '/api/help.ts'
@@ -214,6 +221,49 @@ const person = OBJ({
 // A conversation is known by its public id, its address (PAM-125): the
 // number of the database never reaches the page
 const conversationKey = STR('Public id of the conversation, its address')
+
+// The cursor of a list read by batches (§12.7): what the next batch asks
+// for, and what each batch gives for the one after
+const cursorFrom = (first: string) =>
+  STR(`Cursor of the next batch, empty for the ${first} (§12.7)`)
+const nextCursor = STR('Cursor of the next batch, empty at the end')
+
+// Issues and PRs of a project, by batches (§12.7)
+const issueBatch = OBJ({
+  items: ARR(
+    OBJ({
+      number: NUM(),
+      title: STR(),
+      state: STR(),
+      labels: ARR(STR()),
+      authorLogin: STR(),
+      comments: NUM(),
+      createdAt: NUM(),
+    }),
+    'Open issues, newest first',
+  ),
+  next: nextCursor,
+})
+
+const pullBatch = OBJ({
+  items: ARR(
+    OBJ({
+      number: NUM(),
+      title: STR(),
+      state: STR('open, merged or closed'),
+      authorLogin: STR(),
+      branch: STR(),
+      createdAt: NUM(),
+      skills: ARR(
+        STR('Skill of the vocabulary'),
+        'Languages of the changed files, empty until read (§7.1)',
+      ),
+      reviewed: BOOL('A review was submitted on GitHub'),
+    }),
+    'The open ones first, then the others, newest first',
+  ),
+  next: nextCursor,
+})
 
 const conversationRights = {
   status: STR('pending, accepted; a declined request still reads pending'),
@@ -655,7 +705,7 @@ const defs = {
           owner: STR(),
           name: STR(),
           syncMode: STR('poll or live'),
-          readme: STR(),
+          about: STR('First paragraphs of the README, 600 characters at most'),
           stars: NUM(),
           topics: ARR(STR()),
           languages: ARR(OBJ({ name: STR(), share: NUM() })),
@@ -663,33 +713,51 @@ const defs = {
           release: STR(),
           releasedAt: NUM(),
           lastSyncedAt: NUM(),
-          issues: ARR(OBJ({
-            number: NUM(),
-            title: STR(),
-            state: STR(),
-            labels: ARR(STR()),
-            authorLogin: STR(),
-            comments: NUM(),
-            createdAt: NUM(),
-          })),
-          pullRequests: ARR(OBJ({
-            number: NUM(),
-            title: STR(),
-            state: STR('open, merged or closed'),
-            authorLogin: STR(),
-            branch: STR(),
-            createdAt: NUM(),
-            skills: ARR(
-              STR('Skill of the vocabulary'),
-              'Languages of the changed files, empty until read (§7.1)',
-            ),
-            reviewed: BOOL('A review was submitted on GitHub'),
-          })),
+          openIssues: NUM('Open issues, all of them'),
+          beginnerIssues: NUM('Open issues labelled good first issue'),
+          openPullRequests: NUM('Open PRs, all of them'),
+          waitingReview: NUM('Open PRs with no review yet'),
+          issues: issueBatch,
+          pullRequests: pullBatch,
         })),
       }),
       'Projects the developer is a member of',
     ),
-    description: 'The projects of the signed-in developer',
+    description:
+      'The projects of the signed-in developer, with the first batch of their issues and PRs',
+  }),
+
+  'GET/api/project/issues': route({
+    authorize: withSession,
+    fn: (ctx, { slug, before, filter }) =>
+      listProjectIssues(
+        ctx.session.userId,
+        slug,
+        before,
+        filter === 'good-first-issue',
+      ),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      before: cursorFrom('newest'),
+      filter: optional(LIST(
+        ['', 'good-first-issue'],
+        'Only the issues labelled good first issue; empty for all of them',
+      )),
+    }),
+    output: issueBatch,
+    description: 'The open issues of a project, 20 at a time',
+  }),
+
+  'GET/api/project/pulls': route({
+    authorize: withSession,
+    fn: (ctx, { slug, before }) =>
+      listProjectPulls(ctx.session.userId, slug, before),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      before: cursorFrom('first'),
+    }),
+    output: pullBatch,
+    description: 'The PRs of a project, the open ones first, 20 at a time',
   }),
 
   /*
@@ -697,8 +765,16 @@ const defs = {
    */
   'GET/api/help': route({
     authorize: withSession,
-    fn: (ctx) => listHelpRequests(ctx.session.userId),
-    output: ARR(helpRequest, 'Newest first'),
+    fn: (ctx, { tab, before }) =>
+      listHelpRequests(ctx.session.userId, tab, before),
+    input: OBJ({
+      tab: LIST(HELP_TABS, 'mine, accepted, projects; empty for all of them'),
+      before: cursorFrom('newest'),
+    }),
+    output: OBJ({
+      items: ARR(helpRequest, 'Newest first, 20 at a time'),
+      next: nextCursor,
+    }),
     description:
       'The requests the developer wrote, accepted, or that concern one of their projects',
   }),
@@ -747,15 +823,21 @@ const defs = {
   }),
   'GET/api/help/for-me': route({
     authorize: withSession,
-    fn: (ctx) => listHelpForMe(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        ...helpRequestFields,
-        score: NUM('My score for it'),
-        reasons: ARR(reason),
-      }),
-      'Best score first',
-    ),
+    fn: (ctx, { before }) => listHelpForMe(ctx.session.userId, before),
+    input: OBJ({
+      before: cursorFrom('best'),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          ...helpRequestFields,
+          score: NUM('My score for it'),
+          reasons: ARR(reason),
+        }),
+        'Best score first, 20 at a time',
+      ),
+      next: nextCursor,
+    }),
     description: 'The open requests the developer was matched with',
   }),
   'GET/api/help/preview': route({
@@ -823,28 +905,43 @@ const defs = {
    */
   'GET/api/notifications': route({
     authorize: withSession,
-    fn: (ctx) => listNotifications(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        id: NUM('Id of the notification'),
-        type: STR('help_match, help_accepted, help_message…'),
-        category: STR('for-you, projects, communities, social or system'),
-        actor: STR('Login of who caused it, empty if no one'),
-        helpRequestId: NUM('Request it is about, 0 if none'),
-        title: STR('Title of what it is about'),
-        project: STR('Project name, empty if none'),
-        score: NUM('Matching score, 0 if none'),
-        minutes: NUM('Estimated duration, 0 if none'),
-        skills: ARR(STR('Skill asked')),
-        excerpt: STR('Start of a message, empty if none'),
-        eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
-        badge: STR('Key of a badge unlocked, empty if none'),
-        level: NUM('Level of that badge, 0 if none'),
-        readAt: NUM('In seconds, 0 if unread'),
-        createdAt: NUM('In seconds'),
-      }),
-      'Newest first, the 100 last',
-    ),
+    fn: (ctx, { before, category }) =>
+      listNotifications(ctx.session.userId, before, category),
+    input: OBJ({
+      before: cursorFrom('newest'),
+      category: LIST(
+        ['', ...NOTIFICATION_CATEGORIES],
+        'A tab of the inbox; empty for all of them',
+      ),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          id: NUM('Id of the notification'),
+          type: STR('help_match, help_accepted, help_message…'),
+          category: STR('for-you, projects, communities, social or system'),
+          actor: STR('Login of who caused it, empty if no one'),
+          helpRequestId: NUM('Request it is about, 0 if none'),
+          title: STR('Title of what it is about'),
+          project: STR('Project name, empty if none'),
+          score: NUM('Matching score, 0 if none'),
+          minutes: NUM('Estimated duration, 0 if none'),
+          skills: ARR(STR('Skill asked')),
+          excerpt: STR('Start of a message, empty if none'),
+          eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
+          badge: STR('Key of a badge unlocked, empty if none'),
+          level: NUM('Level of that badge, 0 if none'),
+          readAt: NUM('In seconds, 0 if unread'),
+          createdAt: NUM('In seconds'),
+        }),
+        'Newest first, 20 at a time',
+      ),
+      next: nextCursor,
+      unread: ARR(
+        OBJ({ category: STR('Category'), count: NUM('Unread ones') }),
+        'Every unread one, by category, not only those of the batch',
+      ),
+    }),
     description: 'The inbox of the developer; the page writes the sentences',
   }),
   'POST/api/notification/read': route({
@@ -911,29 +1008,48 @@ const defs = {
    */
   'GET/api/conversations': route({
     authorize: withSession,
-    fn: (ctx) => listConversations(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        id: conversationKey,
-        with: person,
-        ...conversationRights,
-        updatedAt: NUM('Time of the last message'),
-        last: optional(
-          OBJ({
-            excerpt: STR('Beginning of the last message, as plain text'),
-            deleted: BOOL('The last message was deleted'),
-            mine: BOOL('Written by the developer'),
-            at: NUM('When'),
-          }),
-        ),
-        unread: NUM('Messages of the other one not read yet'),
-        muted: BOOL('No toast nor count'),
-        archived: BOOL('Out of the main list'),
-        online: BOOL('The other one has Pamoja open'),
-      }),
-      'The conversations, the latest first',
-    ),
+    fn: (ctx, { before }) => listConversations(ctx.session.userId, before),
+    input: OBJ({
+      before: cursorFrom('latest'),
+    }),
+    output: OBJ({
+      items: ARR(
+        OBJ({
+          id: conversationKey,
+          with: person,
+          ...conversationRights,
+          updatedAt: NUM('Time of the last message'),
+          last: optional(
+            OBJ({
+              excerpt: STR('Beginning of the last message, as plain text'),
+              deleted: BOOL('The last message was deleted'),
+              mine: BOOL('Written by the developer'),
+              at: NUM('When'),
+            }),
+          ),
+          unread: NUM('Messages of the other one not read yet'),
+          muted: BOOL('No toast nor count'),
+          archived: BOOL('Out of the main list'),
+          online: BOOL('The other one has Pamoja open'),
+        }),
+        'The conversations, the latest first, 20 at a time',
+      ),
+      next: nextCursor,
+      unread: NUM(
+        'Unread messages, muted ones aside, counted up to 99, with the latest batch; 0 with the older ones',
+      ),
+    }),
     description: 'The conversations of the developer, requests included',
+  }),
+
+  'GET/api/conversation/with': route({
+    authorize: withSession,
+    fn: (ctx, { login }) => ({
+      id: conversationWith(ctx.session.userId, login),
+    }),
+    input: OBJ({ login: STR('Login of the other developer') }),
+    output: OBJ({ id: STR('Key of the conversation shared, empty if none') }),
+    description: 'The conversation shared with a developer, for « Écrire »',
   }),
 
   'GET/api/conversation': route({
