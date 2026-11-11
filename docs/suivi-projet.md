@@ -676,6 +676,41 @@ Un lien YouTube, Loom ou Vimeo collé dans le texte d'un post devient sa vidéo,
 - **Livrable** : rédaction de l'Accueil, `web/ui/new-post-dialog.tsx`, `useMediaPicker` dans `web/ui/media.tsx`
 - **Par** : @niangoos
 
+### 2026-10-28 · PAM-223 · Filtres du matching par skills, projets et communautés
+
+Les réglages du matching ont trois filtres de plus, enregistrés dans `Profile.matchingFilters` avec le mode, le score minimum et les types d'aide (`POST/api/notification/preferences`, relus par `GET/api/user/me`). Chacun dit « seulement » : vide, toutes les demandes passent ; rempli, `rank()` écarte une demande qui ne touche aucun des skills choisis, qui n'est pas d'un des projets choisis (ou n'a pas de projet), ou dont l'auteur n'est membre d'aucune des communautés choisies. La page propose les skills du développeur, ses projets construits ou suivis et ses communautés ; le bloc « Tes skills », qui ne s'enregistrait pas, laisse sa place. Le compte « N demandes ouvertes passent ce seuil » suit les filtres. Une page plus ancienne qui n'envoie pas les filtres les remet à vide. Vérifié dans le navigateur : 3 demandes, 1 avec TypeScript seul, 3 avec Go en plus, les choix relus après rechargement.
+
+- **Livrable** : `matchingFiltersOf` et `updateMatching` dans `api/user.ts`, `kept` dans `api/matching.ts`, contrôle des filtres dans `api/routes.ts`, 2 tests dans `api/matching_test.ts`, réglages, `saveMatching` et `matchingRequests` côté web
+- **Par** : @niangoos
+
+### 2026-10-28 · PAM-118 · Rendu Markdown sécurisé pour tous les contenus
+
+Le rendu Markdown lisait déjà le texte en éléments, jamais en HTML : rien de ce qu'écrit un membre ne peut s'exécuter, et aucune page n'injecte de HTML. PAM-118 finit le travail sur les liens et étend le rendu au README. Une règle unique (`web/lib/member-links.ts`) fait d'un lien écrit par un membre une adresse `http` ou `https` normalisée, sinon il reste du texte, et lui donne un nouvel onglet avec `rel="noopener noreferrer nofollow ugc"`. Elle sert au Markdown (liens nommés et liens nus), au site web du profil, au lien d'une vidéo non intégrable et à l'aperçu de lien des messages. Le résumé d'un README importé perd ses balises HTML et s'affiche avec le même Markdown ; les textes des projets de démo restent des phrases traduites. Vérifié dans le navigateur : un post avec un lien nommé, un lien nu et un lien `javascript:` resté texte ; le site du profil.
+
+- **Livrable** : `web/lib/member-links.ts` et son test, `web/ui/rich-text.tsx` et son test, `web/ui/video.tsx`, `websiteHref`, page profil, aperçu de lien des messages, `readmeSummary` et « À propos » du projet
+- **Par** : @niangoos
+
+### 2026-10-28 · PAM-306 · Pulse déterministe
+
+Le Pulse d'un projet connu du serveur est maintenant compté par `GET/api/project/pulse`, en SQL, sur les 7 derniers jours ou depuis un instant donné (`since`, ramené entre 90 jours et maintenant) : PRs mergées (`mergedAt`), issues fermées (par leur dernière mise à jour), membres arrivés (`PROJECT_MEMBER_JOINED`), reviews demandées (demandes d'aide « Review de code »), PRs ouvertes sans review non rejetée, releases (`RELEASE_PUBLISHED` ou la dernière release lue par le rafraîchissement). L'onglet Pulse relit ces chiffres à chaque ouverture et le résumé automatique, affiché sans IA, s'en sert ; les projets de démo gardent leurs chiffres fictifs. Corrigé en route : le client de l'API écrit `null` dans une adresse, la page n'envoie donc que le slug. Vérifié dans le navigateur sur un projet inséré dans une base de test : 3 PRs mergées, 2 issues fermées, 2 PRs en attente, 1 release, comme attendu.
+
+- **Livrable** : `api/pulse.ts`, route `GET/api/project/pulse`, `api/pulse_test.ts` (2 tests), `web/lib/pulse.ts`, `projectPulse` et onglet Pulse
+- **Par** : @niangoos
+
+### 2026-10-28 · PAM-412 · Non-lus et réglage par canal
+
+Les non-lus des canaux ne se perdent plus au rechargement et suivent le développeur d'un appareil à l'autre. `ChannelState` garde, pour chaque canal qu'il lit, l'heure de sa dernière lecture et son réglage (`GET/api/project/channels`, `POST/api/project/channel/read`, `POST/api/project/channel/notify`) ; `#suivi` est lisible par les membres et les abonnés. La page compte les messages des autres arrivés après la dernière lecture, selon le réglage : « Rien » n'affiche pas de pastille, « Mentions » ne compte que les messages qui mentionnent `@login`, « Seulement mes PRs », le réglage par défaut de `#suivi`, ne compte que les alertes sur ses PRs. La page projet charge messages et lectures pour que le badge « Canaux » soit juste avant d'ouvrir l'onglet ; un projet inconnu du serveur garde ses lectures dans la page. Corrigé pendant le test : une lecture faite avant que la page sache le projet enregistré n'était jamais envoyée. Vérifié dans le navigateur : badge à 3 (2 messages de #général, l'alerte de la PR #81 dans #suivi), canaux lus après rechargement, un second appareil sans non-lus, réglage gardé.
+
+- **Livrable** : `api/channel-state.ts`, routes `GET/api/project/channels`, `POST/api/project/channel/read` et `POST/api/project/channel/notify`, lecture de `#suivi` dans `rightsIn`, 2 tests dans `api/channels_test.ts`, `unreadIn`, `notifyOf` et `adoptChannelStates` dans les fixtures, `readChannel` et `saveNotify`, onglet Canaux et page projet
+- **Par** : @niangoos
+
+### 2026-10-28 · PAM-411 · Canal #suivi
+
+`#suivi` montre maintenant les vraies alertes d'un projet connu du serveur, lues dans les entries que les webhooks et la synchro écrivent : PR ouverte, review (approuvée, changements demandés, commentée), merge, fermeture, PR sans review depuis 2 jours, issue ouverte, fermée ou rouverte, release, CI en échec ou réparée, pushes regroupés (`GET/api/project/tracking`, 100 dernières). Le serveur donne les faits, la page écrit la phrase en français ou en anglais (`web/lib/tracking.ts`). Les boutons « Demander de l'aide » et « Demander une review » s'y appliquent comme aux alertes de démo. Les membres répondent en fil sous une alerte (`ProjectMessage.parentEntryId`), les abonnés lisent ; une réponse reste dans son fil, hors des canaux. Une vérification planifiée signale une fois chaque PR ouverte sans review depuis 2 jours (`PR_REVIEW_STALE`, que rien ne produisait). Une nouvelle entry GitHub ou un message relit les canaux ouverts en temps réel. Vérifié dans le navigateur sur un projet de test : PR ouverte, changements demandés, CI en échec, 3 commits poussés, deux PRs signalées sans review au démarrage du serveur, « Demander une review », une réponse en fil gardée après rechargement.
+
+- **Livrable** : `api/tracking.ts`, route `GET/api/project/tracking`, réponses sous une alerte dans `api/channels.ts`, `api/tracking_test.ts` (3 tests), `web/lib/tracking.ts`, `adoptTracking`, `loadTracking`, `answerAlert` et `reloadOpenedChannels`, onglet Canaux, page projet, `web/lib/live-data.ts`
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
@@ -893,6 +928,13 @@ GitHub renvoie maintenant vers `/login/github` ; `/connexion/github` y est redir
 
 - **Livrable** : `migrations/010-conversation-public-id.js`, `api/lib/ids.ts`, `api/messages.ts`, `api/routes.ts`, `api/profile.ts`, `api/github-oauth.ts`, `api/installation.ts` ; `web/lib/addresses.ts`, `web/app.tsx`, `web/lib/messages.ts`, `web/lib/profile.ts`, `web/pages/messages-page.tsx`, liens de toutes les pages ; tests `web/lib/addresses_test.ts` et 1 de plus dans `api/messages_test.ts` ; cahier des charges §5.3, §10.6, §12.2, §14.5, §16
 - **Par** : @Mirak29
+
+### 2026-10-29 · PAM-406 · Fils et réactions des canaux
+
+Les fils sous un message de `#général`, `#aide` ou `#annonces` et le « +1 » sont maintenant enregistrés pour un projet connu du serveur, comme les messages (PAM-428) et les fils sous une alerte de `#suivi` (PAM-411). Seuls les membres répondent en fil, sur un seul niveau et dans le canal du message ; tout lecteur du canal donne un +1, une fois. La page lit les fils et les +1 avec les messages, et un +1 s'affiche tout de suite avant la réponse du serveur. Vérifié dans le navigateur : un +1 ajouté à celui d'un autre membre, une réponse en fil, les deux toujours là après rechargement, la réponse absente du fil principal.
+
+- **Livrable** : `api/channels.ts`, `api/routes.ts` (`POST/api/project/message/like`, `parent` à la création), `api/tracking.ts` ; `web/fixtures/channels.ts`, `web/lib/channels.ts`, `web/pages/project/channels-tab.tsx` ; 1 test de plus dans `api/channels_test.ts` ; cahier des charges §6.8
+- **Par** : @niangoos
 
 ## Fermé sans réalisation
 

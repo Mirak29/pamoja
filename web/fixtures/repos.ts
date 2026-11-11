@@ -337,9 +337,13 @@ export const adoptProjects = (list: ApiProject[]) => {
   projectsChanged.value++
 }
 
-/** The first paragraphs of a README, without its headings, badges or code */
+/**
+ * The first paragraphs of a README, without its headings, badges, code or
+ * HTML: Markdown, shown by the Markdown of the members (§16)
+ */
 export const readmeSummary = (readme: string) =>
-  readme.replace(/```[\s\S]*?```/g, '').split(/\n\s*\n/)
+  readme.replace(/```[\s\S]*?```/g, '').replace(/<[^>]*>/g, '')
+    .split(/\n\s*\n/)
     .map((block) => block.trim())
     .filter((block) =>
       block && !block.startsWith('#') && !block.startsWith('![') &&

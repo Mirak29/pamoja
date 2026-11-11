@@ -6,6 +6,7 @@ import {
   Bell,
   CircleAlert,
   CircleCheck,
+  CircleDot,
   CircleX,
   Clock,
   Flag,
@@ -26,8 +27,10 @@ import {
   type Channel,
   channels,
   channelsChanged,
-  markChannelRead,
+  likesOf,
   type Message,
+  type Notify,
+  notifyOf,
   unreadIn,
 } from '/web/fixtures/channels.ts'
 import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
@@ -45,7 +48,14 @@ import { counted } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { overLimit } from '/web/lib/limits.ts'
-import { loadChannelMessages, sendChannelMessage } from '/web/lib/channels.ts'
+import {
+  answerAlert,
+  answerMessage,
+  readChannel,
+  saveNotify,
+  sendChannelMessage,
+  toggleLike,
+} from '/web/lib/channels.ts'
 import type { Media } from '/web/lib/messages.ts'
 import {
   IMAGE_TYPES,
@@ -56,6 +66,7 @@ import {
 } from '/web/ui/media.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
+import { textOf } from '/web/lib/tracking.ts'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -88,14 +99,21 @@ const alertIcons: Record<AlertKind, [IconComponent, string]> = {
   waiting: [Clock, 'text-warning'],
   sync: [Zap, 'text-indigo'],
   import: [FolderGit2, 'text-indigo'],
+  issue: [CircleDot, 'text-indigo'],
+  push: [Zap, 'text-ink-muted'],
 }
 
-const notifyOptions = ['Tout', 'Mentions', 'Seulement mes PRs', 'Rien']
+const notifyOptions: [Notify, string][] = [
+  ['all', 'Tout'],
+  ['mentions', 'Mentions'],
+  ['mine', 'Seulement mes PRs'],
+  ['none', 'Rien'],
+]
 
 type Reply = NonNullable<Message['replies']>[number]
 
-// Messages of a project the server does not know, and replies, written
-// during the session until the threads are saved (PAM-406)
+// Messages and replies of a project the server does not know, or under a
+// demo message, kept for the session
 const sentMessages = signal<Record<string, Message[]>>({})
 const sentReplies = signal<Record<string, Reply[]>>({})
 
@@ -174,15 +192,15 @@ const MessageRow = (
     canAct: boolean
   },
 ) => {
-  // Its own subscription: an alert loses its action once help is asked
+  // Its own subscriptions: an alert loses its action once help is asked,
+  // a +1 changes the message in place
   helpChanged.value
-  const likes = message.reactions?.like ?? []
-  const [liked, setLiked] = useState(likes.some(isMe))
-  const count = likes.length - (likes.some(isMe) ? 1 : 0) +
-    (liked ? 1 : 0)
+  channelsChanged.value
+  const { count, mine: liked } = likesOf(message)
   const replies = repliesOf(message).length
   const action = canAct && alertAction(project, message)
-  const video = videoIn(message.text)
+  const text = textOf(message)
+  const video = videoIn(text)
   return (
     <div class='flex gap-3 rounded-md p-2.5 hover:bg-surface-000'>
       <Author message={message} />
@@ -195,7 +213,7 @@ const MessageRow = (
           {message.demo && <DemoBadge />}
         </div>
         <div class='text-[15px] leading-6 text-pretty'>
-          <Markdown text={message.text} class='gap-1.5' />
+          <Markdown text={text} class='gap-1.5' />
         </div>
         {(message.media?.length || video) && (
           <div class='flex max-w-[480px] flex-col gap-2 py-1'>
@@ -223,19 +241,24 @@ const MessageRow = (
           </Button>
         )}
         <div class='flex items-center gap-2'>
-          <button
-            type='button'
-            onClick={() => setLiked(!liked)}
-            aria-label='Réagir +1'
-            aria-pressed={liked}
-            class={`h-[26px] cursor-pointer rounded-[5px] border px-[9px] font-mono text-[12px] leading-none font-medium text-ink ${
-              liked
-                ? 'border-indigo bg-indigo-soft shadow-[1.73px_1px_0_0_var(--indigo)]'
-                : 'border-line shadow-[1.73px_1px_0_0_var(--line)]'
-            }`}
-          >
-            +1{count ? ` · ${count}` : ''}
-          </button>
+          {
+            // An alert of the server is an entry: no +1 is kept on it
+            !message.alert && (
+              <button
+                type='button'
+                onClick={() => toggleLike(message)}
+                aria-label='Réagir +1'
+                aria-pressed={liked}
+                class={`h-[26px] cursor-pointer rounded-[5px] border px-[9px] font-mono text-[12px] leading-none font-medium text-ink ${
+                  liked
+                    ? 'border-indigo bg-indigo-soft shadow-[1.73px_1px_0_0_var(--indigo)]'
+                    : 'border-line shadow-[1.73px_1px_0_0_var(--line)]'
+                }`}
+              >
+                +1{count ? ` · ${count}` : ''}
+              </button>
+            )
+          }
           <A
             params={{ thread: message.id }}
             class='inline-flex h-[26px] items-center gap-1 rounded-md px-2 text-[12px] leading-none font-medium text-ink-muted no-underline hover:text-indigo hover:no-underline'
@@ -365,7 +388,12 @@ const Composer = (
 }
 
 const Thread = (
-  { message, canReply }: { message: Message; canReply: boolean },
+  { project, channel, message, canReply }: {
+    project: ProjectSlug
+    channel: Channel
+    message: Message
+    canReply: boolean
+  },
 ) => (
   <section class='slab col-span-full flex min-w-0 flex-col overflow-hidden min-[1180px]:col-auto'>
     <div class='flex items-center gap-2 border-b border-line py-3.5 pr-4 pl-5'>
@@ -390,7 +418,7 @@ const Thread = (
         </span>
       </span>
       <div class='text-[14px] leading-[22px]'>
-        <Markdown text={message.text} class='gap-1.5' />
+        <Markdown text={textOf(message)} class='gap-1.5' />
       </div>
     </div>
     <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
@@ -422,13 +450,30 @@ const Thread = (
         label='Réponse'
         square
         onSend={(text) =>
-          sendReply(message.id, {
-            id: `r${Date.now()}`,
-            author: me.login,
-            text,
-            at: Date.now(),
-            demo: false,
-          })}
+          // A message or an alert of the server keeps its thread there
+          // (PAM-406, PAM-411)
+          message.alert || message.id.startsWith('s')
+            ? (message.alert
+              ? answerAlert(project, message.id, text)
+              : answerMessage(project, channel, message.id, text)).then(
+                () => true,
+                () => {
+                  notify({
+                    title: 'Réponse non envoyée',
+                    body: 'Réessaie dans un instant.',
+                    icon: CircleAlert,
+                    tone: 'warning',
+                  })
+                  return false
+                },
+              )
+            : sendReply(message.id, {
+              id: `r${Date.now()}`,
+              author: me.login,
+              text,
+              at: Date.now(),
+              demo: false,
+            })}
       />
     )}
   </section>
@@ -462,27 +507,37 @@ const Presence = ({ channelName }: { channelName: string }) => {
   )
 }
 
-// Per channel notification setting, saved with POST/api/project/channel/notify
-// (PAM-412). #suivi defaults to "only my PRs" (§6.8)
-const NotifySelect = ({ tracking }: { tracking: boolean }) => {
-  const [value, setValue] = useState(tracking ? 'Seulement mes PRs' : 'Tout')
-  return (
-    <label class='flex items-center gap-1.5 text-[12px] text-ink-muted'>
-      <Bell class='size-3.5' />
-      <select
-        aria-label='Notifications du canal'
-        value={value}
-        onChange={(event) => setValue(event.currentTarget.value)}
-        class='well h-8 px-2 text-[13px] leading-none text-ink'
-      >
-        {notifyOptions
-          .filter((option) => tracking || option !== 'Seulement mes PRs')
-          .map((option) => <option key={option} value={option}>{option}
-          </option>)}
-      </select>
-    </label>
-  )
-}
+// What reaches me from a channel: it counts the unread too. #suivi defaults
+// to « only my PRs » (§6.8); saved for a project the server knows (PAM-412)
+const NotifySelect = (
+  { project, channel, saved }: {
+    project: ProjectSlug
+    channel: Channel
+    saved: boolean
+  },
+) => (
+  <label class='flex items-center gap-1.5 text-[12px] text-ink-muted'>
+    <Bell class='size-3.5' />
+    <select
+      aria-label='Notifications du canal'
+      value={notifyOf(project, channel)}
+      onChange={(event) =>
+        saveNotify(
+          project,
+          channel,
+          event.currentTarget.value as Notify,
+          saved,
+        )}
+      class='well h-8 px-2 text-[13px] leading-none text-ink'
+    >
+      {notifyOptions
+        .filter(([value]) => channel === 'tracking' || value !== 'mine')
+        .map(([value, label]) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
+    </select>
+  </label>
+)
 
 /** Four imposed channels, like a Discord server (§6.8) */
 export const ChannelsTab = ({ project }: { project: Project }) => {
@@ -490,11 +545,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
   const [path, key, name, purpose] = channelList.find(([p]) => p === segment) ??
     channelList[0]
   const slug = project.slug as ProjectSlug
-  // A project the server knows keeps its messages there (PAM-428)
+  // A project the server knows keeps its messages and what I read there
+  // (PAM-428, PAM-412): the project page loads them, for its badge too
   const saved = !!project.shots
-  useEffect(() => {
-    saved && loadChannelMessages(slug)
-  }, [slug, saved])
   channelsChanged.value
   const store = channels[slug]
   const messagesOf = (channel: Channel, path: string) => [
@@ -503,11 +556,9 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
   ]
   const messages = messagesOf(key, path)
   // The channel on screen is read, new messages included
-  useEffect(() => markChannelRead(project.slug as ProjectSlug, key), [
-    project.slug,
-    key,
-    messages.length,
-  ])
+  useEffect(() => {
+    readChannel(slug, key, saved)
+  }, [slug, key, messages.length, saved])
 
   const isOwner = project.owner === me.login
   const isMember = isOwner || project.members.some((m) => m.login === me.login)
@@ -577,7 +628,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
               {purpose}
             </span>
           </div>
-          <NotifySelect key={path} tracking={key === 'tracking'} />
+          <NotifySelect project={slug} channel={key} saved={saved} />
         </div>
         <div class='flex flex-1 flex-col gap-0.5 p-2.5'>
           {messages.map((message) => (
@@ -632,7 +683,17 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
             </div>
           )}
       </section>
-      {thread && <Thread message={thread} canReply={isMember || following} />}
+      {
+        // Members answer in a thread; followers read (§6.8)
+        thread && (
+          <Thread
+            project={slug}
+            channel={key}
+            message={thread}
+            canReply={isMember}
+          />
+        )
+      }
     </div>
   )
 }
