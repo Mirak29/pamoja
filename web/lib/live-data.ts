@@ -1,5 +1,6 @@
 import { onEvent, onReconnect } from '/web/lib/realtime.ts'
 import { loadHelpRequests, loadProjects } from '/web/lib/session.ts'
+import { reloadOpenedChannels } from '/web/lib/channels.ts'
 
 // The data of the developer follows its entries without a refresh (§13): an
 // entry makes the page read it again. A burst of entries, like a merge with
@@ -32,6 +33,23 @@ onEvent([
   'COMMITS_PUSHED',
 ], reloadProjects)
 
+// #suivi and the threads of the projects opened follow GitHub and the
+// messages of the others (§6.8)
+const reloadChannels = debounced(reloadOpenedChannels)
+onEvent([
+  'MESSAGE_CREATED',
+  'PR_OPENED',
+  'PR_REVIEWED',
+  'PR_MERGED',
+  'PR_CLOSED',
+  'PR_REVIEW_STALE',
+  'ISSUE_UPDATED',
+  'RELEASE_PUBLISHED',
+  'CI_FAILED',
+  'CI_FIXED',
+  'COMMITS_PUSHED',
+], reloadChannels)
+
 // The help requests follow their lifecycle (§7.2)
 const reloadHelp = debounced(loadHelpRequests)
 onEvent([
@@ -53,4 +71,5 @@ onEvent([
 onReconnect(() => {
   reloadProjects()
   reloadHelp()
+  reloadChannels()
 })

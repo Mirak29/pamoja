@@ -59,6 +59,7 @@ import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
 import { savePost } from '/web/lib/posts.ts'
 import { IMAGE_TYPES, MediaThumbs, useMediaPicker } from '/web/ui/media.tsx'
+import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -289,6 +290,8 @@ const Composer = () => {
   const picker = useMediaPicker(4)
   const files = useRef<HTMLInputElement>(null)
   const [sending, setSending] = useState(false)
+  // A YouTube, Loom or Vimeo link pasted in the text becomes the video
+  const video = videoIn(text)
   const ordered = [...communities].sort((a, b) =>
     Number(me.communities.includes(b.slug)) -
     Number(me.communities.includes(a.slug))
@@ -303,6 +306,7 @@ const Composer = () => {
       title: '',
       body: text.trim(),
       media: picker.media,
+      video,
     }).catch(() => undefined)
     setSending(false)
     if (!post) {
@@ -341,7 +345,7 @@ const Composer = () => {
           rows={3}
           value={text}
           aria-label='Écrire un post'
-          placeholder='Sur quoi tu travailles ? Une question, une astuce, un bout de code…'
+          placeholder='Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
           onInput={(event) => setText(event.currentTarget.value)}
           onPaste={picker.onPaste}
           onDragOver={(event) => event.preventDefault()}
@@ -359,6 +363,7 @@ const Composer = () => {
         />
         <Counter value={text} limit={LIMITS.post} />
         <MediaThumbs picker={picker} />
+        {video && <VideoEmbed url={video} />}
         <div class='flex flex-wrap items-center gap-2'>
           <input
             ref={files}
@@ -374,7 +379,7 @@ const Composer = () => {
           <button
             type='button'
             aria-label='Ajouter une image'
-            title='Ajouter une image (4 maximum)'
+            title='Ajouter une image (4 maximum) ; une vidéo se colle en lien dans le texte'
             disabled={picker.full}
             onClick={() => files.current?.click()}
             class={`${tool} disabled:cursor-default disabled:opacity-50`}
