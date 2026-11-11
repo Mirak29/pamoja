@@ -102,7 +102,13 @@ import {
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
 import { pulseOf } from '/api/pulse.ts'
-import { createChannelMessage, listChannelMessages } from '/api/channels.ts'
+import { listTracking } from '/api/tracking.ts'
+import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
+import {
+  createChannelMessage,
+  likeMessage,
+  listChannelMessages,
+} from '/api/channels.ts'
 import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
 
@@ -139,12 +145,16 @@ const savedPost = OBJ({
 
 const channelMessage = OBJ({
   id: NUM('Id of the message'),
-  channel: STR('general, help or announcements'),
+  channel: STR('general, help, announcements, or tracking for an answer'),
+  alert: NUM('The alert of #suivi it answers, 0 for none'),
+  parent: NUM('The message whose thread it is in, 0 for none'),
   author: STR('Login of the author'),
   authorName: STR('Name of the author'),
   avatarUrl: STR('GitHub avatar of the author'),
   body: STR('Markdown, a video by its link'),
   media: ARR(media, 'The image: none or one'),
+  likes: NUM('Its +1'),
+  liked: BOOL('A +1 of the developer'),
   createdAt: NUM('Sent, in seconds'),
 }, 'A message of a project channel')
 
@@ -1088,6 +1098,67 @@ const defs = {
     description: 'The latest posts, newest first',
   }),
 
+  'GET/api/project/channels': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => channelStatesOf(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      channel: STR('general, tracking, help or announcements'),
+      lastReadAt: NUM('Read up to this time, in seconds; 0 if never'),
+      notify: STR('all, mentions, mine or none'),
+    })),
+    description: 'What I read in the channels I read, and their settings',
+  }),
+
+  'POST/api/project/channel/read': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel }) => {
+      markRead(ctx.session.userId, project, channel)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+    }),
+    description: 'Mark a channel read up to now',
+  }),
+
+  'POST/api/project/channel/notify': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel, notify }) => {
+      setNotify(ctx.session.userId, project, channel, notify)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+      notify: STR('all, mentions, mine (#suivi only) or none'),
+    }),
+    description: 'Choose what reaches me from a channel',
+  }),
+
+  'GET/api/project/tracking': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => listTracking(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      id: NUM('Id of the entry'),
+      kind: STR('PR_OPENED, PR_REVIEWED, CI_FAILED… the type of the entry'),
+      at: NUM('When, in seconds'),
+      actor: STR('Login of who acted, when on Pamoja, or empty'),
+      pullRequest: NUM('Number of the PR, 0 if none'),
+      title: STR('Title of the PR or the issue'),
+      author: STR('GitHub login of the author of the PR, or empty'),
+      issue: NUM('Number of the issue, 0 if none'),
+      tag: STR('Tag of a release'),
+      state: STR('State of a review, or what an issue did'),
+      name: STR('Job of a CI run'),
+      branch: STR('Branch of a CI run or a push'),
+      count: NUM('Commits of a push'),
+      commits: ARR(STR('First line of a commit'), 'The last commits pushed'),
+      replies: ARR(channelMessage, 'The thread under the alert'),
+    })),
+    description: 'The alerts of #suivi and their threads (§6.8)',
+  }),
+
   'GET/api/project/pulse': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
@@ -1117,9 +1188,25 @@ const defs = {
       channel: STR('general, help or announcements'),
       body: STR('Markdown, empty with an image'),
       media: optional(ARR(NUM('Id of an upload'), 'One image at most')),
+      alert: optional(NUM('Alert of #suivi answered, in channel tracking')),
+      parent: optional(NUM('Message answered in its thread, same channel')),
     }),
     output: channelMessage,
     description: 'Write in a channel of a project, with an image',
+  }),
+
+  'POST/api/project/message/like': route({
+    authorize: withSession,
+    fn: (ctx, { message, on }) => likeMessage(ctx.session.userId, message, on),
+    input: OBJ({
+      message: NUM('Id of the message'),
+      on: BOOL('Gives the +1, or takes it back'),
+    }),
+    output: OBJ({
+      likes: NUM('Its +1'),
+      liked: BOOL('A +1 of the developer'),
+    }),
+    description: 'A +1 on a message of a channel the developer reads',
   }),
 
   'GET/api/project/messages': route({
@@ -1127,7 +1214,8 @@ const defs = {
     fn: (ctx, { project }) => listChannelMessages(ctx.session.userId, project),
     input: OBJ({ project: STR('Slug of the project') }),
     output: ARR(channelMessage),
-    description: 'The latest messages of the channels the developer reads',
+    description:
+      'The latest messages of the channels the developer reads, then their threads',
   }),
 
   'GET/api/video/preview': route({
