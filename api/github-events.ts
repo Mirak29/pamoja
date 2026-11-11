@@ -130,6 +130,8 @@ registerHandler('pull_request_review', (payload) => {
   upsertPullRequest(repo.repositoryId, pull)
   const pullRequestId = pullRequestOf(repo.repositoryId, pull.number)!
   const reviewerUserId = upsertReview(pullRequestId, review)
+  // A bot read it (§7.5): the PR still waits for a developer
+  if (reviewerUserId === false) return
   if (payload.action === 'submitted') {
     Entry.insert.PR_REVIEWED({
       userId: maybe(reviewerUserId),

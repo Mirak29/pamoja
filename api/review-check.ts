@@ -19,7 +19,7 @@ import { userIdOfGithubId } from '/api/user.ts'
 
 export type GithubReview = {
   id: number
-  user: { id: number; login: string } | null
+  user: { id: number; login: string; type?: string } | null
   state: string
   body: string | null
   submitted_at: string | null
@@ -38,10 +38,20 @@ const writeReview = sql<undefined, Record<string, string | number | null>>`
 `.run
 
 /**
+ * A review of a bot (CodeRabbit, Copilot…): never kept. It validates no
+ * help, counts in no reputation, and a PR it read still waits for a human
+ * review (§7.5)
+ */
+export const isBotReview = (review: GithubReview) =>
+  review.user?.type === 'Bot' || !!review.user?.login.endsWith('[bot]')
+
+/**
  * A review as GitHub sends it, from a webhook or a resync. Its body counts
- * as one comment; the inline ones are counted later when they matter.
+ * as one comment; the inline ones are counted later when they matter. A
+ * review of a bot is left out: false.
  */
 export const upsertReview = (pullRequestId: number, review: GithubReview) => {
+  if (isBotReview(review)) return false
   const reviewerUserId = review.user
     ? userIdOfGithubId(review.user.id) ?? null
     : null

@@ -165,6 +165,8 @@ L'utilisateur peut utiliser toute la plateforme sans jamais installer l'app.
 
 En pratique (`api/import.ts`) : la liste exclut les forks et les repos privés ; l'aperçu (`GET/api/github/repository`) lit le repo, ses langages, son README, sa dernière release, le nombre de contributeurs et de PRs ouvertes ; tant que l'IA n'est pas branchée (PAM-310), les skills proposés sont ceux des langages et des topics, ramenés au vocabulaire par `SkillAlias`. L'import relit tout côté serveur, sans croire la page, puis crée `Project`, le membre owner, `Repository` (README et chiffres compris), les issues et PRs ouvertes, et l'entry `PROJECT_CREATED`. Le rafraîchissement (`api/sync.ts`) relit toutes les 15 minutes, en requêtes conditionnelles, le repo, ses issues et ses PRs triées par mise à jour ; une réponse 304 ne change rien, une nouveauté produit `PROJECT_UPDATED` pour que les pages ouvertes se mettent à jour. Le serveur regarde chaque minute, dès son démarrage, quels repos sont dus : 15 minutes après leur dernière lecture, une heure pour un repo live (§5.6). Un redémarrage (`deno task dev` repart à chaque fichier modifié, un déploiement) ne repousse donc plus la lecture.
 
+**Invitation à une relecture automatique** (PAM-431) : l'aperçu de l'import propose, sans l'imposer, d'activer CodeRabbit sur le repo, par un lien vers sa page d'installation sur GitHub (`github.com/apps/coderabbitai`). Pamoja n'installe rien et ne lit pas si le repo l'a déjà : son app reste en lecture seule (§5.1). Ce bot fait une première passe sur chaque PR ; les reviews qui comptent sur Pamoja restent celles des développeurs (§7.5, §8).
+
 Seul le propriétaire d'un repo personnel peut l'importer au niveau 1. Un repo d'organisation s'importe par le niveau 2 : l'installation, réservée aux owners de l'organisation et aux admins du repo, prouve le droit de l'importer.
 
 **Niveau 2 — synchro live, avec installation**
@@ -416,6 +418,7 @@ Précisions (`api/review-check.ts`) :
 
 - **Commentaires** : le webhook porte le texte de la review, pas ses commentaires de ligne. Le texte compte pour un commentaire ; une review `commented` sans texte voit ses commentaires de ligne lus sur GitHub juste après le webhook, hors de sa transaction (§5.5), puis est vérifiée à nouveau.
 - **Resynchronisation** : pour les PRs dont une demande est acceptée, elle relit les reviews ; un webhook perdu ne perd pas la review.
+- **Bots** (PAM-431) : une review d'un compte GitHub de type `Bot` (CodeRabbit, Copilot…) n'est pas enregistrée. Elle ne valide aucune demande, ne compte pas dans la réputation et ne fait pas sortir une PR de « en attente de review ».
 - **Effets** : la review est rattachée à la demande (`Review.helpRequestId`, une demande par review), l'entry `REVIEW_SUBMITTED` est créée, le demandeur est notifié, et `deliveredAt` prend l'heure de la détection : les relances et la fermeture sans réponse en partent (§7.2). Côté projet, une PR qui a reçu une review n'est plus « en attente de review ».
 
 ### 7.6 Collaboration Requests
@@ -551,6 +554,20 @@ Types : technologie (Go, Rust, React, Deno, AI, DevOps…), pays (Senegal Develo
 - **Projets** : filtres technologie, stade, cherche des contributeurs, beginner friendly (issues `good first issue`), pays, activité.
 - **What can I work on?** : liste personnalisée de choses concrètes à faire, triées par match : reviews demandées, issues `good first issue`, besoins de projets, documentation.
 
+En pratique (PAM-506, `api/work.ts`, `GET/api/work`) : le serveur calcule la liste sans IA, pour le développeur connecté, en trois groupes d'au plus 10 :
+- **les demandes d'aide** de « Pour moi », avec leur score de matching ;
+- **les besoins ouverts** des projets publics dont il n'est pas membre ;
+- **les `good first issue`** des 10 projets qui lui correspondent le mieux, 3 par projet.
+
+La correspondance d'un besoin ou d'une issue est la part de ses skills que le développeur possède, chacun pesé comme dans le matching (§7.3) : 100 % prouvé sur Pamoja, 85 % lu sur GitHub, 70 % déclaré. Un besoin sans skills prend ceux de son projet. L'Assistant (§11) s'appuie sur cette liste et ne la remplace jamais.
+
+**Premier pas** (PAM-533). Dans l'enquête State of Dev Sénégal 2026 (`docs/etudes/state-of-dev-senegal-2026.md`), le premier groupe, 34,8 % des 624 répondants, répond « J'aimerais mais je ne sais pas par où commencer ». Une liste ne règle pas ce blocage. Pour un développeur qui n'a encore aucune PR mergée connue de Pamoja, la liste commence donc par **une seule chose** :
+- **le choix** : la `good first issue` ou l'issue `documentation` qui lui correspond le mieux, la moins disputée (le moins de commentaires) à correspondance égale ; à défaut, un besoin « Documentation » d'un projet ;
+- **les étapes** : dire sur l'issue qu'on la prend, faire le changement sur une branche de son fork, ouvrir la PR ;
+- **un mentor à un clic** : une demande d'aide « Mentorat » pré-remplie avec l'issue (§7.1).
+
+La documentation compte comme une vraie contribution : 49,4 % des contributeurs en font, c'est leur deuxième forme de contribution. Les issues `documentation` rejoignent donc les `good first issue` de la liste.
+
 ### 10.4 Recherche
 
 Recherche globale sur développeurs, projets, communautés, publications, demandes d'aide et skills, avec **Meilisearch** auto-hébergé : résultats pendant la frappe, tolérance aux fautes (« postgress » trouve PostgreSQL), filtres combinés (pays, skill, disponibilité).
@@ -604,6 +621,7 @@ L'IA améliore le produit mais n'en est jamais une condition : chaque usage a un
 | Embeddings de matching | Texte de la demande d'aide ; profil (headline, bio, skills, activité) | Vecteur stocké en BLOB SQLite | À la création d'une demande ; à la mise à jour d'un profil | Critère « proximité sémantique » à 0 |
 | Description de projet | README | Texte proposé, éditable | Sur clic de l'utilisateur | Champ vide |
 | Recommandations | Profil, historique, besoins des projets | Liste ordonnée pour « What can I work on? » | En tâche de fond, quotidienne | Tri par score de matching SQL |
+| Assistant (PAM-532) | Question du développeur, et ce que Pamoja a calculé pour lui (§10.3) | Réponse courte qui cite des éléments de la liste | Sur sa question, jamais à l'affichage d'une page | La liste calculée, sans phrase |
 
 Règles :
 
@@ -615,6 +633,31 @@ Règles :
 - **Fournisseur et modèles** : à fixer par l'équipe (points ouverts). Le modèle de génération et le modèle d'embeddings peuvent être différents.
 
 Pour la démo, les résumés et embeddings du seed sont pré-calculés.
+
+**Assistant** (PAM-532, repensé par PAM-534 ; `api/assistant.ts`, `web/ui/assistant-panel.tsx`). Un compagnon disponible sur toutes les pages, qui répond à partir de ce que Pamoja sait du développeur.
+
+*Où il est.* Un bouton de l'en-tête (et `Ctrl J` / `⌘J`) ouvre un panneau à droite, plein écran sur mobile. Le panneau reste ouvert pendant qu'on navigue : on lit une réponse, on suit son lien, la conversation est toujours là.
+
+*Ce qu'il sait.* À chaque question, le serveur calcule un contexte ; le modèle ne lit rien d'autre :
+- **le profil** : skills, intentions, s'il a déjà contribué ;
+- **sur quoi travailler** (§10.3) : le premier pas, les demandes qui correspondent, les besoins de projets, les issues pour débuter ;
+- **ce qui l'attend** : ses demandes à confirmer, les aides qu'il a acceptées, ses demandes encore sans aidant, ses notifications non lues ;
+- **ses PR ouvertes et ses projets** : le lien d'une PR ouvre la demande de review déjà remplie ;
+- **la page ouverte** : sur un projet, ses besoins, sa stack, ses issues pour débuter et la correspondance avec le développeur. D'où « Que puis-je faire sur ce projet ? » ;
+- **le point du projet ouvert** (« Où en est ce projet ? ») : les chiffres du Pulse sur 7 jours (§6.4), les PR fusionnées depuis 14 jours avec leur auteur et leurs relecteurs, les PR ouvertes (dont celles sans review), les issues ouvertes, les tâches du tableau avec qui les a en main, les jalons et les membres. Le modèle en fait un point en trois temps : fait et par qui, en cours et par qui, reste à faire. Il ne nomme que les personnes présentes dans ces données ;
+- **le mode d'emploi de Pamoja** : demander une review, importer un projet, la réputation, le matching, écrit par l'équipe dans le prompt.
+
+*Ce qu'il répond.* Un texte court où **chaque chose nommée est un lien**, à l'endroit où elle est nommée : l'élément, son projet, la page de Pamoja qui sert. Tout est à portée de clic, avec l'explication. Dessous, des **cartes** (les éléments cités, chacun avec le lien de son projet) et des **actions** (des boutons : « Demander un mentor », « Compléter mon profil », « Demander de l'aide »…, d'un catalogue fixe du serveur).
+
+Règles :
+- **Le modèle ne choisit rien et n'invente rien.** Il cite cartes et actions par leur clé ; le serveur remplace la clé par le titre et donne les liens, jamais ceux du modèle. Une réponse qui cite une clé inconnue est écartée entière.
+- **Le contexte est une donnée**, envoyé à part de la question : un titre d'issue ou de projet ne peut pas donner d'ordre au modèle.
+- **La conversation est gardée** (`AssistantMessage`, §14.4), pour la retrouver d'une page et d'un appareil à l'autre : les 60 derniers messages, visibles du seul développeur. « Nouvelle conversation » l'efface pour de bon. Les 6 derniers messages accompagnent chaque question.
+- **Jamais de porte fermée** : quand rien ne correspond encore au développeur, l'Assistant ne le dit pas sèchement. Le serveur lui donne la raison (profil sans skills, ou aucun projet qui cherche ses skills) et des projets publics à découvrir ; il explique, propose de compléter le profil et cite ces projets.
+- **Sans question, il est déjà utile** : à l'ouverture, un point calculé sans IA (le premier pas ou les meilleures correspondances, et ce qui attend le développeur), et des questions proposées selon la page.
+- **Budget** : 30 questions par développeur et par jour, 2 000 pour tout Pamoja ; une même question sur le même contexte est servie depuis un cache de 10 minutes.
+- **Repli** : sans clé, si le modèle ne répond pas en 20 s ou si sa réponse est invalide, l'Assistant montre le point calculé, sans phrase du modèle.
+- **Fournisseur** : n'importe quelle API compatible OpenAI, choisie par `LLM_BASE_URL` (une adresse en `/v1`, `/chat/completions`) ; une adresse sans `/v1` passe par l'API native d'Ollama (`/api/chat`). Clé dans `LLM_API_KEY`, modèle dans `LLM_MODEL_NAME`, dans `.env-local`, jamais dans le dépôt. Pour le développement et la démo : **Groq** gratuit (`https://api.groq.com/openai/v1`, `openai/gpt-oss-120b`), qui ne garde pas les données par défaut. Son quota gratuit (environ 8 000 tokens par minute, soit 2 à 3 questions) ne suffit pas pour de vrais utilisateurs : avant l'ouverture, un forfait payant. Les offres gratuites qui se servent des questions pour entraîner leurs modèles sont écartées : le contexte contient des données des développeurs.
 
 ## 12. Architecture technique
 
@@ -861,6 +904,8 @@ Les colonnes ajoutées après le schéma initial (`readme`, `stats`, `skills`, `
 | `Embedding` | embeddingId, targetType (user / help\_request), targetId, model, vector (BLOB), inputHash, createdAt | UNIQUE(targetType, targetId, model) |
 
 Les badges sont définis dans le code (constantes, §8.2), pas en base.
+
+**`AssistantMessage`** (PAM-534) : un message de la conversation d'un développeur avec l'Assistant (§11) : `userId`, `role` (`user` ou `assistant`), `content`, `extras` (JSON : cartes, actions, repli), `createdAt`. Jamais lu par un autre que lui ; effacé par « Nouvelle conversation ».
 
 ### 14.5 Communautés et feed
 

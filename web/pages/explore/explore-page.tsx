@@ -1,7 +1,17 @@
 import { counted } from '/web/lib/plural.ts'
+import { useEffect, useState } from 'preact/hooks'
+import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
+import { currentUser } from '/web/lib/session.ts'
+import { openAssistant } from '/web/lib/assistant.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { A, navigate, url } from '@01edu/signal-router'
-import { CircleDot, FolderGit2, LifeBuoy } from '/web/assets/icons.tsx'
+import {
+  CircleDot,
+  FolderGit2,
+  LifeBuoy,
+  Sparkles,
+} from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import { helpChanged, matchingRequests } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
@@ -22,7 +32,7 @@ import {
 } from '/web/fixtures/projects.ts'
 import { intents } from '/web/fixtures/skills.ts'
 import { Batched } from '/web/ui/infinite-list.tsx'
-import { OptionButton } from '/web/ui/button.tsx'
+import { Button, OptionButton } from '/web/ui/button.tsx'
 import { DeveloperCard } from '/web/ui/developer-card.tsx'
 import { githubUrl } from '/web/lib/links.ts'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
@@ -273,11 +283,64 @@ type Work = {
   cta: string
 }
 
-/** Help that matches, project needs that fit, good first issues (§10.3) */
-const workGroups = (): [string, Work[]][] => {
+type ServerWork = ApiOutput['GET/api/work']
+type ServerItem = ServerWork['help'][number]
+
+// What the server computed for the developer (PAM-506): the real projects
+// and requests, best match first
+const fromServer = (work?: ServerWork) => {
+  const item = (
+    { id, title, project, score, skills, href }: ServerItem,
+    look: Pick<Work, 'icon' | 'color' | 'kind' | 'cta'>,
+  ): Work => ({
+    ...look,
+    key: `server-${look.kind}-${id}`,
+    where: project || 'Sans projet',
+    title,
+    reason: skills.length
+      ? t`Correspondance ${score} / 100 · ${skills.join(', ')}`
+      : t`Correspondance ${score} / 100`,
+    href,
+  })
+  return {
+    help: (work?.help ?? []).map((i) =>
+      item(i, {
+        icon: LifeBuoy,
+        color: 'text-indigo',
+        kind: helpCategories[i.type as HelpCategory] ?? i.type,
+        cta: 'Voir la demande',
+      })
+    ),
+    needs: (work?.needs ?? []).map((i) =>
+      item(i, {
+        icon: FolderGit2,
+        color: 'text-ink',
+        kind: 'Besoin de projet',
+        cta: 'Voir l’équipe',
+      })
+    ),
+    issues: (work?.issues ?? []).map((i) =>
+      item(i, {
+        icon: CircleDot,
+        color: 'text-verified',
+        kind: 'good first issue',
+        cta: 'Voir l’issue sur GitHub',
+      })
+    ),
+  }
+}
+
+/**
+ * Help that matches, project needs that fit, good first issues (§10.3): those
+ * of the server first, then those of the demo
+ */
+const workGroups = (work?: ServerWork): [string, Work[]][] => {
+  const server = fromServer(work)
   const isMember = (p: Project) =>
     p.owner === me.login || p.members.some((m) => isMe(m.login))
-  const help = matchingRequests(me).map(({ request, score }) => ({
+  const help = matchingRequests(me).filter(({ request }) => request.demo).map((
+    { request, score },
+  ) => ({
     key: request.id,
     icon: LifeBuoy,
     color: 'text-indigo',
@@ -293,7 +356,9 @@ const workGroups = (): [string, Work[]][] => {
     cta: 'Voir la demande',
   }))
   // good first issues have their own group below
-  const needs = allProjects().filter((p) => !isMember(p)).flatMap((p) =>
+  const needs = allProjects().filter((p) => p.demo && !isMember(p)).flatMap((
+    p,
+  ) =>
     p.needs.filter((need) => need !== 'good first issue').map((need) => ({
       project: p,
       need,
@@ -317,7 +382,8 @@ const workGroups = (): [string, Work[]][] => {
     p.stack.filter((s) => me.skills.includes(s)).length
   const beginner = issues
     .filter((issue) =>
-      issue.state === 'open' && issue.labels.includes('good first issue') &&
+      issue.demo && issue.state === 'open' &&
+      issue.labels.includes('good first issue') &&
       !isMember(projects[issue.project])
     )
     .sort((a, b) => shared(projects[b.project]) - shared(projects[a.project]))
@@ -335,16 +401,118 @@ const workGroups = (): [string, Work[]][] => {
         cta: 'Voir l’issue sur GitHub',
       }
     })
+  // The demo projects are in the base too: a row of the demo that the
+  // server already gives is shown once
+  const join = (fromServer: Work[], demo: Work[]) => {
+    const known = new Set(fromServer.map((w) => `${w.where}|${w.title}`))
+    return [
+      ...fromServer,
+      ...demo.filter((w) => !known.has(`${w.where}|${w.title}`)),
+    ]
+  }
   return [
-    ['Demandes qui te correspondent', help],
-    ['Besoins de projets', needs],
-    ['good first issue', beginner],
+    ['Demandes qui te correspondent', join(server.help, help)],
+    ['Besoins de projets', join(server.needs, needs)],
+    ['good first issue', join(server.issues, beginner)],
   ]
 }
 
-const WorkList = () => (
+const WorkList = () => {
+  const [work, setWork] = useState<ServerWork>()
+  const userId = currentUser.value?.userId
+  // Read for each developer signed in: computed by the server, never here
+  useEffect(() => {
+    if (!userId) return setWork(undefined)
+    api['GET/api/work'].fetch().then(setWork, () => {})
+  }, [userId])
+  return (
+    <>
+      {userId && <AskAssistant />}
+      {work?.firstStep && <FirstStep step={work.firstStep} />}
+      <WorkGroups groups={workGroups(work)} />
+    </>
+  )
+}
+
+// The Assistant lives in its panel, on every page (§11): here, a way in
+const AskAssistant = () => (
+  <section class='slab mr-2 flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4'>
+    <span class='flex min-w-[220px] flex-1 flex-col gap-0.5'>
+      <span class='text-[15px] leading-[22px] font-semibold'>
+        Tu ne sais pas par où commencer ?
+      </span>
+      <span class='text-[13px] text-ink-muted'>
+        L’Assistant te répond à partir de ce qui te correspond ici.
+      </span>
+    </span>
+    <Button
+      size={40}
+      onClick={() =>
+        openAssistant('Je veux contribuer à l’open source, par où commencer ?')}
+    >
+      <Sparkles />
+      Demander à l’Assistant
+    </Button>
+  </section>
+)
+
+/**
+ * One thing to begin with, for who has never contributed (§10.3): the
+ * first group of State of Dev Sénégal 2026 wants to, but does not know
+ * where to start
+ */
+const FirstStep = ({ step }: { step: ServerItem }) => {
+  // An issue on GitHub, or a need of a project, on Pamoja
+  const issue = step.href.startsWith('http')
+  return (
+    <section class='slab-selected mr-2 flex flex-col gap-4 px-5 py-[18px]'>
+      <Eyebrow accent>Ton premier pas · {step.project}</Eyebrow>
+      <div class='flex flex-col gap-1'>
+        <span class='font-display text-[17px] leading-[22px] font-semibold text-pretty'>
+          {step.title}
+        </span>
+        <span class='text-[13px] text-ink-muted'>
+          {step.type === 'documentation'
+            ? 'De la documentation : une vraie contribution, et une bonne première.'
+            : step.skills.length
+            ? t`Dans ce que tu connais : ${step.skills.join(', ')}.`
+            : 'Une issue choisie pour débuter.'}
+        </span>
+      </div>
+      <ol class='flex list-decimal flex-col gap-1.5 pl-5 text-[14px] leading-[22px]'>
+        <li>
+          {issue
+            ? 'Dis sur l’issue que tu la prends, et pose tes questions.'
+            : 'Présente-toi à l’équipe du projet et demande par quoi commencer.'}
+        </li>
+        <li>Fais le changement sur une branche de ton fork.</li>
+        <li>Ouvre la PR et décris ce que tu as fait.</li>
+      </ol>
+      <div class='flex flex-wrap gap-3'>
+        <Button size={40} href={step.href}>
+          {issue ? 'Voir l’issue sur GitHub' : 'Voir l’équipe du projet'}
+        </Button>
+        <Button
+          variant='secondary'
+          size={40}
+          href='help/new'
+          params={{
+            mentor: issue ? step.href : `/${step.href}`,
+            about: step.project
+              ? `${step.title} (${step.project})`
+              : step.title,
+          }}
+        >
+          Demander un mentor
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+const WorkGroups = ({ groups }: { groups: [string, Work[]][] }) => (
   <>
-    {workGroups().map(([label, items]) => (
+    {groups.map(([label, items]) => (
       <section key={label} class='slab mr-2 overflow-hidden'>
         <div class='flex px-5 pt-[18px] pb-4'>
           <Eyebrow>{label} · {items.length}</Eyebrow>

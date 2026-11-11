@@ -22,6 +22,7 @@ import { paletteOpen } from '/web/ui/command-palette.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 import { Menu } from '/web/ui/menu.tsx'
 import { unread } from '/web/ui/navigation.tsx'
+import { AssistantButton } from '/web/ui/assistant-panel.tsx'
 import { unreadMessages } from '/web/lib/messages.ts'
 import { themeSignal, ThemeToggle, toggleTheme } from '/web/ui/theme-toggle.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
@@ -157,6 +158,7 @@ export const Header = () => {
             </span>
           )}
         </Button>
+        <AssistantButton />
         <Button
           variant='secondary'
           size={40}

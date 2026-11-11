@@ -72,7 +72,7 @@ type Window = Slice & { repositoryId: number }
 export const GOOD_FIRST_ISSUE = 'good first issue'
 
 // The issue holds the label: its text is looked at before its JSON is read
-const isBeginner = `issue.labels LIKE '%${GOOD_FIRST_ISSUE}%'
+export const isBeginner = `issue.labels LIKE '%${GOOD_FIRST_ISSUE}%'
   AND EXISTS (SELECT 1 FROM json_each(issue.labels)
     WHERE value = '${GOOD_FIRST_ISSUE}')`
 

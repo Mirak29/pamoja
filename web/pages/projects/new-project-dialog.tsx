@@ -1,7 +1,12 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { A, navigate } from '@01edu/signal-router'
-import { ArrowLeft, FolderGit2, Github } from '/web/assets/icons.tsx'
+import {
+  ArrowLeft,
+  ExternalLink,
+  FolderGit2,
+  Github,
+} from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
 import { readmeSummary } from '/api/lib/readme.ts'
 import { createProject } from '/web/fixtures/repos.ts'
@@ -252,6 +257,34 @@ const RepoList = (
  * GitHub, with the skills read from its languages and topics, to validate
  * before anything is created
  */
+// The page of CodeRabbit on GitHub, where its owner installs it on a repo
+const CODERABBIT_INSTALL = 'https://github.com/apps/coderabbitai'
+
+/**
+ * An invitation, never a step (§5.4): a bot that reads each PR first, to
+ * turn on on GitHub if one wants. Pamoja installs nothing.
+ */
+const ReviewBotInvite = () => (
+  <div class='tile flex flex-col gap-2 px-[18px] py-4'>
+    <Eyebrow>Facultatif · une première relecture des PRs</Eyebrow>
+    <p class='text-[13px] leading-5 text-pretty text-ink-muted'>
+      CodeRabbit relit chaque PR de ton repo et laisse ses remarques sur GitHub,
+      avant les reviews des développeurs. Tu peux l’activer maintenant ou plus
+      tard, sur GitHub : Pamoja n’installe rien. Sur Pamoja, seules les reviews
+      des développeurs comptent.
+    </p>
+    <a
+      href={CODERABBIT_INSTALL}
+      target='_blank'
+      rel='noopener noreferrer'
+      class='key key-secondary h-9 self-start rounded-md px-4 text-[14px]'
+    >
+      Activer CodeRabbit sur GitHub
+      <ExternalLink class='size-3.5' />
+    </a>
+  </div>
+)
+
 const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
   const [preview, setPreview] = useState<RepoPreviewData>()
   const [failed, setFailed] = useState<Failure>(false)
@@ -405,6 +438,7 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
               projet ».
             </span>
           </div>
+          <ReviewBotInvite />
         </>
       )}
       <Footer>

@@ -841,6 +841,83 @@ Vérifié sur une copie de la base de `deno task stress` : lots de notifications
 - **Livrable** : `web/lib/batches.ts`, `web/ui/scroll-frame.tsx`, `web/ui/infinite-list.tsx`, `web/lib/scroll-handoff.ts`, `api/lib/cursor.ts`, `api/lib/readme.ts`, `api/help.ts`, `api/projects.ts`, `migrations/013-drop-prefix-indexes.js` ; §12.7
 - **Par** : @Mirak29
 
+### 2026-11-11 · PAM-431 · Invitation à CodeRabbit, reviews des bots écartées
+
+- **Import** : l'aperçu d'un repo propose, sans l'imposer, d'activer CodeRabbit. C'est un encadré « Facultatif » avec un lien vers sa page d'installation sur GitHub (`github.com/apps/coderabbitai`), ouvert dans un nouvel onglet. Pamoja n'installe rien : son app reste en lecture seule. L'import se fait de la même façon qu'on clique ou non.
+- **Reviews des bots** : une review d'un compte GitHub de type `Bot` (ou dont le login finit par `[bot]`) n'est plus enregistrée, ni par le webhook ni par la resynchronisation. Avant, une remarque de CodeRabbit faisait passer une PR en « review reçue » et la sortait du compteur « en attente de review ». Elle ne validait déjà aucune demande d'aide et ne comptait pas dans la réputation. Un test le vérifie.
+
+- **Livrable** : `web/pages/projects/new-project-dialog.tsx`, `api/review-check.ts`, `api/github-events.ts`, `api/review_check_test.ts` ; §5.4, §7.5
+- **Par** : @Mirak29
+
+### 2026-11-11 · PAM-506 · « Sur quoi puis-je travailler ? » calculé par le serveur
+
+L'onglet était calculé dans la page, sur les seules données chargées. Le serveur le calcule maintenant pour le développeur connecté (`api/work.ts`, `GET/api/work`), sans IA, en trois groupes d'au plus 10 :
+- les demandes d'aide de « Pour moi », avec leur score ;
+- les besoins ouverts des projets publics dont il n'est pas membre ;
+- les issues pour débuter des 10 projets qui lui correspondent le mieux, 3 par projet.
+
+La correspondance est la part des skills demandés qu'il possède, pesée comme dans le matching : 100 % prouvé sur Pamoja, 85 % lu sur GitHub, 70 % déclaré. Les lignes de démo s'ajoutent à la suite, sans doublon avec celles du serveur. Le seed enregistre désormais la stack des projets (`project.skills`), sans quoi aucun projet de démo ne correspondait.
+
+- **Livrable** : `api/work.ts`, `api/work_test.ts`, `web/pages/explore/explore-page.tsx`, `api/seed.ts` ; §10.3
+- **Par** : @Mirak29
+
+### 2026-11-11 · PAM-533 · Premier pas, d'après State of Dev Sénégal 2026
+
+Lecture complète de l'enquête State of Dev Sénégal 2026 (624 répondants), résumée dans `docs/etudes/state-of-dev-senegal-2026.md`. Le premier groupe, 34,8 %, répond « J'aimerais mais je ne sais pas par où commencer » ; seuls 13,5 % contribuent régulièrement.
+
+- **Premier pas** : pour qui n'a encore aucune PR mergée connue de Pamoja, l'onglet commence par une seule chose :
+  - la `good first issue` ou l'issue `documentation` qui lui correspond le mieux, la moins disputée à correspondance égale ; à défaut, un besoin « Documentation » ;
+  - trois étapes ;
+  - « Demander un mentor », qui ouvre une demande « Mentorat » pré-remplie (Débutant, ~30 min, avec le lien).
+- **Documentation** : les issues `documentation` rejoignent les `good first issue`. C'est la deuxième forme de contribution (49,4 %).
+- **Vocabulaire** : Tailwind CSS, Next.js, Laravel, Angular, Spring, Express, NestJS et React Native ajoutés ; ils sont parmi les plus utilisés au Sénégal et manquaient.
+- **Index** `pull_request_author`, pour savoir sans parcourir toute la table si un développeur a déjà contribué.
+
+Vérifié dans le navigateur, sur une copie de la base : premier pas « Documentation » chez AfriCommerce, étapes adaptées à un besoin, demande de mentor pré-remplie.
+
+- **Livrable** : `docs/etudes/state-of-dev-senegal-2026.md`, `api/work.ts`, `api/vocabulary.ts`, `api/schema.ts`, `web/pages/explore/explore-page.tsx`, `web/pages/help/new-help.tsx` ; §6.1, §10.3
+- **Par** : @Mirak29
+
+### 2026-11-11 · PAM-532 · Assistant sur Ollama Cloud
+
+Un encadré en tête de « Sur quoi puis-je travailler ? » répond à des questions du genre « Sur quoi puis-je travailler aujourd'hui ? » ou « Je veux contribuer à l'open source, par où commencer ? ».
+
+- **Le modèle ne fait que rédiger.** Il reçoit la liste de PAM-506, à part de la question et comme une donnée. Il cite chaque élément par sa clé ; le serveur remplace la clé par le titre et donne les liens. Une réponse qui cite un élément absent de la liste est écartée entière.
+- **Rien n'est gardé** : ni la question ni la réponse. La page renvoie au plus les 6 derniers messages de l'échange.
+- **Budget** : 30 questions par développeur et par jour, 2 000 pour tout Pamoja, et un cache de 10 minutes.
+- **Repli** : sans clé, en cas d'erreur, après 20 s ou pour une réponse invalide, la liste s'affiche sans phrase.
+- **Configuration** : `LLM_API_KEY`, `LLM_BASE_URL` et `LLM_MODEL_NAME` dans `.env-local`. Une adresse en `/v1` (`https://ollama.com/v1`) passe par l'API compatible OpenAI ; sans `/v1`, par l'API native d'Ollama.
+
+Testé avec un faux modèle (6 tests) : sans clé, réponse valide sans lien du modèle, citation inventée écartée, panne, budget, API compatible OpenAI, clé entre crochets avec espaces et Markdown retiré. Le repli est vérifié dans le navigateur.
+
+Essayé pour de vrai avec **Groq** (`openai/gpt-oss-120b`, offre gratuite), sur une copie de la base : réponses en 1 à 2 s, en français, qui ne citent que la liste ; une question hors sujet (« la capitale du Japon ») est déclinée. Les premiers essais disaient « sur l'issue » pour un besoin de projet : les étapes du premier pas sont désormais écrites par le serveur. Ollama Cloud refusait l'appel (402 : compte sans crédits).
+
+- **Livrable** : `api/assistant.ts`, `api/assistant_test.ts`, `web/pages/explore/assistant.tsx`, `api/routes.ts` ; §11
+- **Par** : @Mirak29
+
+### 2026-11-11 · PAM-534 · Assistant repensé : un panneau sur toutes les pages
+
+L'Assistant de PAM-532 était un encadré dans Explorer, dont la conversation se perdait en quittant la page. Il est repensé de zéro.
+
+- **Disponible partout** : un bouton de l'en-tête (et `Ctrl J`) ouvre un panneau à droite, plein écran sur mobile. Il reste ouvert pendant qu'on navigue, et d'une visite à l'autre.
+- **Conversation gardée** : enregistrée par le serveur (table `AssistantMessage`, 60 derniers messages, pour le développeur seul). La corbeille l'efface pour de bon. Les 6 derniers messages accompagnent chaque question.
+- **Un contexte plus large**, calculé par le serveur à chaque question :
+  - le profil et ce qui correspond au développeur (PAM-506, PAM-533) ;
+  - ce qui l'attend : demandes à confirmer, aides acceptées, demandes sans aidant, notifications non lues ;
+  - la page ouverte : sur un projet, ses besoins, sa stack, ses issues pour débuter ;
+  - le mode d'emploi de Pamoja (demander une review, importer, réputation, matching).
+- **Cartes et actions** : une réponse montre les éléments cités, cliquables, et des boutons d'un catalogue fixe (« Demander un mentor », « Compléter mon profil »…). Une clé inventée écarte toute la réponse.
+- **Des liens dans la phrase** : chaque élément, projet ou page nommé dans une réponse est un lien, à l'endroit où il est nommé ; chaque carte mène à l'élément et à son projet. Le lien d'une PR ouverte du développeur ouvre la demande de review déjà remplie. Le catalogue d'actions couvre aussi ses demandes, son profil et ses preuves, ses projets, les communautés, les développeurs et les messages.
+- **Le point d'un projet** : sur la page d'un projet, « Où en est ce projet ? » donne ce qui a été fait et par qui (PR fusionnées, relecteurs), ce qui est en cours (PR ouvertes, dont celles sans review, tâches du tableau) et ce qui reste (issues ouvertes, tableau, jalons), chaque PR et issue en lien. Essayé pour de vrai sur deux projets de la base.
+- **Jamais de « rien ne te correspond » sec** : sans correspondance, le serveur donne la raison et des projets à découvrir, et l'Assistant part des projets du développeur, propose de compléter son profil et d'en découvrir d'autres.
+- **Utile sans question** : à l'ouverture, un point calculé sans IA et des questions proposées selon la page (« Que puis-je faire sur ce projet ? »).
+- **Explorer** garde le premier pas et les listes ; l'encadré devient un bouton « Demander à l'Assistant ».
+
+Vérifié dans le navigateur avec Groq, sur une copie de la base : panneau qui suit la navigation, conversation retrouvée, question sur le projet ouvert (AfriCommerce), « Qu'est-ce qui m'attend ? », « Comment demander une review ? », nouvelle conversation. 7 tests avec un faux modèle.
+
+- **Livrable** : `api/assistant.ts`, `api/assistant_test.ts`, `api/schema.ts`, `api/routes.ts`, `web/lib/assistant.ts`, `web/ui/assistant-panel.tsx`, `web/ui/header.tsx`, `web/ui/layout.tsx`, `web/pages/explore/explore-page.tsx` ; §11, §14.4
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

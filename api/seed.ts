@@ -13,7 +13,7 @@ import {
   User,
   UserIntent,
 } from '/api/schema.ts'
-import { setDeclaredSkills } from '/api/skills.ts'
+import { setDeclaredSkills, skillIdsOf } from '/api/skills.ts'
 import { countryCodeOf, helpCategories, keyOf } from '/api/vocabulary.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { people, type Person } from '/web/fixtures/people.ts'
@@ -188,6 +188,8 @@ export const seed = (githubIds = new Map<string, number>()) => {
         source,
         createdAt,
         updatedAt: at,
+        // Its stack: what « Sur quoi puis-je travailler ? » matches (§10.3)
+        skills: skillIdsOf(project.stack),
       })
       backdate({
         id: Entry.insert.PROJECT_CREATED({

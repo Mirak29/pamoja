@@ -3,6 +3,7 @@ import { useEffect } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { LifeBuoy } from '/web/assets/icons.tsx'
 import { incoming } from '/web/fixtures/notifications.ts'
+import { AssistantPanel } from '/web/ui/assistant-panel.tsx'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
@@ -129,6 +130,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <MobileNav />
     <CreateMenu />
     <CommandPalette />
+    <AssistantPanel />
     <ReportDialog />
     <Toasts />
     <LiveNotifications />

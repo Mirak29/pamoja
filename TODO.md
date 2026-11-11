@@ -191,6 +191,7 @@ Responsable : _à répartir_
 - [x] **PAM-428** · Messages de canal enregistrés avec leur image : `POST/api/project/message/create`, `GET/api/project/messages`, droits d'écriture et de lecture par canal, image servie aux seuls lecteurs du canal, vidéo intégrée depuis le premier lien du message ; fils, réactions et temps réel restent à PAM-406 (§6.8, §17.3) — @niangoos
 - [x] **PAM-429** · Médias de démo : captures dessinées pour les projets de démo (`web/assets/mocks`, copiées dans `dist`), posts du fil avec images et vidéos YouTube, captures des demandes d'aide, une capture dans `#général` d'OpenPay Africa (§12.7, §17.3) — @niangoos
 - [x] **PAM-430** · Vidéo d'un post par le lien collé dans son texte : aperçu dans la rédaction de l'Accueil et le dialogue « Nouveau post », message clair pour un fichier vidéo (§17.3) — @niangoos
+- [x] **PAM-431** · Invitation à activer CodeRabbit dans l'aperçu de l'import, par un lien vers sa page d'installation, sans rien imposer ; les reviews des bots ne sont plus enregistrées (§5.4, §7.5) — @Mirak29
 - [x] **PAM-423** · Alerte « CI en échec » dans `#suivi` sur données fictives, avec « Demander de l'aide » qui pré-remplit une demande Debug (§6.8, §18) `[démo]` — @Mirak29
 
 **Critères d'acceptation (§4)**
@@ -209,7 +210,10 @@ Responsable : _à répartir_
 - [ ] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1)
 - [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
 - [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
-- [ ] **PAM-506** · « What can I work on? » (§10.3, §11)
+- [x] **PAM-506** · « What can I work on? » calculé par le serveur, sans IA : demandes qui correspondent, besoins des autres projets, `good first issue`, chacun avec sa correspondance sur 100 (§10.3, §11) — @Mirak29
+- [x] **PAM-533** · Premier pas pour qui n'a jamais contribué : une issue choisie (`good first issue` ou `documentation`), les étapes, un mentor à un clic ; frameworks les plus utilisés ajoutés au vocabulaire (Tailwind CSS, Next.js, Laravel, Angular, Spring, Express, NestJS, React Native) ; d'après State of Dev Sénégal 2026 (§6.1, §10.3) — @Mirak29
+- [x] **PAM-532** · Assistant sur Ollama Cloud : questions du genre « Sur quoi puis-je travailler aujourd'hui ? », réponses qui ne citent que la liste de PAM-506, vérifiées par le serveur, avec repli sans IA (§11) — @Mirak29
+- [x] **PAM-534** · Assistant repensé : panneau disponible sur toutes les pages, conversation gardée, contexte élargi (ce qui t'attend, la page ouverte, mode d'emploi), cartes et actions, point d'ouverture sans IA (§11, §14.4) — @Mirak29
 - [ ] **PAM-507** · Meilisearch : index, worker de synchro depuis les entries, réindexation nocturne, repli `LIKE` (§10.4)
 - [ ] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements ; un contenu masqué reste visible pour son auteur, avec un bandeau (§10.5)
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
@@ -348,3 +352,7 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-10-25 · Communautés : chaque sorte (technologies, pays, domaines) dans un cadre d'environ deux rangées ; projets et demandes d'aide d'une communauté par lots ; posts et membres d'une communauté restent dans le défilement de la page, comme un fil · §12.7
 - 2026-10-25 · Passage de relais du défilement : un cadre arrivé à son bout donne le reste du geste à la page, en douceur et sans perdre de distance ; plus d'`overscroll-contain` sur les cadres ; jamais depuis une fenêtre modale · §12.7
 - 2026-11-11 · Relecture des listes : une seule mécanique de lots côté navigateur (une première page relue retire ce qui a disparu, chaque onglet montre jusqu'où ses lots sont allés), un composant ScrollFrame pour les cadres, « good first issue » filtré par le serveur, issues et PRs dans l'ordre du serveur · §12.7
+- 2026-11-11 · Import : l'aperçu invite à activer CodeRabbit sur le repo, par un simple lien vers sa page d'installation (Pamoja n'installe rien) ; une review d'un compte `Bot` n'est pas enregistrée, elle ne valide rien et ne sort pas une PR de « en attente de review » · §5.4, §7.5
+- 2026-11-11 · « What can I work on? » calculé par le serveur sans IA (PAM-506), correspondance pesée comme le matching ; Assistant sur Ollama Cloud (PAM-532) : le modèle ne fait que rédiger à partir de cette liste, le serveur vérifie ce qu'il cite, rien n'est gardé, 30 questions par jour, repli sur la liste · §10.3, §11
+- 2026-11-11 · State of Dev Sénégal 2026 lu (`docs/etudes/`) : 34,8 % veulent contribuer sans savoir par où commencer, d'où un premier pas guidé (une issue, les étapes, un mentor) ; la documentation compte comme contribution ; huit frameworks ajoutés au vocabulaire · §6.1, §10.3
+- 2026-11-11 · Assistant repensé (PAM-534) : un panneau ouvert depuis l'en-tête, qui suit la navigation ; conversation gardée côté serveur (60 messages, effaçable) au lieu de « rien n'est gardé » ; le contexte s'élargit à ce qui attend le développeur, à la page ouverte et au mode d'emploi ; réponses avec cartes et actions d'un catalogue fixe · §11, §14.4
