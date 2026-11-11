@@ -22,63 +22,63 @@ Une tâche abandonnée ou fusionnée va dans la section « Fermé sans réalisat
 Vérification de la stack annoncée par rapport au code de Tournament et correction des écarts : build esbuild au lieu de Vite, routes de `@01edu/api` sans paramètre de chemin, réglages SQLite à appliquer soi-même, permissions GitHub.
 
 - **Livrable** : retour technique transmis à l'équipe.
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Cahier des charges de référence
 
 Rédaction du cahier des charges en 20 sections : produit, règles métier, architecture, modèle de données, routes, sécurité, démo. Les faits techniques sont vérifiés dans le code source de `@01edu`.
 
 - **Livrable** : `docs/cahier-des-charges.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Conception de l'intégration GitHub
 
 GitHub App en lecture seule, repos publics uniquement, aucun token utilisateur stocké, import en deux niveaux (vitrine sans installation, synchro live avec installation), webhooks dans une file qui survit aux redémarrages.
 
 - **Livrable** : `docs/cahier-des-charges.md` §5
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Intégration d'une relecture externe
 
 Corrections issues d'une relecture : trois contrôles de droits à l'installation de l'app, cycle de vie complet d'une demande d'aide, réputation fondée sur des preuves figées et des règles anti-abus, modération, critères d'acceptation par bloc.
 
 - **Livrable** : `docs/cahier-des-charges.md` §4, §5, §7, §8, §10.5
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Choix d'infrastructure
 
 Hébergement chez Systalink (imposé), Caddy comme reverse proxy, Meilisearch pour la recherche, images uploadées et vidéos intégrées par lien.
 
 - **Livrable** : `docs/cahier-des-charges.md` §10.4, §17
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Organisation des projets en canaux
 
 Quatre canaux imposés par projet, façon Discord : `#général`, `#suivi`, `#aide`, `#annonces`. Les alertes GitHub et CI/CD de `#suivi` mènent à la boucle d'aide (« Demander de l'aide », « Demander une review »).
 
 - **Livrable** : `docs/cahier-des-charges.md` §6.8
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Nom et inscription au concours
 
 Choix du nom Pamoja (« ensemble » en swahili) et rédaction des textes du formulaire CADEV : description et stack.
 
 - **Livrable** : `docs/cadev-inscription.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Mise en place du suivi de projet
 
 Création du repo, de la todo (identifiants `PAM-xxx`, planning, critères d'acceptation, règles de mise à jour, journal des décisions) et du `CLAUDE.md` partagé avec niangoos.
 
 - **Livrable** : `TODO.md`, `CLAUDE.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-07 · Brief du prototype
 
 Brief autonome pour Claude Design : 47 écrans, 11 parcours jouables, données fictives cohérentes, règles métier visibles, panneau de démo.
 
 - **Livrable** : `docs/brief-prototype-claude-design.md`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ## Réalisé
 
@@ -87,21 +87,21 @@ Brief autonome pour Claude Design : 47 écrans, 11 parcours jouables, données f
 Projet sur 10 jours, du mercredi 7 au vendredi 16 octobre 2026, avec un planning par bloc.
 
 - **Livrable** : `TODO.md` (section Planning)
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-007 · Valider l'identité visuelle
 
 Design system Pamoja (couleurs clair et sombre, typographie, logo, composants), complété par le système isométrique issu du prototype : dalles, touches, puits, formes par type d'objet.
 
 - **Livrable** : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb), `docs/identite/`
-- **Par** : Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-008 · Produire le prototype complet
 
 Prototype interactif Pamoja v2 réalisé avec Claude Design : pages, parcours, données fictives et panneau de démo. Ses écarts validés sont reportés dans le cahier des charges.
 
 - **Livrable** : `docs/prototype/` (avec la liste de ce que le code ne reprend pas)
-- **Par** : Abdou, avec Claude Design
+- **Par** : @Mirak29
 
 ### 2026-10-08 · PAM-101 · Initialiser le projet Deno
 
@@ -446,7 +446,7 @@ encore validé pour gel avant le back.** Aucun correctif applicatif livré par c
 audit ; les tâches de validation en production restent ouvertes.
 
 - **Livrable** : `docs/qa/2026-10-10/rapport-qa-front.md` et captures associées
-- **Par** : Codex, à la demande d'Abdou
+- **Par** : @Mirak29
 
 ### 2026-10-10 · PAM-222 · Boucle d'aide, retours QA 2
 
@@ -1035,6 +1035,13 @@ Les fils sous un message de `#général`, `#aide` ou `#annonces` et le « +1 » 
 
 - **Livrable** : `api/channels.ts`, `api/routes.ts` (`POST/api/project/message/like`, `parent` à la création), `api/tracking.ts` ; `web/fixtures/channels.ts`, `web/lib/channels.ts`, `web/pages/project/channels-tab.tsx` ; 1 test de plus dans `api/channels_test.ts` ; cahier des charges §6.8
 - **Par** : @niangoos
+
+### 2026-10-26 · Diagnostic des tests de charge HTTP locaux
+
+Préparation de sessions distinctes pour 1 000 comptes synthétiques, scénario k6 mêlant lectures et écritures répétables, et nettoyage des sessions. Après un test à 1 000 VU avec un p95 de 25,8 s et 1,56 % d'échecs, ajout du drapeau local `PAMOJA_LOAD_TEST=1` : les événements informatifs HTTP ne calculent plus leurs piles d'appels et ne s'écrivent plus dans le terminal, tandis que les avertissements et les erreurs restent visibles. La procédure utilise le build de production local sans les watchers. L'effet sur la charge et la cause des refus TCP restent à mesurer ; aucun gain n'est encore confirmé.
+
+- **Livrable** : `api/lib/log.ts`, `qa/load/pamoja.js`, `qa/load/README.md`, `task-db-load-sessions.ts`, tâches de sessions dans `deno.json` et exclusion des cookies dans `.gitignore`
+- **Par** : @Mirak29
 
 ## Fermé sans réalisation
 
