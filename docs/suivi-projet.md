@@ -811,6 +811,36 @@ Vérifié dans le navigateur (`?stress`, page Communautés) : au milieu d'un cad
 - **Livrable** : `web/lib/scroll-handoff.ts`, `web/app.tsx`, cadres des pages (sans `overscroll-contain`) ; §12.7
 - **Par** : @Mirak29
 
+### 2026-11-11 · PAM-531 · Relecture des listes : bugs et nettoyage
+
+Relecture complète de la branche (`/simplify` puis `/code-review`), puis correction de tout ce qu'elle a relevé.
+
+- **Bugs** :
+  - une demande de message refusée restait dans la liste ;
+  - une liste pouvait cesser de se charger seule après un changement d'onglet ;
+  - le glissement du défilement pouvait revenir en arrière sans l'événement `scrollend` ;
+  - une notification supprimée côté serveur restait affichée ;
+  - un onglet d'aide restait vide, sans bouton, après une erreur réseau ;
+  - l'en-tête d'un projet de l'API comptait les lignes chargées (« 20 issues ouvertes ») au lieu des compteurs du serveur (2 250).
+- **Une seule mécanique de lots côté navigateur** (`web/lib/batches.ts`), utilisée par les notifications, l'aide, les messages, les issues et les PRs : un curseur par liste, un lot à la fois, un lot raté réessayé avec « Charger plus ». Une première page relue retire ce qui a disparu de sa plage. Chaque onglet montre les lignes jusqu'où ses propres lots sont allés, jamais celles qu'un autre onglet a lues plus bas, sous un trou. Chaque onglet ou filtre a sa propre liste (`key`), qui repart de zéro.
+- **Cadres défilants** : un composant `ScrollFrame` remplace les cadres écrits à la main. Il est positionné, pour que rien de caché n'en sorte, et marqué `data-scroller`, pour que les listes et le passage du défilement le trouvent sans relire les styles de la page à chaque cran de molette.
+- **Serveur** :
+  - un helper commun de lots (`readBatch`, `after`, `BATCH`) ;
+  - les issues « good first issue » filtrées par le serveur, avec leurs propres lots ;
+  - les onglets issues et PRs dans l'ordre du serveur ;
+  - « Pour moi » lu en 2 requêtes par lot au lieu de 2 par demande ;
+  - les onglets de l'aide lisent chaque source par son index, au lieu de trier toutes les demandes des projets ;
+  - les compteurs des projets lus en une requête groupée, et le README plus lu en entier ;
+  - le compteur de messages calculé avec la première page seulement ;
+  - le compteur de notifications non lues lu par son index ;
+  - la migration 013 retire deux index devenus inutiles.
+- **Petits nettoyages** : `readmeSummary` partagé entre l'API et l'aperçu d'import, un seul `debounced` pour les rechargements en temps réel, badge « 9+ » et schémas de curseur factorisés, cartes du fil construites seulement pour le lot affiché.
+
+Vérifié sur une copie de la base de `deno task stress` : lots de notifications et onglet Projets, filtre « good first issue » (2 250 / 450, réponse en 10 ms), PRs sans doublon, onglet d'aide en erreur puis réessayé, demande refusée qui disparaît. Le format, le lint, les types et les 183 tests passent.
+
+- **Livrable** : `web/lib/batches.ts`, `web/ui/scroll-frame.tsx`, `web/ui/infinite-list.tsx`, `web/lib/scroll-handoff.ts`, `api/lib/cursor.ts`, `api/lib/readme.ts`, `api/help.ts`, `api/projects.ts`, `migrations/013-drop-prefix-indexes.js` ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
