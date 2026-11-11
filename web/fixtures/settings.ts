@@ -30,6 +30,13 @@ export const settings = {
   matching: 'Instantané' as typeof matchingModes[number],
   /** Help requests below this score are not proposed (§7.3) */
   minScore: 50,
+  /**
+   * Only the requests on one of these skills, of these projects (slugs) and
+   * by a member of these communities (slugs); empty, all of them (§7.4)
+   */
+  onlySkills: [] as string[],
+  onlyProjects: [] as string[],
+  onlyCommunities: [] as string[],
 }
 
 export const settingsChanged = signal(0)

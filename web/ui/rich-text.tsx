@@ -1,12 +1,15 @@
 import type { ComponentChildren } from 'preact'
 import { A } from '@01edu/signal-router'
 import { openSearch } from '/web/ui/command-palette.tsx'
+import { memberLink, webHref } from '/web/lib/member-links.ts'
 
 // What a member writes is text, never HTML (§10.1, §16). A small Markdown is
 // read into elements, never into an HTML string, so nothing they write can
 // run: **bold**, *italic*, `code`, [links](https://…), lists, quotes, code
 // blocks. Bare links, @mentions and #hashtags lead somewhere too. Only http
-// and https reach an href: `javascript:` and the like stay text.
+// and https reach an href: `javascript:` and the like stay text. A link
+// opens in a new tab, without access to the page, and is marked as written
+// by a member (`memberLink`, §16).
 
 const INLINE = new RegExp(
   [
@@ -51,16 +54,22 @@ const inline = (text: string, depth = 0): ComponentChildren[] => {
         <code translate={false} key={key} class={codeClass}>{g.code}</code>,
       )
     } else if (g.label !== undefined) {
+      const href = webHref(g.target)
+      const label = depth < 2 ? inline(g.label, depth + 1) : g.label
       parts.push(
-        <a
-          translate={false}
-          key={key}
-          href={g.target}
-          rel='nofollow ugc'
-          class={linkClass}
-        >
-          {depth < 2 ? inline(g.label, depth + 1) : g.label}
-        </a>,
+        href
+          ? (
+            <a
+              translate={false}
+              key={key}
+              href={href}
+              {...memberLink}
+              class={linkClass}
+            >
+              {label}
+            </a>
+          )
+          : match[0],
       )
     } else if (g.bold !== undefined) {
       parts.push(
@@ -79,17 +88,23 @@ const inline = (text: string, depth = 0): ComponentChildren[] => {
       const trailing = g.url.match(TRAILING)?.[0] ?? ''
       const shown = g.url.slice(0, g.url.length - trailing.length)
       end -= trailing.length
-      const href = shown.startsWith('www.') ? `https://${shown}` : shown
+      const href = webHref(
+        shown.startsWith('www.') ? `https://${shown}` : shown,
+      )
       parts.push(
-        <a
-          translate={false}
-          key={key}
-          href={href}
-          rel='nofollow ugc'
-          class={linkClass}
-        >
-          {shown}
-        </a>,
+        href
+          ? (
+            <a
+              translate={false}
+              key={key}
+              href={href}
+              {...memberLink}
+              class={linkClass}
+            >
+              {shown}
+            </a>
+          )
+          : shown,
       )
     } else if (g.login !== undefined) {
       parts.push(

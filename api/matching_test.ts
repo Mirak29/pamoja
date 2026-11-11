@@ -8,6 +8,7 @@ import {
   Community,
   CommunityMember,
   Profile,
+  Project,
   User,
   UserIntent,
 } from '/api/schema.ts'
@@ -274,4 +275,102 @@ Deno.test('matching: the preview of the form writes nothing', async () => {
     db.prepare('SELECT count(*) AS n FROM helpMatch').get(),
     { n: 0 },
   )
+})
+
+Deno.test('matching: only the skills, projects and communities kept (§7.4)', async () => {
+  restore()
+  const abdou = dev('abdou', ['Go'])
+  const go = Community.insert({
+    name: 'Go',
+    slug: 'go',
+    description: '',
+    type: 'technology',
+    source: 'demo',
+    createdAt: now(),
+  })
+  CommunityMember.insert({
+    communityId: go,
+    userId: abdou,
+    role: 'member',
+    joinedAt: now(),
+  })
+  const projectId = Project.insert({
+    ownerId: abdou,
+    name: 'OpenPay Africa',
+    slug: 'openpay-africa',
+    description: '',
+    visibility: 'public',
+    status: 'beta',
+    source: 'demo',
+    createdAt: now(),
+    updatedAt: now(),
+  })
+  // Each one keeps something, saved as the settings page saves it
+  const filters = {
+    all: {},
+    sqlite: { onlySkills: ['SQLite'] },
+    rust: { onlySkills: ['Rust'] },
+    openpay: { onlyProjects: ['openpay-africa'] },
+    other: { onlyProjects: ['senegal-maps'] },
+    gophers: { onlyCommunities: ['go'] },
+    reacters: { onlyCommunities: ['react'] },
+    both: { onlySkills: ['Go'], onlyProjects: ['senegal-maps'] },
+  }
+  for (const [login, kept] of Object.entries(filters)) {
+    const userId = dev(login, ['Go', 'SQLite', 'Rust'])
+    const saved = await call(
+      '/api/notification/preferences',
+      await createSession(userId, 'demo'),
+      { matchingMode: 'instant', minScore: 0, helpTypes: [], ...kept },
+    )
+    assertEquals(saved.status, 200)
+  }
+  const reached = (projectId: number | null) =>
+    rank({
+      authorId: abdou,
+      category: 'debugging',
+      skills: skillIdsOf(['Go', 'SQLite']),
+      projectId,
+    }).map((c) => c.login).sort()
+  assertEquals(reached(projectId), ['all', 'gophers', 'openpay', 'sqlite'])
+  // Without a project, a filter on projects keeps nothing
+  assertEquals(reached(null), ['all', 'gophers', 'sqlite'])
+})
+
+Deno.test('matching: the filters are read back and checked', async () => {
+  restore()
+  const cookie = await createSession(dev('moussa', ['Go']), 'demo')
+  const base = { matchingMode: 'digest', minScore: 60, helpTypes: [] }
+  const saved = await call('/api/notification/preferences', cookie, {
+    ...base,
+    onlySkills: ['Go', 'Go'],
+    onlyProjects: ['openpay-africa'],
+    onlyCommunities: ['go'],
+  })
+  assertEquals(
+    [
+      saved.json.onlySkills,
+      saved.json.onlyProjects,
+      saved.json.onlyCommunities,
+    ],
+    [['Go'], ['openpay-africa'], ['go']],
+  )
+  for (
+    const refused of [
+      { onlySkills: ['Cobol++'] },
+      { onlyProjects: ['Not A Slug'] },
+      { onlyCommunities: Array.from({ length: 31 }, (_, i) => `c${i}`) },
+    ]
+  ) {
+    assertEquals(
+      (await call('/api/notification/preferences', cookie, {
+        ...base,
+        ...refused,
+      })).status,
+      400,
+    )
+  }
+  // An older page that does not send them keeps none
+  const older = await call('/api/notification/preferences', cookie, base)
+  assertEquals(older.json.onlySkills, [])
 })

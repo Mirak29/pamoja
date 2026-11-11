@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { ExternalLink, Play } from '/web/assets/icons.tsx'
 import { videoOf } from '/api/video-links.ts'
 import { api } from '/web/lib/api.ts'
+import { memberLink, webHref } from '/web/lib/member-links.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 /*
@@ -29,6 +30,10 @@ const previewOf = (url: string) => {
   return found
 }
 
+/** The first YouTube, Loom or Vimeo link of a text, embedded under it */
+export const videoIn = (text: string) =>
+  text.match(/https?:\/\/[^\s<>()]+/g)?.find((link) => videoOf(link))
+
 const frame =
   'aspect-video w-full overflow-hidden rounded-lg border border-figure-edge bg-surface-000 shadow-tile'
 
@@ -44,12 +49,14 @@ export const VideoEmbed = (
     video && previewOf(url).then(setPreview)
   }, [url])
   if (!video) {
-    // Not an embeddable video: the link itself, opened elsewhere
+    // Not an embeddable video: the link itself, opened elsewhere; not even
+    // a link unless it is a web address (§16)
+    const href = webHref(url)
+    if (!href) return null
     return (
       <a
-        href={url}
-        target='_blank'
-        rel='noopener noreferrer'
+        href={href}
+        {...memberLink}
         class='inline-flex items-center gap-2 text-[14px]'
       >
         <ExternalLink class='size-4' />

@@ -30,7 +30,8 @@ export const english: Record<string, string> = {
   'Ajouter un bloc de code': 'Add a code block',
   'Ajouter un skill': 'Add a skill',
   'Ajouter un skill (essaie « postgres »)': 'Add a skill (try “postgres”)',
-  'Ajouter une image (4 maximum)': 'Add an image (up to 4)',
+  'Ajouter une image (4 maximum) ; une vidéo se colle en lien dans le texte':
+    'Add an image (up to 4); paste a video as a link in the text',
   'Ajouter une technologie': 'Add a technology',
   'Ajoutée au board': 'Added to the board',
   'Alertes GitHub et CI/CD, écrites par la plateforme':
@@ -109,8 +110,8 @@ export const english: Record<string, string> = {
   'Retirer la capture': 'Remove screenshot',
   'Score minimum': 'Minimum score',
   'Signaler': 'Report',
-  'Sur quoi tu travailles ? Une question, une astuce, un bout de code…':
-    'What are you working on? A question, a tip, a code snippet…',
+  'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…':
+    'What are you working on? A question, a tip, some code, a video link…',
   'Synchro live': 'Live sync',
   'Seulement mes PRs': 'Only my pull requests',
   'Tape une techno (essaie « postgres »)': 'Type a technology (try “postgres”)',
@@ -932,6 +933,22 @@ export const english: Record<string, string> = {
   'Tu les suis : tu lis leur #suivi et leurs #annonces, sans écrire.':
     'You follow them: you read their #tracking and #announcements, without writing.',
   '· connecté via GitHub': '· connected through GitHub',
+  'Filtres': 'Filters',
+  'Sans sélection, toutes les demandes passent. Avec, seulement celles qui touchent un des choix de chaque filtre.':
+    'With nothing picked, every request goes through. With picks, only those that match one pick of each filter.',
+  'Seulement ces skills': 'Only these skills',
+  'Seulement ces projets': 'Only these projects',
+  'Seulement les auteurs de ces communautés':
+    'Only authors from these communities',
+  'Ajoute des skills à ton profil pour filtrer.':
+    'Add skills to your profile to filter.',
+  'Rejoins ou suis un projet pour filtrer.':
+    'Join or follow a project to filter.',
+  'Rejoins une communauté pour filtrer.': 'Join a community to filter.',
+  'un reviewer': 'a reviewer',
+  'commit poussé': 'commit pushed',
+  'commits poussés': 'commits pushed',
+  'Réponse non envoyée': 'Reply not sent',
   'Ton profil, tes preuves, tes posts et tes réglages t’appartiennent.':
     'Your profile, proofs, posts and settings belong to you.',
   'Exporter mes données': 'Export my data',
@@ -1516,6 +1533,9 @@ export const english: Record<string, string> = {
   'Joindre une image ou un PDF': 'Attach an image or a PDF',
   'Image jointe': 'Attached image',
   'Format non accepté': 'Format not accepted',
+  'Les vidéos se partagent par lien': 'Videos are shared by link',
+  'Colle un lien YouTube, Loom ou Vimeo dans le texte.':
+    'Paste a YouTube, Loom or Vimeo link in the text.',
   'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
     'Send a JPEG, PNG or WebP image, or a PDF.',
   'Image illisible': 'Unreadable image',
@@ -1552,6 +1572,7 @@ export const english: Record<string, string> = {
     'A wide photo, from your computer or dropped here: JPEG, PNG or WebP.',
   'Couverture non enregistrée': 'Cover not saved',
   'Vidéo du problème': 'Video of the problem',
+  'Vidéo du message': 'Video of the message',
   'Vidéo de démo': 'Demo video',
   'Lien YouTube, Loom ou Vimeo': 'YouTube, Loom or Vimeo link',
   'Vidéo de démo (facultatif)': 'Demo video (optional)',
@@ -1566,6 +1587,29 @@ export const english: Record<string, string> = {
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
 // in their order in the French sentence
 export const englishTemplates: Record<string, string> = {
+  'PR #{0} « {1} » approuvée par {2}.': 'PR #{0} “{1}” approved by {2}.',
+  'Changements demandés sur la PR #{0} « {1} » par {2}.':
+    'Changes requested on PR #{0} “{1}” by {2}.',
+  'Review de {0} sur la PR #{1} « {2} ».': 'Review by {0} on PR #{1} “{2}”.',
+  'Issue #{0} fermée : « {1} ».': 'Issue #{0} closed: “{1}”.',
+  'Issue #{0} rouverte : « {1} ».': 'Issue #{0} reopened: “{1}”.',
+  'Issue #{0} ouverte : « {1} ».': 'Issue #{0} opened: “{1}”.',
+  'CI en échec sur la PR #{0} « {1} » : le job {2} échoue sur {3}.':
+    'CI failing on PR #{0} “{1}”: job {2} fails on {3}.',
+  'CI en échec sur {0} : le job {1} échoue.':
+    'CI failing on {0}: job {1} fails.',
+  'CI réparée sur la PR #{0} « {1} » : le job {2} repasse au vert.':
+    'CI fixed on PR #{0} “{1}”: job {2} is green again.',
+  'CI réparée sur {0} : le job {1} repasse au vert.':
+    'CI fixed on {0}: job {1} is green again.',
+  '{0} sur {1} par {2}.': '{0} on {1} by {2}.',
+  '{0} sur {1}.': '{0} on {1}.',
+  'PR #{0} ouverte par {1} : « {2} ».': 'PR #{0} opened by {1}: “{2}”.',
+  'PR #{0} « {1} » mergée.': 'PR #{0} “{1}” merged.',
+  'PR #{0} « {1} » fermée sans merge.': 'PR #{0} “{1}” closed without merging.',
+  'La PR #{0} « {1} » attend une review depuis 2 jours.':
+    'PR #{0} “{1}” has been waiting 2 days for a review.',
+  'Release {0} publiée.': 'Release {0} published.',
   ' · {0} par GitHub': ' · {0} by GitHub',
   'A aidé {0} : {1}': 'Helped {0}: {1}',
   'A demandé : {0}': 'Asked for help: {0}',
@@ -1648,7 +1692,9 @@ export const englishTemplates: Record<string, string> = {
   '{0}/{1} : issues et PRs importées, synchro toutes les 15 min.':
     '{0}/{1}: issues and PRs imported, synced every 15 min.',
   '« {0} » est dans {1}': '“{0}” is in {1}',
-  'Écrire dans #{0} (Markdown, `code`)': 'Write in #{0} (Markdown, `code`)',
+  'Écrire dans #{0} (Markdown, `code`, lien vidéo)':
+    'Write in #{0} (Markdown, `code`, video link)',
+  'Image de {0}': 'Image from {0}',
   'Écrire à {0}': 'Write to {0}',
   'Écris quelques mots à {0} : le contexte et ce que tu attends.':
     'Write a few words to {0}: the context and what you expect.',
