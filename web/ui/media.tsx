@@ -328,7 +328,10 @@ export const MediaViewer = (
   }, [open, index, items.length])
   if (!open) return null
   const shown = items[index]
-  const arrow = 'absolute top-1/2 -translate-y-1/2'
+  // Over the image, the arrows let it show through: full under the pointer
+  // or the keyboard focus only: a click leaves them light again
+  const arrow =
+    'absolute top-1/2 -translate-y-1/2 opacity-40 transition-opacity hover:opacity-100 has-[:focus-visible]:opacity-100'
   return (
     <Dialog
       id={id}
