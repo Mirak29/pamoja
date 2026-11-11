@@ -7,7 +7,7 @@ import { createSession } from '/api/session.ts'
 import server from '/api/server.ts'
 import { request } from '/api/testing.ts'
 
-// The gallery of a project page (PAM-425, §6.3, §17.3)
+// Images attached to a project gallery and to a profile cover (§9.2, §17.3)
 const restore = makeRestorePoint()
 
 let lastGithubId = 0
@@ -167,4 +167,30 @@ Deno.test('gallery: 8 at most, own uploads only, nothing changed when refused', 
   assertEquals((await setGallery(owner, [first.id, first.id])).status, 400)
   assertEquals(await galleryOf(owner), [first.id])
   assert(exists(first.key))
+})
+
+Deno.test('cover: one photo, replaced or removed, shown with the profile (§9.2)', async () => {
+  restore()
+  const kadi = await dev('kadi')
+  const first = await upload(kadi)
+  const set = await kadi.call('/api/user/cover', { media: first.id })
+  assertEquals(set.json.map((m: { id: number }) => m.id), [first.id])
+  assertEquals(
+    (await kadi.call('/api/user/me')).json.cover.map((m: { id: number }) =>
+      m.id
+    ),
+    [first.id],
+  )
+  // Another photo takes its place: the first one is deleted
+  const second = await upload(kadi)
+  await kadi.call('/api/user/cover', { media: second.id })
+  assert(!exists(first.key))
+  const seen = await request('/api/user?username=kadi')
+  assertEquals(
+    (await seen.json()).cover.map((m: { id: number }) => m.id),
+    [second.id],
+  )
+  // 0 removes it
+  assertEquals((await kadi.call('/api/user/cover', { media: 0 })).json, [])
+  assert(!exists(second.key))
 })

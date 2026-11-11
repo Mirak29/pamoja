@@ -99,13 +99,64 @@ import {
   reportReasons,
   skills,
 } from '/api/vocabulary.ts'
-import { serveMedia, upload } from '/api/media.ts'
-import { setGallery } from '/api/project-gallery.ts'
+import { serveMedia, setCover, upload } from '/api/media.ts'
+import { createPost, listPosts } from '/api/posts.ts'
+import { pulseOf } from '/api/pulse.ts'
+import { listTracking } from '/api/tracking.ts'
+import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
+import {
+  createChannelMessage,
+  likeMessage,
+  listChannelMessages,
+} from '/api/channels.ts'
+import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
+import { previewVideo, thumbnailOf } from '/api/video.ts'
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
   'How help requests reach the developer (§7.4)',
 )
+
+// An uploaded image or file (§17.3): read at GET/api/media?key=
+const media = OBJ({
+  id: NUM('Id of the media'),
+  key: STR('Random key of the file'),
+  mime: STR('image/jpeg, image/png, image/webp or application/pdf'),
+  image: BOOL('An image, shown; a file otherwise, downloaded'),
+  width: NUM('Width in pixels, 0 for a file'),
+  height: NUM('Height in pixels, 0 for a file'),
+  bytes: NUM('Size'),
+  name: STR('Name of a file, empty for an image'),
+}, 'An image or a file')
+
+// A post saved on the server (PAM-427): replies and reactions with PAM-501
+const savedPost = OBJ({
+  id: NUM('Id of the post'),
+  author: STR('Login of the author'),
+  authorName: STR('Name of the author'),
+  community: STR('Slug of the community, empty for the profile'),
+  type: STR('Type of the post'),
+  title: STR('Title, empty if none'),
+  body: STR('Markdown'),
+  media: ARR(media, 'Images, in order'),
+  videoUrl: STR('Link of the video, empty if none'),
+  createdAt: NUM('Publication, in seconds'),
+}, 'A post')
+
+const channelMessage = OBJ({
+  id: NUM('Id of the message'),
+  channel: STR('general, help, announcements, or tracking for an answer'),
+  alert: NUM('The alert of #suivi it answers, 0 for none'),
+  parent: NUM('The message whose thread it is in, 0 for none'),
+  author: STR('Login of the author'),
+  authorName: STR('Name of the author'),
+  avatarUrl: STR('GitHub avatar of the author'),
+  body: STR('Markdown, a video by its link'),
+  media: ARR(media, 'The image: none or one'),
+  likes: NUM('Its +1'),
+  liked: BOOL('A +1 of the developer'),
+  createdAt: NUM('Sent, in seconds'),
+}, 'A message of a project channel')
 
 // What anyone sees of a developer, and the developer of themselves
 const identity = {
@@ -118,6 +169,7 @@ const identity = {
   country: STR('ISO code of an African country, or as written'),
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
+  cover: ARR(media, 'The photo of the cover: none or one (§9.2)'),
 }
 
 const currentUser = {
@@ -126,6 +178,12 @@ const currentUser = {
   matchingMode,
   minScore: NUM('Score under which a help request does not reach them'),
   helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+  onlySkills: ARR(STR('Technology'), 'Only requests on these skills, or all'),
+  onlyProjects: ARR(STR('Slug'), 'Only requests of these projects, or all'),
+  onlyCommunities: ARR(
+    STR('Slug'),
+    'Only requests whose author is in these communities, or all',
+  ),
   skills: ARR(
     OBJ({
       name: STR('Technology of the vocabulary'),
@@ -152,18 +210,6 @@ const person = OBJ({
   name: STR('Name shown'),
   avatarUrl: STR('GitHub avatar'),
 }, 'The other developer')
-
-// An uploaded image or file (§17.3): read at GET/api/media?key=
-const media = OBJ({
-  id: NUM('Id of the media'),
-  key: STR('Random key of the file'),
-  mime: STR('image/jpeg, image/png, image/webp or application/pdf'),
-  image: BOOL('An image, shown; a file otherwise, downloaded'),
-  width: NUM('Width in pixels, 0 for a file'),
-  height: NUM('Height in pixels, 0 for a file'),
-  bytes: NUM('Size'),
-  name: STR('Name of a file, empty for an image'),
-}, 'An image or a file')
 
 // A conversation is known by its public id, its address (PAM-125): the
 // number of the database never reaches the page
@@ -192,6 +238,7 @@ const helpRequestFields = {
   expectedLevel: STR('A key of helpLevels, empty if none'),
   estimatedMinutes: NUM('Estimated duration, 0 if none'),
   videoUrl: STR('Video showing the problem, empty if none'),
+  media: ARR(media, 'Screenshots shown with the request, in order'),
   status: STR('Status of the lifecycle (§7.2)'),
   helper: STR('Login of the helper who accepted, empty if none'),
   acceptedAt: NUM('Acceptance, in seconds, 0 if none'),
@@ -285,6 +332,15 @@ const assertFits = (fields: Parameters<typeof tooLong>[0]) => {
 }
 
 // Only names of the vocabulary are saved: a developer never creates one
+// At most 30 slugs, each as a slug is written
+const assertSlugs = (slugs: string[], what: string) => {
+  if (
+    slugs.length > 30 || slugs.some((slug) => !/^[a-z0-9-]{1,64}$/.test(slug))
+  ) {
+    throw new respond.BadRequestError({ message: `Invalid ${what}` })
+  }
+}
+
 const assertKnown = (names: string[], known: string[], what: string) => {
   const unknown = names.filter((name) => !known.includes(name))
   if (unknown.length) {
@@ -594,6 +650,7 @@ const defs = {
         followers: ARR(STR('Login')),
         needs: ARR(STR('Open need')),
         gallery: ARR(media, 'Screenshots of the project page, in order'),
+        demoVideoUrl: STR('Link of the demo video, empty if none'),
         repository: optional(OBJ({
           owner: STR(),
           name: STR(),
@@ -672,6 +729,7 @@ const defs = {
       project: STR('Slug of a project of the developer, empty if none'),
       pullRequest: NUM('Open PR of that project, 0 if none'),
       videoUrl: STR('Web link of a video, empty if none'),
+      media: optional(ARR(NUM('Id of an upload'), 'Four images at most')),
     }),
     output: helpRequest,
     description: 'Publish a help request, from the form or from a PR',
@@ -808,6 +866,9 @@ const defs = {
     authorize: withSession,
     fn: (ctx, input) => {
       assertKnown(input.helpTypes, Object.keys(helpCategories), 'help types')
+      assertKnown(input.onlySkills ?? [], skills, 'skills')
+      assertSlugs(input.onlyProjects ?? [], 'projects')
+      assertSlugs(input.onlyCommunities ?? [], 'communities')
       updateMatching(ctx.session.userId, input)
       return getCurrentUser(ctx.session.userId)!
     },
@@ -815,6 +876,15 @@ const defs = {
       matchingMode,
       minScore: NUM('0 to 100'),
       helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
+      onlySkills: optional(
+        ARR(STR('Technology'), 'Only requests on these skills, empty for all'),
+      ),
+      onlyProjects: optional(
+        ARR(STR('Slug'), 'Only requests of these projects, empty for all'),
+      ),
+      onlyCommunities: optional(
+        ARR(STR('Slug'), 'Only authors of these communities, empty for all'),
+      ),
     }, 'How help requests reach the developer'),
     output: profileSaved,
     description: 'Save the matching preferences',
@@ -994,6 +1064,181 @@ const defs = {
       'Set the screenshots of a project page: owner and maintainers only',
   }),
 
+  'POST/api/project/video': route({
+    authorize: withSession,
+    fn: (ctx, { project, url }) =>
+      setDemoVideo(ctx.session.userId, project, url),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      url: STR('YouTube, Loom or Vimeo link; empty removes the video'),
+    }),
+    output: OBJ({ url: STR('The link kept, empty if none') }),
+    description: 'Set the demo video of a project: owner and maintainers only',
+  }),
+
+  'POST/api/post/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createPost(ctx.session.userId, input),
+    input: OBJ({
+      community: STR('Slug of a community, empty for the profile'),
+      type: STR('A type of POST_TYPES'),
+      title: STR('Title, empty if none'),
+      body: STR('Markdown'),
+      media: optional(ARR(NUM('Id of an upload'), 'Four images at most')),
+      videoUrl: optional(STR('YouTube, Loom or Vimeo link, empty if none')),
+    }),
+    output: savedPost,
+    description: 'Publish a post with its images and its video',
+  }),
+
+  'GET/api/posts': route({
+    authorize: withSession,
+    fn: () => listPosts(),
+    output: ARR(savedPost),
+    description: 'The latest posts, newest first',
+  }),
+
+  'GET/api/project/channels': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => channelStatesOf(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      channel: STR('general, tracking, help or announcements'),
+      lastReadAt: NUM('Read up to this time, in seconds; 0 if never'),
+      notify: STR('all, mentions, mine or none'),
+    })),
+    description: 'What I read in the channels I read, and their settings',
+  }),
+
+  'POST/api/project/channel/read': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel }) => {
+      markRead(ctx.session.userId, project, channel)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+    }),
+    description: 'Mark a channel read up to now',
+  }),
+
+  'POST/api/project/channel/notify': route({
+    authorize: withSession,
+    fn: (ctx, { project, channel, notify }) => {
+      setNotify(ctx.session.userId, project, channel, notify)
+    },
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, tracking, help or announcements'),
+      notify: STR('all, mentions, mine (#suivi only) or none'),
+    }),
+    description: 'Choose what reaches me from a channel',
+  }),
+
+  'GET/api/project/tracking': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => listTracking(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      id: NUM('Id of the entry'),
+      kind: STR('PR_OPENED, PR_REVIEWED, CI_FAILED… the type of the entry'),
+      at: NUM('When, in seconds'),
+      actor: STR('Login of who acted, when on Pamoja, or empty'),
+      pullRequest: NUM('Number of the PR, 0 if none'),
+      title: STR('Title of the PR or the issue'),
+      author: STR('GitHub login of the author of the PR, or empty'),
+      issue: NUM('Number of the issue, 0 if none'),
+      tag: STR('Tag of a release'),
+      state: STR('State of a review, or what an issue did'),
+      name: STR('Job of a CI run'),
+      branch: STR('Branch of a CI run or a push'),
+      count: NUM('Commits of a push'),
+      commits: ARR(STR('First line of a commit'), 'The last commits pushed'),
+      replies: ARR(channelMessage, 'The thread under the alert'),
+    })),
+    description: 'The alerts of #suivi and their threads (§6.8)',
+  }),
+
+  'GET/api/project/pulse': route({
+    authorize: withSession,
+    // A query string carries text: the time is read as a number
+    fn: (_, { project, since }) =>
+      pulseOf(project, since ? Number(since) || null : null),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      since: optional(STR('From this time, in seconds; the last 7 days')),
+    }),
+    output: OBJ({
+      since: NUM('Start of the period counted, in seconds'),
+      merged: NUM('PRs merged'),
+      issuesClosed: NUM('Issues closed'),
+      newContributors: NUM('Members who joined'),
+      reviewsAsked: NUM('Code reviews asked for on Pamoja'),
+      waitingReview: NUM('Open PRs without a review, now'),
+      releases: NUM('Releases published'),
+    }, 'What happened in a project (§6.4)'),
+    description: 'The deterministic Pulse of a project',
+  }),
+
+  'POST/api/project/message/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createChannelMessage(ctx.session.userId, input),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      channel: STR('general, help or announcements'),
+      body: STR('Markdown, empty with an image'),
+      media: optional(ARR(NUM('Id of an upload'), 'One image at most')),
+      alert: optional(NUM('Alert of #suivi answered, in channel tracking')),
+      parent: optional(NUM('Message answered in its thread, same channel')),
+    }),
+    output: channelMessage,
+    description: 'Write in a channel of a project, with an image',
+  }),
+
+  'POST/api/project/message/like': route({
+    authorize: withSession,
+    fn: (ctx, { message, on }) => likeMessage(ctx.session.userId, message, on),
+    input: OBJ({
+      message: NUM('Id of the message'),
+      on: BOOL('Gives the +1, or takes it back'),
+    }),
+    output: OBJ({
+      likes: NUM('Its +1'),
+      liked: BOOL('A +1 of the developer'),
+    }),
+    description: 'A +1 on a message of a channel the developer reads',
+  }),
+
+  'GET/api/project/messages': route({
+    authorize: withSession,
+    fn: (ctx, { project }) => listChannelMessages(ctx.session.userId, project),
+    input: OBJ({ project: STR('Slug of the project') }),
+    output: ARR(channelMessage),
+    description:
+      'The latest messages of the channels the developer reads, then their threads',
+  }),
+
+  'GET/api/video/preview': route({
+    authorize: withSession,
+    fn: (_, { url }) => previewVideo(url),
+    input: OBJ({ url: STR('YouTube, Loom or Vimeo link') }),
+    output: OBJ({
+      provider: STR('YouTube, Loom or Vimeo'),
+      id: STR('Id of the video at the provider'),
+      embedUrl: STR('Address of the player, built from the id'),
+      title: STR('Title, empty if the provider did not say'),
+      thumbnailUrl: STR('Thumbnail of the provider, empty if none'),
+    }),
+    description: 'What a page shows of a video link before its player',
+  }),
+
+  'GET/api/video/thumbnail': route({
+    authorize: withSession,
+    fn: (_, { url }) => thumbnailOf(url),
+    input: OBJ({ url: STR('YouTube, Loom or Vimeo link') }),
+    description: 'The thumbnail of a video, served by Pamoja (§17.3)',
+  }),
+
   'GET/api/media': route({
     authorize: withSession,
     fn: (ctx, { key }) => serveMedia(ctx.session.userId, key),
@@ -1158,6 +1403,14 @@ const defs = {
     }, 'The whole editable profile: an empty field is emptied'),
     output: profileSaved,
     description: 'Save the profile',
+  }),
+
+  'POST/api/user/cover': route({
+    authorize: withSession,
+    fn: (ctx, { media }) => setCover(ctx.session.userId, media),
+    input: OBJ({ media: NUM('Id of an upload, 0 removes the photo') }),
+    output: ARR(media),
+    description: 'Set or remove the photo of the cover of the profile',
   }),
 
   'POST/api/user/skills/update': route({

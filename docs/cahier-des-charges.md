@@ -258,7 +258,7 @@ Un projet peut aussi être créé sans repo (« Create from scratch » : nom, de
 
 Comprendre un projet en quelques secondes. Deux couches :
 
-- **Pulse déterministe** (toujours affiché) : sur les 7 derniers jours, ou depuis la dernière visite, compte des PRs mergées, issues fermées, contributeurs arrivés, reviews demandées, PRs en attente de review, releases. Calculé par requêtes sur les entries et les données GitHub synchronisées.
+- **Pulse déterministe** (toujours affiché) : sur les 7 derniers jours, ou depuis la dernière visite, compte des PRs mergées, issues fermées, contributeurs arrivés, reviews demandées, PRs en attente de review, releases. Calculé par requêtes sur les entries et les données GitHub synchronisées. `GET/api/project/pulse` (paramètre `since` en secondes pour la dernière visite, ramené entre 90 jours et maintenant) compte : les PRs dont `mergedAt` tombe dans la période ; les issues fermées dont la dernière mise à jour y tombe ; les membres arrivés (`PROJECT_MEMBER_JOINED`) ; les demandes d'aide « Review de code » du projet ; les PRs ouvertes sans review non rejetée, à l'instant ; les releases (`RELEASE_PUBLISHED`, ou la dernière release lue par le rafraîchissement). Les projets de démo gardent leurs chiffres fictifs.
 - **Résumé IA** (3 à 5 phrases) : « Le développement est actif. Le principal goulot est la review. » Pré-calculé (§11). Absent si l'IA ne répond pas, sans casser la page.
 
 ### 6.5 Project DNA, Health et Story
@@ -290,7 +290,7 @@ Chaque projet est organisé comme un serveur Discord, avec **quatre canaux impos
 | `#aide` | Membres et plateforme | Membres | Demandes d'aide du projet, leurs changements d'état et leurs échanges |
 | `#annonces` | Owner et Maintainers | Membres et abonnés | Releases, nouveaux besoins, arrivées dans l'équipe |
 
-**Messages** : Markdown avec une image ou une vidéo intégrée par lien (§17.3), réactions, réponses en **fil de discussion** sous un message ou sous une alerte. Stockés dans `ProjectMessage` ; chaque message produit une entry `MESSAGE_CREATED`. Pas de voix ni de vidéo en direct.
+**Messages** : Markdown avec une image ou une vidéo intégrée par lien (§17.3), réactions, réponses en **fil de discussion** sous un message ou sous une alerte. Stockés dans `ProjectMessage` ; chaque message produit une entry `MESSAGE_CREATED`. Pas de voix ni de vidéo en direct. Un fil n'a qu'un niveau et reste dans le canal de son message ; seuls les membres y répondent, même sous `#annonces` (`parent` de `POST/api/project/message/create`), les abonnés lisent. La réaction est un « +1 », que donne tout lecteur du canal (`POST/api/project/message/like`) ; `MessageReaction` garde son emoji pour en ajouter d'autres sans migration. `GET/api/project/messages` renvoie les derniers messages, puis les réponses de leurs fils, chacun avec son nombre de +1. Une réponse relit les canaux en temps réel par son `MESSAGE_CREATED` ; un +1 n'a pas d'entry et s'y ajoute à la lecture suivante.
 
 **`#suivi`** n'a pas de stockage propre : c'est l'affichage des entries produites par les webhooks et la synchro (§5.5, §13.3). Alertes affichées :
 
@@ -300,12 +300,14 @@ Chaque projet est organisé comme un serveur Discord, avec **quatre canaux impos
 - release publiée ; issue ouverte ou fermée ;
 - pushes regroupés (« 3 commits sur main ») pour éviter le bruit.
 
+**Lecture** : `GET/api/project/tracking` renvoie les 100 dernières alertes du projet, lues dans les entries GitHub (PR ouverte, review, merge, fermeture, PR sans review, issue ouverte, fermée ou rouverte, release, CI en échec ou réparée, pushes), avec leurs faits (numéro, titre, auteur, état de la review, job et branche de la CI, commits) et le fil de chacune ; la page en écrit la phrase dans sa langue. Une nouvelle entry GitHub ou un message relit `#suivi` en temps réel. Les membres répondent en fil sous une alerte (`ProjectMessage.parentEntryId`, `alert` de `POST/api/project/message/create`) ; les abonnés lisent. La vérification « PR sans review depuis 2 jours » tourne toutes les 30 minutes et ne signale une PR qu'une fois (`PR_REVIEW_STALE`).
+
 **Alertes actionnables** : une alerte ne fait pas qu'informer, elle mène à la boucle d'aide (§7).
 
 - « CI en échec » → bouton **Demander de l'aide**, qui crée une demande Debugging pré-remplie (PR, branche, lien du job en échec).
 - « PR sans review depuis 2 jours » → bouton **Demander une review**, qui ouvre « Request Review » sur cette PR.
 
-**Non lus et notifications** : compteur de messages non lus par canal. Chaque membre règle chaque canal : tout, mentions seulement, rien ; pour `#suivi`, une option « seulement mes PRs ». Par défaut, `#suivi` est réglé sur « seulement mes PRs ».
+**Non lus et notifications** : compteur de messages non lus par canal. Chaque membre règle chaque canal : tout, mentions seulement, rien ; pour `#suivi`, une option « seulement mes PRs ». Par défaut, `#suivi` est réglé sur « seulement mes PRs ». `ChannelState` garde, par développeur et par canal qu'il lit, l'heure de sa dernière lecture et ce réglage (`GET/api/project/channels`, `POST/api/project/channel/read`, `POST/api/project/channel/notify`) ; une lecture ne recule jamais. Le compteur suit le réglage en attendant les notifications de canal : « Rien » n'en affiche pas, « Mentions » ne compte que les messages qui mentionnent `@login`, « Seulement mes PRs » que les alertes sur ses PRs. `#suivi` se lit par les membres et les abonnés.
 
 **Limite** : pour un projet en synchro par rafraîchissement (niveau 1, §5.4), `#suivi` se met à jour toutes les 15 minutes. Le temps réel suppose la synchro live.
 
@@ -394,7 +396,7 @@ Précisions :
 - **Ce que dit une notification** : le serveur garde le type, l'auteur de l'action et ce dont elle parle (demande, titre, score, skills, durée, début du message) ; la page en écrit la phrase dans sa langue. Une notification a lieu à chaque étape d'une demande qui concerne l'autre côté : match, acceptation, désistement, libération, annulation, aide livrée, « pas utile », message du fil, demande expirée, relances (§7.2).
 - **Toast** : il arrive par l'entry `NOTIFICATION_CREATED` du destinataire ; un match montre skills, score et durée, et mène à la demande.
 - **Lecture** : seul le destinataire marque sa notification lue.
-- **Préférences** : mode, score minimum et types d'aide acceptés sont enregistrés (`Profile.matchingFilters`) et appliqués par le matching ; les filtres par skills, projets et communautés suivent (PAM-223).
+- **Préférences** : mode, score minimum, types d'aide acceptés et filtres sont enregistrés (`Profile.matchingFilters`) et appliqués par le matching. Les filtres par skills, projets et communautés disent « seulement » : vide, tout passe ; rempli, une demande doit toucher un des skills choisis, être d'un des projets choisis (une demande sans projet ne passe pas ce filtre), et venir d'un auteur membre d'une des communautés choisies. La page les propose parmi les skills du développeur, ses projets (construits ou suivis) et ses communautés ; le serveur garde les skills du vocabulaire et jusqu'à 30 slugs par filtre.
 
 ### 7.5 Vérification d'une review
 
@@ -522,7 +524,7 @@ Précisions (`api/profile.ts`, lu par `GET/api/user`, public) : le profil ne don
 
 ### 9.2 Personnalisation
 
-Cover (Le fil, Grille, Plaques, Uni), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
+Cover (Le fil, Grille, Plaques, Uni, ou une photo uploadée par le développeur, gardée sur le serveur et prioritaire sur les couvertures prédéfinies), couleur d'accent (Indigo, Vert, Ambre, Corail), thème (Minimal, qui suit le thème de l'app, Clair, Sombre, Terminal, Cyber), headline, bio, technologies, projets et badges mis en avant, ordre des sections, liens. Pas de CSS libre : tout reste dans le design system.
 
 ### 9.3 Vitrines visuelles
 
@@ -916,7 +918,7 @@ L'app GitHub est en lecture seule : dans le pire des cas, une faille côté GitH
 | CSRF au login | Victime connectée sur le compte de l'attaquant | `state` signé, à usage unique, valable 10 min, lié au navigateur par le cookie `oauth_nonce` (§5.3) |
 | Vol de session | Prise de compte | Cookie `httpOnly`, `secure`, `SameSite=Lax` ; toutes les écritures en `POST` JSON |
 | Fuite de secrets | Usurpation de l'app ou du bot | Variables d'environnement uniquement, jamais dans le repo ni côté client, rotation documentée |
-| XSS par Markdown | Script exécuté chez les visiteurs (README importés, posts, messages) | Rendu Markdown avec HTML désactivé ou sanitizer, liens externes en `rel="noopener nofollow"` |
+| XSS par Markdown | Script exécuté chez les visiteurs (README importés, posts, messages) | Un seul rendu Markdown pour tout ce qu'écrit un membre et pour le résumé des README importés : le texte est lu en éléments, jamais en HTML, et un README perd ses balises avant. Seule une adresse `http` ou `https` devient un lien (`javascript:`, `data:` restent du texte), y compris le site du profil et le lien d'une vidéo non intégrable ; ces liens s'ouvrent dans un nouvel onglet en `rel="noopener noreferrer nofollow ugc"`. Les autres liens sortants reçoivent `noopener noreferrer` au clic |
 | Lien externe ouvert dans l'onglet de Pamoja | La page ouverte peut rediriger l'onglet d'origine vers un faux Pamoja (tabnabbing) | Tout lien qui sort de Pamoja s'ouvre dans un nouvel onglet, en `rel="noopener noreferrer"`, par une règle unique (`web/lib/external-links.ts`) ; la connexion et l'installation vont sur GitHub dans le même onglet, puisqu'elles en reviennent |
 | Usurpation d'identité GitHub | Un username libéré puis repris | Identification par `githubId` |
 | Fuite par SSE | Recevoir les événements d'un projet non public | Abonnements calculés côté serveur, `trigger` explicite sur chaque type (§13) |
@@ -985,7 +987,10 @@ Les avatars restent ceux de GitHub.
 - **Upload** : route `POST/api/media/upload`, déclarée sans `input` (lecture du `FormData` dans le handler). Formats JPEG, PNG, WebP ; type vérifié sur les premiers octets du fichier, pas sur l'extension ; 2 Mo maximum ; 20 uploads par utilisateur et par heure.
 - **Fichiers** : seuls les messages directs acceptent aussi un PDF, 5 Mo au plus, gardé avec son nom nettoyé (sans chemin ni caractère de contrôle) et servi en téléchargement (`Content-Disposition: attachment`), jamais ouvert dans la page.
 - **Rattachement** : l'upload crée une ligne `Media` sans cible ; elle est rattachée au post, à la demande, au projet ou au message à l'enregistrement, par son propriétaire et une seule fois. Une image jamais rattachée est supprimée au bout de 24 h (vérifié chaque heure par le serveur).
-- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement. Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Stockage** : jamais dans SQLite. Volume disque persistant de la VM Systalink ; stockage objet seulement si Systalink en propose un. Le nom du fichier est un identifiant aléatoire (dossier `MEDIA_DIR`, `./media` par défaut). Les fichiers sont servis par `GET/api/media` (clé aléatoire), avec une session : un upload pas encore rattaché à son propriétaire seulement, le fichier d'un message direct aux deux participants seulement, l'image d'un message de canal aux lecteurs de ce canal (§6.8). Réponse avec le vrai type MIME, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` et un cache long privé.
+- **Partout la même façon de faire** : un sélecteur commun (ordinateur, glisser-déposer, ou capture collée dans un champ de texte), des aperçus pendant l'envoi, l'ordre et le retrait avant l'enregistrement, puis une grille dont chaque image s'ouvre dans une visionneuse (flèches, clavier, vignettes). Il sert à la galerie du projet, aux captures d'une demande d'aide (`media` de `POST/api/help/create`, rattachées dans la même transaction que la demande) et à la photo de couverture (`POST/api/user/cover`, une seule, 0 la retire ; renvoyée dans `cover` du profil).
+- **Posts** : `POST/api/post/create` enregistre un post avec ses images (4 au plus, rattachées dans la même transaction) et son lien vidéo (`videoUrl`, migration 012) ; `GET/api/posts` renvoie les 50 derniers, que le fil affiche. Un lien YouTube, Loom ou Vimeo collé dans le texte d'un post devient sa vidéo, avec l'aperçu dès la rédaction ; un fichier vidéo glissé ou collé est refusé avec ce conseil. Les réponses, réactions et onglets du fil viennent avec PAM-501.
+- **Canaux** : `POST/api/project/message/create` enregistre un message de `#général`, `#aide` ou `#annonces` avec son image (une au plus), selon les droits d'écriture du §6.8, et produit l'entry `MESSAGE_CREATED` ; `GET/api/project/messages` renvoie les derniers messages des canaux que le développeur lit. La vidéo d'un message est le premier lien YouTube, Loom ou Vimeo de son texte, intégré sous le message. Les fils, réactions et le temps réel viennent avec PAM-406.
 - **Galerie d'un projet** : `POST/api/project/gallery` reçoit toute la galerie, dans l'ordre (8 captures au plus) : les nouveaux uploads du développeur y sont rattachés, une capture retirée est supprimée avec son fichier ; propriétaire et mainteneurs seulement. `GET/api/projects` renvoie la galerie de chaque projet ; une capture rattachée se lit par tout développeur connecté.
 - **Modération** : une image se signale comme le contenu qui la porte (§10.5) ; masquer le contenu masque ses images.
 
@@ -994,7 +999,7 @@ Les avatars restent ceux de GitHub.
 Un lien YouTube, Loom ou Vimeo collé dans un post, une page projet (vidéo de démo), une demande d'aide (par exemple un Loom qui montre le bug) ou un message de canal s'affiche en lecteur intégré.
 
 - **Fournisseurs autorisés** : YouTube (lecteur `youtube-nocookie.com`), Loom, Vimeo. Tout autre lien reste un lien simple.
-- **Stockage** : uniquement les métadonnées (`provider`, identifiant de la vidéo, URL, titre, miniature), récupérées une fois côté serveur via oEmbed et mises en cache.
+- **Stockage** : uniquement le lien (`videoUrl` d'une demande d'aide, `demoVideoUrl` d'un projet, réglé par son propriétaire et ses mainteneurs avec `POST/api/project/video`). Le titre et la miniature sont demandés une fois au fournisseur (oEmbed) par `GET/api/video/preview` et gardés en mémoire ; la miniature est servie par Pamoja (`GET/api/video/thumbnail`), jamais lue chez le fournisseur par la page. Le lecteur est construit à partir de l'identifiant de la vidéo, jamais à partir du lien collé.
 - **Affichage** : la miniature s'affiche d'abord ; le lecteur (iframe) ne se charge qu'au clic. La page reste rapide et aucun tiers n'est contacté tant que la vidéo n'est pas lancée.
 - **Sécurité** : iframes limitées à ces domaines par la politique de sécurité de contenu (`frame-src`).
 

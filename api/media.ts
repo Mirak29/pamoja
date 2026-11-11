@@ -338,6 +338,16 @@ export const setMediaOf = (
   remove(current.filter((m) => !ids.includes(m.mediaId)))
 }
 
+/** The photo of the cover of a profile (§9.2): none or one */
+export const coverOf = (userId: number) =>
+  mediaOf('profile_cover', [userId]).get(userId) ?? []
+
+/** Sets the photo of the cover of the developer, or removes it with 0 */
+export const setCover = (me: number, mediaId: number) => {
+  setMediaOf(me, 'profile_cover', me, mediaId ? [mediaId] : [])
+  return coverOf(me)
+}
+
 /** Deletes the media of a content: rows and files */
 export const removeMediaOf = (targetType: string, targetId: number) =>
   remove(listOf({ targetType, ids: JSON.stringify([targetId]) }))
@@ -377,9 +387,30 @@ const getMembership = sql<
   WHERE conversationId = :conversationId AND userId = :userId
 `.get
 
+// A reader of the channel of a message: a member, or a follower of the
+// project for #annonces (§6.8)
+const getChannelReader = sql<
+  { yes: number },
+  { messageId: number; userId: number }
+>`
+  SELECT 1 AS yes FROM projectMessage
+  WHERE messageId = :messageId AND hiddenAt IS NULL AND (
+    EXISTS (
+      SELECT 1 FROM projectMember
+      WHERE projectMember.projectId = projectMessage.projectId
+        AND projectMember.userId = :userId
+    ) OR (channel = 'announcements' AND EXISTS (
+      SELECT 1 FROM follow
+      WHERE followerId = :userId AND targetType = 'project'
+        AND targetId = projectMessage.projectId
+    ))
+  )
+`.get
+
 /**
  * The file of a media, to whom may see it: an upload to its owner, a file
- * of a direct message to the two of the conversation (§10.6)
+ * of a direct message to the two of the conversation (§10.6), an image of a
+ * channel to its readers (§6.8)
  */
 export const serveMedia = async (me: number, key: string) => {
   if (!/^[0-9a-f]{32}\.(jpg|png|webp|pdf)$/.test(key)) throw notFound()
@@ -390,6 +421,8 @@ export const serveMedia = async (me: number, key: string) => {
     : media.targetType === 'message'
     ? media.conversationId !== null && !media.messageDeleted &&
       !!getMembership({ conversationId: media.conversationId, userId: me })
+    : media.targetType === 'channel_message'
+    ? !!getChannelReader({ messageId: media.targetId!, userId: me })
     : true
   if (!allowed) throw notFound()
   let file: Deno.FsFile

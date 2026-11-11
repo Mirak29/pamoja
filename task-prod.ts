@@ -1,7 +1,8 @@
-import { config } from './build-config.ts'
+import { config, copyMocks } from './build-config.ts'
 import { build } from 'npm:esbuild@0.25.5'
 
 await build({ ...config, sourcemap: false, minify: true })
+copyMocks()
 
 const tailwind = await new Deno.Command('deno', {
   args: [

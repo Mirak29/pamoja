@@ -7,6 +7,8 @@ import {
 } from '/api/vocabulary.ts'
 import type { ApiOutput } from '/web/lib/api.ts'
 import { translate } from '/web/lib/language.ts'
+import type { Media } from '/web/lib/messages.ts'
+import { webHref } from '/web/lib/member-links.ts'
 export type Person = {
   login: string
   name: string
@@ -35,6 +37,8 @@ export type Person = {
   follows?: string[]
   /** GitHub photo; without it, the initials (§17.3) */
   avatarUrl?: string
+  /** The photo of the cover, when one was uploaded (§9.2) */
+  cover?: Media[]
   /** Login on GitHub when it differs from the one of Pamoja (§14) */
   github?: string
   /**
@@ -214,6 +218,7 @@ type ApiPerson =
     | 'githubLogin'
     | 'displayName'
     | 'avatarUrl'
+    | 'cover'
     | 'headline'
     | 'bio'
     | 'country'
@@ -262,6 +267,7 @@ const adoptPerson = (user: ApiPerson) => {
       domains: user.domains,
       intents: user.intents,
       avatarUrl: user.avatarUrl,
+      cover: user.cover,
       github: user.githubLogin,
     },
     user.available === undefined ? {} : { available: user.available },
@@ -296,7 +302,7 @@ export const placeOf = (person: Person) =>
 
 /** A website as written on a profile, with or without its protocol */
 export const websiteHref = (website: string) =>
-  /^https?:\/\//.test(website) ? website : `https://${website}`
+  webHref(/^https?:\/\//i.test(website) ? website : `https://${website}`)
 
 export const websiteLabel = (website: string) =>
   website.replace(/^https?:\/\//, '').replace(/\/$/, '')

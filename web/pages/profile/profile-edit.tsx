@@ -5,9 +5,10 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  CircleAlert,
   GripVertical,
 } from '/web/assets/icons.tsx'
-import { me, type Person } from '/web/fixtures/people.ts'
+import { me, peopleChanged, type Person } from '/web/fixtures/people.ts'
 import {
   profileAccents,
   profileCovers,
@@ -27,6 +28,13 @@ import { Field, Input, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { Cover } from '/web/pages/profile/cover.tsx'
+import { api } from '/web/lib/api.ts'
+import type { Media } from '/web/lib/messages.ts'
+import {
+  MediaPicker,
+  type MediaPickerState,
+  useMediaPicker,
+} from '/web/ui/media.tsx'
 import { t, translate } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 
@@ -58,7 +66,14 @@ const Choices = (
 type Draft = ProfileDraft
 type Update = (patch: Partial<Draft>) => void
 
-const Appearance = ({ draft, update }: { draft: Draft; update: Update }) => (
+const Appearance = (
+  { draft, update, cover }: {
+    draft: Draft
+    update: Update
+    /** The photo of the cover, picked from the computer */
+    cover: MediaPickerState
+  },
+) => (
   <Section title='Apparence'>
     <Choices label='Thème du profil'>
       {profileThemes.map(([key, label]) => (
@@ -108,6 +123,12 @@ const Appearance = ({ draft, update }: { draft: Draft; update: Update }) => (
         </OptionButton>
       ))}
     </Choices>
+    {draft.cover === 'photo' && (
+      <MediaPicker
+        picker={cover}
+        hint='Une photo large, depuis ton ordinateur ou glissée ici : JPEG, PNG ou WebP.'
+      />
+    )}
   </Section>
 )
 
@@ -220,7 +241,7 @@ const SectionOrder = ({ draft, update }: { draft: Draft; update: Update }) => {
 }
 
 /** The profile as it will look, in its theme, accent and section order */
-const Preview = ({ draft }: { draft: Draft }) => (
+const Preview = ({ draft, photo }: { draft: Draft; photo?: Media }) => (
   <aside class='flex min-w-0 flex-col gap-2.5 lg:sticky lg:top-24'>
     <Eyebrow>Aperçu en direct</Eyebrow>
     <div
@@ -229,7 +250,7 @@ const Preview = ({ draft }: { draft: Draft }) => (
       class='flex flex-col gap-3 rounded-[12px] border border-figure-edge bg-surface-000 p-3.5 text-ink shadow-slab transition-[background-color] duration-200'
     >
       <div class='overflow-hidden rounded-lg border border-figure-edge bg-surface-100 shadow-tile'>
-        <Cover cover={draft.cover} small />
+        <Cover cover={draft.cover} small photo={photo} />
         <div class='flex flex-col gap-2 px-3.5 pb-3.5'>
           <Portrait
             name={me.name}
@@ -275,8 +296,11 @@ const Preview = ({ draft }: { draft: Draft }) => (
 /** /profile/edit: identity, appearance, skills and section order (§9.2) */
 export const ProfileEditPage = () => {
   const person: Person = me
+  // An uploaded photo is the cover; it lives on the server (§9.2)
+  const cover = useMediaPicker(1, me.cover ?? [])
   const [draft, setDraft] = useState<Draft>(() => ({
     ...settingsOf(me.login),
+    ...(me.cover?.length ? { cover: 'photo' as const } : {}),
     headline: person.headline,
     bio: person.bio,
     website: person.website ?? '',
@@ -284,8 +308,27 @@ export const ProfileEditPage = () => {
   }))
   const update: Update = (patch) => setDraft({ ...draft, ...patch })
 
-  const save = () => {
-    saveProfile(me.login, draft)
+  const save = async () => {
+    const photo = draft.cover === 'photo' ? cover.ids[0] ?? 0 : 0
+    if (photo !== (me.cover?.[0]?.id ?? 0)) {
+      try {
+        me.cover = await api['POST/api/user/cover'].fetch({ media: photo })
+        peopleChanged.value++
+      } catch {
+        notify({
+          title: 'Couverture non enregistrée',
+          body: 'Réessaie dans un instant.',
+          icon: CircleAlert,
+          tone: 'warning',
+        })
+        return
+      }
+    }
+    // « Photo » without a photo falls back on the thread
+    saveProfile(me.login, {
+      ...draft,
+      cover: draft.cover === 'photo' && !photo ? 'fil' : draft.cover,
+    })
     navigate({ href: `@${me.login}` })
     notify({
       title: 'Profil enregistré',
@@ -332,17 +375,19 @@ export const ProfileEditPage = () => {
             />
           </Field>
         </Section>
-        <Appearance draft={draft} update={update} />
+        <Appearance draft={draft} update={update} cover={cover} />
         <SkillsAndProjects draft={draft} update={update} />
         <SectionOrder draft={draft} update={update} />
         <div class='flex flex-wrap gap-3.5 pb-1'>
-          <Button size={42} onClick={save}>Enregistrer</Button>
+          <Button size={42} onClick={save} disabled={cover.uploading}>
+            Enregistrer
+          </Button>
           <Button variant='secondary' size={42} href={`@${me.login}`}>
             Annuler
           </Button>
         </div>
       </div>
-      <Preview draft={draft} />
+      <Preview draft={draft} photo={cover.media[0]} />
     </Page>
   )
 }

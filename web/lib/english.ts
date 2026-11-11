@@ -30,7 +30,8 @@ export const english: Record<string, string> = {
   'Ajouter un bloc de code': 'Add a code block',
   'Ajouter un skill': 'Add a skill',
   'Ajouter un skill (essaie « postgres »)': 'Add a skill (try “postgres”)',
-  'Ajouter une image (4 maximum)': 'Add an image (up to 4)',
+  'Ajouter une image (4 maximum) ; une vidéo se colle en lien dans le texte':
+    'Add an image (up to 4); paste a video as a link in the text',
   'Ajouter une technologie': 'Add a technology',
   'Ajoutée au board': 'Added to the board',
   'Alertes GitHub et CI/CD, écrites par la plateforme':
@@ -84,7 +85,6 @@ export const english: Record<string, string> = {
   'La boucle': 'The loop',
   'Le nom de ton projet': 'Your project name',
   'Langages pas encore lus sur GitHub.': 'Languages not yet read from GitHub.',
-  'Lien YouTube ou Loom': 'YouTube or Loom link',
   'Modifier le profil': 'Edit profile',
   'Notifications du canal': 'Channel notifications',
   'Nouvelle carte': 'New card',
@@ -108,11 +108,10 @@ export const english: Record<string, string> = {
   'Republié': 'Reposted',
   'Rien pour l’instant.': 'Nothing here yet.',
   'Retirer la capture': 'Remove screenshot',
-  'Retirer l’image': 'Remove image',
   'Score minimum': 'Minimum score',
   'Signaler': 'Report',
-  'Sur quoi tu travailles ? Une question, une astuce, un bout de code…':
-    'What are you working on? A question, a tip, a code snippet…',
+  'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…':
+    'What are you working on? A question, a tip, some code, a video link…',
   'Synchro live': 'Live sync',
   'Seulement mes PRs': 'Only my pull requests',
   'Tape une techno (essaie « postgres »)': 'Type a technology (try “postgres”)',
@@ -477,7 +476,6 @@ export const english: Record<string, string> = {
     'Context, what you expect, and how long it might take',
   'Le pays où tu vis': 'The country where you live',
   'Lien vidéo (facultatif)': 'Video link (optional)',
-  'Lire la vidéo de démo': 'Watch the demo video',
   'Liste': 'List',
   'Lu sur GitHub · à valider': 'Read from GitHub · needs verification',
   'Matching': 'Matching',
@@ -935,6 +933,22 @@ export const english: Record<string, string> = {
   'Tu les suis : tu lis leur #suivi et leurs #annonces, sans écrire.':
     'You follow them: you read their #tracking and #announcements, without writing.',
   '· connecté via GitHub': '· connected through GitHub',
+  'Filtres': 'Filters',
+  'Sans sélection, toutes les demandes passent. Avec, seulement celles qui touchent un des choix de chaque filtre.':
+    'With nothing picked, every request goes through. With picks, only those that match one pick of each filter.',
+  'Seulement ces skills': 'Only these skills',
+  'Seulement ces projets': 'Only these projects',
+  'Seulement les auteurs de ces communautés':
+    'Only authors from these communities',
+  'Ajoute des skills à ton profil pour filtrer.':
+    'Add skills to your profile to filter.',
+  'Rejoins ou suis un projet pour filtrer.':
+    'Join or follow a project to filter.',
+  'Rejoins une communauté pour filtrer.': 'Join a community to filter.',
+  'un reviewer': 'a reviewer',
+  'commit poussé': 'commit pushed',
+  'commits poussés': 'commits pushed',
+  'Réponse non envoyée': 'Reply not sent',
   'Ton profil, tes preuves, tes posts et tes réglages t’appartiennent.':
     'Your profile, proofs, posts and settings belong to you.',
   'Exporter mes données': 'Export my data',
@@ -977,7 +991,6 @@ export const english: Record<string, string> = {
   'Toutes les preuves ·': 'All proofs ·',
   '· Voir les preuves': '· View proofs',
   'Vidéo de démo ·': 'Demo video ·',
-  'Lecture · Vidéo de démo ·': 'Play · Demo video ·',
   'Tes projets ·': 'Your projects ·',
   'Projets que tu suis ·': 'Projects you follow ·',
   'travaille sur la PR #84': 'is working on PR #84',
@@ -1520,6 +1533,9 @@ export const english: Record<string, string> = {
   'Joindre une image ou un PDF': 'Attach an image or a PDF',
   'Image jointe': 'Attached image',
   'Format non accepté': 'Format not accepted',
+  'Les vidéos se partagent par lien': 'Videos are shared by link',
+  'Colle un lien YouTube, Loom ou Vimeo dans le texte.':
+    'Paste a YouTube, Loom or Vimeo link in the text.',
   'Envoie une image JPEG, PNG ou WebP, ou un PDF.':
     'Send a JPEG, PNG or WebP image, or a PDF.',
   'Image illisible': 'Unreadable image',
@@ -1533,25 +1549,67 @@ export const english: Record<string, string> = {
   'Envoi en cours…': 'Sending…',
   // Screenshots of a project (PAM-425)
   'Ajouter des captures': 'Add screenshots',
-  'Capture précédente': 'Previous screenshot',
-  'Capture suivante': 'Next screenshot',
   'Ajoute des images JPEG, PNG ou WebP.': 'Add JPEG, PNG or WebP images.',
-  'Galerie pleine': 'Gallery full',
   'Captures enregistrées': 'Screenshots saved',
   'Captures non enregistrées': 'Screenshots not saved',
   'Réessaie dans un instant.': 'Try again in a moment.',
-  'Captures du projet': 'Project screenshots',
   'Principale': 'Main',
-  'Envoi en cours': 'Uploading',
-  'Clique ou dépose des images ici : JPEG, PNG ou WebP.':
-    'Click or drop images here: JPEG, PNG or WebP.',
   'Enregistrement…': 'Saving…',
-  'Gérer les captures': 'Manage screenshots',
+  'Les suivantes ne sont pas ajoutées.': 'The next ones are not added.',
+  'Choisir une image': 'Choose an image',
+  'Depuis ton ordinateur, glissées ici ou collées : JPEG, PNG ou WebP.':
+    'From your computer, dropped here or pasted: JPEG, PNG or WebP.',
+  'Image précédente': 'Previous image',
+  'Image suivante': 'Next image',
+  'Écrans, démo, version mobile : glissées ici ou choisies sur ton ordinateur.':
+    'Screens, demo, mobile version: dropped here or chosen on your computer.',
+  'La première est mise en avant. Les images sont réduites et leurs métadonnées retirées avant l’envoi.':
+    'The first one is featured. Images are resized and their metadata removed before sending.',
+  'Une erreur, un écran : depuis ton ordinateur, glissées ici ou collées dans la description.':
+    'An error, a screen: from your computer, dropped here or pasted in the description.',
+  'Photo': 'Photo',
+  'Une photo large, depuis ton ordinateur ou glissée ici : JPEG, PNG ou WebP.':
+    'A wide photo, from your computer or dropped here: JPEG, PNG or WebP.',
+  'Couverture non enregistrée': 'Cover not saved',
+  'Vidéo du problème': 'Video of the problem',
+  'Vidéo du message': 'Video of the message',
+  'Vidéo de démo': 'Demo video',
+  'Lien YouTube, Loom ou Vimeo': 'YouTube, Loom or Vimeo link',
+  'Vidéo de démo (facultatif)': 'Demo video (optional)',
+  'Colle un lien YouTube, Loom ou Vimeo.':
+    'Paste a YouTube, Loom or Vimeo link.',
+  'Gérer les captures et la vidéo': 'Manage screenshots and video',
+  'Captures et vidéo du projet': 'Project screenshots and video',
+  'Vidéo': 'Video',
+  'Post non publié': 'Post not published',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
 // in their order in the French sentence
 export const englishTemplates: Record<string, string> = {
+  'PR #{0} « {1} » approuvée par {2}.': 'PR #{0} “{1}” approved by {2}.',
+  'Changements demandés sur la PR #{0} « {1} » par {2}.':
+    'Changes requested on PR #{0} “{1}” by {2}.',
+  'Review de {0} sur la PR #{1} « {2} ».': 'Review by {0} on PR #{1} “{2}”.',
+  'Issue #{0} fermée : « {1} ».': 'Issue #{0} closed: “{1}”.',
+  'Issue #{0} rouverte : « {1} ».': 'Issue #{0} reopened: “{1}”.',
+  'Issue #{0} ouverte : « {1} ».': 'Issue #{0} opened: “{1}”.',
+  'CI en échec sur la PR #{0} « {1} » : le job {2} échoue sur {3}.':
+    'CI failing on PR #{0} “{1}”: job {2} fails on {3}.',
+  'CI en échec sur {0} : le job {1} échoue.':
+    'CI failing on {0}: job {1} fails.',
+  'CI réparée sur la PR #{0} « {1} » : le job {2} repasse au vert.':
+    'CI fixed on PR #{0} “{1}”: job {2} is green again.',
+  'CI réparée sur {0} : le job {1} repasse au vert.':
+    'CI fixed on {0}: job {1} is green again.',
+  '{0} sur {1} par {2}.': '{0} on {1} by {2}.',
+  '{0} sur {1}.': '{0} on {1}.',
+  'PR #{0} ouverte par {1} : « {2} ».': 'PR #{0} opened by {1}: “{2}”.',
+  'PR #{0} « {1} » mergée.': 'PR #{0} “{1}” merged.',
+  'PR #{0} « {1} » fermée sans merge.': 'PR #{0} “{1}” closed without merging.',
+  'La PR #{0} « {1} » attend une review depuis 2 jours.':
+    'PR #{0} “{1}” has been waiting 2 days for a review.',
+  'Release {0} publiée.': 'Release {0} published.',
   ' · {0} par GitHub': ' · {0} by GitHub',
   'A aidé {0} : {1}': 'Helped {0}: {1}',
   'A demandé : {0}': 'Asked for help: {0}',
@@ -1634,7 +1692,9 @@ export const englishTemplates: Record<string, string> = {
   '{0}/{1} : issues et PRs importées, synchro toutes les 15 min.':
     '{0}/{1}: issues and PRs imported, synced every 15 min.',
   '« {0} » est dans {1}': '“{0}” is in {1}',
-  'Écrire dans #{0} (Markdown, `code`)': 'Write in #{0} (Markdown, `code`)',
+  'Écrire dans #{0} (Markdown, `code`, lien vidéo)':
+    'Write in #{0} (Markdown, `code`, video link)',
+  'Image de {0}': 'Image from {0}',
   'Écrire à {0}': 'Write to {0}',
   'Écris quelques mots à {0} : le contexte et ce que tu attends.':
     'Write a few words to {0}: the context and what you expect.',
@@ -1668,7 +1728,6 @@ export const englishTemplates: Record<string, string> = {
   '{0} · {1} par GitHub · {2}': '{0} · {1} by GitHub · {2}',
   'La communauté « {0} » n’existe pas.': 'The “{0}” community does not exist.',
   'Signalé par {0} · {1}': 'Reported by {0} · {1}',
-  'Vidéo : {0}': 'Video: {0}',
   'Aucun développeur « {0} » sur Pamoja.': 'No developer “{0}” on Pamoja.',
   'Demande d’aide : {0}': 'Help request: {0}',
   'Le projet « {0} » n’existe pas ou n’est plus public.':
@@ -1790,14 +1849,17 @@ export const englishTemplates: Record<string, string> = {
   'Jusqu’à {0} images : écrans, démo, version mobile.':
     'Up to {0} images: screens, demo, mobile version.',
   'Agrandir la capture {0} de {1}': 'Enlarge screenshot {0} of {1}',
-  'Capture {0} sur {1} · {2}': 'Screenshot {0} of {1} · {2}',
-  'Capture {0} de {1}': 'Screenshot {0} of {1}',
-  'Capture {0}': 'Screenshot {0}',
-  '{0} captures au plus : les suivantes ne sont pas ajoutées.':
-    '{0} screenshots at most: the next ones are not added.',
-  '{0} sur {1}. La première est mise en avant. Les images sont réduites et leurs métadonnées retirées avant l’envoi.':
-    '{0} of {1}. The first one is featured. Images are resized and their metadata removed before sending.',
-  'Avancer la capture {0}': 'Move screenshot {0} forward',
-  'Retirer la capture {0}': 'Remove screenshot {0}',
-  'Reculer la capture {0}': 'Move screenshot {0} back',
+  '{0} images au plus': '{0} images at most',
+  'Image {0}': 'Image {0}',
+  'Avancer l’image {0}': 'Move image {0} forward',
+  'Retirer l’image {0}': 'Remove image {0}',
+  'Reculer l’image {0}': 'Move image {0} back',
+  'Ajouter des images ({0} sur {1})': 'Add images ({0} of {1})',
+  'Agrandir l’image {0} : {1}': 'Enlarge image {0}: {1}',
+  '{0} · {1} sur {2}': '{0} · {1} of {2}',
+  '{0}, image {1}': '{0}, image {1}',
+  'Captures de {0}': 'Screenshots of {0}',
+  'Captures de la demande': 'Screenshots of the request',
+  'Lire : {0}': 'Play: {0}',
+  'Images du post': 'Images of the post',
 }

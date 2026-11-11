@@ -12,6 +12,7 @@ import {
 } from '/api/vocabulary.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { api, type ApiOutput } from '/web/lib/api.ts'
+import { loadPosts } from '/web/lib/posts.ts'
 
 type User = ApiOutput['GET/api/user/me']
 
@@ -28,6 +29,9 @@ const setUser = (user: User) => {
   settings.matching = matchingModes[user.matchingMode]
   // The matching preferences saved on the server (§7.4)
   settings.minScore = user.minScore
+  settings.onlySkills = user.onlySkills
+  settings.onlyProjects = user.onlyProjects
+  settings.onlyCommunities = user.onlyCommunities
   me.helpTypes = user.helpTypes.map((key) =>
     helpCategories[key as HelpCategory] ?? key
   )
@@ -35,6 +39,7 @@ const setUser = (user: User) => {
   if (first) {
     loadProjects()
     loadHelpRequests()
+    loadPosts()
   }
   return user
 }
@@ -157,12 +162,16 @@ const save = async (changes: {
 
 /**
  * Saves how help requests reach the developer: mode, minimum score, types
- * of help accepted (§7.4). The page shows the change at once.
+ * of help accepted, skills, projects and communities kept (§7.4). The page
+ * shows the change at once.
  */
 export const saveMatching = (change: {
   matchingMode?: MatchingMode
   minScore?: number
   helpTypes?: string[]
+  onlySkills?: string[]
+  onlyProjects?: string[]
+  onlyCommunities?: string[]
 }) => {
   const user = currentUser.peek()
   if (!user) return
@@ -170,6 +179,9 @@ export const saveMatching = (change: {
     matchingMode: change.matchingMode ?? user.matchingMode,
     minScore: change.minScore ?? user.minScore,
     helpTypes: change.helpTypes ?? user.helpTypes,
+    onlySkills: change.onlySkills ?? user.onlySkills,
+    onlyProjects: change.onlyProjects ?? user.onlyProjects,
+    onlyCommunities: change.onlyCommunities ?? user.onlyCommunities,
   }).then(setUser, () =>
     notify({
       title: 'Réglages non enregistrés',

@@ -13,6 +13,7 @@ type ProjectRow = {
   vision: string | null
   status: string
   skills: string | null
+  demoVideoUrl: string | null
   createdAt: number
   ownerLogin: string
   repositoryId: number | null
@@ -26,7 +27,7 @@ type ProjectRow = {
 
 const listMine = sql<ProjectRow, number>`
   SELECT project.projectId, slug, project.name, description, vision, status,
-    project.skills, project.createdAt, owner.githubUsername AS ownerLogin,
+    project.skills, project.demoVideoUrl, project.createdAt, owner.githubUsername AS ownerLogin,
     repository.repositoryId, repository.owner AS repoOwner,
     repository.name AS repoName, syncMode, readme, stats, lastSyncedAt
   FROM projectMember
@@ -122,6 +123,7 @@ export const listMyProjects = (userId: number) =>
       followers: listFollowers(row.projectId).map((f) => f.login),
       needs: listNeeds(row.projectId).map((n) => n.title),
       gallery: galleryOf(row.projectId),
+      demoVideoUrl: row.demoVideoUrl ?? '',
       repository: repositoryId
         ? {
           owner: row.repoOwner!,
