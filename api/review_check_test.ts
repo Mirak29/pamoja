@@ -226,6 +226,24 @@ Deno.test('review check: another reviewer, or a review before the acceptance, do
   assertEquals(submitted(), [])
 })
 
+Deno.test('review check: a review of a bot is never kept', async () => {
+  const s = await setup()
+  // CodeRabbit reads the PR first: the PR still waits for a developer
+  const bot = { id: 900, login: 'coderabbitai[bot]', type: 'Bot' }
+  await deliver('pull_request_review', {
+    action: 'submitted',
+    pull_request: pull(),
+    review: { ...review(5, ABDOU, 'commented', 'Nitpick', now()), user: bot },
+  })
+  assertEquals(reviewOf(5), undefined)
+  assertEquals(
+    db.prepare('SELECT count(*) AS n FROM entry WHERE type = ?')
+      .get(entries.PR_REVIEWED),
+    { n: 0 },
+  )
+  assertEquals(statusOf(s.id), 'accepted')
+})
+
 Deno.test('review check: the author of the PR cannot be its reviewer', async () => {
   // Condition 3: Moussa wrote the PR he would review
   const s = await setup(MOUSSA)
