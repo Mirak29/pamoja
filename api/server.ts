@@ -9,6 +9,7 @@ import { startHelpTimers } from '/api/help-timers.ts'
 import { startRefresh } from '/api/sync.ts'
 import { startWorker } from '/api/webhooks.ts'
 import { startMediaCleanup } from '/api/media.ts'
+import { startStaleReviews } from '/api/tracking.ts'
 // What each GitHub event changes (§5.5): registered before the worker runs
 import '/api/github-events.ts'
 
@@ -21,7 +22,8 @@ export default {
 }
 
 // Polled repos refresh every 15 min (§5.4), the webhook worker picks up what
-// a restart left (§5.5), the delays of help requests run every 10 min (§7.2);
+// a restart left (§5.5), the delays of help requests run every 10 min (§7.2),
+// PRs without a review for 2 days reach #suivi (§6.8);
 // tests call them themselves
 if (APP_ENV !== 'test') {
   startRefresh()
@@ -29,6 +31,7 @@ if (APP_ENV !== 'test') {
   startHelpTimers()
   // Uploads never attached, after 24 h (§17.3)
   startMediaCleanup()
+  startStaleReviews()
 }
 
 log.info('server-start')

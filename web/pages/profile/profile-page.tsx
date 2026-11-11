@@ -73,6 +73,7 @@ import {
 import { ShareDialog } from '/web/pages/profile/share-dialog.tsx'
 import { t } from '/web/lib/language.ts'
 import { conversations, conversationWith } from '/web/lib/messages.ts'
+import { memberLink } from '/web/lib/member-links.ts'
 import {
   loadProfile,
   type ProfileStatus,
@@ -233,9 +234,10 @@ const Hero = ({ login, write }: { login: Login; write?: string }) => {
             <Github class='size-3.5' />
             github.com/{person.github ?? login}
           </a>
-          {person.website && (
+          {person.website && websiteHref(person.website) && (
             <a
               href={websiteHref(person.website)}
+              {...memberLink}
               class='inline-flex items-center gap-1.5 font-mono text-ink-muted'
             >
               <Link class='size-3.5' />

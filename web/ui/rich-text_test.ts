@@ -63,12 +63,29 @@ Deno.test('rich text: Markdown as elements, nothing a member writes can run', as
       ['https://exemple.sn/a', 'https://exemple.sn/a'],
       ['@moussa', 'http://localhost/@moussa'],
     ])
+    // A link of a member: a new tab, no access to the page, no ranking
+    assertEquals(
+      [...root.querySelectorAll('a[href^="https"]')].map((a) => [
+        a.getAttribute('target'),
+        a.getAttribute('rel'),
+      ]),
+      [
+        ['_blank', 'noopener noreferrer nofollow ugc'],
+        ['_blank', 'noopener noreferrer nofollow ugc'],
+      ],
+    )
     assertEquals(root.querySelector('button')!.textContent, '#golang')
     // A number is not a hashtag: « PR #8 »
     show('Voir la PR #8 et #go')
     assertEquals(
       [...root.querySelectorAll('button')].map((b) => b.textContent),
       ['#go'],
+    )
+    // A link that is no web address stays text
+    show('[ici](https://) et https://:80 puis [ok](https://Exemple.SN)')
+    assertEquals(
+      [...root.querySelectorAll('a')].map((a) => a.getAttribute('href')),
+      ['https://exemple.sn/'],
     )
     // Line breaks are kept
     assertEquals(
