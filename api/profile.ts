@@ -1,6 +1,7 @@
 import { sql } from '@01edu/db'
 import { listHelpActivity } from '/api/help.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
+import { coverOf } from '/api/media.ts'
 
 // The profile of a developer as anyone sees it at /@login (§9.1): public,
 // like the passport. Never the email, the matching settings or anything
@@ -95,6 +96,7 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     country: row.country ?? '',
     city: row.city ?? '',
     website: row.website ?? '',
+    cover: coverOf(row.userId),
     available: row.availability === 'available',
     helpTypes: helpTypesOf(row.matchingFilters),
     skills,

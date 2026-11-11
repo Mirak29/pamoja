@@ -11,6 +11,7 @@ import {
   User,
 } from '/api/schema.ts'
 import { skillNamesOf } from '/api/skills.ts'
+import server from '/api/server.ts'
 import { login, request } from '/api/testing.ts'
 
 // A fake GitHub for the files of a PR (§7.1)
@@ -276,4 +277,61 @@ Deno.test('pull skills: read once per head commit, shown on the PR', async () =>
   ]
   await readPullRequestSkills()
   assertEquals((await pulls())[0].skills, ['TypeScript'])
+})
+
+// A PNG header is all the server reads: the type, then the size
+const png = () => {
+  const bytes = new Uint8Array(33)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12)
+  new DataView(bytes.buffer).setUint32(16, 800)
+  new DataView(bytes.buffer).setUint32(20, 600)
+  return bytes
+}
+
+const upload = async (session: string) => {
+  const body = new FormData()
+  body.append('file', new File([png()], 'erreur.png'))
+  const res = await server.fetch(
+    new Request('http://localhost/api/media/upload', {
+      method: 'POST',
+      body,
+      headers: { Cookie: `session=${session}` },
+    }),
+  )
+  return (await res.json()).id as number
+}
+
+Deno.test('help: screenshots shown with the request, 4 at most (§17.3)', async () => {
+  const { session } = await setup()
+  const shots = [await upload(session), await upload(session)]
+  const created = await call('/api/help/create', session, {
+    ...form,
+    pullRequest: 0,
+    project: '',
+    media: shots,
+  })
+  assertEquals(created.status, 200)
+  assertEquals(created.json.media.map((m: { id: number }) => m.id), shots)
+  const listed = (await call('/api/help', session)).json
+  assertEquals(listed[0].media.length, 2)
+  // Five, or an upload already attached: refused, nothing published
+  const five = []
+  for (let i = 0; i < 5; i++) five.push(await upload(session))
+  const refused = await call('/api/help/create', session, {
+    ...form,
+    project: '',
+    pullRequest: 0,
+    media: five,
+  })
+  assertEquals(refused.status, 400)
+  const again = await call('/api/help/create', session, {
+    ...form,
+    project: '',
+    pullRequest: 0,
+    title: 'Encore',
+    media: [shots[0]],
+  })
+  assertEquals(again.status, 400)
+  assertEquals((await call('/api/help', session)).json.length, 1)
 })

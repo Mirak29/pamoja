@@ -100,7 +100,7 @@ pour essayer le build de prod sur sa machine : `deno task prod:local`.
 - **JSX classique** (`h` global, comme Tournament) : ne jamais nommer une variable `h`.
 - **Icônes** : importer le nom Lucide depuis `/web/assets/icons.tsx` puis lancer
   `deno task icon` (Lucide figé sur la 0.460 du prototype).
-- **Données fictives** dans `web/fixtures/` en attendant l'API ; elles disparaissent
+- **Données fictives** dans `web/fixtures/` en attendant l'API (leurs images dans `web/assets/mocks`, via `demoImage`) ; elles disparaissent
   quand un écran passe sur `api[...].signal()`. Les actions de session modifient les
   objets sur place puis incrémentent un signal (`helpChanged`, `projectsChanged`…).
 - **Signaux et re-rendu** : avec `@preact/signals`, un composant qui lit un signal ou
