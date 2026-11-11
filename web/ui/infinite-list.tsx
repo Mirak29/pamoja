@@ -12,30 +12,26 @@ export const BATCH = 20
 const AHEAD_PX = 800
 const AHEAD = `${AHEAD_PX}px`
 
-// What the list scrolls in: a column of its own (the messages), or the page.
-// The margin ahead applies to it only: within a column, the page's would be
-// cut by the column
-const scrollerOf = (element: HTMLElement) => {
-  for (let node = element.parentElement; node; node = node.parentElement) {
-    if (node === document.body) break
-    if (/auto|scroll/.test(getComputedStyle(node).overflowY)) return node
-  }
-  return null
-}
+// What the list scrolls in: a ScrollFrame, or the page. The margin ahead
+// applies to it only: within a frame, the page's would be cut by the frame
+const scrollerOf = (element: HTMLElement) =>
+  element.parentElement?.closest('[data-scroller]') ?? null
 
 /**
  * A list that loads its next batch a little before its end comes into view,
- * with « Chargement… » meanwhile; the end of the list is said. The rows go
- * inside the container (`class`, a grid as well).
+ * with « Chargement… » meanwhile; the end of a list longer than a batch is
+ * said. The rows go inside the container (`class`, a grid as well). Another
+ * list (a tab, a filter) is another InfiniteList: give it a `key`, it starts
+ * afresh.
  *
  * « Charger plus » stays for the keyboard and screen readers, out of sight
  * until it has the focus. It shows when the list cannot load by itself: a
  * browser that does not watch the scroll, or a batch that added no row (a
  * list filtered by the page), so that it never reads batch after batch to
- * fill the screen (§12.7).
+ * fill the screen (§12.7). A batch that failed leaves it too, to try again.
  *
  * @example
- * <InfiniteList more={!!next} onMore={loadOlder} end='C’est tout.'>
+ * <InfiniteList key={tab} more={!!next} onMore={loadOlder} end='C’est tout.'>
  *   {rows.map((row) => <Row key={row.id} row={row} />)}
  * </InfiniteList>
  */
@@ -45,7 +41,7 @@ export const InfiniteList = (
     more: boolean
     /** Loads the next batch; the list waits for its promise */
     onMore: () => unknown
-    /** Said at the end, once everything is shown */
+    /** Said at the end, once everything is shown, past the first batch */
     end?: ComponentChildren
     class?: string
     children: ComponentChildren
@@ -99,12 +95,7 @@ export const InfiniteList = (
   return (
     <>
       <div class={className}>{children}</div>
-      {
-        /* relative: the hidden button stays inside, where the list scrolls.
-        Absolute without it, it went out of a column that scrolls and made
-        the whole page longer */
-      }
-      <div ref={sentinel} class='relative flex flex-col items-center py-3'>
+      <div ref={sentinel} class='flex flex-col items-center py-3'>
         {more && (
           <Button
             variant='secondary'
@@ -121,7 +112,7 @@ export const InfiniteList = (
             Chargement…
           </p>
         )}
-        {!more && count > 0 && end && (
+        {!more && count > BATCH && end && (
           <p class='text-[13px] text-ink-muted'>{end}</p>
         )}
         <span role='status' class='sr-only'>
@@ -167,7 +158,13 @@ export const Batched = <T,>(
 ) => {
   const { shown, more, next } = useBatches(items, reset)
   return (
-    <InfiniteList more={more} onMore={next} end={end} class={className}>
+    <InfiniteList
+      key={reset}
+      more={more}
+      onMore={next}
+      end={end}
+      class={className}
+    >
       {shown.map(row)}
     </InfiniteList>
   )

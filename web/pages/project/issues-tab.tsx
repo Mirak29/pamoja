@@ -11,7 +11,7 @@ import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { githubUrl } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
-import { loadProjectIssues, projectBatches } from '/web/fixtures/repos.ts'
+import { loadProjectList, projectLists } from '/web/fixtures/repos.ts'
 import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -19,6 +19,7 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { counted } from '/web/lib/plural.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const GOOD_FIRST_ISSUE = 'good first issue'
 
@@ -35,19 +36,35 @@ const columnNames: Record<string, string> = Object.fromEntries(boardColumns)
 /** Issues synced from GitHub, filterable on good first issue */
 export const IssuesTab = ({ project }: { project: Project }) => {
   boardChanged.value
+  const { slug } = project
+  // Newest first, as the server sends them; a project of the API shows what
+  // its batches reached (§12.7)
+  const reached = (name: 'issues' | 'beginners', issue: { number: number }) =>
+    project.demo || projectLists.shows(`${slug} ${name}`, issue.number)
   const open = issues
-    .filter((issue) => issue.project === project.slug && issue.state === 'open')
-    .sort((a, b) => b.at - a.at)
-  const beginners = open.filter((issue) =>
-    issue.labels.includes(GOOD_FIRST_ISSUE)
-  )
+    .filter((issue) =>
+      issue.project === slug && issue.state === 'open' &&
+      reached('issues', issue)
+    )
+    .sort((a, b) => b.number - a.number)
+  const beginners = issues
+    .filter((issue) =>
+      issue.project === slug && issue.state === 'open' &&
+      issue.labels.includes(GOOD_FIRST_ISSUE) &&
+      (reached('beginners', issue) || reached('issues', issue))
+    )
+    .sort((a, b) => b.number - a.number)
   // Counted by the server for a project of the API: the batches read may
   // not hold every issue yet (§12.7)
   const openCount = project.demo ? open.length : project.openIssues
-  const beginnerCount = project.beginnerIssues ?? beginners.length
-  const more = projectBatches.value[project.slug]?.issues
+  const beginnerCount = project.demo
+    ? beginners.length
+    : project.beginnerIssues ?? 0
   const onlyBeginners = url.params.filter === 'good-first-issue'
   const list = onlyBeginners ? beginners : open
+  // The beginners have batches of their own, filtered by the server
+  const name = onlyBeginners ? 'beginners' : 'issues'
+  const more = !project.demo && projectLists.more(`${slug} ${name}`)
   const cards = boards[project.slug as ProjectSlug] ?? []
   const isMember = project.owner === me.login ||
     project.members.some((m) => m.login === me.login)
@@ -79,10 +96,11 @@ export const IssuesTab = ({ project }: { project: Project }) => {
       {
         /* The list scrolls in a frame, by batches: the page keeps its height */
       }
-      <div class='max-h-[720px] overflow-y-auto'>
+      <ScrollFrame class='max-h-[720px]'>
         <InfiniteList
-          more={!!more}
-          onMore={() => loadProjectIssues(project.slug)}
+          key={name}
+          more={more}
+          onMore={() => loadProjectList(slug, name)}
         >
           {list.map((issue) => {
             const blocked = issue.labels.includes('blocked')
@@ -168,7 +186,7 @@ export const IssuesTab = ({ project }: { project: Project }) => {
             )
           })}
         </InfiniteList>
-      </div>
+      </ScrollFrame>
       {!list.length && (
         <p class='border-t border-line px-6 py-10 text-center text-ink-muted'>
           {onlyBeginners

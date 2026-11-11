@@ -80,6 +80,7 @@ import {
   type ProfileStatus,
   useProfile,
 } from '/web/lib/profile.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const dimensionIcons = {
   review: GitPullRequest,
@@ -361,7 +362,7 @@ const Building = ({ login }: { login: Login }) => {
         /* About three cards high: the others scroll inside, so that a long
         list does not push the rest of the profile down; by batches (§12.7) */
       }
-      <div class='-mr-2 max-h-[440px] overflow-y-auto pt-1 pr-3 pb-1'>
+      <ScrollFrame class='-mr-2 max-h-[440px] pt-1 pr-3 pb-1'>
         <Batched
           items={list}
           reset={login}
@@ -405,7 +406,7 @@ const Building = ({ login }: { login: Login }) => {
               : <div key={project.slug} class={projectCard}>{content}</div>
           }}
         />
-      </div>
+      </ScrollFrame>
     </section>
   )
 }

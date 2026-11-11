@@ -151,6 +151,12 @@ Deno.test('projects: the issues and PRs of a project by batches', async () => {
     4,
     2,
   ])
+  // Those for a first contribution, filtered by the server
+  const beginners = await all(
+    '/api/project/issues?slug=big-repo&filter=good-first-issue',
+    session,
+  )
+  assertEquals(beginners, { numbers: [40, 30, 20, 10], batches: 1 })
   const pulls = await all('/api/project/pulls?slug=big-repo', session)
   // The open ones first, then the merged ones, newest first, each once
   assertEquals(pulls.batches, 2)

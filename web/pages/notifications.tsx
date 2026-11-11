@@ -1,4 +1,3 @@
-import { useEffect } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { navigate, url } from '@01edu/signal-router'
 import {
@@ -37,7 +36,7 @@ import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
 import {
   loadNotificationBatch,
-  olderNotifications,
+  notificationLists,
   readAll,
   readOne,
   unreadCount,
@@ -156,14 +155,15 @@ export const NotificationsPage = () => {
     .sort((a, b) => b.at - a.at)
   const current = categories.find(([key]) => key === url.params.category) ??
     categories[0]
-  const list = mine.filter((n) => !current[1] || n.category === current[1])
   // A tab reads its first batch when it opens; all of them come with the
-  // session (§12.7)
-  useEffect(() => {
-    const category = current[1]
-    category && olderNotifications.peek()[category] === undefined &&
-      loadNotificationBatch(category)
-  }, [current[1]])
+  // session (§12.7). It shows the rows of the server its batches reached,
+  // not those another tab read further down
+  const tab = current[1] ?? ''
+  const list = mine.filter((n) =>
+    (!tab || n.category === tab) &&
+    (!n.id.startsWith('s') || notificationLists.shows(tab, n.at))
+  )
+  const more = notificationLists.more(tab)
   // Counted by the server too: older batches may not be read yet
   const unread = unreadCount()
   return (
@@ -190,15 +190,16 @@ export const NotificationsPage = () => {
       />
       <div class='slab mr-2 overflow-hidden'>
         <InfiniteList
-          more={!!olderNotifications.value[current[1] ?? '']}
-          onMore={() => loadNotificationBatch(current[1] ?? '')}
-          end={list.length > 20 && 'Tu as tout vu.'}
+          key={tab}
+          more={more}
+          onMore={() => loadNotificationBatch(tab)}
+          end='Tu as tout vu.'
         >
           {list.map((notification) => (
             <Row key={notification.id} notification={notification} />
           ))}
         </InfiniteList>
-        {!list.length && !olderNotifications.value[current[1] ?? ''] && (
+        {!list.length && !more && (
           <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
             <span class='font-display text-[17px] leading-[22px] font-semibold'>
               Rien de neuf ici

@@ -183,3 +183,20 @@ effect(() => {
   if (!signedIn.value) disconnect()
   else if (!source) connect()
 })
+
+/**
+ * A reload that a burst of entries runs once, when the page is shown. An
+ * entry of a project reaches every member at once: `spread` makes each one
+ * wait a random moment more, so that their pages do not all ask the server
+ * in the same instant (§12.7)
+ */
+export const debounced = (load: () => unknown, spread = 0) => {
+  let pending: ReturnType<typeof setTimeout> | undefined
+  return () => {
+    clearTimeout(pending)
+    pending = setTimeout(
+      () => whenShown(load),
+      300 + Math.random() * spread,
+    )
+  }
+}

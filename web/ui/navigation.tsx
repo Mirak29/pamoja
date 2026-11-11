@@ -1,4 +1,4 @@
-import { counted } from '/web/lib/plural.ts'
+import { badgeCount, counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { A, url } from '@01edu/signal-router'
 import {
@@ -157,7 +157,7 @@ const CountBadge = ({ count }: { count: number }) => (
     aria-label={counted(count, 'non lue', 'non lues')}
     class='h-5 min-w-[22px] rounded-sm bg-indigo px-1.5 text-center font-mono text-[12px] leading-5 font-medium text-on-indigo'
   >
-    {count > 9 ? '9+' : count}
+    {badgeCount(count)}
   </span>
 )
 
@@ -167,7 +167,10 @@ export const Sidebar = () => {
   const count = unread()
   return (
     <div class='hidden w-[264px] flex-none p-4 md:block'>
-      <aside class='slab sticky top-4 flex h-[calc(100vh-32px)] flex-col gap-[18px] overflow-y-auto px-3 pt-[18px] pb-3 [scrollbar-width:none]'>
+      <aside
+        data-scroller=''
+        class='slab sticky top-4 flex h-[calc(100vh-32px)] flex-col gap-[18px] overflow-y-auto px-3 pt-[18px] pb-3 [scrollbar-width:none]'
+      >
         <A
           href='.'
           aria-label='Pamoja, accueil'
@@ -266,7 +269,7 @@ export const MobileNav = () => {
             <span>{short}</span>
             {key === 'notifications' && count > 0 && (
               <span class='absolute top-0.5 left-[calc(50%+4px)] h-4 min-w-4 rounded-sm bg-indigo px-1 text-center font-mono text-[10px] leading-4 font-medium text-on-indigo'>
-                {count > 9 ? '9+' : count}
+                {badgeCount(count)}
               </span>
             )}
           </A>

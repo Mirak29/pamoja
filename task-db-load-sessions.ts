@@ -2,9 +2,8 @@
 // synthetic dev00000… accounts created by `deno task stress`.
 import { db } from '@01edu/db'
 import { Entry } from '/api/entries.ts'
-import { b64url } from '/api/lib/encoding.ts'
 import { APP_ENV } from '/api/lib/env.ts'
-import { createSession } from '/api/session.ts'
+import { createSession, decodeSession } from '/api/session.ts'
 
 const path = 'qa/load/sessions.json'
 
@@ -47,9 +46,8 @@ if (Deno.args.includes('--clean')) {
   const sessions: { login: string; cookie: string; entryId: number }[] = []
   for (const user of users) {
     const token = await createSession(user.userId, 'demo')
-    const encodedId = token.split(':', 1)[0]
-    const bytes = Uint8Array.fromBase64(encodedId, b64url).slice()
-    const entryId = new Float64Array(bytes.buffer)[0]
+    // The entry of the session, as the server reads it from the cookie
+    const { entryId } = (await decodeSession(token))!
     sessions.push({
       login: user.githubUsername,
       cookie: `session=${token}`,

@@ -1,6 +1,7 @@
 import { sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
-import { batch, readCursor } from '/api/lib/cursor.ts'
+import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
+import { readmeSummary } from '/api/lib/readme.ts'
 import { galleryOf } from '/api/project-gallery.ts'
 import { skillNamesOf } from '/api/skills.ts'
 
@@ -34,7 +35,8 @@ const listMine = sql<ProjectRow, number>`
   SELECT project.projectId, slug, project.name, description, vision, status,
     project.skills, project.demoVideoUrl, project.createdAt, owner.githubUsername AS ownerLogin,
     repository.repositoryId, repository.owner AS repoOwner,
-    repository.name AS repoName, syncMode, readme, stats, lastSyncedAt
+    repository.name AS repoName, syncMode,
+    substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
   FROM projectMember
   JOIN project ON project.projectId = projectMember.projectId
   JOIN user owner ON owner.userId = project.ownerId
@@ -64,9 +66,15 @@ const listNeeds = sql<{ title: string }, number>`
  * the first batch and the exact counts, the tabs of a project read the rest
  */
 
-const BATCH = 20
+type Window = Slice & { repositoryId: number }
 
-type Window = { repositoryId: number; value: number; id: number; limit: number }
+/** The label of the issues for a first contribution */
+export const GOOD_FIRST_ISSUE = 'good first issue'
+
+// The issue holds the label: its text is looked at before its JSON is read
+const isBeginner = `issue.labels LIKE '%${GOOD_FIRST_ISSUE}%'
+  AND EXISTS (SELECT 1 FROM json_each(issue.labels)
+    WHERE value = '${GOOD_FIRST_ISSUE}')`
 
 type IssueRow = {
   number: number
@@ -78,17 +86,19 @@ type IssueRow = {
   createdAt: number
 }
 
-// The open issues, newest first, from the index (repositoryId, state, number)
-const listIssues = sql<
-  IssueRow,
-  { repositoryId: number; id: number; limit: number }
->`
-  SELECT number, title, state, labels, authorLogin, comments, createdAt
-  FROM issue
-  WHERE repositoryId = :repositoryId AND state = 'open' AND number < :id
-  ORDER BY number DESC
-  LIMIT :limit
-`.all
+// The open issues, newest first, from the index (repositoryId, state, number);
+// those for a first contribution apart, by batches of their own
+const openIssues = (where: string) =>
+  sql<IssueRow, { repositoryId: number; id: number; limit: number }>`
+    SELECT number, title, state, labels, authorLogin, comments, createdAt
+    FROM issue
+    WHERE repositoryId = :repositoryId AND state = 'open' AND number < :id
+      ${where}
+    ORDER BY number DESC
+    LIMIT :limit
+  `.all
+const listIssues = openIssues('')
+const listBeginnerIssues = openIssues(`AND ${isBeginner}`)
 
 type PullRow = {
   number: number
@@ -114,36 +124,57 @@ const listPulls = sql<PullRow, Window>`
     (state = 'open') AS open
   FROM pullRequest
   WHERE repositoryId = :repositoryId
-    AND ((state = 'open') < :value
-      OR ((state = 'open') = :value AND number < :id))
+    AND ${after("(state = 'open')", 'number')}
   ORDER BY (state = 'open') DESC, number DESC
   LIMIT :limit
 `.all
 
-// Counted, never listed: the headers of the tabs and the cards
-const getCounts = sql<
-  {
-    openIssues: number
-    beginnerIssues: number
-    openPullRequests: number
-    waitingReview: number
-  },
-  number
->`
-  SELECT
-    (SELECT count(*) FROM issue WHERE repositoryId = :id AND state = 'open')
-      AS openIssues,
-    (SELECT count(*) FROM issue WHERE repositoryId = :id AND state = 'open'
-      AND EXISTS (SELECT 1 FROM json_each(issue.labels)
-        WHERE value = 'good first issue')) AS beginnerIssues,
-    (SELECT count(*) FROM pullRequest
-      WHERE repositoryId = :id AND state = 'open') AS openPullRequests,
-    (SELECT count(*) FROM pullRequest
-      WHERE repositoryId = :id AND state = 'open'
-        AND NOT EXISTS (SELECT 1 FROM review
-          WHERE review.pullRequestId = pullRequest.pullRequestId
-            AND review.state != 'dismissed')) AS waitingReview
-`.get
+// Counted, never listed: the headers of the tabs and the cards. Every
+// repository of the list at once, each count from its index
+type Counts = {
+  openIssues: number
+  beginnerIssues: number
+  openPullRequests: number
+  waitingReview: number
+}
+
+const countBy = (from: string, where = '') =>
+  sql<{ repositoryId: number; n: number }, string>`
+    SELECT repositoryId, count(*) AS n FROM ${from}
+    WHERE repositoryId IN (SELECT value FROM json_each(?))
+      AND state = 'open' ${where}
+    GROUP BY repositoryId
+  `.all
+
+const counters = {
+  openIssues: countBy('issue'),
+  beginnerIssues: countBy('issue', `AND ${isBeginner}`),
+  openPullRequests: countBy('pullRequest'),
+  waitingReview: countBy(
+    'pullRequest',
+    `AND NOT EXISTS (SELECT 1 FROM review
+      WHERE review.pullRequestId = pullRequest.pullRequestId
+        AND review.state != 'dismissed')`,
+  ),
+}
+
+const countsOf = (repositoryIds: number[]) => {
+  const ids = JSON.stringify(repositoryIds)
+  const counts = new Map<number, Counts>(
+    repositoryIds.map((id) => [id, {
+      openIssues: 0,
+      beginnerIssues: 0,
+      openPullRequests: 0,
+      waitingReview: 0,
+    }]),
+  )
+  for (const [name, count] of Object.entries(counters)) {
+    for (const { repositoryId, n } of count(ids)) {
+      counts.get(repositoryId)![name as keyof Counts] = n
+    }
+  }
+  return counts
+}
 
 const shownIssue = (issue: IssueRow) => ({
   ...issue,
@@ -160,36 +191,28 @@ const shownPull = ({ open: _open, ...pull }: PullRow) => ({
   reviewed: pull.reviewed === 1,
 })
 
-const issuesOf = (repositoryId: number, before = '') => {
-  const { id } = readCursor(before)
-  const page = batch(
-    listIssues({ repositoryId, id, limit: BATCH + 1 }),
-    BATCH,
+const issuesOf = (repositoryId: number, before = '', beginners = false) => {
+  const page = readBatch(
+    before,
+    ({ id, limit }) =>
+      (beginners ? listBeginnerIssues : listIssues)({
+        repositoryId,
+        id,
+        limit,
+      }),
     (row) => ({ value: 0, id: row.number }),
   )
   return { items: page.items.map(shownIssue), next: page.next }
 }
 
 const pullsOf = (repositoryId: number, before = '') => {
-  const { value, id } = readCursor(before)
-  const page = batch(
-    listPulls({ repositoryId, value, id, limit: BATCH + 1 }),
-    BATCH,
+  const page = readBatch(
+    before,
+    (slice) => listPulls({ ...slice, repositoryId }),
     (row) => ({ value: row.open, id: row.number }),
   )
   return { items: page.items.map(shownPull), next: page.next }
 }
-
-// The first paragraphs of a README, without its headings, badges or code:
-// the page shows no more, so the whole README never travels
-const readmeSummary = (readme: string) =>
-  readme.replace(/```[\s\S]*?```/g, '').split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .filter((block) =>
-      block && !block.startsWith('#') && !block.startsWith('![') &&
-      !block.startsWith('[![') && !block.startsWith('<')
-    )
-    .join('\n\n').slice(0, 600)
 
 type Stats = {
   stars?: number
@@ -202,8 +225,10 @@ type Stats = {
   release?: { tag: string; at: number | null } | null
 }
 
-export const listMyProjects = (userId: number) =>
-  listMine(userId).map((row) => {
+export const listMyProjects = (userId: number) => {
+  const rows = listMine(userId)
+  const counts = countsOf(rows.flatMap((row) => row.repositoryId ?? []))
+  return rows.map((row) => {
     const stats = parse<Stats>(row.stats, {})
     const repositoryId = row.repositoryId
     return {
@@ -234,13 +259,14 @@ export const listMyProjects = (userId: number) =>
           release: stats.release?.tag ?? '',
           releasedAt: stats.release?.at ?? 0,
           lastSyncedAt: row.lastSyncedAt ?? 0,
-          ...getCounts(repositoryId)!,
+          ...counts.get(repositoryId)!,
           issues: issuesOf(repositoryId),
           pullRequests: pullsOf(repositoryId),
         }
         : undefined,
     }
   })
+}
 
 const getRepository = sql<
   { repositoryId: number },
@@ -260,9 +286,16 @@ const repositoryOf = (userId: number, slug: string) => {
   return row.repositoryId
 }
 
-/** A batch of the open issues of a project, from a cursor */
-export const listProjectIssues = (userId: number, slug: string, before = '') =>
-  issuesOf(repositoryOf(userId, slug), before)
+/**
+ * A batch of the open issues of a project, from a cursor; only those for a
+ * first contribution with `beginners`
+ */
+export const listProjectIssues = (
+  userId: number,
+  slug: string,
+  before = '',
+  beginners = false,
+) => issuesOf(repositoryOf(userId, slug), before, beginners)
 
 /** A batch of the PRs of a project, the open ones first, from a cursor */
 export const listProjectPulls = (userId: number, slug: string, before = '') =>

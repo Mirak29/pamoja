@@ -48,6 +48,7 @@ import {
 } from '/api/messages.ts'
 import {
   listNotifications,
+  NOTIFICATION_CATEGORIES,
   readAllNotifications,
   readNotification,
 } from '/api/notifications.ts'
@@ -221,6 +222,12 @@ const person = OBJ({
 // number of the database never reaches the page
 const conversationKey = STR('Public id of the conversation, its address')
 
+// The cursor of a list read by batches (§12.7): what the next batch asks
+// for, and what each batch gives for the one after
+const cursorFrom = (first: string) =>
+  STR(`Cursor of the next batch, empty for the ${first} (§12.7)`)
+const nextCursor = STR('Cursor of the next batch, empty at the end')
+
 // Issues and PRs of a project, by batches (§12.7)
 const issueBatch = OBJ({
   items: ARR(
@@ -235,7 +242,7 @@ const issueBatch = OBJ({
     }),
     'Open issues, newest first',
   ),
-  next: STR('Cursor of the next batch, empty at the end'),
+  next: nextCursor,
 })
 
 const pullBatch = OBJ({
@@ -255,7 +262,7 @@ const pullBatch = OBJ({
     }),
     'The open ones first, then the others, newest first',
   ),
-  next: STR('Cursor of the next batch, empty at the end'),
+  next: nextCursor,
 })
 
 const conversationRights = {
@@ -722,11 +729,20 @@ const defs = {
 
   'GET/api/project/issues': route({
     authorize: withSession,
-    fn: (ctx, { slug, before }) =>
-      listProjectIssues(ctx.session.userId, slug, before),
+    fn: (ctx, { slug, before, filter }) =>
+      listProjectIssues(
+        ctx.session.userId,
+        slug,
+        before,
+        filter === 'good-first-issue',
+      ),
     input: OBJ({
       slug: STR('Slug of the project'),
-      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+      before: cursorFrom('newest'),
+      filter: optional(LIST(
+        ['', 'good-first-issue'],
+        'Only the issues labelled good first issue; empty for all of them',
+      )),
     }),
     output: issueBatch,
     description: 'The open issues of a project, 20 at a time',
@@ -738,7 +754,7 @@ const defs = {
       listProjectPulls(ctx.session.userId, slug, before),
     input: OBJ({
       slug: STR('Slug of the project'),
-      before: STR('Cursor of the next batch, empty for the first (§12.7)'),
+      before: cursorFrom('first'),
     }),
     output: pullBatch,
     description: 'The PRs of a project, the open ones first, 20 at a time',
@@ -753,11 +769,11 @@ const defs = {
       listHelpRequests(ctx.session.userId, tab, before),
     input: OBJ({
       tab: LIST(HELP_TABS, 'mine, accepted, projects; empty for all of them'),
-      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+      before: cursorFrom('newest'),
     }),
     output: OBJ({
       items: ARR(helpRequest, 'Newest first, 20 at a time'),
-      next: STR('Cursor of the next batch, empty at the end'),
+      next: nextCursor,
     }),
     description:
       'The requests the developer wrote, accepted, or that concern one of their projects',
@@ -809,7 +825,7 @@ const defs = {
     authorize: withSession,
     fn: (ctx, { before }) => listHelpForMe(ctx.session.userId, before),
     input: OBJ({
-      before: STR('Cursor of the next batch, empty for the best (§12.7)'),
+      before: cursorFrom('best'),
     }),
     output: OBJ({
       items: ARR(
@@ -820,7 +836,7 @@ const defs = {
         }),
         'Best score first, 20 at a time',
       ),
-      next: STR('Cursor of the next batch, empty at the end'),
+      next: nextCursor,
     }),
     description: 'The open requests the developer was matched with',
   }),
@@ -892,9 +908,9 @@ const defs = {
     fn: (ctx, { before, category }) =>
       listNotifications(ctx.session.userId, before, category),
     input: OBJ({
-      before: STR('Cursor of the next batch, empty for the newest (§12.7)'),
+      before: cursorFrom('newest'),
       category: LIST(
-        ['', 'for-you', 'projects', 'communities', 'social', 'system'],
+        ['', ...NOTIFICATION_CATEGORIES],
         'A tab of the inbox; empty for all of them',
       ),
     }),
@@ -920,7 +936,7 @@ const defs = {
         }),
         'Newest first, 20 at a time',
       ),
-      next: STR('Cursor of the next batch, empty at the end'),
+      next: nextCursor,
       unread: ARR(
         OBJ({ category: STR('Category'), count: NUM('Unread ones') }),
         'Every unread one, by category, not only those of the batch',
@@ -994,7 +1010,7 @@ const defs = {
     authorize: withSession,
     fn: (ctx, { before }) => listConversations(ctx.session.userId, before),
     input: OBJ({
-      before: STR('Cursor of the next batch, empty for the latest (§12.7)'),
+      before: cursorFrom('latest'),
     }),
     output: OBJ({
       items: ARR(
@@ -1018,8 +1034,10 @@ const defs = {
         }),
         'The conversations, the latest first, 20 at a time',
       ),
-      next: STR('Cursor of the next batch, empty at the end'),
-      unread: NUM('Unread messages, muted ones aside, counted up to 99'),
+      next: nextCursor,
+      unread: NUM(
+        'Unread messages, muted ones aside, counted up to 99, with the latest batch; 0 with the older ones',
+      ),
     }),
     description: 'The conversations of the developer, requests included',
   }),

@@ -950,8 +950,9 @@ Deno.test('messages: the list by batches of 20, the counter up to 99 (§12.7)', 
       json.items.every((c: { unread: number }) => c.unread === 3),
       true,
     )
-    // 135 unread messages: the counter stops at 99
-    assertEquals(json.unread, 99)
+    // 135 unread messages: the counter stops at 99, and comes with the
+    // latest batch only
+    assertEquals(json.unread, before ? 0 : 99)
     seen.push(...json.items.map((c: { id: string }) => c.id))
     before = json.next
     batches++

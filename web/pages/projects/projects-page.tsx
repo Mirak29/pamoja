@@ -21,6 +21,7 @@ import { counted } from '/web/lib/plural.ts'
 import { notify } from '/web/ui/toast.tsx'
 import { NewProjectDialog } from '/web/pages/projects/new-project-dialog.tsx'
 import { t } from '/web/lib/language.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const syncLabels = {
   live: [Zap, 'Synchro live'],
@@ -174,7 +175,7 @@ export const ProjectsPage = () => {
           so the projects followed stay close (§12.7) */
         }
         {mine.length > 0 && (
-          <div class='-mr-1 max-h-[700px] overflow-y-auto pt-1 pr-3 pb-3'>
+          <ScrollFrame class='-mr-1 max-h-[700px] pt-1 pr-3 pb-3'>
             <Batched
               items={mine}
               class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-7 gap-y-6'
@@ -182,7 +183,7 @@ export const ProjectsPage = () => {
                 <MineCard key={project.slug} project={project} />
               )}
             />
-          </div>
+          </ScrollFrame>
         )}
         {!mine.length && (
           <GhostSlab class='px-6 py-10'>
@@ -209,7 +210,7 @@ export const ProjectsPage = () => {
           </span>
         </div>
         {followed.length > 0 && (
-          <div class='mr-2 max-h-[480px] overflow-y-auto rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
+          <ScrollFrame class='mr-2 max-h-[480px] rounded-lg border border-line-strong bg-surface-000 pt-2 pr-3 pb-3 pl-2 inset-shadow-well'>
             <Batched
               items={followed}
               class='flex flex-col gap-2.5'
@@ -217,7 +218,7 @@ export const ProjectsPage = () => {
                 <FollowedRow key={project.slug} project={project} />
               )}
             />
-          </div>
+          </ScrollFrame>
         )}
         {!followed.length && (
           <GhostSlab class='p-5'>

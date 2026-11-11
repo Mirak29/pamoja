@@ -15,6 +15,7 @@ import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
 import { NewCommunityDialog } from '/web/pages/communities/new-community-dialog.tsx'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const groups: [Community['type'], string][] = [
   ['Technologie', 'Technologies'],
@@ -90,7 +91,7 @@ export const CommunitiesPage = () => {
               /* About two rows: the others scroll inside, by batches, so a
               long kind does not push the next ones down (§12.7) */
             }
-            <div class='-mr-1 max-h-[520px] overflow-y-auto pt-1 pr-3 pb-3'>
+            <ScrollFrame class='-mr-1 max-h-[520px] pt-1 pr-3 pb-3'>
               <Batched
                 items={list}
                 reset={type}
@@ -99,7 +100,7 @@ export const CommunitiesPage = () => {
                   <CommunityCard key={community.slug} community={community} />
                 )}
               />
-            </div>
+            </ScrollFrame>
           </section>
         )
       })}

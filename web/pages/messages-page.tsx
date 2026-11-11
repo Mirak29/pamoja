@@ -1,3 +1,4 @@
+import { badgeCount } from '/web/lib/plural.ts'
 import { Fragment } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
@@ -75,6 +76,7 @@ import { Markdown } from '/web/ui/rich-text.tsx'
 import { memberLink } from '/web/lib/member-links.ts'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 // Direct messages (§10.6): the conversations on the left, the one open on
 // the right; on a phone, one or the other. Like Discord: edit, delete,
@@ -189,7 +191,7 @@ const Row = ({ conversation, active }: {
                 : 'bg-indigo text-on-indigo'
             }`}
           >
-            {conversation.unread > 9 ? '9+' : conversation.unread}
+            {badgeCount(conversation.unread)}
           </span>
         )}
       </span>
@@ -268,7 +270,7 @@ const List = ({ openId }: { openId: string | null }) => {
         Messages
       </h1>
       <SearchBox onResults={setResults} />
-      <div class='flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain'>
+      <ScrollFrame contain class='flex min-h-0 flex-1 flex-col'>
         {results
           ? (
             <>
@@ -331,7 +333,7 @@ const List = ({ openId }: { openId: string | null }) => {
               )}
             </>
           )}
-      </div>
+      </ScrollFrame>
     </section>
   )
 }
@@ -1134,7 +1136,9 @@ const Open = ({ id }: { id: string }) => {
           stick.current =
             box.scrollHeight - box.scrollTop - box.clientHeight < 80
         }}
-        class='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4'
+        // A column that keeps its gesture, as a ScrollFrame `contain`
+        data-scroller='contain'
+        class='relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4'
       >
         <div ref={content} class='flex flex-col gap-3'>
           {shown.more && !shown.jumpedTo && (

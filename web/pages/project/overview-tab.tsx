@@ -20,6 +20,7 @@ import { Progress } from '/web/ui/progress.tsx'
 import { t } from '/web/lib/language.ts'
 import { VideoEmbed } from '/web/ui/video.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const Card = (
   { class: className, children }: {
@@ -180,7 +181,7 @@ const Team = ({ project }: { project: Project }) => {
         /* About six people high: the others scroll inside, by batches, so a
         large team does not stretch the page (§12.7) */
       }
-      <div class='-mr-2 max-h-[300px] overflow-y-auto pr-2'>
+      <ScrollFrame class='-mr-2 max-h-[300px] pr-2'>
         <Batched
           items={project.members}
           reset={project.slug}
@@ -205,7 +206,7 @@ const Team = ({ project }: { project: Project }) => {
             </A>
           )}
         />
-      </div>
+      </ScrollFrame>
       {more > 0 && (
         <span class='text-[13px] text-ink-muted'>
           + {counted(more, 'contributeur')} sur GitHub

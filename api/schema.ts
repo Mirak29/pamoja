@@ -443,7 +443,6 @@ export const HelpRequest = createTable('helpRequest', {
   lastWaveAt: { type: 'REAL', optional: true },
 })
 index('help_request_status', 'helpRequest', 'status')
-index('help_request_author', 'helpRequest', 'authorId')
 // The tabs of the help page, read by batches newest first (§12.7): equality
 // then the order, so SQLite reads 20 rows instead of sorting them all (the
 // rowid closes each index, which breaks the ties)
@@ -484,9 +483,8 @@ export const HelpMatch = createTable('helpMatch', {
   status: { type: 'TEXT' },
 })
 unique('help_match', 'helpMatch', 'helpRequestId, userId')
-// « Pour moi », and the daily cap of matching notifications (§7.3)
-index('help_match_user', 'helpMatch', 'userId, status')
-// « Pour moi » by batches, best score first (§12.7)
+// « Pour moi » by batches, best score first (§12.7), and the daily cap of
+// matching notifications (§7.3)
 index(
   'help_match_for_me',
   'helpMatch',

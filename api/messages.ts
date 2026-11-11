@@ -12,7 +12,7 @@ import {
   type Preview,
 } from '/api/link-preview.ts'
 import { attach, mediaOf, removeMediaOf } from '/api/media.ts'
-import { batch, readCursor } from '/api/lib/cursor.ts'
+import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import { isOnline, sendTo } from '/api/presence.ts'
 import { userIdOfGithubId, userIdOfLogin } from '/api/user.ts'
@@ -524,11 +524,9 @@ type ListRow = ConversationRow & {
 // By batches of 20, the latest first (§12.7). The ids of the batch first,
 // small rows cheap to sort; then the details of those 20 only: the last
 // message and the unread ones are never computed for the whole list
-const BATCH = 20
-
 const listBatch = sql<
   { conversationId: number; updatedAt: number },
-  { me: number; value: number; id: number; limit: number }
+  Slice & { me: number }
 >`
   SELECT conversation.conversationId, conversation.updatedAt
   FROM conversationMember AS me
@@ -536,8 +534,7 @@ const listBatch = sql<
   WHERE me.userId = :me
     -- A request they declined is gone from their list
     AND NOT (conversation.startedBy != :me AND conversation.status = 'declined')
-    AND (conversation.updatedAt < :value OR (conversation.updatedAt = :value
-      AND conversation.conversationId < :id))
+    AND ${after('conversation.updatedAt', 'conversation.conversationId')}
   ORDER BY conversation.updatedAt DESC, conversation.conversationId DESC
   LIMIT :limit
 `.all
@@ -608,17 +605,17 @@ export const excerpt = (body: string) => {
  * their list; a request someone sent them waits apart.
  */
 export const listConversations = (me: number, before = '') => {
-  const { value, id } = readCursor(before)
-  const { items, next } = batch(
-    listBatch({ me, value, id, limit: BATCH + 1 }),
-    BATCH,
+  const { items, next } = readBatch(
+    before,
+    (slice) => listBatch({ ...slice, me }),
     (row) => ({ value: row.updatedAt, id: row.conversationId }),
   )
   const ids = JSON.stringify(items.map((row) => row.conversationId))
   return {
     items: listMine({ me, ids }).map((row) => shownConversation(row, me)),
     next,
-    unread: countUnread(me)!.n,
+    // With the latest batch: the older ones leave the counter as it is
+    unread: before ? 0 : countUnread(me)!.n,
   }
 }
 

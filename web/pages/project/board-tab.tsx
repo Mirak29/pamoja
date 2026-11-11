@@ -24,6 +24,7 @@ import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { StatusBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { t, translate } from '/web/lib/language.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 // Diamond of each column: from a dashed outline to a filled indigo
 const marks: Record<BoardColumn, string> = {
@@ -246,7 +247,7 @@ export const BoardTab = ({ project }: { project: Project }) => {
                   {list.length}
                 </span>
               </div>
-              <div class='-ml-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pt-0.5 pr-2 pb-2 pl-1'>
+              <ScrollFrame class='-ml-1 flex min-h-0 flex-1 flex-col gap-3 pt-0.5 pr-2 pb-2 pl-1'>
                 {list.map((card) => (
                   <BoardCard
                     key={card.id}
@@ -266,7 +267,7 @@ export const BoardTab = ({ project }: { project: Project }) => {
                   </div>
                 )}
                 {key === 'backlog' && canMove && <NewCard project={project} />}
-              </div>
+              </ScrollFrame>
             </div>
           )
         })}

@@ -14,11 +14,16 @@ import { type Status, StatusBadge, statusLabel } from '/web/ui/badge.tsx'
 import { githubUrl } from '/web/lib/links.ts'
 import { counted } from '/web/lib/plural.ts'
 import { Button } from '/web/ui/button.tsx'
-import { loadProjectPulls, projectBatches } from '/web/fixtures/repos.ts'
+import {
+  loadProjectList,
+  projectLists,
+  pullOrder,
+} from '/web/fixtures/repos.ts'
 import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { t, translate } from '/web/lib/language.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const reviewStatus = (pr: PullRequest): Status =>
   pr.state === 'merged' ? 'merged' : `review-${pr.review}`
@@ -113,19 +118,22 @@ const PullRequestDetail = (
 
 /** Pull requests synced from GitHub, with their review and CI state */
 export const PullRequestsTab = ({ project }: { project: Project }) => {
+  // The open ones first, as the server sends them; a project of the API
+  // shows what its batches reached (§12.7)
+  const key = `${project.slug} pulls` as const
   const prs = pullRequests
-    .filter((pr) => pr.project === project.slug)
-    .sort((a, b) =>
-      Number(a.state === 'merged') - Number(b.state === 'merged') ||
-      b.number - a.number
+    .filter((pr) =>
+      pr.project === project.slug &&
+      (project.demo || projectLists.shows(key, pullOrder(pr)))
     )
+    .sort((a, b) => pullOrder(b) - pullOrder(a))
   const open = prs.filter((pr) => pr.state === 'open')
   // Counted by the server for a project of the API: the batches read may
   // not hold every PR yet (§12.7)
   const openCount = project.openPullRequests ?? open.length
   const waiting = project.waitingReview ??
     open.filter((pr) => pr.review === 'waiting').length
-  const more = projectBatches.value[project.slug]?.pulls
+  const more = !project.demo && projectLists.more(key)
   const opened = prs.find((pr) => url.params.dialog === `pr-${pr.number}`)
   return (
     <section class='slab mr-2 overflow-hidden'>
@@ -138,10 +146,10 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
       {
         /* The list scrolls in a frame, by batches: the page keeps its height */
       }
-      <div class='max-h-[720px] overflow-y-auto'>
+      <ScrollFrame class='max-h-[720px]'>
         <InfiniteList
-          more={!!more}
-          onMore={() => loadProjectPulls(project.slug)}
+          more={more}
+          onMore={() => loadProjectList(project.slug, 'pulls')}
         >
           {prs.map((pr) => (
             <A
@@ -177,7 +185,7 @@ export const PullRequestsTab = ({ project }: { project: Project }) => {
             </A>
           ))}
         </InfiniteList>
-      </div>
+      </ScrollFrame>
       {!prs.length && (
         <p class='border-t border-line px-6 py-10 text-center text-ink-muted'>
           Aucune pull request sur ce projet pour l’instant.

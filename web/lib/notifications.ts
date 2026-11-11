@@ -12,9 +12,10 @@ import { badgeName, levelNames } from '/web/fixtures/reputation.ts'
 import { me, personOf } from '/web/fixtures/people.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { t, translate } from '/web/lib/language.ts'
-import { onEvent, onReconnect, whenShown } from '/web/lib/realtime.ts'
+import { debounced, onEvent, onReconnect } from '/web/lib/realtime.ts'
 import { currentUser } from '/web/lib/session.ts'
-import { effect, signal } from '@preact/signals'
+import { computed, effect, signal } from '@preact/signals'
+import { assign, batchedLists, replaceTop, upsert } from '/web/lib/batches.ts'
 
 // The notifications of the server (§7.4) join those of the demo in the
 // center; a new one pops up as a toast. The server says what happened, the
@@ -157,34 +158,58 @@ let loaded = false
  * server, which counts every unread one, not only those of the batches read.
  */
 
-/**
- * Cursor of the older batch of each tab (`''` for all of them): empty when
- * everything is read, missing before the first batch of the tab
- */
-export const olderNotifications = signal<Record<string, string>>({})
-// Tabs whose older batches were read: a new read of the newest keeps them
-const olderRead = new Set<string>()
 // Unread ones of the server, by category
 const serverUnread = signal<Record<string, number>>({})
 
+/** A tab of the center: a category, or all of them (`''`) */
+export type NotificationTab = NotificationCategory | ''
+
+const isServer = (n: Notification) => n.id.startsWith('s')
+const orderOf = (n: Notification) => n.at
+
+// The rows of the server join the shared array, each once
 const keep = (batch: Batch) => {
   serverUnread.value = Object.fromEntries(
     batch.unread.map(({ category, count }) => [category, count]),
   )
-  const fresh = batch.items.map(toPage)
-  for (const notification of fresh) {
-    const i = notifications.findIndex((n) => n.id === notification.id)
-    i < 0 ? notifications.push(notification) : notifications[i] = notification
-  }
-  return fresh
+  return batch.items.map(toPage)
 }
+
+/**
+ * The cursors of the tabs. Every tab puts its rows in the same array; each
+ * one shows those down to where its batches reached (`notificationLists.shows`)
+ */
+export const notificationLists = batchedLists<NotificationTab>(
+  async (category, before) => {
+    const batch = await api['GET/api/notifications']
+      .fetch({ before, category })
+    const fresh = keep(batch)
+    assign(notifications, upsert(notifications, fresh, (n) => n.id))
+    fresh.forEach((n) => seen.add(n.id))
+    notificationsChanged.value++
+    return { next: batch.next, orders: fresh.map(orderOf) }
+  },
+)
 
 /** The newest batch of the server: the first read is quiet, later ones pop up */
 export const loadNotifications = () =>
   api['GET/api/notifications'].fetch({ before: '', category: '' }).then(
     (batch) => {
       const fresh = keep(batch)
-      olderRead.has('') || setCursor('', batch.next)
+      // One no longer among the newest is gone on the server
+      assign(
+        notifications,
+        replaceTop(notifications, fresh, {
+          idOf: (n) => n.id,
+          order: orderOf,
+          next: batch.next,
+          among: isServer,
+        }),
+      )
+      notificationLists.first('', {
+        next: batch.next,
+        orders: fresh.map(orderOf),
+      })
       const arrived = fresh.filter((n) => !n.read && !seen.has(n.id))
       fresh.forEach((n) => seen.add(n.id))
       if (loaded && arrived.length) incoming.value = arrived[0]
@@ -194,53 +219,37 @@ export const loadNotifications = () =>
     () => {},
   )
 
-const setCursor = (category: string, next: string) => {
-  olderNotifications.value = { ...olderNotifications.peek(), [category]: next }
-}
-
-const reading = new Map<string, Promise<void>>()
-
 /**
  * The next batch of a tab, its first one if none was read; nothing when one
  * is already on its way
  */
-export const loadNotificationBatch = (
-  category: NotificationCategory | '' = '',
-) => {
-  const current = reading.get(category)
-  if (current) return current
-  const before = olderNotifications.peek()[category]
-  if (before === '') return Promise.resolve()
-  const read = api['GET/api/notifications']
-    .fetch({ before: before ?? '', category })
-    .then((batch) => {
-      keep(batch).forEach((n) => seen.add(n.id))
-      before && olderRead.add(category)
-      setCursor(category, batch.next)
-      notificationsChanged.value++
-    })
-    .catch(() => {})
-    .finally(() => reading.delete(category))
-  reading.set(category, read)
-  return read
-}
+export const loadNotificationBatch = (category: NotificationTab = '') =>
+  notificationLists.load(category)
+
+// The unread ones of the demo, by category, counted once for every counter
+const demoUnread = computed(() => {
+  notificationsChanged.value
+  const counts: Record<string, number> = {}
+  for (const n of notifications) {
+    if (n.to !== me.login || n.read || isServer(n)) continue
+    counts[n.category] = (counts[n.category] ?? 0) + 1
+  }
+  return counts
+})
+
+const total = (counts: Record<string, number>) =>
+  Object.values(counts).reduce((sum, count) => sum + count, 0)
 
 /**
  * Unread ones for the developer, of a category or all: those of the demo,
  * counted here, and those of the server, counted by the server
  */
 export const unreadCount = (category?: string) => {
-  notificationsChanged.value
-  const demo =
-    notifications.filter((n) =>
-      n.to === me.login && !n.read && !n.id.startsWith('s') &&
-      (!category || n.category === category)
-    ).length
+  const demo = demoUnread.value
   const server = serverUnread.value
-  return demo +
-    (category
-      ? server[category] ?? 0
-      : Object.values(server).reduce((sum, count) => sum + count, 0))
+  return category
+    ? (demo[category] ?? 0) + (server[category] ?? 0)
+    : total(demo) + total(server)
 }
 
 /** Opened or read: the server keeps it */
@@ -273,11 +282,12 @@ export const readAll = () => {
 effect(() => {
   if (!currentUser.value) return
   loaded = false
-  olderRead.clear()
-  olderNotifications.value = {}
+  notificationLists.reset()
   seen.clear()
   loadNotifications()
 })
 // Hidden, the tab reads once when it shows again (§12.7)
-onEvent('NOTIFICATION_CREATED', () => whenShown(loadNotifications))
-onReconnect(() => currentUser.peek() && whenShown(loadNotifications))
+// A burst of them is read once
+const reloadNotifications = debounced(loadNotifications)
+onEvent('NOTIFICATION_CREATED', reloadNotifications)
+onReconnect(() => currentUser.peek() && reloadNotifications())

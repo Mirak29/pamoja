@@ -1,4 +1,3 @@
-import { useEffect } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { Plus } from '/web/assets/icons.tsx'
 import {
@@ -13,7 +12,7 @@ import { HelpRequestCard } from '/web/ui/help-request-card.tsx'
 import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
-import { helpBatches, type HelpListTab, loadHelpBatch } from '/web/lib/help.ts'
+import { helpLists, type HelpListTab, loadHelpBatch } from '/web/lib/help.ts'
 
 const myProjects = Object.values(projects)
   .filter((p) => isMe(p.owner) || p.members.some((m) => isMe(m.login)))
@@ -64,13 +63,9 @@ export const HelpList = () => {
   }
   const current = tabs.find((t) => t.key === url.params.tab) ?? tabs[0]
   const rows = lists[current.key]
-  // By batches of 20 (§12.7): the first when the tab opens
-  const batches = helpBatches.value
-  const more = batches[current.key]
-  useEffect(() => {
-    helpBatches.peek()[current.key] === undefined &&
-      loadHelpBatch(current.key)
-  }, [current.key])
+  // By batches of 20 (§12.7): the list reads the first when the tab opens.
+  // A batch that failed leaves « Charger plus » to try again
+  const batches = helpLists.cursors.value
   return (
     <Page title='Aide' class='flex flex-col gap-6 pt-5'>
       <div class='flex flex-wrap items-end justify-end gap-4'>
@@ -92,16 +87,17 @@ export const HelpList = () => {
       />
       <div class='slab mr-2 overflow-hidden'>
         <InfiniteList
-          more={!!more}
+          key={current.key}
+          more={helpLists.more(current.key)}
           onMore={() => loadHelpBatch(current.key)}
-          end={rows.length > 20 && 'Tu as tout vu.'}
+          end='Tu as tout vu.'
           class='-mt-px'
         >
           {rows.map(({ request, score }) => (
             <HelpRequestCard key={request.id} request={request} score={score} />
           ))}
         </InfiniteList>
-        {!rows.length && more === '' && (
+        {!rows.length && batches[current.key] === '' && (
           <p class='px-6 py-10 text-center text-ink-muted'>{current.empty}</p>
         )}
       </div>

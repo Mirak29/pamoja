@@ -38,7 +38,7 @@ const setUser = (user: User) => {
   currentUser.value = user
   if (first) {
     loadProjects()
-    loadHelpRequests()
+    reloadHelpRequests()
     loadPosts()
   }
   return user
@@ -47,13 +47,6 @@ const setUser = (user: User) => {
 /** The projects of the developer, imported ones included (§5.4) */
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
-
-/**
- * The newest help requests the developer wrote, accepted, or of their
- * projects, and those the matching sent them, with their score (§7.3); the
- * help page reads the older ones by batches
- */
-export const loadHelpRequests = () => reloadHelpRequests()
 
 api['GET/api/user/me'].fetch().then(
   setUser,

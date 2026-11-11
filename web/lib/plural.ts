@@ -21,3 +21,11 @@ export const plural = (count: number, one: string, many = `${one}s`) => {
  */
 export const counted = (count: number, one: string, many = `${one}s`) =>
   `${count} ${plural(count, one, many)}`
+
+/**
+ * A counter of a badge: « 9+ » past 9, the badge stays small
+ *
+ * @example
+ * badgeCount(12) // '9+'
+ */
+export const badgeCount = (count: number) => count > 9 ? '9+' : count

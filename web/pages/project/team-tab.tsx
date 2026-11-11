@@ -32,6 +32,7 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
+import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
 const roles: [ProjectRole, string][] = [
   ['Propriétaire', 'Gère le projet, ses réglages et la synchro.'],
@@ -93,7 +94,7 @@ const PersonLink = (
 export const MemberRows = (
   { project, isOwner }: { project: Project; isOwner: boolean },
 ) => (
-  <div class='max-h-[640px] overflow-y-auto'>
+  <ScrollFrame class='max-h-[640px]'>
     <Batched
       items={project.members}
       reset={project.slug}
@@ -137,7 +138,7 @@ export const MemberRows = (
         )
       }}
     />
-  </div>
+  </ScrollFrame>
 )
 
 const Members = (

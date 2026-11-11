@@ -1,4 +1,4 @@
-import { counted } from '/web/lib/plural.ts'
+import { badgeCount, counted } from '/web/lib/plural.ts'
 import { t } from '/web/lib/language.ts'
 import { A } from '@01edu/signal-router'
 import {
@@ -153,7 +153,7 @@ export const Header = () => {
           <MessageSquare class='size-5' />
           {messages > 0 && (
             <span class='absolute -top-[7px] -right-2 h-[18px] min-w-5 rounded-sm border border-indigo-edge bg-indigo px-[5px] text-center font-mono text-[10px] leading-4 font-medium text-on-indigo shadow-[1.73px_1px_0_0_var(--indigo-edge)]'>
-              {messages > 9 ? '9+' : messages}
+              {badgeCount(messages)}
             </span>
           )}
         </Button>
@@ -170,7 +170,7 @@ export const Header = () => {
           <Bell class='size-5' />
           {count > 0 && (
             <span class='absolute -top-[7px] -right-2 h-[18px] min-w-5 rounded-sm border border-indigo-edge bg-indigo px-[5px] text-center font-mono text-[10px] leading-4 font-medium text-on-indigo shadow-[1.73px_1px_0_0_var(--indigo-edge)]'>
-              {count > 9 ? '9+' : count}
+              {badgeCount(count)}
             </span>
           )}
         </Button>

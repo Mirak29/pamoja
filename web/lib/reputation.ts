@@ -1,7 +1,7 @@
 import { adoptReputation } from '/web/fixtures/reputation.ts'
 import { api } from '/web/lib/api.ts'
 import { url } from '@01edu/signal-router'
-import { onEvent, onReconnect, whenShown } from '/web/lib/realtime.ts'
+import { debounced, onEvent, onReconnect } from '/web/lib/realtime.ts'
 
 // The reputation of a profile, read from the server (§8): its proofs by
 // dimension and its badges. A developer the server does not know is a demo
@@ -28,18 +28,10 @@ const onScreen = () => {
   return [...shown].find((known) => known.toLowerCase() === login)
 }
 
-let pending: ReturnType<typeof setTimeout> | undefined
-const reload = () => {
-  clearTimeout(pending)
-  pending = setTimeout(
-    () =>
-      whenShown(() => {
-        const login = onScreen()
-        login && loadReputation(login)
-      }),
-    300 + Math.random() * 1500,
-  )
-}
+const reload = debounced(() => {
+  const login = onScreen()
+  login && loadReputation(login)
+}, 1500)
 
 // A confirmed help, a merge, a release or a new badge: the profiles read
 // follow without a refresh (§13)
