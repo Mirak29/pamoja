@@ -470,7 +470,8 @@ export const searchMessages = (q: string) =>
 
 /** Where the browser reads a file: the server checks who asks */
 export const mediaUrl = (key: string) =>
-  `api/media?key=${encodeURIComponent(key)}`
+  // A demo image of the fixtures ships with the pages (web/assets/mocks)
+  key.startsWith('mocks/') ? key : `api/media?key=${encodeURIComponent(key)}`
 
 const IMAGES = ['image/jpeg', 'image/png', 'image/webp']
 export const ACCEPTED = [...IMAGES, 'application/pdf'].join(',')

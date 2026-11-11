@@ -128,14 +128,27 @@ const listIntents = UserIntent.sql<'intent', number>`
   SELECT intent FROM userIntent WHERE userId = ? ORDER BY userIntentId
 `.all
 
-/** The filters of the matching a developer chose, with their defaults */
+/**
+ * The filters of the matching a developer chose, with their defaults. The
+ * last three keep only the requests on one of these skills, projects or
+ * communities; empty, everything passes (§7.4)
+ */
 export const matchingFiltersOf = (stored: string | null) => {
   const filters = stored
-    ? JSON.parse(stored) as { minScore?: number; helpTypes?: string[] }
+    ? JSON.parse(stored) as {
+      minScore?: number
+      helpTypes?: string[]
+      skills?: string[]
+      projects?: string[]
+      communities?: string[]
+    }
     : {}
   return {
     minScore: filters.minScore ?? DEFAULT_MIN_SCORE,
     helpTypes: filters.helpTypes ?? [],
+    onlySkills: filters.skills ?? [],
+    onlyProjects: filters.projects ?? [],
+    onlyCommunities: filters.communities ?? [],
   }
 }
 
@@ -148,17 +161,29 @@ const writeMatching = sql<
   WHERE userId = :userId
 `.run
 
-/** How help requests reach the developer: mode, minimum score, types (§7.4) */
-export const updateMatching = (
-  userId: number,
-  input: { matchingMode: MatchingMode; minScore: number; helpTypes: string[] },
-) =>
+export type MatchingInput = {
+  matchingMode: MatchingMode
+  minScore: number
+  helpTypes: string[]
+  onlySkills?: string[] | null
+  onlyProjects?: string[] | null
+  onlyCommunities?: string[] | null
+}
+
+/**
+ * How help requests reach the developer: mode, minimum score, types, and
+ * the skills, projects and communities they keep (§7.4)
+ */
+export const updateMatching = (userId: number, input: MatchingInput) =>
   writeMatching({
     userId,
     matchingMode: input.matchingMode,
     filters: JSON.stringify({
       minScore: Math.min(100, Math.max(0, Math.round(input.minScore))),
       helpTypes: [...new Set(input.helpTypes)],
+      skills: [...new Set(input.onlySkills ?? [])],
+      projects: [...new Set(input.onlyProjects ?? [])],
+      communities: [...new Set(input.onlyCommunities ?? [])],
     }),
     at: now(),
   })

@@ -568,6 +568,8 @@ export const Post = createTable('post', {
   source: { type: 'TEXT' },
   createdAt: { type: 'REAL' },
   updatedAt: { type: 'REAL' },
+  // Added by migrations/012: the link of the video (§17.3)
+  videoUrl: { type: 'TEXT', optional: true },
 })
 index('post_community', 'post', 'communityId, createdAt')
 index('post_replies', 'post', 'parentId, createdAt')

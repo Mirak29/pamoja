@@ -1,12 +1,20 @@
 import { signal } from '@preact/signals'
 import { hoursAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import {
+  hearOf,
+  type Login,
+  people,
+  type Person,
+} from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import { t } from '/web/lib/language.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
+import type { Media } from '/web/lib/messages.ts'
 
 export type PostType =
   | 'Discussion'
@@ -33,7 +41,8 @@ export type Post = {
   root?: string
   acceptedReply?: string
   link?: ProjectSlug
-  images?: number
+  /** Uploaded images, 4 at most (§17.3) */
+  media?: Media[]
   /** Embedded by link only: YouTube, Loom or Vimeo (§17.3) */
   video?: string
   bookmarks?: Login[]
@@ -106,8 +115,9 @@ export const posts: Post[] = [
     type: 'Vitrine',
     title: 'Senegal Maps v1.2 : les points d’eau sont en ligne',
     body:
-      'Forages et bornes fontaines de 14 régions, en open data. Les contributions sont ouvertes : il manque encore Kaolack et Kolda.',
+      'Forages et bornes fontaines de 12 régions sur 14, en open data. Les contributions sont ouvertes : il manque encore Kaolack et Kolda.',
     hoursAgo: 50,
+    media: [demoImage('senegal-maps-carte'), demoImage('senegal-maps-regions')],
     reactions: {
       like: ['abdou', 'fatou', 'moussa'],
       thanks: ['kofi', 'yao'],
@@ -140,8 +150,10 @@ export const posts: Post[] = [
     type: 'Ressource',
     title: 'Un pipeline CI à 0 € pour vos projets Go',
     body:
-      'GitHub Actions, cache des modules, tests en parallèle et déploiement sur un petit VPS. Le gabarit complet est dans k8s-starter-africa.',
+      'GitHub Actions, cache des modules, tests en parallèle et déploiement sur un petit VPS : le build passe de 6 à 2 minutes. Le gabarit complet est dans k8s-starter-africa, et la vidéo qui m’a servi de base est en dessous.',
     hoursAgo: 70,
+    media: [demoImage('ci-pipeline')],
+    video: 'https://www.youtube.com/watch?v=R8_veQiYBjI',
     reactions: { useful: ['abdou', 'kofi', 'zeinab', 'moussa'] },
   }),
   ...replies({ id: 'po4', community: 'devops' }, 70, [
@@ -178,8 +190,10 @@ export const posts: Post[] = [
     type: 'Opportunité',
     title: 'Meetup Go à Abidjan le 24 octobre',
     body:
-      'On parle concurrence et revue de code, à Cocody. Places limitées, inscris-toi en commentaire.',
+      'On parle concurrence et revue de code, à Cocody. Places limitées, inscris-toi en commentaire. Pour se préparer, le talk de Rob Pike sur la concurrence.',
     hoursAgo: 30,
+    media: [demoImage('meetup-go-abidjan')],
+    video: 'https://www.youtube.com/watch?v=oV9rvDllKEg',
     reactions: { like: ['yao'] },
   }),
   ...replies({ id: 'po6', community: 'cote-divoire-developers' }, 30, [
@@ -240,6 +254,7 @@ export const posts: Post[] = [
     body:
       'Le job de réconciliation du ledger passe enfin, en local comme en CI. La PR #84 est approuvée, merci pour les reviews rapides.',
     hoursAgo: 5,
+    media: [demoImage('ledger-tests')],
     reactions: { like: ['abdou'] },
     link: 'openpay-africa',
   }),
@@ -252,9 +267,41 @@ export const posts: Post[] = [
     body:
       'AfriCommerce accepte maintenant le paiement à la livraison avec confirmation par SMS. Les vendeurs de Makola testent depuis lundi.',
     hoursAgo: 28,
+    media: [
+      demoImage('africommerce-ecrans'),
+      demoImage('africommerce-ventes'),
+    ],
     reactions: { like: ['awa', 'amina', 'abdou', 'fatou'] },
     link: 'africommerce',
-    images: 2,
+  }),
+  // Kept at the top of the demo feed: the demo everyone clicks
+  post({
+    id: 'po11',
+    community: 'open-source',
+    author: 'kofi',
+    type: 'Release',
+    title: 'AfriCommerce 1.0 : la démo complète',
+    body:
+      'Paiement à la livraison, confirmation par SMS et tableau de bord des vendeurs : tout est dans la vidéo. Trois minutes, promis, ça vaut le coup.',
+    hoursAgo: 0.05,
+    reactions: {
+      like: ['awa', 'moussa', 'fatou', 'amina'],
+      thanks: ['abdou', 'yao'],
+    },
+    link: 'africommerce',
+    video: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  }),
+  post({
+    id: 'po10',
+    community: 'devops',
+    author: 'wanjiru',
+    type: 'Ressource',
+    title: 'Docker en 100 secondes',
+    body:
+      'Pour ceux qui débutent avec les conteneurs : l’essentiel en moins de deux minutes, avant d’ouvrir le gabarit CI d’Amina.',
+    hoursAgo: 12,
+    reactions: { useful: ['amina', 'yao'], thanks: ['kofi'] },
+    video: 'https://www.youtube.com/watch?v=Gjnup-PuquQ',
   }),
 ]
 
@@ -368,16 +415,21 @@ export const replyTo = (parent: Post, login: Login, body: string) => {
 
 export type PostDraft = Pick<
   Post,
-  'community' | 'type' | 'title' | 'body' | 'images' | 'video'
+  'community' | 'type' | 'title' | 'body' | 'media' | 'video'
 >
 
 /** POST/api/post/create: publishing in a community joins it */
-export const publishPost = (draft: PostDraft, author: Person) => {
+export const publishPost = (
+  draft: PostDraft,
+  author: Person,
+  /** The id and the time the server gave it */
+  saved?: { id: string; at: number },
+) => {
   const post: Post = {
     ...draft,
-    id: nextId(),
+    id: saved?.id ?? nextId(),
     author: author.login as Login,
-    at: Date.now(),
+    at: saved?.at ?? Date.now(),
     reactions: {},
     reposts: [],
     demo: false,
@@ -422,5 +474,35 @@ export const acceptAnswer = (question: Post, answer: Post) => {
     body: `« ${title} ». Entraide : ${counted(count, 'preuve')}.`,
     href: `post/${question.id}`,
   })
+  changed()
+}
+
+/** A post saved on the server (PAM-427) keeps its id, prefixed */
+export const savedId = (id: number) => `s${id}`
+
+/**
+ * Brings the posts read from GET/api/posts into the feed, newest first; a
+ * post already shown stays as it is
+ */
+export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
+  for (const saved of [...list].reverse()) {
+    const id = savedId(saved.id)
+    if (posts.some((post) => post.id === id)) continue
+    hearOf(saved.author, saved.authorName, '')
+    posts.unshift({
+      id,
+      community: saved.community,
+      author: saved.author as Login,
+      type: saved.type as PostType,
+      title: saved.title,
+      body: saved.body,
+      at: saved.createdAt * 1000,
+      reactions: {},
+      reposts: [],
+      media: saved.media,
+      video: saved.videoUrl || undefined,
+      demo: false,
+    })
+  }
   changed()
 }

@@ -1,8 +1,15 @@
 import { signal } from '@preact/signals'
 import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { match, type Matched } from '/web/fixtures/matching.ts'
+import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import { type Login, me, people, type Person } from '/web/fixtures/people.ts'
+import {
+  type Login,
+  me,
+  people,
+  type Person,
+  personOf,
+} from '/web/fixtures/people.ts'
 import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -87,6 +94,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [demoImage('paiement-api-go')],
     at: hoursAgo(5),
     demo: true,
   },
@@ -102,6 +110,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~45 min',
     status: 'open',
+    media: [demoImage('horaires-architecture')],
     at: hoursAgo(20),
     demo: true,
   },
@@ -117,6 +126,7 @@ export const helpRequests: HelpRequest[] = [
     level: 'Confirmé',
     duration: '~1 h',
     status: 'open',
+    media: [demoImage('sqlite-locked')],
     at: hoursAgo(30),
     issue: 44,
     demo: true,
@@ -133,6 +143,10 @@ export const helpRequests: HelpRequest[] = [
     level: 'Intermédiaire',
     duration: '~30 min',
     status: 'open',
+    media: [
+      demoImage('carte-tuiles-mobile'),
+      demoImage('carte-tuiles-reseau'),
+    ],
     at: hoursAgo(3),
     demo: true,
   },
@@ -159,9 +173,21 @@ export const helpRequests: HelpRequest[] = [
 // lifecycle routes exist (PAM-208): screens read this signal to refresh
 export const helpChanged = signal(0)
 
+// The skills, projects and communities kept in the settings; an empty
+// filter keeps everything (§7.4)
+const kept = (request: HelpRequest) =>
+  (!settings.onlySkills.length ||
+    request.skills.some((skill) => settings.onlySkills.includes(skill))) &&
+  (!settings.onlyProjects.length ||
+    (!!request.project && settings.onlyProjects.includes(request.project))) &&
+  (!settings.onlyCommunities.length ||
+    personOf(request.author).communities.some((slug) =>
+      settings.onlyCommunities.includes(slug)
+    ))
+
 /**
  * Open requests of others that match a developer, best first, from the
- * minimum score set in the settings (§7.3)
+ * filters and the minimum score set in the settings (§7.3, §7.4)
  */
 export const matchingRequests = (person: Person, min = settings.minScore) =>
   helpRequests
@@ -170,7 +196,8 @@ export const matchingRequests = (person: Person, min = settings.minScore) =>
       !h.withdrawn?.includes(person.login as Login)
     )
     // A real request reaches me through the matching of the server, which
-    // already applied my minimum score
+    // already applied my filters and my minimum score
+    .filter((h) => !h.demo || kept(h))
     .map((h) => ({
       request: h,
       score: h.demo ? match(person, h).total : h.myScore ?? 0,

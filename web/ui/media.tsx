@@ -6,6 +6,7 @@ import {
   CircleAlert,
   ImagePlus,
   Trash2,
+  X,
 } from '/web/assets/icons.tsx'
 import { t } from '/web/lib/language.ts'
 import { type Media, mediaUrl, uploadMedia } from '/web/lib/messages.ts'
@@ -50,7 +51,13 @@ export const useMediaPicker = (max: number, initial: Media[] = []) => {
   const [items, setItems] = useState<Item[]>(() => initial.map(fromMedia))
   const add = (files: File[]) => {
     const images = files.filter((file) => IMAGE_TYPES.includes(file.type))
-    if (images.length < files.length) {
+    if (files.some((file) => file.type.startsWith('video/'))) {
+      // Videos are never uploaded: they are embedded by their link (§17.3)
+      warn(
+        'Les vidéos se partagent par lien',
+        'Colle un lien YouTube, Loom ou Vimeo dans le texte.',
+      )
+    } else if (images.length < files.length) {
       warn('Format non accepté', 'Ajoute des images JPEG, PNG ou WebP.')
     }
     const room = max - items.length
@@ -226,6 +233,37 @@ export const MediaPicker = (
     </div>
   )
 }
+
+/** The images of a composer, small, each with its removal */
+export const MediaThumbs = ({ picker }: { picker: MediaPickerState }) =>
+  picker.items.length
+    ? (
+      <div class='flex flex-wrap gap-2.5'>
+        {picker.items.map((item, i) => (
+          <span
+            key={item.local}
+            class='tile relative size-16 overflow-hidden rounded-[5px]'
+          >
+            <img
+              src={item.preview}
+              alt={t`Image ${i + 1}`}
+              class={`size-full object-cover ${
+                item.media ? '' : 'animate-skeleton'
+              }`}
+            />
+            <button
+              type='button'
+              aria-label={t`Retirer l’image ${i + 1}`}
+              onClick={() => picker.remove(item.local)}
+              class='absolute top-0.5 right-0.5 flex size-[20px] cursor-pointer items-center justify-center rounded-sm border border-figure-edge bg-surface-100 text-ink'
+            >
+              <X class='size-3' />
+            </button>
+          </span>
+        ))}
+      </div>
+    )
+    : null
 
 // One image takes the width; two side by side; more in a grid
 const layouts = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-2']
