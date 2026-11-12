@@ -167,8 +167,10 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
-// From the first batch again when the filters change (§12.7)
-const filtersKey = () => url.relativePath + JSON.stringify(url.params)
+// From the first batch again when the filters change (§12.7); a dialog
+// opened over the list (its parameters) is not a new list
+const filtersKey = (keys: string[]) =>
+  JSON.stringify(keys.map((key) => param(key)))
 
 const Developers = ({ all }: { all: Person[] }) => {
   const community = communities.find((c) => c.name === param('community'))
@@ -231,7 +233,7 @@ const Developers = ({ all }: { all: Person[] }) => {
       />
       <Batched
         items={list}
-        reset={filtersKey()}
+        reset={filtersKey(DEVELOPER_FILTERS)}
         class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
         row={(person) => <DeveloperCard key={person.login} person={person} />}
       />
@@ -301,7 +303,7 @@ const Projects = ({ all }: { all: Project[] }) => {
       />
       <Batched
         items={list}
-        reset={filtersKey()}
+        reset={filtersKey(PROJECT_FILTERS)}
         class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'
         row={(project) => <ProjectCard key={project.slug} project={project} />}
       />

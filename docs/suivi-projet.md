@@ -962,6 +962,16 @@ Vérifié dans le navigateur, sur une base de démo neuve : Accueil à 3 000 px 
 - **Nouveaux posts** : mis de côté par la couche de données, seuls les plus récents lus ; `adoptPosts` ne prévient plus les pages quand rien n'a été ajouté.
 - **Petits** : place du panneau de l'Assistant lue directement par la mise en page, écrans vides par `EmptyState`, listes de filtres d'Explorer écrites une fois, audience `fan` nommée, fondu des onglets simplifié et mesuré par `ResizeObserver`.
 
+**Relecture `/code-review`**, six points corrigés :
+- une fenêtre ouverte sur une liste (visionneuse d'images, signalement) changeait sa clé et la ramenait à 20 lignes : les lignes lues sont gardées par chemin, liste et filtres, plus par l'adresse entière ; Explorer ne compte plus que ses filtres ;
+- la position atteinte sans changer de page n'était pas écrite avant un rechargement (l'écriture du stockage passait avant elle) : elle est écrite tout de suite quand la page part ou est masquée ;
+- un Ctrl+clic ou un clic du milieu laissait une intention de défilement en attente pour le lien suivant : seuls les appuis que le routeur suit comptent ;
+- retoucher l'Accueil relit aussi les demandes d'aide de sa colonne ;
+- la restauration après un rechargement attend jusqu'à 10 s (le temps de la session et des données), sans rien coûter pendant l'attente ;
+- le logo se comporte comme l'entrée Accueil du menu.
+
+Vérifié : F5 retrouve 5 000 px atteints sans navigation, une visionneuse ouverte puis fermée laisse le fil à 5 000 px, le logo ramène l'Accueil à 5 000 px, un profil ouvert après un Ctrl+clic dans le menu s'ouvre en haut.
+
 Revérifié avec de vrais gestes, dans un onglet neuf : Explorer en haut à la première visite, Accueil retrouvé à 1 500 px par le menu sans remontée parasite, Accueil touché à nouveau remonte une fois, l'onglet du fil garde la position, retour 1 200 px, avance 839 px, F5 1 200 px, « 1 nouveau post » sans bouger le fil.
 
 - **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/posts.ts`, `web/ui/tabs.tsx`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7

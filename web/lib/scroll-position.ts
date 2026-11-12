@@ -31,11 +31,20 @@ export const fromMenu = () => intent = 'menu'
 /** The next navigation is a tab of the same page: the scroll stays */
 export const keepScroll = () => intent = 'keep'
 
+/**
+ * A press the router follows: the main button, no key held. A middle click
+ * or a Ctrl click opens a new tab, and this page does not move.
+ */
+export const plainPress = (event: MouseEvent) =>
+  event.button === 0 && !event.metaKey && !event.ctrlKey &&
+  !event.shiftKey && !event.altKey
+
 /** What a link gives the router so that it says its intent in time */
 export const scrollIntent = (say: () => unknown) => ({
-  onPointerDown: say,
+  onPointerDown: (event: MouseEvent) => plainPress(event) && say(),
   // From the keyboard there is no pointer: the router acts at the click
-  onClick: (event: MouseEvent) => event.detail === 0 && say(),
+  onClick: (event: MouseEvent) =>
+    event.detail === 0 && plainPress(event) && say(),
 })
 
 /** The address of the page, its tab included: what positions are kept by */
@@ -65,7 +74,9 @@ let path = url.relativePath
  * the page is tall enough. One's own gesture stops it at once.
  */
 
-const RESTORE_FOR_MS = 3000
+// Long enough for a slow first load (the session, then the data): waiting
+// costs nothing, the page is only tried again when it grows
+const RESTORE_FOR_MS = 10_000
 const GESTURES = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const
 let stopRestoring: (() => void) | undefined
 
@@ -101,9 +112,15 @@ const keep = () => {
   byEntry.set(entry, scrollY)
   byPage.set(at, scrollY)
 }
-addEventListener('pagehide', keep)
+// The page is going, or may be dropped: written at once, not after a while
+const keepNow = () => {
+  keep()
+  byEntry.flush()
+  byPage.flush()
+}
+addEventListener('pagehide', keepNow)
 addEventListener('visibilitychange', () => {
-  document.visibilityState === 'hidden' && keep()
+  document.visibilityState === 'hidden' && keepNow()
 })
 
 // The page as it loads: a reload, or a return from another site, comes back

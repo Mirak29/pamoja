@@ -1,5 +1,5 @@
 import { refreshPage } from '/web/lib/refresh.ts'
-import { fromMenu } from '/web/lib/scroll-position.ts'
+import { fromMenu, plainPress } from '/web/lib/scroll-position.ts'
 import { reloadHelpRequests } from '/web/lib/help.ts'
 import { loadPosts } from '/web/lib/posts.ts'
 import { loadProjects } from '/web/lib/session.ts'
@@ -50,7 +50,9 @@ const navItems = (): {
     label: 'Accueil',
     short: 'Accueil',
     icon: House,
-    readAgain: () => Promise.all([loadPosts(), loadProjects()]),
+    // The feed, and its rail: help that matches, projects
+    readAgain: () =>
+      Promise.all([loadPosts(), loadProjects(), reloadHelpRequests()]),
   },
   {
     key: 'explore',
@@ -137,10 +139,12 @@ const itemProps = (
   const here = () => url.relativePath === root
   return {
     onPointerDown: (event: MouseEvent) => {
+      if (!plainPress(event)) return void (pressed = undefined)
       pressed = { href, here: here() }
       pressed.here ? event.preventDefault() : fromMenu()
     },
     onClick: (event: MouseEvent) => {
+      if (!plainPress(event)) return
       const fromKey = event.detail === 0
       const wasHere = fromKey ? here() : pressed?.href === href && pressed.here
       pressed = undefined
@@ -150,6 +154,9 @@ const itemProps = (
     },
   }
 }
+
+/** The logo: the menu item of the feed, as it is on every page */
+export const homeLinkProps = () => itemProps(navItems()[0])
 
 const currentSection = () => {
   const [first] = url.relativePath.slice(1).split('/')
@@ -234,6 +241,7 @@ export const Sidebar = () => {
         <A
           href='.'
           aria-label='Pamoja, accueil'
+          {...homeLinkProps()}
           class='flex h-[30px] flex-none items-center gap-2 px-2 text-ink no-underline hover:no-underline'
         >
           <LogoMark />

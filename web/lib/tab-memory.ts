@@ -50,6 +50,8 @@ export const tabMemory = <T>(name: string) => {
     document.visibilityState === 'hidden' && pending && flush()
   })
   return {
+    /** Written at once: the page is going */
+    flush,
     get: (id: string): T | undefined => values.get(id),
     set: (id: string, value: T) => {
       values.delete(id)
