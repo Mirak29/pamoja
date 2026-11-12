@@ -991,7 +991,7 @@ La démo sera hébergée chez Systalink, sur la formule Développeur (1 cœur, 2
 
 **Image.** Le `Dockerfile` suit Tournament : build sur l'image Deno, binaire `deno compile`, Alpine finale avec la glibc et SQLite, sans root. Le binaire embarquait `node_modules`, soit 50 Mo d'outils de build (esbuild, Tailwind) ; il est compilé sans. Résultat : 112 Mo de binaire, dont 96 Mo de runtime Deno, et 174 Mo d'image au lieu de 241 Mo. Le `.dockerignore` ne laisse entrer que ce que le build lit. Un seul binaire sert l'app (`pamoja`) et reconstruit la démo (`pamoja seed --prod`).
 
-**Caddy et compose.** `deploy/compose.yaml` lance l'app et Caddy, avec des volumes pour la base et les médias, pour les sauvegardes et pour les certificats. Le `Caddyfile` sert HTTPS en HTTP/1.1, 2 et 3, avec `flush_interval -1` sur `/api/events` et sans `encode`. Les secrets vont dans `deploy/.env`, sur la VM seulement (`deploy/.env.example`). Marche à suivre : `docs/deploiement.md`.
+**Publication et compose, comme Defendable.** L'image est construite et publiée par GitHub (`.github/workflows/publish.yml`, `ghcr.io/mirak29/pamoja`), après une CI réussie sur `master` ; la VM ne fait que `docker compose pull`. Le `docker-compose.yml` lance l'app sur `127.0.0.1:8000`, avec un volume pour la base, les médias et les sauvegardes, et une vérification de santé ; Caddy est son profil `https`. Le `Caddyfile` sert HTTPS en HTTP/1.1, 2 et 3, avec `flush_interval -1` sur `/api/events` et sans `encode`. Les secrets vont dans `.env.production`, sur la VM seulement (`.env.production.example`). Marche à suivre : `docs/deploiement.md`.
 
 **Bloquant découvert : les logs.** En production, le logger de `@01edu/api` refuse de démarrer sans les devtools de 01edu (`DEVTOOL_URL`, `DEVTOOL_REPORT_TOKEN`), où Tournament envoie ses logs. Pamoja ne les a pas. En production, `api/lib/log.ts` écrit donc une ligne JSON par événement sur la sortie du conteneur, lue avec `docker logs`, avec la même interface `Log`.
 
@@ -1007,7 +1007,7 @@ Reste à faire :
 - le flux SSE à travers Caddy avec une vraie session, avec PAM-906 sur la VM ;
 - la copie quotidienne hors de la VM, qui dépend du stockage proposé par Systalink (PAM-003).
 
-- **Livrable** : `web/lib/lazy-page.ts`, `web/lib/language.ts`, `web/app.tsx`, `task-prod.ts`, `Dockerfile`, `.dockerignore`, `deploy/`, `api/backups.ts`, `api/lib/log.ts`, `api/lib/env.ts`, `api/server.ts`, `docs/deploiement.md` ; §12.7, §17.4, §17.5
+- **Livrable** : `web/lib/lazy-page.ts`, `web/lib/language.ts`, `web/app.tsx`, `task-prod.ts`, `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `.env.production.example`, `.github/workflows/publish.yml`, `deploy/`, `api/backups.ts`, `api/lib/log.ts`, `api/lib/env.ts`, `api/server.ts`, `docs/deploiement.md` ; §12.7, §17.4, §17.5
 - **Par** : @Mirak29
 
 ## Audits QA

@@ -1074,7 +1074,8 @@ L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des fo
 ### 17.4 Déploiement
 
 - Dockerfile multi-stage et binaire `deno compile`, comme Tournament ; l'étape de build compile aussi le CSS Tailwind. L'image finale est une Alpine qui ne contient que le binaire, la glibc et la bibliothèque SQLite (174 Mo, dont 96 Mo pour le runtime Deno) ; l'app y tourne sans être root. Le binaire est compilé sans `node_modules`, qui ne contient que les outils de build (esbuild, Tailwind). Un seul binaire pour deux usages : `pamoja` sert l'app, `pamoja seed --prod` reconstruit les données de démo, serveur arrêté (`deploy/main.ts`).
-- Fichiers : `Dockerfile` et `.dockerignore` à la racine (l'image ne reçoit que ce que le build lit) ; `deploy/compose.yaml`, `deploy/Caddyfile`, `deploy/.env.example` ; marche à suivre dans `docs/deploiement.md`.
+- **Publication, comme Defendable** : l'image est construite par GitHub, pas sur la VM. Le workflow `publish` tourne après une CI réussie sur `master` (ou à la main) et publie `ghcr.io/mirak29/pamoja` ; la machine fait `docker compose pull`. La VM de 2 Go ne compile rien, et une image n'est jamais publiée depuis du code qui a échoué à ses vérifications.
+- Fichiers : `Dockerfile`, `.dockerignore` (l'image ne reçoit que ce que le build lit), `docker-compose.yml` et `.env.production.example` à la racine ; `deploy/Caddyfile`. Sur la machine, il suffit de `docker-compose.yml`, `deploy/Caddyfile` et `.env.production`. L'app écoute sur `127.0.0.1:8000` ; Caddy est le profil `https` du compose. Marche à suivre dans `docs/deploiement.md`.
 - **`APP_ENV=prod` obligatoire** : c'est cette variable qui active le mode WAL dans `@01edu/db`.
 - Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker, formule Développeur pour la démo (1 cœur, 2 Go de mémoire, 30 Go de disque, 7 733 F CFA par mois) ; l'app, Caddy et Docker y tiennent en environ 1 Go. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume, version fixée, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
 - Caddy en reverse proxy : HTTPS automatique et **HTTP/2** (§13.5), sans mise en tampon des réponses SSE (`flush_interval -1` sur `/api/events`). Pas de directive `encode` : l'app compresse déjà ses réponses (§12.7), une seconde compression ne gagnerait rien et retarderait le flux SSE.
@@ -1084,7 +1085,7 @@ L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des fo
 
 La réputation est la donnée la plus précieuse du produit.
 
-- Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours. C'est le serveur qui le fait (`api/backups.ts`), comme ses autres tâches de fond : ni cron ni conteneur de plus. Une copie par heure, `pamoja-AAAA-MM-JJTHH.db`, dans `BACKUP_DIR` (un volume à part de la base), obligatoire en production.
+- Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours. C'est le serveur qui le fait (`api/backups.ts`), comme ses autres tâches de fond : ni cron ni conteneur de plus. Une copie par heure, `pamoja-AAAA-MM-JJTHH.db`, dans `BACKUP_DIR` (`/data/backups`, dans le volume de la base), obligatoire en production.
 - Copie quotidienne hors de la VM, sur un autre stockage Systalink (les données restent au Sénégal), en complément des sauvegardes proposées par Systalink.
 - Une restauration testée au moins une fois avant la démo.
 

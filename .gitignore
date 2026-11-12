@@ -18,6 +18,7 @@ AGENTS.md
 .claude/
 .env
 .env-local
+.env.production
 .vscode
 .DS_Store
 

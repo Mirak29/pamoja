@@ -1,7 +1,7 @@
 # In front of the app (§17.4): HTTPS from Let's Encrypt, HTTP/2 (and 3) by
 # default. No `encode`: the app compresses its responses already (§12.7),
 # and a second pass would only delay the live events.
-{$DOMAIN} {
+{$PUBLIC_HOST} {
 	# The live events (§13.2): each one goes out as soon as it is written
 	handle /api/events {
 		reverse_proxy app:8000 {

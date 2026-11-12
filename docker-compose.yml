@@ -1,0 +1,45 @@
+# Pamoja on one machine (§17.4):
+#   docker compose up -d                     the app, on 127.0.0.1:8000
+#   docker compose --profile https up -d     the app behind Caddy (HTTPS)
+# See docs/deploiement.md.
+services:
+  app:
+    # Built and published by .github/workflows/publish.yml: the machine pulls
+    # it (`docker compose pull`); `--build` builds it here instead
+    build: .
+    image: ghcr.io/mirak29/pamoja:latest
+    restart: unless-stopped
+    env_file: .env.production
+    # Local only: Caddy, a tunnel or the host's own proxy reaches it there
+    ports:
+      - '${APP_BIND:-127.0.0.1:8000}:8000'
+    volumes:
+      # The database, the uploads (§17.3) and the hourly copies (§17.5): kept
+      # when the image changes
+      - data:/data
+    stop_grace_period: 30s
+
+  # HTTPS with a certificate that renews itself, for a domain pointing here
+  caddy:
+    profiles: [https]
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      # The domain that points here, from .env next to this file
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The certificates: kept across restarts, Let's Encrypt limits renewals
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:

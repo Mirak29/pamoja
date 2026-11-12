@@ -1,6 +1,6 @@
 # Pamoja in production (§17.4): the app compiled into one binary, on a
-# minimal Alpine. Built on any machine with Docker, the VM included:
-#   docker compose -f deploy/compose.yaml up -d --build
+# minimal Alpine. Built and published by .github/workflows/publish.yml; the
+# machine only pulls it (docs/deploiement.md).
 
 # Stage 1: the bundle, the CSS and the binary
 FROM denoland/deno:alpine-2.9.8 AS build
@@ -44,13 +44,17 @@ ENV LD_LIBRARY_PATH=/usr/local/lib/glibc \
   PORT=8000 \
   DATABASE_PATH=/data/pamoja.db \
   MEDIA_DIR=/data/media \
-  BACKUP_DIR=/backups
+  BACKUP_DIR=/data/backups
 
-# Not root: the app writes only its two volumes
+# Not root: the app writes only its volume
 RUN adduser -D -H -u 10001 pamoja \
-  && mkdir -p /data /backups \
-  && chown pamoja /data /backups
+  && mkdir -p /data \
+  && chown pamoja /data
 USER pamoja
 
 EXPOSE 8000
+
+# The wget of Alpine (busybox): no other tool in the image
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:8000/ || exit 1
 ENTRYPOINT ["/app/pamoja"]
