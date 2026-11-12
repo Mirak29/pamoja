@@ -95,12 +95,28 @@ const sections: Record<string, string> = {
 }
 
 // The menu item of the page one is on (its first page, not a project or
-// a post under it), tapped again: back to its top and its news (§12.2)
-const tapAgain = (key: string, href: string) => (event: MouseEvent) => {
+// a post under it), tapped again: back to its top and its news (§12.2).
+//
+// Decided before the link acts: the router moves to its page as the pointer
+// goes down, so by the click the address is already the link's. A pointer
+// is handled as it goes down, a key (Enter) as it clicks.
+const tapAgain = (key: string, href: string) => {
   const root = href === '.' ? '/' : `/${href}`
-  if (url.relativePath !== root || event.metaKey || event.ctrlKey) return
-  event.preventDefault()
-  refreshSection(key)
+  const handle = (event: MouseEvent) => {
+    const plain = !event.button && !event.metaKey && !event.ctrlKey &&
+      !event.shiftKey && !event.altKey
+    if (!plain || url.relativePath !== root) return
+    // The router then leaves the link alone: no navigation to the same page
+    event.preventDefault()
+    refreshSection(key)
+  }
+  return {
+    onPointerDown: handle,
+    onClick: (event: MouseEvent) => {
+      const fromKey = event.clientX === 0 && event.clientY === 0
+      fromKey && handle(event)
+    },
+  }
 }
 
 const currentSection = () => {
@@ -212,7 +228,7 @@ export const Sidebar = () => {
                 key={key}
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                onClick={tapAgain(key, href)}
+                {...tapAgain(key, href)}
                 class={`mr-1 flex h-10 items-center gap-2.5 rounded-md border px-2.5 text-[15px] no-underline transition-shadow duration-150 ease-out hover:bg-surface-200 hover:no-underline ${
                   active
                     ? 'border-indigo bg-indigo-soft font-semibold text-indigo shadow-key-selected'
@@ -272,7 +288,7 @@ export const MobileNav = () => {
             href={href}
             aria-label={label}
             aria-current={active ? 'page' : undefined}
-            onClick={tapAgain(key, href)}
+            {...tapAgain(key, href)}
             class={`relative flex flex-col items-center justify-center gap-1 rounded-md border text-[11px] leading-none font-medium no-underline hover:no-underline ${
               active
                 ? 'border-indigo bg-indigo-soft text-indigo shadow-key-selected'
