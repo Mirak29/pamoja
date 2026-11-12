@@ -18,27 +18,38 @@ const myProjects = Object.values(projects)
   .filter((p) => isMe(p.owner) || p.members.some((m) => isMe(m.login)))
   .map((p) => p.slug as string)
 
-const tabs: { key: HelpListTab; label: string; empty: string }[] = [
+// An empty tab is never a dead end: it says what to do next (`action`)
+const tabs: {
+  key: HelpListTab
+  label: string
+  empty: string
+  action: [label: string, href: string]
+}[] = [
   {
     key: 'for-me',
     label: 'Pour moi',
-    empty: 'Aucune demande ouverte ne correspond à tes skills pour l’instant.',
+    empty:
+      'Aucune demande ouverte ne correspond à tes skills pour l’instant. Plus ton profil en dit sur toi, plus Pamoja t’en propose.',
+    action: ['Compléter mes skills', 'profile/edit'],
   },
   {
     key: 'mine',
     label: 'Mes demandes',
     empty:
       'Tu n’as pas encore demandé d’aide. Une PR qui attend ? Demande une review.',
+    action: ['Nouvelle demande d’aide', 'help/new'],
   },
   {
     key: 'accepted',
     label: 'Acceptées par moi',
     empty: 'Tu n’as accepté aucune demande pour l’instant.',
+    action: ['Voir sur quoi travailler', 'explore/work'],
   },
   {
     key: 'projects',
     label: 'Demandes des projets',
     empty: 'Aucune demande dans tes projets.',
+    action: ['Voir mes projets', 'projects'],
   },
 ]
 
@@ -98,7 +109,14 @@ export const HelpList = () => {
           ))}
         </InfiniteList>
         {!rows.length && batches[current.key] === '' && (
-          <p class='px-6 py-10 text-center text-ink-muted'>{current.empty}</p>
+          <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
+            <p class='max-w-[520px] text-pretty text-ink-muted'>
+              {current.empty}
+            </p>
+            <Button variant='secondary' size={36} href={current.action[1]}>
+              {current.action[0]}
+            </Button>
+          </div>
         )}
       </div>
     </Page>

@@ -292,6 +292,9 @@ const Composer = () => {
   const picker = useMediaPicker(4)
   const files = useRef<HTMLInputElement>(null)
   const [sending, setSending] = useState(false)
+  // On a phone the tools show once one writes: the feed comes sooner
+  const [touched, setTouched] = useState(false)
+  const opened = touched || !!text || picker.items.length > 0
   // A YouTube, Loom or Vimeo link pasted in the text becomes the video
   const video = videoIn(text)
   const ordered = [...communities].sort((a, b) =>
@@ -344,10 +347,13 @@ const Composer = () => {
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
         <textarea
           ref={field}
-          rows={3}
+          rows={opened ? 3 : 1}
           value={text}
+          onFocus={() => setTouched(true)}
           aria-label='Écrire un post'
-          placeholder='Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
+          placeholder={opened
+            ? 'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
+            : 'Sur quoi tu travailles ?'}
           onInput={(event) => setText(event.currentTarget.value)}
           onPaste={picker.onPaste}
           onDragOver={(event) => event.preventDefault()}
@@ -366,7 +372,11 @@ const Composer = () => {
         <Counter value={text} limit={LIMITS.post} />
         <MediaThumbs picker={picker} />
         {video && <VideoEmbed url={video} />}
-        <div class='flex flex-wrap items-center gap-2'>
+        <div
+          class={`flex-wrap items-center gap-2 sm:flex ${
+            opened ? 'flex' : 'hidden'
+          }`}
+        >
           <input
             ref={files}
             type='file'

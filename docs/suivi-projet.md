@@ -918,6 +918,24 @@ Vérifié dans le navigateur avec Groq, sur une copie de la base : panneau qui s
 - **Livrable** : `api/assistant.ts`, `api/assistant_test.ts`, `api/schema.ts`, `api/routes.ts`, `web/lib/assistant.ts`, `web/ui/assistant-panel.tsx`, `web/ui/header.tsx`, `web/ui/layout.tsx`, `web/pages/explore/explore-page.tsx` ; §11, §14.4
 - **Par** : @Mirak29
 
+### 2026-11-12 · PAM-535 · Passe de fluidité sur toute l'interface
+
+Parcours de toutes les pages, sur ordinateur (1 440 et 1 920 px) et sur mobile (375 px), avec un contrôle automatique des débordements (aucun) puis un passage à l'œil.
+
+- **Défilement** : en changeant de page, on gardait la position de la page précédente (un profil ouvert depuis le milieu d'Explorer s'affichait au milieu). Une nouvelle page s'ouvre maintenant en haut, le retour ramène où l'on était, et les onglets d'une même page ne bougent pas.
+- **Grand écran** : le contenu, collé à gauche, laissait un grand vide à droite ; il est centré sous la recherche. Le panneau de l'Assistant ne recouvre plus la page : elle lui fait place au-delà de 1 400 px.
+- **Mobile** :
+  - la barre du bas passe de 7 à 6 entrées : les notifications, déjà dans l'en-tête, n'y sont plus en double ;
+  - les onglets amènent l'onglet courant à l'écran et s'estompent au bord quand d'autres suivent ;
+  - les filtres d'Explorer se replient sous « Filtres · n », les résultats sont sur le premier écran ;
+  - la rédaction de l'Accueil tient sur une ligne tant qu'on n'écrit pas, le fil arrive plus tôt.
+- **Écrans vides** : chacun mène quelque part (messages → trouver des développeurs ; onglets de l'aide → compléter ses skills, nouvelle demande, sur quoi travailler ; preuves de son profil → trouver sa première contribution).
+
+Vérifié dans le navigateur, sur une base de démo neuve : mesures de défilement (0 sur une nouvelle page, 600 retrouvés au retour), captures mobile et grand écran.
+
+- **Livrable** : `web/lib/scroll-position.ts`, `web/ui/tabs.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/lib/assistant.ts`, `web/pages/explore/explore-page.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-list.tsx`, `web/pages/messages-page.tsx`, `web/pages/profile/profile-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

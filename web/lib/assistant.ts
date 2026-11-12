@@ -34,6 +34,8 @@ export const asking = signal<string | null>(null)
 
 effect(() => {
   const open = assistantOpen.value
+  // The page makes room for the panel on a wide screen (layout.tsx)
+  document.documentElement.toggleAttribute('data-assistant', open)
   try {
     localStorage.setItem(OPEN_KEY, open ? '1' : '0')
   } catch {

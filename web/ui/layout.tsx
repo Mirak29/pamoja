@@ -114,7 +114,7 @@ const SkipLink = () => (
  * of the window: the page no longer scrolls, its columns do.
  */
 export const AppLayout = ({ children }: { children: ComponentChildren }) => (
-  <div class='flex min-h-screen has-[[data-fill]]:h-dvh'>
+  <div class='flex min-h-screen has-[[data-fill]]:h-dvh min-[1400px]:[[data-assistant]_&]:pr-[400px]'>
     <SkipLink />
     <Sidebar />
     <div class='flex min-w-0 flex-1 flex-col'>
@@ -122,7 +122,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
       <main
         id='contenu'
         tabIndex={-1}
-        class='w-full max-w-[1140px] flex-1 px-4 pt-3 pb-40 outline-none has-[[data-fill]]:flex has-[[data-fill]]:min-h-0 has-[[data-fill]]:flex-col has-[[data-fill]]:pb-[84px] md:pt-2 md:pr-8 md:pb-[120px] md:pl-4 md:has-[[data-fill]]:pb-6'
+        class='mx-auto w-full max-w-[1140px] flex-1 px-4 pt-3 pb-40 outline-none has-[[data-fill]]:flex has-[[data-fill]]:min-h-0 has-[[data-fill]]:flex-col has-[[data-fill]]:pb-[84px] md:pt-2 md:pr-8 md:pb-[120px] md:pl-4 md:has-[[data-fill]]:pb-6'
       >
         {children}
       </main>

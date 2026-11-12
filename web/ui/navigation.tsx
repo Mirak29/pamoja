@@ -74,6 +74,8 @@ const navItems = (): {
     label: 'Notifications',
     short: 'Notifs',
     icon: Bell,
+    // Its bell and its counter are in the header of phones
+    desktopOnly: true,
   },
   {
     key: `@${me.login}`,
@@ -247,7 +249,7 @@ export const MobileNav = () => {
   return (
     <nav
       aria-label='Navigation principale'
-      class='fixed inset-x-0 bottom-0 z-30 grid h-[68px] grid-cols-7 gap-0.5 border-t border-figure-edge bg-surface-100 px-1.5 pt-1.5 pb-2 md:hidden'
+      class='fixed inset-x-0 bottom-0 z-30 grid h-[68px] grid-cols-6 gap-0.5 border-t border-figure-edge bg-surface-100 px-1.5 pt-1.5 pb-2 md:hidden'
     >
       {navItems().filter((item) => !item.desktopOnly).map((
         { key, href, label, short, icon: Icon },
@@ -259,7 +261,7 @@ export const MobileNav = () => {
             href={href}
             aria-label={label}
             aria-current={active ? 'page' : undefined}
-            class={`relative flex flex-col items-center justify-center gap-1 rounded-md border text-[10px] leading-none font-medium no-underline hover:no-underline ${
+            class={`relative flex flex-col items-center justify-center gap-1 rounded-md border text-[11px] leading-none font-medium no-underline hover:no-underline ${
               active
                 ? 'border-indigo bg-indigo-soft text-indigo shadow-key-selected'
                 : 'border-transparent text-ink-muted'

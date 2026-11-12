@@ -326,10 +326,15 @@ const List = ({ openId }: { openId: string | null }) => {
                 </>
               )}
               {conversationsLoaded.value && !list.length && (
-                <p class='border-t border-line px-4 py-5 text-[14px] text-pretty text-ink-muted'>
-                  Pas encore de conversation. Écris à un développeur depuis son
-                  profil, avec « Écrire ».
-                </p>
+                <div class='flex flex-col items-start gap-3 border-t border-line px-4 py-5'>
+                  <p class='text-[14px] text-pretty text-ink-muted'>
+                    Pas encore de conversation. Trouve un développeur, puis «
+                    Écrire » sur son profil.
+                  </p>
+                  <Button variant='secondary' size={36} href='explore'>
+                    Trouver des développeurs
+                  </Button>
+                </div>
               )}
             </>
           )}
@@ -1389,7 +1394,13 @@ export const MessagesPage = () => {
         {right ?? (
           <div class='hidden md:block'>
             <GhostSlab>
-              <EmptyState>
+              <EmptyState
+                action={
+                  <Button variant='secondary' size={36} href='explore'>
+                    Trouver des développeurs
+                  </Button>
+                }
+              >
                 <span class='flex flex-col items-center gap-2'>
                   <MessageSquare class='size-6' />
                   Choisis une conversation, ou écris à un développeur depuis son
