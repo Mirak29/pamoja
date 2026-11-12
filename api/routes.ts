@@ -1302,7 +1302,13 @@ const defs = {
 
   'GET/api/posts': route({
     authorize: withSession,
-    fn: () => listPosts(),
+    // A query string carries text: the time is read as a number
+    fn: (_, { after }) => listPosts(Number(after) || 0),
+    input: OBJ({
+      after: optional(
+        STR('Only the posts published after this time, in seconds'),
+      ),
+    }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
   }),

@@ -1,9 +1,12 @@
+import { toTop } from '/web/lib/refresh.ts'
+import { useDraft } from '/web/lib/draft.ts'
 import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
+  ArrowUp,
   CircleAlert,
   CircleCheck,
   CircleX,
@@ -58,7 +61,7 @@ import { dotted, t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
-import { savePost } from '/web/lib/posts.ts'
+import { newPosts, savePost, showNewPosts } from '/web/lib/posts.ts'
 import { IMAGE_TYPES, MediaThumbs, useMediaPicker } from '/web/ui/media.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 
@@ -284,7 +287,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
 const FENCE = '`'.repeat(3)
 
 const Composer = () => {
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft('post')
   const [community, setCommunity] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
   const [type, setType] = useState<PostType>('Discussion')
@@ -292,6 +295,9 @@ const Composer = () => {
   const picker = useMediaPicker(4)
   const files = useRef<HTMLInputElement>(null)
   const [sending, setSending] = useState(false)
+  // On a phone the tools show once one writes: the feed comes sooner
+  const [touched, setTouched] = useState(false)
+  const opened = touched || !!text || picker.items.length > 0
   // A YouTube, Loom or Vimeo link pasted in the text becomes the video
   const video = videoIn(text)
   const ordered = [...communities].sort((a, b) =>
@@ -344,10 +350,13 @@ const Composer = () => {
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
         <textarea
           ref={field}
-          rows={3}
+          rows={opened ? 3 : 1}
           value={text}
+          onFocus={() => setTouched(true)}
           aria-label='Écrire un post'
-          placeholder='Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
+          placeholder={opened
+            ? 'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
+            : 'Sur quoi tu travailles ?'}
           onInput={(event) => setText(event.currentTarget.value)}
           onPaste={picker.onPaste}
           onDragOver={(event) => event.preventDefault()}
@@ -366,7 +375,11 @@ const Composer = () => {
         <Counter value={text} limit={LIMITS.post} />
         <MediaThumbs picker={picker} />
         {video && <VideoEmbed url={video} />}
-        <div class='flex flex-wrap items-center gap-2'>
+        <div
+          class={`flex-wrap items-center gap-2 sm:flex ${
+            opened ? 'flex' : 'hidden'
+          }`}
+        >
           <input
             ref={files}
             type='file'
@@ -619,6 +632,32 @@ const Rail = () => {
   )
 }
 
+// Above this, one is at the top of the feed: news show at once
+const AT_TOP = 160
+
+/**
+ * Posts published while one reads wait behind a button, as on a social
+ * network (§12.2): the rows one reads do not jump. At the top of the feed,
+ * or once one scrolls back up to it, they show at once.
+ */
+const useNews = () => {
+  const waiting = newPosts.value.length
+  useEffect(() => {
+    if (!waiting) return
+    const atTop = () => scrollY < AT_TOP && showNewPosts()
+    atTop()
+    addEventListener('scroll', atTop, { passive: true })
+    return () => removeEventListener('scroll', atTop)
+  }, [waiting])
+  return {
+    waiting,
+    show: () => {
+      showNewPosts()
+      toTop()
+    },
+  }
+}
+
 /** Accueil: compose, read the feed, see what needs you (§6.2, §10.1) */
 export const HomePage = () => {
   postsChanged.value
@@ -628,6 +667,7 @@ export const HomePage = () => {
   const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
     'for-you'
   const items = feedItems(current)
+  const news = useNews()
   const { shown, more, next } = useBatches(items, current)
   const { matches, waiting } = homeData()
   return (
@@ -660,6 +700,15 @@ export const HomePage = () => {
             params: { feed: i ? key : null },
           }))}
         />
+        {news.waiting > 0 && (
+          // Stays in view while one scrolls the feed
+          <div class='sticky top-[84px] z-20 flex h-0 justify-center'>
+            <Button size={36} onClick={news.show} class='shadow-slab-pop'>
+              <ArrowUp />
+              {counted(news.waiting, 'nouveau post', 'nouveaux posts')}
+            </Button>
+          </div>
+        )}
         <InfiniteList
           more={more}
           onMore={next}

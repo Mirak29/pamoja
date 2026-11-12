@@ -1,3 +1,4 @@
+import { useDraft } from '/web/lib/draft.ts'
 import { badgeCount } from '/web/lib/plural.ts'
 import { Fragment } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
@@ -326,10 +327,12 @@ const List = ({ openId }: { openId: string | null }) => {
                 </>
               )}
               {conversationsLoaded.value && !list.length && (
-                <p class='border-t border-line px-4 py-5 text-[14px] text-pretty text-ink-muted'>
-                  Pas encore de conversation. Écris à un développeur depuis son
-                  profil, avec « Écrire ».
-                </p>
+                <div class='border-t border-line'>
+                  <EmptyState action={<FindDevelopers />}>
+                    Pas encore de conversation. Trouve un développeur, puis «
+                    Écrire » sur son profil.
+                  </EmptyState>
+                </div>
               )}
             </>
           )}
@@ -346,6 +349,13 @@ const List = ({ openId }: { openId: string | null }) => {
 type Pending = { local: string; name: string; shown?: string; media?: Media }
 
 /** Enter sends, Shift + Enter goes to the next line, ↑ edits the last one */
+// No conversation yet: the way to someone to write to
+const FindDevelopers = () => (
+  <Button variant='secondary' size={36} href='explore'>
+    Trouver des développeurs
+  </Button>
+)
+
 const Composer = (
   {
     placeholder,
@@ -356,7 +366,10 @@ const Composer = (
     onTyping,
     onSend,
     files,
+    draftKey,
   }: {
+    /** Where the text begun is kept: by conversation */
+    draftKey: string
     placeholder: string
     onTyping?: () => void
     replying?: Message | null
@@ -368,7 +381,7 @@ const Composer = (
     files?: boolean
   },
 ) => {
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useDraft(draftKey)
   const [pending, setPending] = useState<Pending[]>([])
   const box = useRef<HTMLDivElement>(null)
   const picker = useRef<HTMLInputElement>(null)
@@ -1193,6 +1206,7 @@ const Open = ({ id }: { id: string }) => {
       {shown.canWrite && !shown.jumpedTo && (
         <Composer
           placeholder={t`Écrire à ${other.name}`}
+          draftKey={`message:${id}`}
           replying={replying}
           withName={other.name}
           onCancelReply={() => setReplying(null)}
@@ -1261,6 +1275,7 @@ const New = ({ githubId }: { githubId: number }) => {
       </div>
       <Composer
         placeholder={t`Écrire à ${person.name}`}
+        draftKey={`message:new:${githubId}`}
         onSend={async (text) => {
           const id = await startConversation(githubId, text)
           if (!id) return false
@@ -1371,9 +1386,10 @@ export const MessagesPage = () => {
     })
   }, [avec])
   const right = openId
-    ? <Open id={openId} />
+    // Keyed: each conversation has its own composer, draft and files
+    ? <Open key={openId} id={openId} />
     : githubId && conversationsLoaded.value
-    ? <New githubId={githubId} />
+    ? <New key={githubId} githubId={githubId} />
     : null
   return (
     <Page
@@ -1389,7 +1405,7 @@ export const MessagesPage = () => {
         {right ?? (
           <div class='hidden md:block'>
             <GhostSlab>
-              <EmptyState>
+              <EmptyState action={<FindDevelopers />}>
                 <span class='flex flex-col items-center gap-2'>
                   <MessageSquare class='size-6' />
                   Choisis une conversation, ou écris à un développeur depuis son

@@ -3,6 +3,7 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
+import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
 import { Post } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
@@ -73,6 +74,14 @@ const listRecent = sql<PostRow, number>`${postSelect}
   LIMIT ?
 `.all
 
+// Those published since a time: what a feed open on the page lacks (§12.2)
+const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
+  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+    AND post.createdAt > :after
+  ORDER BY post.createdAt DESC
+  LIMIT :limit
+`.all
+
 const getOne = sql<PostRow, number>`${postSelect}
   WHERE post.postId = ?
 `.get
@@ -94,7 +103,12 @@ const shown = (rows: PostRow[]) => {
 }
 
 /** The latest posts, newest first: what the feed reads */
-export const listPosts = () => shown(listRecent(50))
+/**
+ * The latest posts; with `after` (seconds), only those published since: a
+ * feed open on the page reads just what is new
+ */
+export const listPosts = (after = 0) =>
+  shown(after ? listSince({ after, limit: 50 }) : listRecent(50))
 
 /** Publishes a post with its images and its video, checked first */
 export const createPost = (me: number, input: PostInput) => {
@@ -130,6 +144,13 @@ export const createPost = (me: number, input: PostInput) => {
       videoUrl: videoUrl || null,
     })
     attach(me, media, 'post', postId)
+    // The feeds of its audience read it at once (§12.2)
+    Entry.insert.POST_CREATED({
+      userId: me,
+      communityId: maybe(community?.communityId),
+      postId,
+      source: 'platform',
+    })
     return postId
   })()
   return shown([getOne(postId)!])[0]

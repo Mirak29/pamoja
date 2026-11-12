@@ -918,6 +918,65 @@ Vérifié dans le navigateur avec Groq, sur une copie de la base : panneau qui s
 - **Livrable** : `api/assistant.ts`, `api/assistant_test.ts`, `api/schema.ts`, `api/routes.ts`, `web/lib/assistant.ts`, `web/ui/assistant-panel.tsx`, `web/ui/header.tsx`, `web/ui/layout.tsx`, `web/pages/explore/explore-page.tsx` ; §11, §14.4
 - **Par** : @Mirak29
 
+### 2026-11-12 · PAM-535 · Passe de fluidité sur toute l'interface
+
+Parcours de toutes les pages, sur ordinateur (1 440 et 1 920 px) et sur mobile (375 px), avec un contrôle automatique des débordements (aucun) puis un passage à l'œil.
+
+- **Défilement** : en changeant de page, on gardait la position de la page précédente (un profil ouvert depuis le milieu d'Explorer s'affichait au milieu). Une nouvelle page s'ouvre maintenant en haut, le retour ramène où l'on était, et les onglets d'une même page ne bougent pas.
+- **Grand écran** : le contenu, collé à gauche, laissait un grand vide à droite ; il est centré sous la recherche. Le panneau de l'Assistant ne recouvre plus la page : elle lui fait place au-delà de 1 400 px.
+- **Mobile** :
+  - la barre du bas passe de 7 à 6 entrées : les notifications, déjà dans l'en-tête, n'y sont plus en double ;
+  - les onglets amènent l'onglet courant à l'écran et s'estompent au bord quand d'autres suivent ;
+  - les filtres d'Explorer se replient sous « Filtres · n », les résultats sont sur le premier écran ;
+  - la rédaction de l'Accueil tient sur une ligne tant qu'on n'écrit pas, le fil arrive plus tôt.
+- **Écrans vides** : chacun mène quelque part (messages → trouver des développeurs ; onglets de l'aide → compléter ses skills, nouvelle demande, sur quoi travailler ; preuves de son profil → trouver sa première contribution).
+
+Vérifié dans le navigateur, sur une base de démo neuve : mesures de défilement (0 sur une nouvelle page, 600 retrouvés au retour), captures mobile et grand écran.
+
+- **Livrable** : `web/lib/scroll-position.ts`, `web/ui/tabs.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/lib/assistant.ts`, `web/pages/explore/explore-page.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-list.tsx`, `web/pages/messages-page.tsx`, `web/pages/profile/profile-page.tsx` ; §12.7
+- **Par** : @Mirak29
+
+### 2026-11-12 · PAM-536 · Mécanismes de réseau social
+
+Ce qu'un réseau social fait et que Pamoja ne faisait pas :
+
+- **Chaque page principale garde sa place.** Accueil, Explorer, Projets, Aide, Communautés, Notifications, Messages et Enregistrés retrouvent leur position même quand on y revient par le menu, pas seulement par le retour. Une page ouverte depuis une autre (profil, projet, post) s'ouvre en haut.
+- **Les listes gardent ce qu'elles ont chargé.** Avant, revenir à l'Accueil ne montrait que les 20 premiers posts : impossible de retrouver le 60ᵉ. Le nombre de lignes lues est gardé par page et par liste.
+- **L'onglet actif touché à nouveau** remonte en haut et relit le contenu (posts, projets, demandes, notifications, messages), avec une barre fine pendant la lecture. Depuis très bas, saut près du haut puis glissement court.
+- **Les posts arrivent en direct.** Le serveur ne créait aucune entrée `POST_CREATED` : le fil n'était lu qu'à la connexion. L'entrée est maintenant créée et envoyée à l'auteur (ses autres onglets), aux membres de la communauté et aux abonnés de l'auteur, pas à tout le monde, pour ménager le serveur.
+- **« ↑ N nouveaux posts ».** Plus bas dans le fil, les nouveautés attendent derrière ce bouton, collé en haut, au lieu de faire sauter ce qu'on lit. En haut du fil, elles s'affichent tout de suite.
+- **Brouillons.** Un post commencé, ou un message par conversation, survit à un changement de page (pour l'onglet du navigateur seulement, jamais envoyé).
+- **Titre de l'onglet** : « (3) Accueil · Pamoja » quand des notifications ou des messages attendent.
+
+**Correction : la place perdue au rechargement.** Positions et nombre de lignes n'étaient gardés qu'en mémoire, et la restauration du navigateur était désactivée (`scrollRestoration = 'manual'`) : un rechargement, un retour depuis un autre site, ou un téléphone qui recharge l'onglet après un passage dans une autre application, ramenaient en haut. Le mécanisme est réécrit sur le modèle du navigateur : une clé par entrée de l'historique (`history.state`), une position par entrée et par page principale, gardées pour l'onglet (`web/lib/tab-memory.ts`, `sessionStorage`) ; la restauration attend que la page soit assez haute et cède au premier geste du lecteur ; les défilements de l'application pendant une navigation ne sont pas enregistrés. Vérifié avec de vrais gestes (molette, clics, retour, avance, F5) : Accueil à 2 000 px retrouvé par le menu et par l'avance, Explorer à 500 px par le retour, 1 500 px retrouvés après F5, un projet ouvert en haut, l'Accueil touché à nouveau remonte en haut.
+
+**Correction : chaque clic du menu remontait en haut.** Le routeur change de page dès que le pointeur s'enfonce (`pointerdown`), avant le clic : au moment où « l'onglet de la page où l'on est déjà ? » était vérifié (sur le clic), l'adresse était déjà celle du lien, et la remontée partait à chaque changement de page. Une restauration juste derrière le masquait chez moi, pas dans un vrai navigateur. La décision est maintenant prise avant que le lien n'agisse : à l'appui pour un pointeur, au clic pour une touche (Entrée) ; elle empêche alors le routeur de naviguer. Vérifié en traçant chaque défilement : changer de page ne fait plus que restaurer, retoucher l'Accueil remonte une seule fois.
+
+Vérifié dans le navigateur, sur une base de démo neuve : Accueil à 3 000 px retrouvé après un passage par Explorer (12 posts toujours chargés), Explorer à 500 px retrouvé, profil ouvert en haut, retour au bon endroit ; un post publié par un compte suivi pendant la lecture fait apparaître « 1 nouveau post » sans bouger le fil, puis passe en tête au clic. Le test des déclencheurs couvre la nouvelle audience de `POST_CREATED`.
+
+**Relecture `/simplify`** (réutilisation, simplification, performance, architecture) et corrections à la racine :
+- **Défilement** : plus d'écoute continue ni de drapeau « en cours de navigation ». La position est gardée quand on quitte une page et quand l'onglet est masqué ; une entrée d'historique sans clé est un nouveau lien (le test `isTrusted` reposait sur une idée fausse : le routeur n'envoie pas d'événement) ; ce sont les liens qui disent leur intention (menu, onglet) au lieu des listes de chemins `MAIN` et `pageOf` ; ce qui ne change que les paramètres ne bouge pas le défilement ; la restauration réessaie quand la page grandit (`ResizeObserver`) au lieu d'un minuteur.
+- **Menu** : chaque entrée porte ce qu'elle relit ; « déjà sur sa page » est décidé à l'appui et gardé pour le clic (le menu est redessiné entre les deux). Un premier essai qui décidait au rendu relançait une remontée à chaque changement de page : vu en traçant chaque défilement, corrigé.
+- **Un seul stockage d'onglet** (`tabMemory<T>`) pour les positions, les listes et les brouillons, limité aux 100 clés les plus récentes, écrit après une rafale ; les brouillons ne sont plus écrits à chaque frappe. Chaque conversation a son propre composer (`key`) : ses pièces jointes ne passent plus à la suivante.
+- **Listes** : une seule source pour le nombre de lignes lues, avec une clé par liste (`useId`) : deux listes d'une même page ne partagent plus leur compteur.
+- **Nouveaux posts** : mis de côté par la couche de données, seuls les plus récents lus ; `adoptPosts` ne prévient plus les pages quand rien n'a été ajouté.
+- **Petits** : place du panneau de l'Assistant lue directement par la mise en page, écrans vides par `EmptyState`, listes de filtres d'Explorer écrites une fois, audience `fan` nommée, fondu des onglets simplifié et mesuré par `ResizeObserver`.
+
+**Relecture `/code-review`**, six points corrigés :
+- une fenêtre ouverte sur une liste (visionneuse d'images, signalement) changeait sa clé et la ramenait à 20 lignes : les lignes lues sont gardées par chemin, liste et filtres, plus par l'adresse entière ; Explorer ne compte plus que ses filtres ;
+- la position atteinte sans changer de page n'était pas écrite avant un rechargement (l'écriture du stockage passait avant elle) : elle est écrite tout de suite quand la page part ou est masquée ;
+- un Ctrl+clic ou un clic du milieu laissait une intention de défilement en attente pour le lien suivant : seuls les appuis que le routeur suit comptent ;
+- retoucher l'Accueil relit aussi les demandes d'aide de sa colonne ;
+- la restauration après un rechargement attend jusqu'à 10 s (le temps de la session et des données), sans rien coûter pendant l'attente ;
+- le logo se comporte comme l'entrée Accueil du menu.
+
+Vérifié : F5 retrouve 5 000 px atteints sans navigation, une visionneuse ouverte puis fermée laisse le fil à 5 000 px, le logo ramène l'Accueil à 5 000 px, un profil ouvert après un Ctrl+clic dans le menu s'ouvre en haut.
+
+Revérifié avec de vrais gestes, dans un onglet neuf : Explorer en haut à la première visite, Accueil retrouvé à 1 500 px par le menu sans remontée parasite, Accueil touché à nouveau remonte une fois, l'onglet du fil garde la position, retour 1 200 px, avance 839 px, F5 1 200 px, « 1 nouveau post » sans bouger le fil.
+
+- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/posts.ts`, `web/ui/tabs.tsx`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -3,6 +3,7 @@ import { Fragment, h, type JSX, render } from 'preact'
 import '/web/lib/external-links.ts'
 // A frame at its end gives the rest of the gesture to the page (§12.7)
 import '/web/lib/scroll-handoff.ts'
+import '/web/lib/scroll-position.ts'
 // Projects and help requests follow their entries, without a refresh
 import '/web/lib/live-data.ts'
 // The notifications of the server, and their toast (§7.4)

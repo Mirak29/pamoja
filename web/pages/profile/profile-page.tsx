@@ -466,7 +466,13 @@ const Contributions = ({ login }: { login: Login }) => {
         )
       })}
       {!mine.length && (
-        <EmptyState>
+        <EmptyState
+          action={isMe(login) && (
+            <Button variant='secondary' size={36} href='explore/work'>
+              Trouver ma première contribution
+            </Button>
+          )}
+        >
           Pas encore de contribution vérifiée. Une review, une aide ou une PR
           mergée apparaît ici.
         </EmptyState>

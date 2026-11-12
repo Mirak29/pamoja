@@ -18,6 +18,12 @@ import { Input } from '/web/ui/input.tsx'
 // (the whole screen on a phone). It stays open while one browses: an answer
 // is read, its link followed, the conversation is still there.
 
+// The width of the panel, and the room the page leaves it on a wide screen
+// (layout.tsx): the same 400px. Whole class names, for Tailwind to find
+const PANEL_WIDTH = 'sm:w-[400px]'
+/** What the page gives itself while the panel is open: room for it */
+export const PANEL_ROOM = 'min-[1400px]:pr-[400px]'
+
 const QUESTION_MAX = 500
 
 type Extras = Pick<AssistantMessage, 'cards' | 'actions'>
@@ -170,7 +176,7 @@ const Panel = () => {
       onKeyDown={(event) => {
         event.key === 'Escape' && (assistantOpen.value = false)
       }}
-      class='fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-line-strong bg-surface-100 shadow-slab-pop sm:w-[400px]'
+      class={`fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-line-strong bg-surface-100 shadow-slab-pop ${PANEL_WIDTH}`}
     >
       <div class='flex flex-none items-center gap-2 border-b border-line px-4 py-3'>
         <Sparkles class='size-4 flex-none text-indigo' />

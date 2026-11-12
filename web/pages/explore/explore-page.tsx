@@ -7,6 +7,7 @@ import { openAssistant } from '/web/lib/assistant.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
+  ChevronDown,
   CircleDot,
   FolderGit2,
   LifeBuoy,
@@ -87,17 +88,60 @@ const FilterSelect = (
   </select>
 )
 
+// The URL params of each list's filters: folded, counted and cleared together
+const DEVELOPER_FILTERS = [
+  'skill',
+  'country',
+  'community',
+  'intent',
+  'available',
+]
+const PROJECT_FILTERS = [
+  'tech',
+  'stage',
+  'country',
+  'activity',
+  'contributors',
+  'beginners',
+]
+
+// On a phone the filters fold under one button, with how many are set: the
+// results show on the first screen. Wider, they are always there.
 const Filters = (
-  { selects, children }: {
+  { selects, keys, children }: {
     selects: ComponentChildren
+    /** The URL params of these filters, to count those that are set */
+    keys: string[]
     children: ComponentChildren
   },
-) => (
-  <div class='mr-2 flex flex-col gap-3 rounded-lg border border-line-strong bg-surface-000 pt-3.5 pr-4 pb-4 pl-3.5 inset-shadow-well'>
-    <div class='flex flex-wrap items-center gap-2.5'>{selects}</div>
-    <div class='flex flex-wrap gap-2 pb-1'>{children}</div>
-  </div>
-)
+) => {
+  const [open, setOpen] = useState(false)
+  const set = keys.filter((key) => param(key)).length
+  return (
+    <div class='mr-2 flex flex-col gap-3 rounded-lg border border-line-strong bg-surface-000 pt-3.5 pr-4 pb-4 pl-3.5 inset-shadow-well'>
+      <button
+        type='button'
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        class='flex cursor-pointer items-center justify-between gap-3 text-[14px] leading-5 font-semibold text-ink sm:hidden'
+      >
+        <span>
+          Filtres
+          {set > 0 && <span class='text-indigo'>{` · ${set}`}</span>}
+        </span>
+        <ChevronDown
+          class={`size-4 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      <div
+        class={`flex-col gap-3 sm:flex ${open ? 'flex' : 'hidden'}`}
+      >
+        <div class='flex flex-wrap items-center gap-2.5'>{selects}</div>
+        <div class='flex flex-wrap gap-2 pb-1'>{children}</div>
+      </div>
+    </div>
+  )
+}
 
 const Count = ({ label, keys }: { label: string; keys: string[] }) => (
   <div class='flex items-center justify-between gap-3'>
@@ -123,8 +167,10 @@ const Empty = ({ children }: { children: ComponentChildren }) => (
   </GhostSlab>
 )
 
-// From the first batch again when the filters change (§12.7)
-const filtersKey = () => url.relativePath + JSON.stringify(url.params)
+// From the first batch again when the filters change (§12.7); a dialog
+// opened over the list (its parameters) is not a new list
+const filtersKey = (keys: string[]) =>
+  JSON.stringify(keys.map((key) => param(key)))
 
 const Developers = ({ all }: { all: Person[] }) => {
   const community = communities.find((c) => c.name === param('community'))
@@ -138,6 +184,7 @@ const Developers = ({ all }: { all: Person[] }) => {
   return (
     <>
       <Filters
+        keys={DEVELOPER_FILTERS}
         selects={
           <>
             <FilterSelect
@@ -182,11 +229,11 @@ const Developers = ({ all }: { all: Person[] }) => {
       </Filters>
       <Count
         label={counted(list.length, 'développeur')}
-        keys={['skill', 'country', 'community', 'intent', 'available']}
+        keys={DEVELOPER_FILTERS}
       />
       <Batched
         items={list}
-        reset={filtersKey()}
+        reset={filtersKey(DEVELOPER_FILTERS)}
         class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-x-7 gap-y-6 pr-2'
         row={(person) => <DeveloperCard key={person.login} person={person} />}
       />
@@ -211,6 +258,7 @@ const Projects = ({ all }: { all: Project[] }) => {
   return (
     <>
       <Filters
+        keys={PROJECT_FILTERS}
         selects={
           <>
             <FilterSelect
@@ -251,18 +299,11 @@ const Projects = ({ all }: { all: Project[] }) => {
       </Filters>
       <Count
         label={counted(list.length, 'projet')}
-        keys={[
-          'tech',
-          'stage',
-          'country',
-          'activity',
-          'contributors',
-          'beginners',
-        ]}
+        keys={PROJECT_FILTERS}
       />
       <Batched
         items={list}
-        reset={filtersKey()}
+        reset={filtersKey(PROJECT_FILTERS)}
         class='grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-x-7 gap-y-6 pr-2'
         row={(project) => <ProjectCard key={project.slug} project={project} />}
       />

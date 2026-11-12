@@ -76,7 +76,7 @@ const audience: Record<EntryTypeName, Role[]> = {
   HELP_MESSAGE_CREATED: help,
   HELP_REQUEST_CLOSED: help,
   // Communities
-  POST_CREATED: ['communityMember'],
+  POST_CREATED: ['actor', 'communityMember', 'fan'],
   POST_REPLIED: ['communityMember'],
   POST_REPOSTED: ['communityMember', 'fan'],
   CONTENT_REPORTED: ['moderator'],
