@@ -733,7 +733,12 @@ Objectif : un produit pour développeurs haut de gamme. Références : Linear, G
 - Animations courtes et utiles : arrivée d'une notification, progression d'un badge, mise à jour du Pulse.
 - Responsive obligatoire. Priorité au desktop, mais Feed, Notifications, demandes d'aide, Profil et Explore doivent être confortables sur mobile. La gestion de projet (Board, Roadmap) reste pensée pour le desktop.
 - **Fluidité** (PAM-535), des règles valables sur tous les écrans :
-  - **Le défilement suit la navigation** (`web/lib/scroll-position.ts`) : une nouvelle page s'ouvre en haut ; retour et avance ramènent où l'on était ; les onglets d'une même page (un projet, Explorer, une communauté) ne bougent pas le défilement.
+  - **Le défilement suit la navigation** (`web/lib/scroll-position.ts`), comme sur un réseau social : une page principale (Accueil, Explorer, Projets, Aide, Communautés, Notifications, Messages, Enregistrés) garde sa place, qu'on y revienne par le menu ou par le retour ; une page ouverte depuis une autre (un profil, un projet, un post) s'ouvre en haut, et le retour ramène où l'on était ; les onglets d'une même page ne bougent pas le défilement.
+  - **Les listes gardent ce qu'elles ont chargé** : en revenant, les mêmes lignes sont là, et la page peut retrouver sa place.
+  - **L'onglet du menu touché à nouveau** (`web/lib/refresh.ts`) remonte en haut de la page et relit son contenu ; une barre fine le montre pendant la lecture.
+  - **« ↑ N nouveaux posts »** : les posts arrivent en direct (`POST_CREATED`, pour l'auteur, les membres de la communauté et les abonnés de l'auteur). Plus bas dans le fil, ils attendent derrière ce bouton au lieu de faire sauter ce qu'on lit ; en haut, ils s'affichent tout de suite.
+  - **Brouillons** (`web/lib/draft.ts`) : un post ou un message commencé survit à un changement de page, par conversation, pour l'onglet du navigateur seulement.
+  - **L'onglet du navigateur** compte ce qui attend : « (3) Accueil · Pamoja », notifications et messages non lus.
   - **Le contenu est centré** dans l'espace à droite du menu, sous la recherche, au lieu de laisser un vide à droite sur un grand écran. Au-delà de 1 400 px, la page se décale pour laisser sa place au panneau de l'Assistant, qui ne recouvre rien.
   - **Le contenu d'abord sur mobile** : les filtres d'Explorer se replient sous un bouton qui dit combien sont actifs ; la rédaction de l'Accueil tient sur une ligne tant qu'on n'écrit pas.
   - **Onglets** : sur un écran étroit, l'onglet courant est amené à l'écran et un bord s'estompe tant que d'autres onglets suivent.

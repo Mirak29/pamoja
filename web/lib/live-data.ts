@@ -2,6 +2,7 @@ import { debounced, onEvent, onReconnect } from '/web/lib/realtime.ts'
 import { reloadHelpRequests } from '/web/lib/help.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
+import { loadPosts } from '/web/lib/posts.ts'
 
 // The data of the developer follows its entries without a refresh (§13): an
 // entry makes the page read it again. A burst of entries, like a merge with
@@ -66,3 +67,10 @@ onReconnect(() => {
   reloadHelp()
   reloadChannels()
 })
+
+// A post of someone the developer follows, of their community, or theirs
+// from another tab: the feed reads its posts again; a reader further down
+// sees « nouveaux posts » instead of rows that jump (home-page.tsx)
+const reloadPosts = debounced(loadPosts, 1500)
+onEvent('POST_CREATED', reloadPosts)
+onReconnect(reloadPosts)

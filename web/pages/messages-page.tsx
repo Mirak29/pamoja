@@ -1,3 +1,4 @@
+import { useDraft } from '/web/lib/draft.ts'
 import { badgeCount } from '/web/lib/plural.ts'
 import { Fragment } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
@@ -361,7 +362,10 @@ const Composer = (
     onTyping,
     onSend,
     files,
+    draftKey,
   }: {
+    /** Where the text begun is kept: by conversation */
+    draftKey: string
     placeholder: string
     onTyping?: () => void
     replying?: Message | null
@@ -373,7 +377,7 @@ const Composer = (
     files?: boolean
   },
 ) => {
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useDraft(draftKey)
   const [pending, setPending] = useState<Pending[]>([])
   const box = useRef<HTMLDivElement>(null)
   const picker = useRef<HTMLInputElement>(null)
@@ -1198,6 +1202,7 @@ const Open = ({ id }: { id: string }) => {
       {shown.canWrite && !shown.jumpedTo && (
         <Composer
           placeholder={t`Écrire à ${other.name}`}
+          draftKey={`message:${id}`}
           replying={replying}
           withName={other.name}
           onCancelReply={() => setReplying(null)}
@@ -1266,6 +1271,7 @@ const New = ({ githubId }: { githubId: number }) => {
       </div>
       <Composer
         placeholder={t`Écrire à ${person.name}`}
+        draftKey={`message:new:${githubId}`}
         onSend={async (text) => {
           const id = await startConversation(githubId, text)
           if (!id) return false

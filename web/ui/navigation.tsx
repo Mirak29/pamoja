@@ -1,3 +1,4 @@
+import { refreshSection } from '/web/lib/refresh.ts'
 import { badgeCount, counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { A, url } from '@01edu/signal-router'
@@ -91,6 +92,15 @@ const sections: Record<string, string> = {
   project: 'projects',
   community: 'communities',
   post: 'communities',
+}
+
+// The menu item of the page one is on (its first page, not a project or
+// a post under it), tapped again: back to its top and its news (§12.2)
+const tapAgain = (key: string, href: string) => (event: MouseEvent) => {
+  const root = href === '.' ? '/' : `/${href}`
+  if (url.relativePath !== root || event.metaKey || event.ctrlKey) return
+  event.preventDefault()
+  refreshSection(key)
 }
 
 const currentSection = () => {
@@ -202,6 +212,7 @@ export const Sidebar = () => {
                 key={key}
                 href={href}
                 aria-current={active ? 'page' : undefined}
+                onClick={tapAgain(key, href)}
                 class={`mr-1 flex h-10 items-center gap-2.5 rounded-md border px-2.5 text-[15px] no-underline transition-shadow duration-150 ease-out hover:bg-surface-200 hover:no-underline ${
                   active
                     ? 'border-indigo bg-indigo-soft font-semibold text-indigo shadow-key-selected'
@@ -261,6 +272,7 @@ export const MobileNav = () => {
             href={href}
             aria-label={label}
             aria-current={active ? 'page' : undefined}
+            onClick={tapAgain(key, href)}
             class={`relative flex flex-col items-center justify-center gap-1 rounded-md border text-[11px] leading-none font-medium no-underline hover:no-underline ${
               active
                 ? 'border-indigo bg-indigo-soft text-indigo shadow-key-selected'

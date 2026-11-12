@@ -131,14 +131,26 @@ export const InfiniteList = (
  * const { shown, more, next } = useBatches(people, JSON.stringify(filters))
  */
 export const useBatches = <T,>(items: T[], reset = '', size = BATCH) => {
-  const [state, setState] = useState({ reset, count: size })
-  const count = state.reset === reset ? state.count : size
+  // Kept by page and by list: the rows read are still there when one comes
+  // back, and the page can scroll to where it was (§12.2)
+  const at = `${location.pathname}${location.search} ${reset}`
+  const [state, setState] = useState(() => ({
+    reset,
+    count: readSoFar.get(at) ?? size,
+  }))
+  const count = state.reset === reset ? state.count : readSoFar.get(at) ?? size
   return {
     shown: items.slice(0, count),
     more: count < items.length,
-    next: () => setState({ reset, count: count + size }),
+    next: () => {
+      readSoFar.set(at, count + size)
+      setState({ reset, count: count + size })
+    },
   }
 }
+
+// How many rows each list in memory showed, by page and list
+const readSoFar = new Map<string, number>()
 
 /**
  * A list already in memory, in an `InfiniteList`, by batches

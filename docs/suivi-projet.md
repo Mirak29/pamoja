@@ -936,6 +936,23 @@ Vérifié dans le navigateur, sur une base de démo neuve : mesures de défileme
 - **Livrable** : `web/lib/scroll-position.ts`, `web/ui/tabs.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/lib/assistant.ts`, `web/pages/explore/explore-page.tsx`, `web/pages/home/home-page.tsx`, `web/pages/help/help-list.tsx`, `web/pages/messages-page.tsx`, `web/pages/profile/profile-page.tsx` ; §12.7
 - **Par** : @Mirak29
 
+### 2026-11-12 · PAM-536 · Mécanismes de réseau social
+
+Ce qu'un réseau social fait et que Pamoja ne faisait pas :
+
+- **Chaque page principale garde sa place.** Accueil, Explorer, Projets, Aide, Communautés, Notifications, Messages et Enregistrés retrouvent leur position même quand on y revient par le menu, pas seulement par le retour. Une page ouverte depuis une autre (profil, projet, post) s'ouvre en haut.
+- **Les listes gardent ce qu'elles ont chargé.** Avant, revenir à l'Accueil ne montrait que les 20 premiers posts : impossible de retrouver le 60ᵉ. Le nombre de lignes lues est gardé par page et par liste.
+- **L'onglet actif touché à nouveau** remonte en haut et relit le contenu (posts, projets, demandes, notifications, messages), avec une barre fine pendant la lecture. Depuis très bas, saut près du haut puis glissement court.
+- **Les posts arrivent en direct.** Le serveur ne créait aucune entrée `POST_CREATED` : le fil n'était lu qu'à la connexion. L'entrée est maintenant créée et envoyée à l'auteur (ses autres onglets), aux membres de la communauté et aux abonnés de l'auteur, pas à tout le monde, pour ménager le serveur.
+- **« ↑ N nouveaux posts ».** Plus bas dans le fil, les nouveautés attendent derrière ce bouton, collé en haut, au lieu de faire sauter ce qu'on lit. En haut du fil, elles s'affichent tout de suite.
+- **Brouillons.** Un post commencé, ou un message par conversation, survit à un changement de page (pour l'onglet du navigateur seulement, jamais envoyé).
+- **Titre de l'onglet** : « (3) Accueil · Pamoja » quand des notifications ou des messages attendent.
+
+Vérifié dans le navigateur, sur une base de démo neuve : Accueil à 3 000 px retrouvé après un passage par Explorer (12 posts toujours chargés), Explorer à 500 px retrouvé, profil ouvert en haut, retour au bon endroit ; un post publié par un compte suivi pendant la lecture fait apparaître « 1 nouveau post » sans bouger le fil, puis passe en tête au clic. Le test des déclencheurs couvre la nouvelle audience de `POST_CREATED`.
+
+- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

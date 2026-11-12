@@ -3,6 +3,7 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
+import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
 import { Post } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
@@ -130,6 +131,13 @@ export const createPost = (me: number, input: PostInput) => {
       videoUrl: videoUrl || null,
     })
     attach(me, media, 'post', postId)
+    // The feeds of its audience read it at once (§12.2)
+    Entry.insert.POST_CREATED({
+      userId: me,
+      communityId: maybe(community?.communityId),
+      postId,
+      source: 'platform',
+    })
     return postId
   })()
   return shown([getOne(postId)!])[0]

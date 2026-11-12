@@ -7,7 +7,11 @@ import { AssistantPanel } from '/web/ui/assistant-panel.tsx'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
-import { CreateMenu, MobileNav, Sidebar } from '/web/ui/navigation.tsx'
+import { CreateMenu, MobileNav, Sidebar, unread } from '/web/ui/navigation.tsx'
+import { effect, signal } from '@preact/signals'
+import { unreadMessages } from '/web/lib/messages.ts'
+import { refreshing } from '/web/lib/refresh.ts'
+import { badgeCount } from '/web/lib/plural.ts'
 import { ReportDialog } from '/web/ui/report-dialog.tsx'
 import { notify, Toasts } from '/web/ui/toast.tsx'
 import { translate } from '/web/lib/language.ts'
@@ -135,9 +139,34 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <Toasts />
     <LiveNotifications />
     <ConnectionBanner />
+    <RefreshBar />
     <FocusKeeper />
   </div>
 )
+
+// The title of the page, and before it what waits: unread notifications
+// and messages, as on a social network (§12.2)
+const pageTitle = signal('')
+effect(() => {
+  const waiting = unread() + unreadMessages.value
+  const title = pageTitle.value
+  if (!title) return
+  document.title = `${
+    waiting ? `(${badgeCount(waiting)}) ` : ''
+  }${title} · Pamoja`
+})
+
+// A bar along the top while a page reads its news again (refresh.ts)
+const RefreshBar = () =>
+  refreshing.value
+    ? (
+      <div
+        role='status'
+        aria-label='Actualisation'
+        class='fixed inset-x-0 top-0 z-50 h-0.5 animate-skeleton bg-indigo'
+      />
+    )
+    : null
 
 /**
  * Sets the document title of a page. No page header repeats the navigation
@@ -161,7 +190,7 @@ export const Page = (
   // Translated here: the app is rendered again when the language changes
   const shown = translate(title)
   useEffect(() => {
-    document.title = `${shown} · Pamoja`
+    pageTitle.value = shown
   }, [shown])
   return (
     <div data-fill={fill || undefined} class={className}>

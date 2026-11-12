@@ -1,9 +1,12 @@
+import { toTop } from '/web/lib/refresh.ts'
+import { useDraft } from '/web/lib/draft.ts'
 import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { A, navigate, url } from '@01edu/signal-router'
 import {
+  ArrowUp,
   CircleAlert,
   CircleCheck,
   CircleX,
@@ -204,7 +207,13 @@ const HelpInsert = (
 )
 
 // `node` is built only for the items a batch shows
-type FeedItem = { at: number; key: string; node: () => JSX.Element }
+type FeedItem = {
+  at: number
+  key: string
+  node: () => JSX.Element
+  // Written or shared by the developer: shown at once, never held back
+  mine?: boolean
+}
 
 /** Posts, reposts, GitHub events and a matching help request (§6.2) */
 const feedItems = (tab: FeedTab): FeedItem[] => {
@@ -243,6 +252,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
       at,
       key: post.id,
       node: () => <PostCard post={post} repostBy={repostBy} />,
+      mine: isMe(post.author) || (!!repostBy && isMe(repostBy)),
     }))
   if (tab === 'for-you' || tab === 'following') {
     const events = mine.flatMap((project) =>
@@ -284,7 +294,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
 const FENCE = '`'.repeat(3)
 
 const Composer = () => {
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft('post')
   const [community, setCommunity] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
   const [type, setType] = useState<PostType>('Discussion')
@@ -629,6 +639,48 @@ const Rail = () => {
   )
 }
 
+// Above this, one is at the top of the feed: news show at once
+const AT_TOP = 160
+
+/**
+ * News that come while one reads further down wait above, behind a button,
+ * as on a social network (§12.2): the rows one reads do not jump. At the
+ * top of the feed, they show at once.
+ */
+const useNews = (items: FeedItem[], tab: string) => {
+  // Newer than this, an item waits; none waits while one is at the top
+  const [cutoff, setCutoff] = useState<number | null>(null)
+  const newest = items.reduce((max, item) => Math.max(max, item.at), 0)
+  const before = useRef(newest)
+  useEffect(() => setCutoff(null), [tab])
+  // News came: read further down, the feed keeps what it showed
+  useEffect(() => {
+    const was = before.current
+    before.current = newest
+    newest > was && scrollY >= AT_TOP &&
+      setCutoff((known) => known ?? was)
+  }, [newest])
+  // Back at the top: the news show
+  useEffect(() => {
+    const onScroll = () => scrollY < AT_TOP && setCutoff(null)
+    addEventListener('scroll', onScroll, { passive: true })
+    return () => removeEventListener('scroll', onScroll)
+  }, [])
+  const waiting = cutoff === null
+    ? []
+    : items.filter((item) => item.at > cutoff && !item.mine)
+  return {
+    shown: waiting.length
+      ? items.filter((item) => !waiting.includes(item))
+      : items,
+    waiting: waiting.length,
+    show: () => {
+      setCutoff(null)
+      toTop()
+    },
+  }
+}
+
 /** Accueil: compose, read the feed, see what needs you (§6.2, §10.1) */
 export const HomePage = () => {
   postsChanged.value
@@ -637,7 +689,9 @@ export const HomePage = () => {
   dismissedHelp.value
   const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
     'for-you'
-  const items = feedItems(current)
+  const all = feedItems(current)
+  const news = useNews(all, current)
+  const items = news.shown
   const { shown, more, next } = useBatches(items, current)
   const { matches, waiting } = homeData()
   return (
@@ -670,6 +724,15 @@ export const HomePage = () => {
             params: { feed: i ? key : null },
           }))}
         />
+        {news.waiting > 0 && (
+          // Stays in view while one scrolls the feed
+          <div class='sticky top-[84px] z-20 flex h-0 justify-center'>
+            <Button size={36} onClick={news.show} class='shadow-slab-pop'>
+              <ArrowUp />
+              {counted(news.waiting, 'nouveau post', 'nouveaux posts')}
+            </Button>
+          </div>
+        )}
         <InfiniteList
           more={more}
           onMore={next}
