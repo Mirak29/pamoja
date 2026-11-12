@@ -8,6 +8,7 @@ import {
 import { isMe, me } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { Button } from '/web/ui/button.tsx'
+import { EmptyState } from '/web/ui/states.tsx'
 import { HelpRequestCard } from '/web/ui/help-request-card.tsx'
 import { InfiniteList } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
@@ -109,14 +110,15 @@ export const HelpList = () => {
           ))}
         </InfiniteList>
         {!rows.length && batches[current.key] === '' && (
-          <div class='flex flex-col items-center gap-3 px-6 py-10 text-center'>
-            <p class='max-w-[520px] text-pretty text-ink-muted'>
-              {current.empty}
-            </p>
-            <Button variant='secondary' size={36} href={current.action[1]}>
-              {current.action[0]}
-            </Button>
-          </div>
+          <EmptyState
+            action={
+              <Button variant='secondary' size={36} href={current.action[1]}>
+                {current.action[0]}
+              </Button>
+            }
+          >
+            {current.empty}
+          </EmptyState>
         )}
       </div>
     </Page>

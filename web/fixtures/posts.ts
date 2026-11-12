@@ -485,9 +485,12 @@ export const savedId = (id: number) => `s${id}`
  * post already shown stays as it is
  */
 export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
+  const known = new Set(posts.map((post) => post.id))
+  let added = 0
   for (const saved of [...list].reverse()) {
     const id = savedId(saved.id)
-    if (posts.some((post) => post.id === id)) continue
+    if (known.has(id)) continue
+    added++
     hearOf(saved.author, saved.authorName, '')
     posts.unshift({
       id,
@@ -504,5 +507,19 @@ export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
       demo: false,
     })
   }
-  changed()
+  added && changed()
 }
+
+/** Whether a post of the server is already in the pages */
+export const isKnownPost = (id: number) =>
+  posts.some((post) => post.id === savedId(id))
+
+/** The time of the newest post of the server in the pages, in seconds */
+export const newestSavedAt = () =>
+  posts.reduce(
+    (newest, post) =>
+      post.id.startsWith('s') && !post.parent
+        ? Math.max(newest, post.at / 1000)
+        : newest,
+    0,
+  )

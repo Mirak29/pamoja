@@ -1,4 +1,8 @@
-import { refreshSection } from '/web/lib/refresh.ts'
+import { refreshPage } from '/web/lib/refresh.ts'
+import { fromMenu } from '/web/lib/scroll-position.ts'
+import { reloadHelpRequests } from '/web/lib/help.ts'
+import { loadPosts } from '/web/lib/posts.ts'
+import { loadProjects } from '/web/lib/session.ts'
 import { badgeCount, counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { A, url } from '@01edu/signal-router'
@@ -15,8 +19,8 @@ import {
   Users,
 } from '/web/assets/icons.tsx'
 import { me } from '/web/fixtures/people.ts'
-import { unreadMessages } from '/web/lib/messages.ts'
-import { unreadCount } from '/web/lib/notifications.ts'
+import { loadConversations, unreadMessages } from '/web/lib/messages.ts'
+import { loadNotifications, unreadCount } from '/web/lib/notifications.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
@@ -37,14 +41,24 @@ const navItems = (): {
   icon: IconComponent
   /** Left out of the tab bar of phones, full: in the header there */
   desktopOnly?: boolean
+  /** What its page reads again when the item is tapped on it (§12.2) */
+  readAgain?: () => Promise<unknown>
 }[] => [
-  { key: '', href: '.', label: 'Accueil', short: 'Accueil', icon: House },
+  {
+    key: '',
+    href: '.',
+    label: 'Accueil',
+    short: 'Accueil',
+    icon: House,
+    readAgain: () => Promise.all([loadPosts(), loadProjects()]),
+  },
   {
     key: 'explore',
     href: 'explore',
     label: 'Explorer',
     short: 'Explorer',
     icon: Compass,
+    readAgain: () => Promise.all([loadProjects(), reloadHelpRequests()]),
   },
   {
     key: 'projects',
@@ -52,8 +66,16 @@ const navItems = (): {
     label: 'Projets',
     short: 'Projets',
     icon: FolderGit2,
+    readAgain: loadProjects,
   },
-  { key: 'help', href: 'help', label: 'Aide', short: 'Aide', icon: LifeBuoy },
+  {
+    key: 'help',
+    href: 'help',
+    label: 'Aide',
+    short: 'Aide',
+    icon: LifeBuoy,
+    readAgain: reloadHelpRequests,
+  },
   {
     key: 'communities',
     href: 'communities',
@@ -68,6 +90,7 @@ const navItems = (): {
     short: 'Messages',
     icon: MessageSquare,
     desktopOnly: true,
+    readAgain: loadConversations,
   },
   {
     key: 'notifications',
@@ -77,6 +100,7 @@ const navItems = (): {
     icon: Bell,
     // Its bell and its counter are in the header of phones
     desktopOnly: true,
+    readAgain: loadNotifications,
   },
   {
     key: `@${me.login}`,
@@ -94,27 +118,35 @@ const sections: Record<string, string> = {
   post: 'communities',
 }
 
-// The menu item of the page one is on (its first page, not a project or
-// a post under it), tapped again: back to its top and its news (§12.2).
+// What a menu item does when it is pressed (§12.2). On another page, it
+// goes to its own, where it was left. On its own first page (not a project
+// or a post under it), it goes back to the top and reads the page again.
 //
-// Decided before the link acts: the router moves to its page as the pointer
-// goes down, so by the click the address is already the link's. A pointer
-// is handled as it goes down, a key (Enter) as it clicks.
-const tapAgain = (key: string, href: string) => {
+// Whether it is on its own page is decided as it is pressed, and kept for
+// its click: the router moves as the pointer goes down, and the menu is
+// drawn again before the click comes. On its own page, the press keeps the
+// router from moving, and the reading waits for the click, which only a
+// real tap gives, never a swipe that starts on the item. From the keyboard
+// there is no press: the click decides, before the router acts.
+let pressed: { href: string; here: boolean } | undefined
+
+const itemProps = (
+  { href, readAgain }: { href: string; readAgain?: () => Promise<unknown> },
+) => {
   const root = href === '.' ? '/' : `/${href}`
-  const handle = (event: MouseEvent) => {
-    const plain = !event.button && !event.metaKey && !event.ctrlKey &&
-      !event.shiftKey && !event.altKey
-    if (!plain || url.relativePath !== root) return
-    // The router then leaves the link alone: no navigation to the same page
-    event.preventDefault()
-    refreshSection(key)
-  }
+  const here = () => url.relativePath === root
   return {
-    onPointerDown: handle,
+    onPointerDown: (event: MouseEvent) => {
+      pressed = { href, here: here() }
+      pressed.here ? event.preventDefault() : fromMenu()
+    },
     onClick: (event: MouseEvent) => {
-      const fromKey = event.clientX === 0 && event.clientY === 0
-      fromKey && handle(event)
+      const fromKey = event.detail === 0
+      const wasHere = fromKey ? here() : pressed?.href === href && pressed.here
+      pressed = undefined
+      if (!wasHere) return void (fromKey && fromMenu())
+      event.preventDefault()
+      refreshPage(readAgain)
     },
   }
 }
@@ -221,14 +253,15 @@ export const Sidebar = () => {
           aria-label='Navigation principale'
           class='flex flex-none flex-col gap-1'
         >
-          {navItems().map(({ key, href, label, icon: Icon }) => {
+          {navItems().map((item) => {
+            const { key, href, label, icon: Icon } = item
             const active = key === section
             return (
               <A
                 key={key}
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                {...tapAgain(key, href)}
+                {...itemProps(item)}
                 class={`mr-1 flex h-10 items-center gap-2.5 rounded-md border px-2.5 text-[15px] no-underline transition-shadow duration-150 ease-out hover:bg-surface-200 hover:no-underline ${
                   active
                     ? 'border-indigo bg-indigo-soft font-semibold text-indigo shadow-key-selected'
@@ -278,9 +311,8 @@ export const MobileNav = () => {
       aria-label='Navigation principale'
       class='fixed inset-x-0 bottom-0 z-30 grid h-[68px] grid-cols-6 gap-0.5 border-t border-figure-edge bg-surface-100 px-1.5 pt-1.5 pb-2 md:hidden'
     >
-      {navItems().filter((item) => !item.desktopOnly).map((
-        { key, href, label, short, icon: Icon },
-      ) => {
+      {navItems().filter((item) => !item.desktopOnly).map((item) => {
+        const { key, href, label, short, icon: Icon } = item
         const active = key === section
         return (
           <A
@@ -288,7 +320,7 @@ export const MobileNav = () => {
             href={href}
             aria-label={label}
             aria-current={active ? 'page' : undefined}
-            {...tapAgain(key, href)}
+            {...itemProps(item)}
             class={`relative flex flex-col items-center justify-center gap-1 rounded-md border text-[11px] leading-none font-medium no-underline hover:no-underline ${
               active
                 ? 'border-indigo bg-indigo-soft text-indigo shadow-key-selected'

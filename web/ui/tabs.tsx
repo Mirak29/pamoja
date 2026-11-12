@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { A, type LinkProps } from '@01edu/signal-router'
+import { keepScroll, scrollIntent } from '/web/lib/scroll-position.ts'
 
 export type Tab = Pick<LinkProps, 'href' | 'params'> & {
   key: string
@@ -19,6 +20,8 @@ const FADE = '36px'
  * Tabs sit in a rail dug into the ground; the current one is a raised tile.
  * Each tab is a link: a path (`href`) or a query param (`params`), so the URL
  * keeps the current tab.
+ *
+ * A tab leaves the scroll of the page where it is (scroll-position.ts).
  *
  * On a narrow screen the rail scrolls sideways: the current tab is brought
  * into view, and an edge fades out while tabs go on beyond it, so that one
@@ -54,12 +57,14 @@ export const Tabs = (
         was.left === left && was.right === right ? was : { left, right }
       )
     }
-    measure()
+    // The rail resized, or a tab did (a count, a badge)
+    const resized = new ResizeObserver(measure)
+    resized.observe(box)
+    for (const tab of box.children) resized.observe(tab)
     box.addEventListener('scroll', measure, { passive: true })
-    addEventListener('resize', measure)
     return () => {
+      resized.disconnect()
       box.removeEventListener('scroll', measure)
-      removeEventListener('resize', measure)
     }
   }, [tabs.length])
   // The current tab is never left out of sight, beyond an edge
@@ -74,12 +79,11 @@ export const Tabs = (
       box.scrollTo({ left: after - box.clientWidth })
     }
   }, [current])
+  // A side with no fade has a stop at 0: its transparent end never shows
+  const left = more.left ? FADE : '0px'
+  const right = more.right ? FADE : '0px'
   const fade = more.left || more.right
-    ? `linear-gradient(to right, ${more.left ? 'transparent' : '#000'}, #000 ${
-      more.left ? FADE : '0px'
-    }, #000 calc(100% - ${more.right ? FADE : '0px'}), ${
-      more.right ? 'transparent' : '#000'
-    })`
+    ? `linear-gradient(to right, transparent, #000 ${left}, #000 calc(100% - ${right}), transparent)`
     : undefined
   return (
     <nav
@@ -94,6 +98,10 @@ export const Tabs = (
           <A
             key={key}
             {...link}
+            {
+              // A tab of the same page: the scroll stays where it is
+              ...scrollIntent(keepScroll)
+            }
             aria-current={active ? 'page' : undefined}
             class={`flex h-[34px] flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border ${
               roomy ? 'px-3.5' : 'px-3'

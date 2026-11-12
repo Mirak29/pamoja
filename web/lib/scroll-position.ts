@@ -7,145 +7,133 @@ import { tabMemory } from '/web/lib/tab-memory.ts'
 //
 // - Back, forward and a reload bring one where one was, as a browser does:
 //   each entry of the history has its own position.
-// - A main page (the feed, Explore, the help…) also keeps its place when
-//   one comes back to it from the menu.
-// - A page opened from another (a profile, a project, a post) starts at its
-//   top; the tabs of a same page leave the scroll alone.
-// - The menu item of the page one is on, tapped again, goes to its top and
-//   reads it again (refresh.ts).
+// - The menu brings one back where one left its page (`fromMenu`).
+// - The tabs of a page leave the scroll alone (`keepScroll`), and so does
+//   anything that only changes the parameters of the address: a dialog, a
+//   filter, the tab of the feed.
+// - Any other link opens its page at the top.
 //
-// The browser restores a position of its own before the page is drawn,
-// when the page is still short: the app does it instead, once the page can
-// reach it.
+// The link says what it wants, as the pointer goes down: the router moves
+// to its page right after (or, from the keyboard, at the click). The page
+// itself needs no list of paths.
+//
+// The browser would restore a position of its own before the page is drawn,
+// when it is still short: the app does it instead, once the page can reach
+// it.
 history.scrollRestoration = 'manual'
 
-/** The main pages: reached from the menu, they keep their place */
-const MAIN = new Set([
-  '/',
-  '/explore',
-  '/explore/projects',
-  '/explore/work',
-  '/projects',
-  '/help',
-  '/communities',
-  '/notifications',
-  '/messages',
-  '/saved',
-])
+type Intent = 'menu' | 'keep'
+let intent: Intent | undefined
 
-/** What counts as one page: its tabs share its scroll */
-const pageOf = (path: string) => {
-  const [section = '', item = ''] = path.replace(/^\/+/, '').split('/')
-  return ['project', 'community'].includes(section)
-    ? `${section}/${item}`
-    : section === 'explore'
-    ? section
-    : path
-}
+/** The next navigation comes from the menu: back where its page was left */
+export const fromMenu = () => intent = 'menu'
 
-// Positions by entry of the history, and by main page
-const byEntry = tabMemory('scroll-entry')
-const byPage = tabMemory('scroll-page')
+/** The next navigation is a tab of the same page: the scroll stays */
+export const keepScroll = () => intent = 'keep'
 
-// Each entry of the history gets a key of its own, kept in its state: back
-// and forward give it back. The router pushes an empty state.
-const entryKey = () => {
-  const state = history.state as { scrollKey?: string } | null
-  if (state?.scrollKey) return state.scrollKey
+/** What a link gives the router so that it says its intent in time */
+export const scrollIntent = (say: () => unknown) => ({
+  onPointerDown: say,
+  // From the keyboard there is no pointer: the router acts at the click
+  onClick: (event: MouseEvent) => event.detail === 0 && say(),
+})
+
+/** The address of the page, its tab included: what positions are kept by */
+export const address = () => `${url.relativePath}${url.value.search}`
+
+// Positions by entry of the history, and by page for the menu
+const byEntry = tabMemory<number>('scroll-entry')
+const byPage = tabMemory<number>('scroll-page')
+
+// Each entry of the history gets a key of its own, kept in its state: back,
+// forward and a reload give it back. The router pushes an empty state, so a
+// new entry is one without a key.
+type State = { scrollKey?: string } | null
+const keyOf = () => (history.state as State)?.scrollKey
+const newKey = () => {
   const scrollKey = crypto.randomUUID()
-  history.replaceState({ ...state, scrollKey }, '')
+  history.replaceState({ ...history.state, scrollKey }, '')
   return scrollKey
 }
 
-const address = () => `${location.pathname}${location.search}`
-
-/** Where the page is now: kept for its entry, and for it if it is main */
-const keep = (entry: string, at: string) => {
-  byEntry.set(entry, scrollY)
-  MAIN.has(at.split('?')[0]) && byPage.set(at, scrollY)
-}
-
-let entry = entryKey()
+let entry = keyOf() ?? newKey()
 let at = address()
-// While a page is being reached (a new page drawn, a position restored),
-// the scroll is the app's, not the reader's: it is not kept
-let settling = false
-addEventListener('scroll', () => settling || keep(entry, at), {
-  passive: true,
-})
+let path = url.relativePath
 
 /*
  * Restoring: a page fills as its data comes, so the position waits until
- * the page is tall enough. One's own scroll stops it at once.
+ * the page is tall enough. One's own gesture stops it at once.
  */
 
 const RESTORE_FOR_MS = 3000
-let stopRestoring = () => {}
+const GESTURES = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const
+let stopRestoring: (() => void) | undefined
 
 const restore = (top: number) => {
-  stopRestoring()
-  settling = true
-  const until = performance.now() + RESTORE_FOR_MS
-  let timer: ReturnType<typeof setTimeout> | undefined
+  stopRestoring?.()
+  const page = document.documentElement
+  const reach = () => {
+    scrollTo({ top, behavior: 'instant' })
+    page.scrollHeight - innerHeight >= top && stop()
+  }
+  // Tried again each time the page grows, not on a timer
+  const grows = new ResizeObserver(reach)
+  const deadline = setTimeout(() => stop(), RESTORE_FOR_MS)
   const stop = () => {
-    clearTimeout(timer)
-    settling = false
-    for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
-      removeEventListener(type, stop, true)
-    }
+    grows.disconnect()
+    clearTimeout(deadline)
+    for (const type of GESTURES) removeEventListener(type, stop, true)
+    stopRestoring = undefined
   }
   stopRestoring = stop
-  for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
+  for (const type of GESTURES) {
     addEventListener(type, stop, { capture: true, passive: true })
   }
-  const step = () => {
-    const reachable = document.documentElement.scrollHeight - innerHeight
-    scrollTo({ top: Math.min(top, reachable), behavior: 'instant' })
-    if (reachable >= top || performance.now() > until) return stop()
-    timer = setTimeout(step, 50)
-  }
-  step()
+  grows.observe(document.body)
+  reach()
 }
 
-// The first page drawn: a reload, or a return from another site, comes
-// back where this entry was
-const first = byEntry.get(entry)
-if (first) {
-  settling = true
-  setTimeout(() => restore(first), 0)
+// Kept when a page is left, and when the tab is hidden or left: a reload
+// or a dropped tab comes back where it was. Not while a position is still
+// being reached: the scroll is then the app's, not the reader's.
+const keep = () => {
+  if (stopRestoring) return
+  byEntry.set(entry, scrollY)
+  byPage.set(at, scrollY)
 }
-
-// A step of the browser, not a link: the router sends an event of its own
-// at each navigation, which is not trusted
-let stepped = false
-addEventListener('popstate', (event) => {
-  if (event.isTrusted) stepped = true
+addEventListener('pagehide', keep)
+addEventListener('visibilitychange', () => {
+  document.visibilityState === 'hidden' && keep()
 })
 
-let page = pageOf(location.pathname)
-// Its first run is the page as it loads, already handled above
-let loaded = false
+// The page as it loads: a reload, or a return from another site, comes back
+// where its entry was
+const loaded = byEntry.get(entry)
+loaded && setTimeout(() => restore(loaded), 0)
+
+let first = true
 effect(() => {
-  const path = url.value.pathname
-  if (!loaded) return void (loaded = true)
-  // The page being left is still drawn: its position is the one to keep,
-  // unless it was still being reached
-  settling || keep(entry, at)
-  stopRestoring()
-  settling = true
-  entry = entryKey()
+  url.value
+  // Its first run is the page as it loads, handled above
+  if (first) return void (first = false)
+  // The page being left is still drawn: its position is the one to keep
+  keep()
+  const known = keyOf()
+  entry = known ?? newKey()
   at = address()
-  const next = pageOf(path)
-  const moved = next !== page
-  page = next
-  // Once the new page is drawn and every listener of the navigation ran:
-  // whether it was a step of the browser is known by then
-  setTimeout(() => {
-    const step = stepped
-    stepped = false
-    const top = step ? byEntry.get(entry) : byPage.get(at)
-    if (moved && top) return restore(top)
-    moved && scrollTo({ top: 0, behavior: 'instant' })
-    settling = false
-  }, 0)
+  const samePage = url.relativePath === path
+  path = url.relativePath
+  const wanted = intent
+  intent = undefined
+  if (wanted === 'keep' || samePage) return
+  // A step of the browser: an entry it already had
+  const top = known
+    ? byEntry.get(entry)
+    : wanted === 'menu'
+    ? byPage.get(at)
+    : undefined
+  stopRestoring?.()
+  // A new page shows at its top at once; a position waits for the page
+  if (top) setTimeout(() => restore(top), 0)
+  else scrollTo({ top: 0, behavior: 'instant' })
 })

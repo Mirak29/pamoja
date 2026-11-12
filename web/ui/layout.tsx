@@ -3,7 +3,8 @@ import { useEffect } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { LifeBuoy } from '/web/assets/icons.tsx'
 import { incoming } from '/web/fixtures/notifications.ts'
-import { AssistantPanel } from '/web/ui/assistant-panel.tsx'
+import { AssistantPanel, PANEL_ROOM } from '/web/ui/assistant-panel.tsx'
+import { assistantOpen } from '/web/lib/assistant.ts'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
@@ -118,7 +119,11 @@ const SkipLink = () => (
  * of the window: the page no longer scrolls, its columns do.
  */
 export const AppLayout = ({ children }: { children: ComponentChildren }) => (
-  <div class='flex min-h-screen has-[[data-fill]]:h-dvh min-[1400px]:[[data-assistant]_&]:pr-[400px]'>
+  <div
+    class={`flex min-h-screen has-[[data-fill]]:h-dvh ${
+      assistantOpen.value ? PANEL_ROOM : ''
+    }`}
+  >
     <SkipLink />
     <Sidebar />
     <div class='flex min-w-0 flex-1 flex-col'>

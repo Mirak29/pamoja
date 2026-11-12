@@ -954,7 +954,17 @@ Ce qu'un réseau social fait et que Pamoja ne faisait pas :
 
 Vérifié dans le navigateur, sur une base de démo neuve : Accueil à 3 000 px retrouvé après un passage par Explorer (12 posts toujours chargés), Explorer à 500 px retrouvé, profil ouvert en haut, retour au bon endroit ; un post publié par un compte suivi pendant la lecture fait apparaître « 1 nouveau post » sans bouger le fil, puis passe en tête au clic. Le test des déclencheurs couvre la nouvelle audience de `POST_CREATED`.
 
-- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
+**Relecture `/simplify`** (réutilisation, simplification, performance, architecture) et corrections à la racine :
+- **Défilement** : plus d'écoute continue ni de drapeau « en cours de navigation ». La position est gardée quand on quitte une page et quand l'onglet est masqué ; une entrée d'historique sans clé est un nouveau lien (le test `isTrusted` reposait sur une idée fausse : le routeur n'envoie pas d'événement) ; ce sont les liens qui disent leur intention (menu, onglet) au lieu des listes de chemins `MAIN` et `pageOf` ; ce qui ne change que les paramètres ne bouge pas le défilement ; la restauration réessaie quand la page grandit (`ResizeObserver`) au lieu d'un minuteur.
+- **Menu** : chaque entrée porte ce qu'elle relit ; « déjà sur sa page » est décidé à l'appui et gardé pour le clic (le menu est redessiné entre les deux). Un premier essai qui décidait au rendu relançait une remontée à chaque changement de page : vu en traçant chaque défilement, corrigé.
+- **Un seul stockage d'onglet** (`tabMemory<T>`) pour les positions, les listes et les brouillons, limité aux 100 clés les plus récentes, écrit après une rafale ; les brouillons ne sont plus écrits à chaque frappe. Chaque conversation a son propre composer (`key`) : ses pièces jointes ne passent plus à la suivante.
+- **Listes** : une seule source pour le nombre de lignes lues, avec une clé par liste (`useId`) : deux listes d'une même page ne partagent plus leur compteur.
+- **Nouveaux posts** : mis de côté par la couche de données, seuls les plus récents lus ; `adoptPosts` ne prévient plus les pages quand rien n'a été ajouté.
+- **Petits** : place du panneau de l'Assistant lue directement par la mise en page, écrans vides par `EmptyState`, listes de filtres d'Explorer écrites une fois, audience `fan` nommée, fondu des onglets simplifié et mesuré par `ResizeObserver`.
+
+Revérifié avec de vrais gestes, dans un onglet neuf : Explorer en haut à la première visite, Accueil retrouvé à 1 500 px par le menu sans remontée parasite, Accueil touché à nouveau remonte une fois, l'onglet du fil garde la position, retour 1 200 px, avance 839 px, F5 1 200 px, « 1 nouveau post » sans bouger le fil.
+
+- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/posts.ts`, `web/ui/tabs.tsx`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
 - **Par** : @Mirak29
 
 ## Audits QA

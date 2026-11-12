@@ -88,6 +88,23 @@ const FilterSelect = (
   </select>
 )
 
+// The URL params of each list's filters: folded, counted and cleared together
+const DEVELOPER_FILTERS = [
+  'skill',
+  'country',
+  'community',
+  'intent',
+  'available',
+]
+const PROJECT_FILTERS = [
+  'tech',
+  'stage',
+  'country',
+  'activity',
+  'contributors',
+  'beginners',
+]
+
 // On a phone the filters fold under one button, with how many are set: the
 // results show on the first screen. Wider, they are always there.
 const Filters = (
@@ -165,7 +182,7 @@ const Developers = ({ all }: { all: Person[] }) => {
   return (
     <>
       <Filters
-        keys={['skill', 'country', 'community', 'intent', 'available']}
+        keys={DEVELOPER_FILTERS}
         selects={
           <>
             <FilterSelect
@@ -210,7 +227,7 @@ const Developers = ({ all }: { all: Person[] }) => {
       </Filters>
       <Count
         label={counted(list.length, 'développeur')}
-        keys={['skill', 'country', 'community', 'intent', 'available']}
+        keys={DEVELOPER_FILTERS}
       />
       <Batched
         items={list}
@@ -239,14 +256,7 @@ const Projects = ({ all }: { all: Project[] }) => {
   return (
     <>
       <Filters
-        keys={[
-          'tech',
-          'stage',
-          'country',
-          'activity',
-          'contributors',
-          'beginners',
-        ]}
+        keys={PROJECT_FILTERS}
         selects={
           <>
             <FilterSelect
@@ -287,14 +297,7 @@ const Projects = ({ all }: { all: Project[] }) => {
       </Filters>
       <Count
         label={counted(list.length, 'projet')}
-        keys={[
-          'tech',
-          'stage',
-          'country',
-          'activity',
-          'contributors',
-          'beginners',
-        ]}
+        keys={PROJECT_FILTERS}
       />
       <Batched
         items={list}

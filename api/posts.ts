@@ -74,6 +74,14 @@ const listRecent = sql<PostRow, number>`${postSelect}
   LIMIT ?
 `.all
 
+// Those published since a time: what a feed open on the page lacks (§12.2)
+const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
+  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+    AND post.createdAt > :after
+  ORDER BY post.createdAt DESC
+  LIMIT :limit
+`.all
+
 const getOne = sql<PostRow, number>`${postSelect}
   WHERE post.postId = ?
 `.get
@@ -95,7 +103,12 @@ const shown = (rows: PostRow[]) => {
 }
 
 /** The latest posts, newest first: what the feed reads */
-export const listPosts = () => shown(listRecent(50))
+/**
+ * The latest posts; with `after` (seconds), only those published since: a
+ * feed open on the page reads just what is new
+ */
+export const listPosts = (after = 0) =>
+  shown(after ? listSince({ after, limit: 50 }) : listRecent(50))
 
 /** Publishes a post with its images and its video, checked first */
 export const createPost = (me: number, input: PostInput) => {

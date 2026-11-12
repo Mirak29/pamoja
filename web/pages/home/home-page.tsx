@@ -61,7 +61,7 @@ import { dotted, t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
-import { savePost } from '/web/lib/posts.ts'
+import { newPosts, savePost, showNewPosts } from '/web/lib/posts.ts'
 import { IMAGE_TYPES, MediaThumbs, useMediaPicker } from '/web/ui/media.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 
@@ -207,13 +207,7 @@ const HelpInsert = (
 )
 
 // `node` is built only for the items a batch shows
-type FeedItem = {
-  at: number
-  key: string
-  node: () => JSX.Element
-  // Written or shared by the developer: shown at once, never held back
-  mine?: boolean
-}
+type FeedItem = { at: number; key: string; node: () => JSX.Element }
 
 /** Posts, reposts, GitHub events and a matching help request (§6.2) */
 const feedItems = (tab: FeedTab): FeedItem[] => {
@@ -252,7 +246,6 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
       at,
       key: post.id,
       node: () => <PostCard post={post} repostBy={repostBy} />,
-      mine: isMe(post.author) || (!!repostBy && isMe(repostBy)),
     }))
   if (tab === 'for-you' || tab === 'following') {
     const events = mine.flatMap((project) =>
@@ -643,39 +636,23 @@ const Rail = () => {
 const AT_TOP = 160
 
 /**
- * News that come while one reads further down wait above, behind a button,
- * as on a social network (§12.2): the rows one reads do not jump. At the
- * top of the feed, they show at once.
+ * Posts published while one reads wait behind a button, as on a social
+ * network (§12.2): the rows one reads do not jump. At the top of the feed,
+ * or once one scrolls back up to it, they show at once.
  */
-const useNews = (items: FeedItem[], tab: string) => {
-  // Newer than this, an item waits; none waits while one is at the top
-  const [cutoff, setCutoff] = useState<number | null>(null)
-  const newest = items.reduce((max, item) => Math.max(max, item.at), 0)
-  const before = useRef(newest)
-  useEffect(() => setCutoff(null), [tab])
-  // News came: read further down, the feed keeps what it showed
+const useNews = () => {
+  const waiting = newPosts.value.length
   useEffect(() => {
-    const was = before.current
-    before.current = newest
-    newest > was && scrollY >= AT_TOP &&
-      setCutoff((known) => known ?? was)
-  }, [newest])
-  // Back at the top: the news show
-  useEffect(() => {
-    const onScroll = () => scrollY < AT_TOP && setCutoff(null)
-    addEventListener('scroll', onScroll, { passive: true })
-    return () => removeEventListener('scroll', onScroll)
-  }, [])
-  const waiting = cutoff === null
-    ? []
-    : items.filter((item) => item.at > cutoff && !item.mine)
+    if (!waiting) return
+    const atTop = () => scrollY < AT_TOP && showNewPosts()
+    atTop()
+    addEventListener('scroll', atTop, { passive: true })
+    return () => removeEventListener('scroll', atTop)
+  }, [waiting])
   return {
-    shown: waiting.length
-      ? items.filter((item) => !waiting.includes(item))
-      : items,
-    waiting: waiting.length,
+    waiting,
     show: () => {
-      setCutoff(null)
+      showNewPosts()
       toTop()
     },
   }
@@ -689,9 +666,8 @@ export const HomePage = () => {
   dismissedHelp.value
   const current = feedTabs.find(([key]) => key === url.params.feed)?.[0] ??
     'for-you'
-  const all = feedItems(current)
-  const news = useNews(all, current)
-  const items = news.shown
+  const items = feedItems(current)
+  const news = useNews()
   const { shown, more, next } = useBatches(items, current)
   const { matches, waiting } = homeData()
   return (

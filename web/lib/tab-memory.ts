@@ -7,38 +7,61 @@
 // as the page, which is all it can do.
 
 const PREFIX = 'pamoja-memory:'
+// Kept for the newest keys only: a session of the tab never fills the storage
+const KEPT = 100
+// Written once a burst of changes is over (a scroll, typing)
+const SAVE_AFTER_MS = 300
 
-/** A map of numbers kept for the tab, under `name` */
-export const tabMemory = (name: string) => {
+/**
+ * Values kept for the tab under `name`, the most recently set first to stay
+ *
+ * @example
+ * const drafts = tabMemory<string>('draft')
+ * drafts.set('post', text)
+ */
+export const tabMemory = <T>(name: string) => {
   const key = PREFIX + name
-  let values: Record<string, number> = {}
+  // In the order they were set: the oldest leave first
+  let values = new Map<string, T>()
   try {
-    values = JSON.parse(sessionStorage.getItem(key) ?? '{}')
+    values = new Map(Object.entries(
+      JSON.parse(sessionStorage.getItem(key) ?? '{}') as Record<string, T>,
+    ))
   } catch {
-    values = {}
+    // Unreadable or refused: an empty memory
   }
   let pending: ReturnType<typeof setTimeout> | undefined
-  // Written once a burst of changes is over: scrolling sets a value often
-  const save = () => {
-    clearTimeout(pending)
-    pending = setTimeout(flush, 200)
-  }
   const flush = () => {
     clearTimeout(pending)
+    pending = undefined
     try {
-      sessionStorage.setItem(key, JSON.stringify(values))
+      sessionStorage.setItem(key, JSON.stringify(Object.fromEntries(values)))
     } catch {
       // Not kept beyond the page: see above
     }
   }
-  // The page may be left before the burst is over
-  addEventListener('pagehide', flush)
+  const save = () => {
+    clearTimeout(pending)
+    pending = setTimeout(flush, SAVE_AFTER_MS)
+  }
+  // The page may be left, or the phone may drop it, before a save is due
+  addEventListener('pagehide', () => pending && flush())
+  addEventListener('visibilitychange', () => {
+    document.visibilityState === 'hidden' && pending && flush()
+  })
   return {
-    get: (id: string): number | undefined => values[id],
-    set: (id: string, value: number) => {
-      if (values[id] === value) return
-      values[id] = value
+    get: (id: string): T | undefined => values.get(id),
+    set: (id: string, value: T) => {
+      values.delete(id)
+      values.set(id, value)
+      for (const old of values.keys()) {
+        if (values.size <= KEPT) break
+        values.delete(old)
+      }
       save()
+    },
+    remove: (id: string) => {
+      values.delete(id) && save()
     },
   }
 }

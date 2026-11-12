@@ -1,7 +1,8 @@
 import { type ComponentChildren, type JSX, toChildArray } from 'preact'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useId, useRef, useState } from 'preact/hooks'
 import { Button } from '/web/ui/button.tsx'
 import { tabMemory } from '/web/lib/tab-memory.ts'
+import { address } from '/web/lib/scroll-position.ts'
 
 // Long lists (§12.7): read by batches as one scrolls, never all at once,
 // never cut without saying so
@@ -132,27 +133,23 @@ export const InfiniteList = (
  * const { shown, more, next } = useBatches(people, JSON.stringify(filters))
  */
 export const useBatches = <T,>(items: T[], reset = '', size = BATCH) => {
-  // Kept by page and by list: the rows read are still there when one comes
-  // back, and the page can scroll to where it was (§12.2)
-  const at = `${location.pathname}${location.search} ${reset}`
-  const [state, setState] = useState(() => ({
-    reset,
-    count: readSoFar.get(at) ?? size,
-  }))
-  const count = state.reset === reset ? state.count : readSoFar.get(at) ?? size
+  // Kept by page, by list and by reset: the rows read are still there when
+  // one comes back or reloads, and the page can scroll among them (§12.2)
+  const at = `${address()} ${useId()} ${reset}`
+  const count = readSoFar.get(at) ?? size
+  const [, drawAgain] = useState(0)
   return {
     shown: items.slice(0, count),
     more: count < items.length,
     next: () => {
       readSoFar.set(at, count + size)
-      setState({ reset, count: count + size })
+      drawAgain((n) => n + 1)
     },
   }
 }
 
-// How many rows each list in memory showed, by page and list: kept for the
-// tab, so that a reload shows the same rows and can scroll back among them
-const readSoFar = tabMemory('rows')
+// How many rows each list in memory showed, kept for the tab
+const readSoFar = tabMemory<number>('rows')
 
 /**
  * A list already in memory, in an `InfiniteList`, by batches

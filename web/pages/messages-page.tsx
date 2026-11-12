@@ -327,14 +327,11 @@ const List = ({ openId }: { openId: string | null }) => {
                 </>
               )}
               {conversationsLoaded.value && !list.length && (
-                <div class='flex flex-col items-start gap-3 border-t border-line px-4 py-5'>
-                  <p class='text-[14px] text-pretty text-ink-muted'>
+                <div class='border-t border-line'>
+                  <EmptyState action={<FindDevelopers />}>
                     Pas encore de conversation. Trouve un développeur, puis «
                     Écrire » sur son profil.
-                  </p>
-                  <Button variant='secondary' size={36} href='explore'>
-                    Trouver des développeurs
-                  </Button>
+                  </EmptyState>
                 </div>
               )}
             </>
@@ -352,6 +349,13 @@ const List = ({ openId }: { openId: string | null }) => {
 type Pending = { local: string; name: string; shown?: string; media?: Media }
 
 /** Enter sends, Shift + Enter goes to the next line, ↑ edits the last one */
+// No conversation yet: the way to someone to write to
+const FindDevelopers = () => (
+  <Button variant='secondary' size={36} href='explore'>
+    Trouver des développeurs
+  </Button>
+)
+
 const Composer = (
   {
     placeholder,
@@ -1382,9 +1386,10 @@ export const MessagesPage = () => {
     })
   }, [avec])
   const right = openId
-    ? <Open id={openId} />
+    // Keyed: each conversation has its own composer, draft and files
+    ? <Open key={openId} id={openId} />
     : githubId && conversationsLoaded.value
-    ? <New githubId={githubId} />
+    ? <New key={githubId} githubId={githubId} />
     : null
   return (
     <Page
@@ -1400,13 +1405,7 @@ export const MessagesPage = () => {
         {right ?? (
           <div class='hidden md:block'>
             <GhostSlab>
-              <EmptyState
-                action={
-                  <Button variant='secondary' size={36} href='explore'>
-                    Trouver des développeurs
-                  </Button>
-                }
-              >
+              <EmptyState action={<FindDevelopers />}>
                 <span class='flex flex-col items-center gap-2'>
                   <MessageSquare class='size-6' />
                   Choisis une conversation, ou écris à un développeur depuis son

@@ -117,6 +117,9 @@ const projectAudience = (entry: Target, sub: unknown) =>
   member(entry, sub) || has(listener(sub).followedProjectIds, entry.projectId)
 const communityMember = (entry: Target, sub: unknown) =>
   has(listener(sub).communityIds, entry.communityId)
+// Follows the author of the entry
+const fan = (entry: Target, sub: unknown) =>
+  has(listener(sub).followedUserIds, entry.userId)
 const moderator = (entry: Target, sub: unknown) =>
   has(listener(sub).moderatedCommunityIds, entry.communityId)
 
@@ -444,7 +447,7 @@ export const Entry = initEntries(entries, relations, {
     // followers of its author (§10.1, §12.2)
     trigger: (entry, sub) =>
       self(entry, sub) || communityMember(entry, sub) ||
-      has(listener(sub).followedUserIds, entry.userId),
+      fan(entry, sub),
   },
   POST_UPDATED: {
     userId: 'author',
@@ -466,7 +469,7 @@ export const Entry = initEntries(entries, relations, {
     fields: { source },
     trigger: (entry, sub) =>
       communityMember(entry, sub) ||
-      has(listener(sub).followedUserIds, entry.userId),
+      fan(entry, sub),
   },
   ANSWER_ACCEPTED: {
     userId: 'author of the answer: Community Help',
