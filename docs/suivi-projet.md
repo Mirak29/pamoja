@@ -948,9 +948,11 @@ Ce qu'un réseau social fait et que Pamoja ne faisait pas :
 - **Brouillons.** Un post commencé, ou un message par conversation, survit à un changement de page (pour l'onglet du navigateur seulement, jamais envoyé).
 - **Titre de l'onglet** : « (3) Accueil · Pamoja » quand des notifications ou des messages attendent.
 
+**Correction : la place perdue au rechargement.** Positions et nombre de lignes n'étaient gardés qu'en mémoire, et la restauration du navigateur était désactivée (`scrollRestoration = 'manual'`) : un rechargement, un retour depuis un autre site, ou un téléphone qui recharge l'onglet après un passage dans une autre application, ramenaient en haut. Le mécanisme est réécrit sur le modèle du navigateur : une clé par entrée de l'historique (`history.state`), une position par entrée et par page principale, gardées pour l'onglet (`web/lib/tab-memory.ts`, `sessionStorage`) ; la restauration attend que la page soit assez haute et cède au premier geste du lecteur ; les défilements de l'application pendant une navigation ne sont pas enregistrés. Vérifié avec de vrais gestes (molette, clics, retour, avance, F5) : Accueil à 2 000 px retrouvé par le menu et par l'avance, Explorer à 500 px par le retour, 1 500 px retrouvés après F5, un projet ouvert en haut, l'Accueil touché à nouveau remonte en haut.
+
 Vérifié dans le navigateur, sur une base de démo neuve : Accueil à 3 000 px retrouvé après un passage par Explorer (12 posts toujours chargés), Explorer à 500 px retrouvé, profil ouvert en haut, retour au bon endroit ; un post publié par un compte suivi pendant la lecture fait apparaître « 1 nouveau post » sans bouger le fil, puis passe en tête au clic. Le test des déclencheurs couvre la nouvelle audience de `POST_CREATED`.
 
-- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
+- **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
 - **Par** : @Mirak29
 
 ## Audits QA

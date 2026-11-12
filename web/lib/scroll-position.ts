@@ -1,20 +1,22 @@
 import { effect } from '@preact/signals'
 import { url } from '@01edu/signal-router'
+import { tabMemory } from '/web/lib/tab-memory.ts'
 
 // Where the page scrolls when one moves about (§12.2), as on a social
 // network:
 //
-// - A main page (the feed, Explore, the help, the notifications…) keeps its
-//   place: left for another page and come back to, by the menu or by the
-//   back button, it is where one left it.
+// - Back, forward and a reload bring one where one was, as a browser does:
+//   each entry of the history has its own position.
+// - A main page (the feed, Explore, the help…) also keeps its place when
+//   one comes back to it from the menu.
 // - A page opened from another (a profile, a project, a post) starts at its
-//   top, and back and forward bring one where one was on it.
-// - The tabs of a same page (a project, Explore, a community) leave the
-//   scroll alone: one stays at the tabs.
-// - The menu item of the page one is on, tapped again, goes back to its
-//   top and reads its content again (refresh.ts).
-
-// The browser would restore a position of its own, before the page is drawn
+//   top; the tabs of a same page leave the scroll alone.
+// - The menu item of the page one is on, tapped again, goes to its top and
+//   reads it again (refresh.ts).
+//
+// The browser restores a position of its own before the page is drawn,
+// when the page is still short: the app does it instead, once the page can
+// reach it.
 history.scrollRestoration = 'manual'
 
 /** The main pages: reached from the menu, they keep their place */
@@ -41,51 +43,109 @@ const pageOf = (path: string) => {
     : path
 }
 
-// Where each page was left, by its address
-const left = new Map<string, number>()
+// Positions by entry of the history, and by main page
+const byEntry = tabMemory('scroll-entry')
+const byPage = tabMemory('scroll-page')
+
+// Each entry of the history gets a key of its own, kept in its state: back
+// and forward give it back. The router pushes an empty state.
+const entryKey = () => {
+  const state = history.state as { scrollKey?: string } | null
+  if (state?.scrollKey) return state.scrollKey
+  const scrollKey = crypto.randomUUID()
+  history.replaceState({ ...state, scrollKey }, '')
+  return scrollKey
+}
+
 const address = () => `${location.pathname}${location.search}`
 
-let back = false
-// Only the steps of the browser: the router sends an event of its own at
-// each navigation, which is not a step back
-addEventListener('popstate', (event) => {
-  if (event.isTrusted) back = true
+/** Where the page is now: kept for its entry, and for it if it is main */
+const keep = (entry: string, at: string) => {
+  byEntry.set(entry, scrollY)
+  MAIN.has(at.split('?')[0]) && byPage.set(at, scrollY)
+}
+
+let entry = entryKey()
+let at = address()
+// While a page is being reached (a new page drawn, a position restored),
+// the scroll is the app's, not the reader's: it is not kept
+let settling = false
+addEventListener('scroll', () => settling || keep(entry, at), {
+  passive: true,
 })
 
-// A page fills as its data comes: tried until it is tall enough, a second
-// at most
-const restore = (top: number, tries = 20) => {
-  scrollTo({ top, behavior: 'instant' })
-  if (tries && Math.abs(scrollY - top) > 2) {
-    setTimeout(() => restore(top, tries - 1), 50)
+/*
+ * Restoring: a page fills as its data comes, so the position waits until
+ * the page is tall enough. One's own scroll stops it at once.
+ */
+
+const RESTORE_FOR_MS = 3000
+let stopRestoring = () => {}
+
+const restore = (top: number) => {
+  stopRestoring()
+  settling = true
+  const until = performance.now() + RESTORE_FOR_MS
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const stop = () => {
+    clearTimeout(timer)
+    settling = false
+    for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
+      removeEventListener(type, stop, true)
+    }
   }
+  stopRestoring = stop
+  for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) {
+    addEventListener(type, stop, { capture: true, passive: true })
+  }
+  const step = () => {
+    const reachable = document.documentElement.scrollHeight - innerHeight
+    scrollTo({ top: Math.min(top, reachable), behavior: 'instant' })
+    if (reachable >= top || performance.now() > until) return stop()
+    timer = setTimeout(step, 50)
+  }
+  step()
 }
 
-/** Forgets where a page was left: it opens at its top next time */
-export const forgetScroll = (path = location.pathname) => {
-  for (const key of left.keys()) key.startsWith(path) && left.delete(key)
+// The first page drawn: a reload, or a return from another site, comes
+// back where this entry was
+const first = byEntry.get(entry)
+if (first) {
+  settling = true
+  setTimeout(() => restore(first), 0)
 }
 
-let current = address()
-let page = pageOf(url.peek().pathname)
+// A step of the browser, not a link: the router sends an event of its own
+// at each navigation, which is not trusted
+let stepped = false
+addEventListener('popstate', (event) => {
+  if (event.isTrusted) stepped = true
+})
+
+let page = pageOf(location.pathname)
+// Its first run is the page as it loads, already handled above
+let loaded = false
 effect(() => {
   const path = url.value.pathname
+  if (!loaded) return void (loaded = true)
+  // The page being left is still drawn: its position is the one to keep,
+  // unless it was still being reached
+  settling || keep(entry, at)
+  stopRestoring()
+  settling = true
+  entry = entryKey()
+  at = address()
   const next = pageOf(path)
-  const changed = next !== page
+  const moved = next !== page
   page = next
-  // The page being left is still drawn: its scroll is the one to keep
-  left.set(current, scrollY)
-  current = address()
-  const to = current
   // Once the new page is drawn and every listener of the navigation ran:
-  // whether it was a step back is known by then, whatever their order. A
-  // timer, not a frame: a tab in the background draws no frame
+  // whether it was a step of the browser is known by then
   setTimeout(() => {
-    const wasBack = back
-    back = false
-    if (!changed) return
-    const top = left.get(to)
-    if (top !== undefined && (wasBack || MAIN.has(path))) restore(top)
-    else scrollTo({ top: 0, behavior: 'instant' })
+    const step = stepped
+    stepped = false
+    const top = step ? byEntry.get(entry) : byPage.get(at)
+    if (moved && top) return restore(top)
+    moved && scrollTo({ top: 0, behavior: 'instant' })
+    settling = false
   }, 0)
 })

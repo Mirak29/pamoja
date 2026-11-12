@@ -1,6 +1,7 @@
 import { type ComponentChildren, type JSX, toChildArray } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { Button } from '/web/ui/button.tsx'
+import { tabMemory } from '/web/lib/tab-memory.ts'
 
 // Long lists (§12.7): read by batches as one scrolls, never all at once,
 // never cut without saying so
@@ -149,8 +150,9 @@ export const useBatches = <T,>(items: T[], reset = '', size = BATCH) => {
   }
 }
 
-// How many rows each list in memory showed, by page and list
-const readSoFar = new Map<string, number>()
+// How many rows each list in memory showed, by page and list: kept for the
+// tab, so that a reload shows the same rows and can scroll back among them
+const readSoFar = tabMemory('rows')
 
 /**
  * A list already in memory, in an `InfiniteList`, by batches
