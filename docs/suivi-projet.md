@@ -977,6 +977,39 @@ Revérifié avec de vrais gestes, dans un onglet neuf : Explorer en haut à la p
 - **Livrable** : `web/lib/scroll-position.ts`, `web/lib/tab-memory.ts`, `web/lib/posts.ts`, `web/ui/tabs.tsx`, `web/lib/refresh.ts`, `web/lib/draft.ts`, `web/lib/live-data.ts`, `web/ui/infinite-list.tsx`, `web/ui/navigation.tsx`, `web/ui/layout.tsx`, `web/pages/home/home-page.tsx`, `web/pages/messages-page.tsx`, `api/posts.ts`, `api/entries.ts` ; §10.1, §12.7
 - **Par** : @Mirak29
 
+### 2026-11-12 · PAM-537 · Démo prête à déployer chez Systalink
+
+La démo sera hébergée chez Systalink, sur la formule Développeur (1 cœur, 2 Go, 30 Go, 7 733 F CFA par mois) : l'app, Caddy et Docker y tiennent en environ 1 Go. Consigne : une app aussi légère que possible, au bundle comme au build.
+
+**Bundle.** Le poids venait de notre code, pas des dépendances (Preact et les signals font 22 Ko). Le navigateur lisait au démarrage toutes les pages (270 Ko) et l'anglais de l'interface (90 Ko).
+- Chaque page est lue à sa première visite (`web/lib/lazy-page.ts`). Celle de l'adresse demandée part en même temps que la session, les autres quand le navigateur est libre : un clic ouvre sa page sans attente. Si le code d'une page manque après un nouveau déploiement, la page se recharge une fois.
+- L'anglais n'est lu que par qui l'a choisi, avant le premier affichage, donc sans français entrevu. `language` est la langue affichée ; elle passe à l'anglais une fois ses mots chargés.
+- Le build de production repart d'un `dist/` vide (il embarquait les source maps, le CSS et les anciens morceaux du build de dev) et ne garde pas les commentaires de licence.
+- Mesuré : 175 Ko au démarrage (64 Ko compressés) au lieu de 594 Ko (186 Ko), puis 48 Ko (21 Ko) pour l'Accueil et 20 Ko (7 Ko) pour la landing.
+
+**Correction en cours de route.** Le premier essai du build de production affichait une page blanche. Le code de la page arrivait entre son premier affichage (vide) et l'effet qui devait la redessiner ; l'effet voyait la page déjà là et ne faisait rien. Il se fie maintenant à ce qui a été affiché. Un test reproduit cette course : il échoue avec l'ancien code.
+
+**Image.** Le `Dockerfile` suit Tournament : build sur l'image Deno, binaire `deno compile`, Alpine finale avec la glibc et SQLite, sans root. Le binaire embarquait `node_modules`, soit 50 Mo d'outils de build (esbuild, Tailwind) ; il est compilé sans. Résultat : 112 Mo de binaire, dont 96 Mo de runtime Deno, et 174 Mo d'image au lieu de 241 Mo. Le `.dockerignore` ne laisse entrer que ce que le build lit. Un seul binaire sert l'app (`pamoja`) et reconstruit la démo (`pamoja seed --prod`).
+
+**Caddy et compose.** `deploy/compose.yaml` lance l'app et Caddy, avec des volumes pour la base et les médias, pour les sauvegardes et pour les certificats. Le `Caddyfile` sert HTTPS en HTTP/1.1, 2 et 3, avec `flush_interval -1` sur `/api/events` et sans `encode`. Les secrets vont dans `deploy/.env`, sur la VM seulement (`deploy/.env.example`). Marche à suivre : `docs/deploiement.md`.
+
+**Bloquant découvert : les logs.** En production, le logger de `@01edu/api` refuse de démarrer sans les devtools de 01edu (`DEVTOOL_URL`, `DEVTOOL_REPORT_TOKEN`), où Tournament envoie ses logs. Pamoja ne les a pas. En production, `api/lib/log.ts` écrit donc une ligne JSON par événement sur la sortie du conteneur, lue avec `docker logs`, avec la même interface `Log`.
+
+**Sauvegardes.** Le serveur copie lui-même la base toutes les heures avec `VACUUM INTO` (`api/backups.ts`), comme ses autres tâches de fond, et efface les copies de plus de 7 jours. Il n'y a ni cron ni conteneur de plus. `BACKUP_DIR` est obligatoire en production.
+
+Vérifié :
+- build de production servi en local : landing, connexion, les huit pages du menu, passage en anglais et rechargement en anglais ;
+- image construite et lancée avec compose : seed par le binaire, page et API servies à travers Caddy, compression de l'app intacte, HTTP/2 et 3 annoncés ;
+- une sauvegarde horaire copiée hors du conteneur : `integrity_check` à `ok`, 9 développeurs.
+
+Reste à faire :
+- la restauration complète (remettre la copie en place puis redémarrer), avec PAM-907 ;
+- le flux SSE à travers Caddy avec une vraie session, avec PAM-906 sur la VM ;
+- la copie quotidienne hors de la VM, qui dépend du stockage proposé par Systalink (PAM-003).
+
+- **Livrable** : `web/lib/lazy-page.ts`, `web/lib/language.ts`, `web/app.tsx`, `task-prod.ts`, `Dockerfile`, `.dockerignore`, `deploy/`, `api/backups.ts`, `api/lib/log.ts`, `api/lib/env.ts`, `api/server.ts`, `docs/deploiement.md` ; §12.7, §17.4, §17.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -27,3 +27,7 @@ export const GITHUB_APP_PRIVATE_KEY: string = PROD('GITHUB_APP_PRIVATE_KEY', '')
 // Signs the webhooks GitHub sends: X-Hub-Signature-256 (§5.5). The same
 // value goes in the Webhook secret field of the app.
 export const GITHUB_WEBHOOK_SECRET: string = PROD('GITHUB_WEBHOOK_SECRET', '')
+
+// The folder of the hourly copies of the database, a volume (§17.5): none
+// in dev, where the seed rebuilds the database at will
+export const BACKUP_DIR: string = PROD('BACKUP_DIR', '')

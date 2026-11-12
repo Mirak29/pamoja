@@ -1,7 +1,18 @@
 import { config, copyMocks } from './build-config.ts'
 import { build } from 'npm:esbuild@0.25.5'
 
-await build({ ...config, sourcemap: false, minify: true })
+// From an empty folder: what the dev build left there (source maps, its
+// CSS, chunks of older versions) never ships
+await Deno.remove('dist', { recursive: true }).catch((error) => {
+  if (!(error instanceof Deno.errors.NotFound)) throw error
+})
+await build({
+  ...config,
+  sourcemap: false,
+  minify: true,
+  // The licenses stay in the packages: not sent with each page
+  legalComments: 'none',
+})
 copyMocks()
 
 const tailwind = await new Deno.Command('deno', {

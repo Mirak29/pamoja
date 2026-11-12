@@ -1,6 +1,5 @@
 import { type ComponentChildren, options, type VNode } from 'preact'
 import { effect, signal } from '@preact/signals'
-import { english, englishTemplates } from '/web/lib/english.ts'
 
 // The interface in French or in English (§2). French is the language of the
 // code: each sentence of the interface is the key of its English. What
@@ -49,22 +48,49 @@ const languageOf = (preference: LanguagePreference): Language =>
   preference === 'system' ? fromSystem() : preference
 
 export const languagePreference = signal<LanguagePreference>(readStored())
-export const language = signal<Language>(languageOf(languagePreference.peek()))
+/** The language the interface is shown in: English once its words are in */
+export const language = signal<Language>('fr')
 
+// The English of the interface, read only by those who use it: French is
+// in the code, and most never download the English (§17.4)
+let english: Record<string, string> = {}
+let englishTemplates: Record<string, string> = {}
+let englishLoaded = false
+
+/** Shows the language of the preference, once its words are in */
+const apply = (): Promise<void> => {
+  const wanted = languageOf(languagePreference.peek())
+  if (wanted === 'fr' || englishLoaded) {
+    language.value = wanted
+    return Promise.resolve()
+  }
+  return import('/web/lib/english.ts').then((words) => {
+    english = words.english
+    englishTemplates = words.englishTemplates
+    englishLoaded = true
+    // Another choice may have come while the words were read: the last wins
+    language.value = languageOf(languagePreference.peek())
+  }, () => {
+    // Not read (offline, a new version deployed): the interface stays French
+  })
+}
+
+/** The language of the page as it loads: the app is drawn once it is in */
+export const languageReady = apply()
+
+/** Resolved once the interface shows the chosen language */
 export const setLanguagePreference = (preference: LanguagePreference) => {
   store(preference)
   languagePreference.value = preference
-  language.value = languageOf(preference)
+  return apply()
 }
 
 // The system language changes, or another tab chose one
-globalThis.addEventListener('languagechange', () => {
-  language.value = languageOf(languagePreference.peek())
-})
+globalThis.addEventListener('languagechange', apply)
 globalThis.addEventListener('storage', (event: StorageEvent) => {
   if (event.key !== STORAGE_KEY && event.key !== null) return
   languagePreference.value = readStored()
-  language.value = languageOf(languagePreference.peek())
+  apply()
 })
 
 effect(() => {

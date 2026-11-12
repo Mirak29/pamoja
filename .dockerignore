@@ -1,0 +1,14 @@
+# The image is built from these only: the rest of the repo, the local
+# database, media, dist and node_modules never enter it
+*
+!deno.json
+!build-config.ts
+!task-prod.ts
+!task-db-seed.ts
+!prod-server.ts
+!deploy/main.ts
+!api/
+!web/
+!migrations/
+**/*_test.ts
+**/*_test.tsx

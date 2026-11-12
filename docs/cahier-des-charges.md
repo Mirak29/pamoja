@@ -685,7 +685,7 @@ Une seule instance Deno sert l'API, le flux SSE et les fichiers statiques, avec 
 
 - **Dev** : comme `task-dev.ts`, esbuild en mode watch sert `dist/` et le serveur Deno route `/api` vers l'API et le reste vers esbuild. Il n'y a pas de `@01edu/api-proxy` dans Tournament et il n'en faut pas.
 - **Prod** : comme `prod-server.ts`, le serveur lit `dist/index.html` au démarrage et le sert pour toutes les routes de la SPA (ce qui permet d'y injecter les balises OG, §17). Il refuse de démarrer sans `APP_ENV=prod`, qui rend obligatoires les secrets (session, GitHub) et coupe la connexion simulée ; `deno task prod:local` essaie le build sur sa machine.
-- **Découpage** : esbuild découpe le bundle (`splitting`). Une donnée lourde que peu d'écrans affichent est importée à la demande et part dans `dist/chunks/` ; c'est le cas des terres du globe de la Collaboration Map (53 Ko, §9.3). Le reste de l'app tient en un fichier.
+- **Découpage** : esbuild découpe le bundle (`splitting`), et le navigateur ne lit au démarrage que le cadre de l'app : mise en page, menu, données de démo, Preact. Chaque page est lue à sa première visite (`web/lib/lazy-page.ts`) ; celle de l'adresse demandée est lue en même temps que la session, les autres quand le navigateur est libre, pour qu'un clic l'ouvre sans attente. L'anglais de l'interface (90 Ko) n'est lu que par qui l'a choisi, avant le premier affichage : jamais de français entrevu. Les terres du globe de la Collaboration Map (53 Ko, §9.3) restent lues à la demande. Le build de production repart d'un dossier `dist/` vide et ne garde pas les commentaires de licence. Mesuré le 12 novembre : 175 Ko au démarrage (64 Ko compressés) au lieu de 594 Ko (186 Ko), puis 48 Ko (21 Ko) pour l'Accueil.
 - **Routage** : vrais chemins avec `@01edu/signal-router`, **jamais de `#`** : le serveur doit voir l'adresse pour injecter l'aperçu de partage. Le prototype utilise des `#` ; le code ne les reprend pas.
 - **Adresses en anglais** (PAM-125), chemins et paramètres : `/help/new`, `/project/openpay-africa/channels/updates`, `/community/go/about`, `/explore/work`, `/settings`, `/saved`, `/profile/edit`, `/login`, `?filter=`, `?step=`, `?next=`… Le texte de l'interface reste en français. Les adresses françaises des premières versions (`/aide`, `/projet/…`, `?filtre=`…) sont remplacées par leur équivalent anglais à l'ouverture, sans étape dans l'historique (`web/lib/addresses.ts`).
 - **Ce qui est public reste lisible** : un profil est `/@login`, un projet ou une communauté garde son slug. **Ce qui est privé ne se devine pas** : une conversation est `/messages/<id public>` (12 caractères aléatoires, §14.5), jamais son numéro en base ni un login ; écrire à quelqu'un pour la première fois passe par `/messages/new/<id GitHub>`, stable quand le login change (§10.6).
@@ -1073,17 +1073,18 @@ L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des fo
 
 ### 17.4 Déploiement
 
-- Dockerfile multi-stage et binaire `deno compile`, comme Tournament ; l'étape de build compile aussi le CSS Tailwind.
+- Dockerfile multi-stage et binaire `deno compile`, comme Tournament ; l'étape de build compile aussi le CSS Tailwind. L'image finale est une Alpine qui ne contient que le binaire, la glibc et la bibliothèque SQLite (174 Mo, dont 96 Mo pour le runtime Deno) ; l'app y tourne sans être root. Le binaire est compilé sans `node_modules`, qui ne contient que les outils de build (esbuild, Tailwind). Un seul binaire pour deux usages : `pamoja` sert l'app, `pamoja seed --prod` reconstruit les données de démo, serveur arrêté (`deploy/main.ts`).
+- Fichiers : `Dockerfile` et `.dockerignore` à la racine (l'image ne reçoit que ce que le build lit) ; `deploy/compose.yaml`, `deploy/Caddyfile`, `deploy/.env.example` ; marche à suivre dans `docs/deploiement.md`.
 - **`APP_ENV=prod` obligatoire** : c'est cette variable qui active le mode WAL dans `@01edu/db`.
-- Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume, version fixée, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
+- Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker, formule Développeur pour la démo (1 cœur, 2 Go de mémoire, 30 Go de disque, 7 733 F CFA par mois) ; l'app, Caddy et Docker y tiennent en environ 1 Go. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume, version fixée, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
 - Caddy en reverse proxy : HTTPS automatique et **HTTP/2** (§13.5), sans mise en tampon des réponses SSE (`flush_interval -1` sur `/api/events`). Pas de directive `encode` : l'app compresse déjà ses réponses (§12.7), une seconde compression ne gagnerait rien et retarderait le flux SSE.
-- Les logs passent par l'équivalent de `api/lib/log.ts`.
+- Les logs passent par `api/lib/log.ts`. En production, chaque événement est une ligne JSON sur la sortie du conteneur, lue avec `docker logs` : le logger de `@01edu/api` envoie les siens aux devtools de 01edu, que Pamoja n'utilise pas, et refuse de démarrer sans eux.
 
 ### 17.5 Sauvegardes
 
 La réputation est la donnée la plus précieuse du produit.
 
-- Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours.
+- Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours. C'est le serveur qui le fait (`api/backups.ts`), comme ses autres tâches de fond : ni cron ni conteneur de plus. Une copie par heure, `pamoja-AAAA-MM-JJTHH.db`, dans `BACKUP_DIR` (un volume à part de la base), obligatoire en production.
 - Copie quotidienne hors de la VM, sur un autre stockage Systalink (les données restent au Sénégal), en complément des sauvegardes proposées par Systalink.
 - Une restauration testée au moins une fois avant la démo.
 

@@ -33,9 +33,10 @@ Deno.test('language: English render, switching, member content and screens fed b
     return Promise.resolve()
   }
   try {
-    const { language, setLanguagePreference, t, translate } = await import(
-      './language.ts'
-    )
+    const { language, languageReady, setLanguagePreference, t, translate } =
+      await import('./language.ts')
+    // The English is read on demand: the app is drawn once it is in
+    await languageReady
 
     // Data mutated in place, as the fixtures are, and a signal that says so
     const data = { count: 0 }
@@ -79,7 +80,7 @@ Deno.test('language: English render, switching, member content and screens fed b
       root.textContent,
       'Accueil1Message original écrit par un membre',
     )
-    setLanguagePreference('en')
+    await setLanguagePreference('en')
     await flush()
     assertEquals(root.textContent, 'Home1Message original écrit par un membre')
 
@@ -96,7 +97,7 @@ Deno.test('language: English render, switching, member content and screens fed b
       root.textContent,
       'Accueil1Message original écrit par un membre',
     )
-    setLanguagePreference('system')
+    await setLanguagePreference('system')
     await flush()
     assertEquals(language.value, 'en')
     assertEquals(root.textContent, 'Home1Message original écrit par un membre')

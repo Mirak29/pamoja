@@ -4,7 +4,8 @@ import '/api/entries.ts'
 import { server } from '@01edu/api/server'
 import { log } from '/api/lib/log.ts'
 import { routeHandler } from '/api/routes.ts'
-import { APP_ENV } from '/api/lib/env.ts'
+import { APP_ENV, BACKUP_DIR } from '/api/lib/env.ts'
+import { startBackups } from '/api/backups.ts'
 import { startHelpTimers } from '/api/help-timers.ts'
 import { startRefresh } from '/api/sync.ts'
 import { startWorker } from '/api/webhooks.ts'
@@ -32,6 +33,8 @@ if (APP_ENV !== 'test') {
   // Uploads never attached, after 24 h (§17.3)
   startMediaCleanup()
   startStaleReviews()
+  // A copy of the database every hour, kept 7 days (§17.5)
+  BACKUP_DIR && startBackups(BACKUP_DIR)
 }
 
 log.info('server-start')
