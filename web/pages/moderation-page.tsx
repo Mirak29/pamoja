@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Lock, ShieldCheck } from '/web/assets/icons.tsx'
 import { me, people, type Person } from '/web/fixtures/people.ts'
 import {

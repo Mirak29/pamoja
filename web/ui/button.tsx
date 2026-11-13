@@ -1,5 +1,5 @@
 import type { JSX } from 'preact'
-import { A, type LinkProps } from '@01edu/signal-router'
+import { A, type Props as LinkProps } from '/web/ui/link.tsx'
 
 const variants = {
   primary: 'key-primary',

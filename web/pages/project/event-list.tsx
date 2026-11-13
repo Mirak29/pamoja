@@ -1,6 +1,6 @@
 import { recentActivityOf } from '/web/fixtures/activity.ts'
 import type { Project } from '/web/fixtures/projects.ts'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { eventLink } from '/web/lib/links.ts'
 import { ago } from '/web/lib/time.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'

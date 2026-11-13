@@ -1,4 +1,5 @@
-import { A, navigate, url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Search } from '/web/assets/icons.tsx'
 import { helpChanged } from '/web/fixtures/help.ts'
 import { peopleChanged } from '/web/fixtures/people.ts'

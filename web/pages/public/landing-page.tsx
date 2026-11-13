@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Github } from '/web/assets/icons.tsx'
 import { type Login, people, placeOf } from '/web/fixtures/people.ts'
 import { Portrait } from '/web/ui/avatar.tsx'

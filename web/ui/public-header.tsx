@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { signedIn } from '/web/lib/session.ts'
 import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'

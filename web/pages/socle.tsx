@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { useState } from 'preact/hooks'
 import { GitPullRequest, LifeBuoy, Send } from '/web/assets/icons.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'

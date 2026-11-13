@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   isMe,
   type Login,

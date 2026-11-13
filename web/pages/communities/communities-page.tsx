@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Plus } from '/web/assets/icons.tsx'
 import {
   communities,
@@ -37,13 +37,16 @@ export const countsOf = (community: Community) => {
   return `${counted(community.members, 'membre')} · ${counted(count, 'post')}`
 }
 
+// The whole card opens the community, as a developer's or a project's card
+// does. It holds the button to join, and a button cannot be inside a link:
+// the link of the name covers the card (its ::after), the button sits above.
 const CommunityCard = ({ community }: { community: Community }) => {
   const joined = me.communities.includes(community.slug)
   return (
-    <div class='slab mb-2 flex flex-col gap-3 p-[18px]'>
+    <div class='slab slab-lift relative mb-2 flex flex-col gap-3 p-[18px]'>
       <A
         href={`community/${community.slug}`}
-        class='flex min-w-0 items-center gap-3 text-ink no-underline hover:no-underline'
+        class="flex min-w-0 items-center gap-3 text-ink no-underline after:absolute after:inset-0 after:content-[''] hover:no-underline"
       >
         <span class='tile flex size-11 flex-none items-center justify-center font-display text-[14px] leading-none font-bold text-indigo'>
           {emblemOf(community)}
@@ -60,7 +63,7 @@ const CommunityCard = ({ community }: { community: Community }) => {
       <span class='text-[14px] leading-[22px] text-pretty text-ink-muted'>
         {community.description}
       </span>
-      <div class='mt-auto flex items-center gap-2.5 pb-[3px]'>
+      <div class='relative mt-auto flex items-center gap-2.5 pb-[3px]'>
         <Membership community={community} joined={joined} size={34} />
       </div>
     </div>

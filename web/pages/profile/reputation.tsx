@@ -1,6 +1,6 @@
 import type { JSX } from 'preact'
 import { counted } from '/web/lib/plural.ts'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { isMe, type Login } from '/web/fixtures/people.ts'
 import {
   type Badge,

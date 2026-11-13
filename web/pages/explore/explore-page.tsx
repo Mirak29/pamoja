@@ -5,7 +5,8 @@ import { api, type ApiOutput } from '/web/lib/api.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { openAssistant } from '/web/lib/assistant.ts'
 import type { ComponentChildren, JSX } from 'preact'
-import { A, navigate, url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   ChevronDown,
   CircleDot,

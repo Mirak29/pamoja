@@ -1,6 +1,6 @@
 import { Batched } from '/web/ui/infinite-list.tsx'
 import { signal } from '@preact/signals'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Check, Send } from '/web/assets/icons.tsx'
 import { activityChanged, logActivity } from '/web/fixtures/activity.ts'
 import {

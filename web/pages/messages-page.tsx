@@ -2,7 +2,8 @@ import { useDraft } from '/web/lib/draft.ts'
 import { badgeCount } from '/web/lib/plural.ts'
 import { Fragment } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
-import { A, navigate, url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   ArrowLeft,
   Bell,

@@ -1,5 +1,6 @@
 import { counted } from '/web/lib/plural.ts'
-import { A, url } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { type Login, people, personOf } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import {

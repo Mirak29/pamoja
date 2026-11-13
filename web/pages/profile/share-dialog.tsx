@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Copy, Download } from '/web/assets/icons.tsx'
 import { isMe, type Login, me, people, placeOf } from '/web/fixtures/people.ts'
 import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'

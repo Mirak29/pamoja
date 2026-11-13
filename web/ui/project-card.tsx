@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { issues } from '/web/fixtures/issues.ts'
 import { me, personOf } from '/web/fixtures/people.ts'
 import { dotted } from '/web/lib/language.ts'

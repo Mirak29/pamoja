@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { A, type LinkProps } from '@01edu/signal-router'
-import { keepScroll, scrollIntent } from '/web/lib/scroll-position.ts'
+import { type LinkProps } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
+import { keepScroll } from '/web/lib/scroll-position.ts'
 
 export type Tab = Pick<LinkProps, 'href' | 'params'> & {
   key: string
@@ -98,10 +99,8 @@ export const Tabs = (
           <A
             key={key}
             {...link}
-            {
-              // A tab of the same page: the scroll stays where it is
-              ...scrollIntent(keepScroll)
-            }
+            // A tab of the same page: the scroll stays where it is
+            onNavigate={keepScroll}
             aria-current={active ? 'page' : undefined}
             class={`flex h-[34px] flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border ${
               roomy ? 'px-3.5' : 'px-3'

@@ -1,4 +1,5 @@
-import { A, url } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { useState } from 'preact/hooks'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'

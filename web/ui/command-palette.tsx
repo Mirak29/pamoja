@@ -2,7 +2,8 @@ import { counted } from '/web/lib/plural.ts'
 import { signal } from '@preact/signals'
 import type { JSX } from 'preact'
 import { useEffect, useRef } from 'preact/hooks'
-import { A, navigate } from '@01edu/signal-router'
+import { navigate } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   FolderGit2,
   LifeBuoy,

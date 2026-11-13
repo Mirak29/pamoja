@@ -1,7 +1,7 @@
 import { repoPath } from '/web/lib/links.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   Bookmark,
   BookmarkCheck,

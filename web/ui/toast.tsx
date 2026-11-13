@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
 import type { JSX } from 'preact'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Bell, ShieldCheck, X } from '/web/assets/icons.tsx'
 
 const tones = {

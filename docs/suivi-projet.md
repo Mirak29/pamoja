@@ -1010,6 +1010,27 @@ Reste à faire :
 - **Livrable** : `web/lib/lazy-page.ts`, `web/lib/language.ts`, `web/app.tsx`, `task-prod.ts`, `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `.env.production.example`, `.github/workflows/publish.yml`, `deploy/`, `api/backups.ts`, `api/lib/log.ts`, `api/lib/env.ts`, `api/server.ts`, `docs/deploiement.md` ; §12.7, §17.4, §17.5
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-538 · Navigation au doigt
+
+Trois retours de tests sur téléphone : en faisant défiler, on ouvrait les cartes ; sur la page Communautés, seul le nom d'une communauté l'ouvrait ; la navigation manquait d'un bouton retour.
+
+**Un défilement ouvrait les cartes.** La cause est dans le routeur (`@01edu/signal-router`) : son lien `A` navigue au `pointerdown`, quel que soit le pointeur. C'est ce qui le rend vif à la souris, mais sur un écran tactile, le doigt qui se pose sur une carte pour faire défiler la page l'ouvre aussitôt. La correction est faite à la racine, sans toucher à la bibliothèque : `web/ui/link.tsx` est le lien de l'app, et les 44 fichiers qui prenaient celui du routeur le prennent maintenant. La souris navigue toujours à l'appui. Un doigt ou un stylet navigue au clic, que le navigateur n'envoie que pour un tap, jamais après un défilement. Le clavier navigue au clic, et les liens vers un autre site restent ceux du navigateur.
+
+Les intentions de défilement (menu, onglets) et « déjà sur sa page » sont maintenant décidées par `onNavigate`, au moment où le lien va naviguer, et non plus à l'appui. Un doigt qui ne fait que défiler ne laisse donc plus d'intention en attente. L'état `pressed` du menu, qui gardait la décision de l'appui jusqu'au clic, disparaît.
+
+**Cartes de communauté.** Elles s'ouvrent maintenant en entier, comme celles des développeurs et des projets, avec le même effet au survol. Comme elles portent le bouton « Rejoindre », qui ne peut pas être dans un lien, le lien du nom les couvre (`::after`) et le bouton reste au-dessus.
+
+**Bouton retour.** Il apparaît dans la barre du haut sur chaque page hors du menu (`web/ui/back-button.tsx`). Sur mobile, il prend la place du logo. Une entrée de l'historique créée par l'app le dit dans son état (`inApp`, posé par `scroll-position.ts`). Le retour revient alors à l'entrée précédente, et le défilement y est retrouvé. Une page ouverte par un lien partagé n'a rien avant elle dans l'app : le retour mène à sa section, sans quitter le site.
+
+Vérifié :
+- `web/ui/link_test.ts` : un doigt posé n'ouvre rien, un tap ouvre une fois, un stylet fait comme un doigt, la souris navigue à l'appui sans repartir au clic, le clavier navigue au clic, `onNavigate` peut garder la page, un lien externe n'est pas touché. Le même test échoue avec le lien du routeur.
+- Dans le navigateur, en vue mobile, avec des événements tactiles : un doigt posé sur une carte de communauté ne l'ouvre pas, un tap sur sa description l'ouvre ; la description, les coins et le bas de la carte mènent au lien, le bouton reste au-dessus ; le retour depuis une communauté revient sur Communautés à 700 px sans nouvelle entrée d'historique ; un projet ouvert directement ramène à Projets ; l'onglet Projets touché sur sa page relit les projets.
+- À la souris, avec de vrais clics : la description d'une carte ouvre la communauté, la flèche retour ramène à Communautés.
+- CI : format, lint, types, 198 tests.
+
+- **Livrable** : `web/ui/link.tsx`, `web/ui/link_test.ts`, `web/ui/back-button.tsx`, `web/ui/header.tsx`, `web/ui/navigation.tsx`, `web/ui/tabs.tsx`, `web/ui/button.tsx`, `web/lib/scroll-position.ts`, `web/pages/communities/communities-page.tsx`, imports de 44 fichiers ; §12.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

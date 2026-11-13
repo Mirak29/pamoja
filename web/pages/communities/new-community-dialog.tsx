@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks'
-import { A, navigate } from '@01edu/signal-router'
+import { navigate } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Users } from '/web/assets/icons.tsx'
 import {
   communityNamed,

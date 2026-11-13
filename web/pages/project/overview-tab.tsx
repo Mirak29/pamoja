@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact'
 import { Batched } from '/web/ui/infinite-list.tsx'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { ImagePlus, Play } from '/web/assets/icons.tsx'
 import { isMe, personOf } from '/web/fixtures/people.ts'
 import { type Project, projectsChanged } from '/web/fixtures/projects.ts'

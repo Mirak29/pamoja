@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   ChevronDown,
   ChevronUp,

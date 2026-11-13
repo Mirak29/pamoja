@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { openSearch } from '/web/ui/command-palette.tsx'
 import { memberLink, webHref } from '/web/lib/member-links.ts'
 

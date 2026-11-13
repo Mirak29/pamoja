@@ -1,6 +1,7 @@
 import { badgeCount, counted } from '/web/lib/plural.ts'
 import { t } from '/web/lib/language.ts'
-import { A } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   Bell,
   Bookmark,
@@ -23,6 +24,7 @@ import { LogoMark } from '/web/ui/logo.tsx'
 import { Menu } from '/web/ui/menu.tsx'
 import { homeLinkProps, unread } from '/web/ui/navigation.tsx'
 import { AssistantButton } from '/web/ui/assistant-panel.tsx'
+import { BackButton, parentOf } from '/web/ui/back-button.tsx'
 import { unreadMessages } from '/web/lib/messages.ts'
 import { themeSignal, ThemeToggle, toggleTheme } from '/web/ui/theme-toggle.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
@@ -109,14 +111,22 @@ export const Header = () => {
   return (
     <header class='sticky top-0 z-30 grid flex-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line bg-surface-000 px-3 py-2.5 md:grid-cols-[minmax(max-content,1fr)_minmax(0,520px)_minmax(max-content,1fr)] md:pt-4 md:pr-8 md:pb-3.5 md:pl-4'>
       <div class='flex min-w-0 items-center'>
-        <A
-          href='.'
-          aria-label='Pamoja, accueil'
-          {...homeLinkProps()}
-          class='flex flex-none md:hidden'
-        >
-          <LogoMark />
-        </A>
+        {
+          /* A page outside the menu has its way back here; the others show
+          the logo, on a phone (the side menu has it on a computer) */
+        }
+        {parentOf(url.relativePath) === undefined
+          ? (
+            <A
+              href='.'
+              aria-label='Pamoja, accueil'
+              {...homeLinkProps()}
+              class='flex flex-none md:hidden'
+            >
+              <LogoMark />
+            </A>
+          )
+          : <BackButton />}
       </div>
       <button
         type='button'

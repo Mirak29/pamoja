@@ -4,7 +4,8 @@ import { counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
 import { signal } from '@preact/signals'
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { A, navigate, url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   ArrowUp,
   CircleAlert,

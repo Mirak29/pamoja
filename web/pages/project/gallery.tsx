@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
-import { A, navigate, url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { CircleAlert, ImagePlus } from '/web/assets/icons.tsx'
 import { isMe } from '/web/fixtures/people.ts'
 import { type Project, projectsChanged } from '/web/fixtures/projects.ts'

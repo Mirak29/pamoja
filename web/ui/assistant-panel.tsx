@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { A, url } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Send, Sparkles, Trash2, X } from '/web/assets/icons.tsx'
 import {
   askAssistant,

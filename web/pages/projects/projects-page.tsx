@@ -1,4 +1,4 @@
-import { A } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import { Check, CircleSlash, Clock, Plus, Zap } from '/web/assets/icons.tsx'
 import { issues } from '/web/fixtures/issues.ts'
 import { isMe, me } from '/web/fixtures/people.ts'

@@ -13,9 +13,9 @@ import { tabMemory } from '/web/lib/tab-memory.ts'
 //   filter, the tab of the feed.
 // - Any other link opens its page at the top.
 //
-// The link says what it wants, as the pointer goes down: the router moves
-// to its page right after (or, from the keyboard, at the click). The page
-// itself needs no list of paths.
+// The link says what it wants as it navigates (`onNavigate` of
+// web/ui/link.tsx): at the press of a mouse, at the click of a finger or a
+// key. The page itself needs no list of paths.
 //
 // The browser would restore a position of its own before the page is drawn,
 // when it is still short: the app does it instead, once the page can reach
@@ -31,22 +31,6 @@ export const fromMenu = () => intent = 'menu'
 /** The next navigation is a tab of the same page: the scroll stays */
 export const keepScroll = () => intent = 'keep'
 
-/**
- * A press the router follows: the main button, no key held. A middle click
- * or a Ctrl click opens a new tab, and this page does not move.
- */
-export const plainPress = (event: MouseEvent) =>
-  event.button === 0 && !event.metaKey && !event.ctrlKey &&
-  !event.shiftKey && !event.altKey
-
-/** What a link gives the router so that it says its intent in time */
-export const scrollIntent = (say: () => unknown) => ({
-  onPointerDown: (event: MouseEvent) => plainPress(event) && say(),
-  // From the keyboard there is no pointer: the router acts at the click
-  onClick: (event: MouseEvent) =>
-    event.detail === 0 && plainPress(event) && say(),
-})
-
 /** The address of the page, its tab included: what positions are kept by */
 export const address = () => `${url.relativePath}${url.value.search}`
 
@@ -56,16 +40,20 @@ const byPage = tabMemory<number>('scroll-page')
 
 // Each entry of the history gets a key of its own, kept in its state: back,
 // forward and a reload give it back. The router pushes an empty state, so a
-// new entry is one without a key.
-type State = { scrollKey?: string } | null
+// new entry is one without a key. An entry the app pushed says so (`inApp`):
+// the page loaded first, from a link or a bookmark, has none before it.
+type State = { scrollKey?: string; inApp?: boolean } | null
 const keyOf = () => (history.state as State)?.scrollKey
-const newKey = () => {
+const newKey = (inApp: boolean) => {
   const scrollKey = crypto.randomUUID()
-  history.replaceState({ ...history.state, scrollKey }, '')
+  history.replaceState({ ...history.state, scrollKey, inApp }, '')
   return scrollKey
 }
 
-let entry = keyOf() ?? newKey()
+/** The entry before this one is a page of the app: going back stays in it */
+export const backInApp = () => !!(history.state as State)?.inApp
+
+let entry = keyOf() ?? newKey(false)
 let at = address()
 let path = url.relativePath
 
@@ -136,7 +124,7 @@ effect(() => {
   // The page being left is still drawn: its position is the one to keep
   keep()
   const known = keyOf()
-  entry = known ?? newKey()
+  entry = known ?? newKey(true)
   at = address()
   const samePage = url.relativePath === path
   path = url.relativePath

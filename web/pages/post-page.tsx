@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks'
-import { A, url } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   Bookmark,
   BookmarkCheck,

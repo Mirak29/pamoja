@@ -1,11 +1,12 @@
 import { refreshPage } from '/web/lib/refresh.ts'
-import { fromMenu, plainPress } from '/web/lib/scroll-position.ts'
+import { fromMenu } from '/web/lib/scroll-position.ts'
 import { reloadHelpRequests } from '/web/lib/help.ts'
 import { loadPosts } from '/web/lib/posts.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { badgeCount, counted } from '/web/lib/plural.ts'
 import type { JSX } from 'preact'
-import { A, url } from '@01edu/signal-router'
+import { url } from '@01edu/signal-router'
+import { A } from '/web/ui/link.tsx'
 import {
   Bell,
   CircleUser,
@@ -120,37 +121,20 @@ const sections: Record<string, string> = {
   post: 'communities',
 }
 
-// What a menu item does when it is pressed (§12.2). On another page, it
-// goes to its own, where it was left. On its own first page (not a project
-// or a post under it), it goes back to the top and reads the page again.
-//
-// Whether it is on its own page is decided as it is pressed, and kept for
-// its click: the router moves as the pointer goes down, and the menu is
-// drawn again before the click comes. On its own page, the press keeps the
-// router from moving, and the reading waits for the click, which only a
-// real tap gives, never a swipe that starts on the item. From the keyboard
-// there is no press: the click decides, before the router acts.
-let pressed: { href: string; here: boolean } | undefined
-
+// What a menu item does as it navigates (§12.2). On another page, it goes
+// to its own, where it was left. On its own first page (not a project or a
+// post under it), it stays, goes back to the top and reads the page again.
+// The link asks as it is about to move (web/ui/link.tsx): the page it
+// leaves is still the one shown, and a finger that only scrolls never asks.
 const itemProps = (
   { href, readAgain }: { href: string; readAgain?: () => Promise<unknown> },
 ) => {
   const root = href === '.' ? '/' : `/${href}`
-  const here = () => url.relativePath === root
   return {
-    onPointerDown: (event: MouseEvent) => {
-      if (!plainPress(event)) return void (pressed = undefined)
-      pressed = { href, here: here() }
-      pressed.here ? event.preventDefault() : fromMenu()
-    },
-    onClick: (event: MouseEvent) => {
-      if (!plainPress(event)) return
-      const fromKey = event.detail === 0
-      const wasHere = fromKey ? here() : pressed?.href === href && pressed.here
-      pressed = undefined
-      if (!wasHere) return void (fromKey && fromMenu())
-      event.preventDefault()
+    onNavigate: () => {
+      if (url.relativePath !== root) return void fromMenu()
       refreshPage(readAgain)
+      return false
     },
   }
 }
