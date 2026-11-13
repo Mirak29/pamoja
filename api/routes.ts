@@ -1789,6 +1789,7 @@ export const routeHandler = makeRouter({
     'code',
     'state',
     'body',
+    'message',
     'bio',
     'headline',
     'description',

@@ -32,13 +32,22 @@ const JoinForm = ({ project }: { project: Project }) => {
   const [how, setHow] = useState<string[]>([])
   const [availability, setAvailability] = useState(availabilities[1])
   const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
   const { check, clear, field } = useFieldErrors<'how'>('join')
 
-  const send = () => {
+  const send = async () => {
+    if (sending) return
     if (!check({ how: !how.length && 'Choisis au moins une façon d’aider.' })) {
       return
     }
-    applyToProject(project, { areas: how, availability, message })
+    setSending(true)
+    try {
+      await applyToProject(project, { areas: how, availability, message })
+    } catch {
+      return
+    } finally {
+      setSending(false)
+    }
     navigate({ params: { dialog: null } })
     notify({
       title: 'Candidature envoyée',
@@ -100,7 +109,9 @@ const JoinForm = ({ project }: { project: Project }) => {
         {t`${owner} reçoit ta candidature et peut l’accepter directement depuis sa notification.`}
       </span>
       <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
-        <Button size={40} onClick={send}>Envoyer la candidature</Button>
+        <Button size={40} disabled={sending} onClick={send}>
+          Envoyer la candidature
+        </Button>
         <Button variant='secondary' size={40} params={{ dialog: null }}>
           Annuler
         </Button>

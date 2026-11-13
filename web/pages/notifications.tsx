@@ -1,4 +1,5 @@
 import type { JSX } from 'preact'
+import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import {
   Check,
@@ -79,25 +80,39 @@ const open = (notification: Notification) => {
 }
 
 const Row = ({ notification }: { notification: Notification }) => {
+  notificationsChanged.value
+  applicationsChanged.value
+  const [deciding, setDeciding] = useState(false)
   const Icon = icons[notification.kind]
   const application = applications.find((a) =>
     a.id === notification.application
   )
   // A candidature from the server (PAM-403): its id is the join request, and
-  // the managers accept or refuse it here until it is read and handled
+  // the managers accept or refuse it here until the request is resolved
   const serverJoin = notification.kind === 'application' &&
     !!notification.application && notification.id.startsWith('s')
   const pending = serverJoin
-    ? !notification.read
+    ? notification.accepted === -1
     : application?.status === 'pending'
-  const decide = (accept: boolean) =>
-    serverJoin
-      ? decideJoinRequest(
+  const decide = async (accept: boolean) => {
+    if (deciding) return
+    if (!serverJoin) {
+      if (application) decideApplication(application, accept)
+      return
+    }
+    setDeciding(true)
+    try {
+      await decideJoinRequest(
         Number(notification.application),
         accept,
         notification,
       )
-      : application && decideApplication(application, accept)
+    } catch {
+      // The helper reports the failure; keep the decision available for retry.
+    } finally {
+      setDeciding(false)
+    }
+  }
   return (
     <div
       class={`-mt-px flex gap-3.5 border-t border-line px-5 py-4 ${
@@ -124,7 +139,7 @@ const Row = ({ notification }: { notification: Notification }) => {
           <span>{categoryLabels[notification.category]}</span>
           {notification.demo && <DemoBadge />}
         </div>
-        {pending && (
+        {pending && !deciding && (
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'

@@ -56,13 +56,14 @@ export const apply = (
   const id = `a${applications.length + 1}`
   const message = draft.message.trim() || 'J’aimerais contribuer au projet.'
   const project = projects[draft.project]
-  applications.push({
+  const application: Application = {
     ...draft,
     id,
     message,
     at: Date.now(),
     status: 'pending',
-  })
+  }
+  applications.push(application)
   pushNotification({
     to: project.owner,
     category: 'projects',
@@ -75,6 +76,7 @@ export const apply = (
     application: id,
   })
   applicationsChanged.value++
+  return application
 }
 
 /** POST/api/project/join-request/decide, from the team tab or the notification */

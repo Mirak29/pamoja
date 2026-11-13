@@ -2,8 +2,16 @@ import { api } from '/web/lib/api.ts'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { Login, me } from '/web/fixtures/people.ts'
-import { apply } from '/web/fixtures/applications.ts'
-import type { Notification } from '/web/fixtures/notifications.ts'
+import {
+  applications,
+  applicationsChanged,
+  apply,
+} from '/web/fixtures/applications.ts'
+import {
+  type Notification,
+  notifications,
+  notificationsChanged,
+} from '/web/fixtures/notifications.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { readOne } from '/web/lib/notifications.ts'
 
@@ -26,17 +34,29 @@ export const applyToProject = (
   draft: { areas: string[]; availability: string; message: string },
 ) => {
   // Optimistic: the page marks the candidature as sent
-  apply({
+  const application = apply({
     project: project.slug as ProjectSlug,
     login: me.login as Login,
     ...draft,
   })
-  api['POST/api/project/join'].fetch({
+  return api['POST/api/project/join'].fetch({
     slug: project.slug,
     areas: draft.areas,
     availability: draft.availability,
     message: draft.message,
-  }).catch(() => failed('Candidature non envoyée'))
+  }).catch((error) => {
+    const index = applications.indexOf(application)
+    if (index !== -1) applications.splice(index, 1)
+    for (let i = notifications.length - 1; i >= 0; i--) {
+      if (notifications[i].application === application.id) {
+        notifications.splice(i, 1)
+      }
+    }
+    applicationsChanged.value++
+    notificationsChanged.value++
+    failed('Candidature non envoyée')
+    throw error
+  })
 }
 
 /** Accept or refuse a candidature from its notification (§6.6) */
@@ -45,9 +65,16 @@ export const decideJoinRequest = (
   accept: boolean,
   notification: Notification,
 ) => {
-  // Read and handled: the buttons leave at once
-  readOne(notification)
-  api['POST/api/project/join-request/decide']
+  return api['POST/api/project/join-request/decide']
     .fetch({ joinRequestId, accept })
-    .catch(() => failed('Décision non enregistrée'))
+    .then((result) => {
+      notification.accepted = accept ? 1 : 0
+      readOne(notification)
+      notificationsChanged.value++
+      return result
+    })
+    .catch((error) => {
+      failed('Décision non enregistrée')
+      throw error
+    })
 }

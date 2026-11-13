@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
+import { listNotifications, readAllNotifications } from '/api/notifications.ts'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
 import { applyToProject, decideJoinRequest } from '/api/join.ts'
@@ -70,4 +71,34 @@ Deno.test('join: only a manager decides, no self-apply (PAM-403)', () => {
   assertThrows(() =>
     applyToProject(moussa, 'no-such-project', ['Backend'], '', '')
   )
+})
+
+Deno.test('join: manager decisions follow request state independently of reading', () => {
+  for (const accept of [true, false]) {
+    restore()
+    seed()
+    const applicant = userIdOfLogin('moussa')!
+    const manager = userIdOfLogin('abdou')!
+    applyToProject(applicant, 'openpay-africa', ['Backend'], '', '')
+    const request = lastRequest(applicant)
+    const notification = () =>
+      listNotifications(manager).items.find((n) =>
+        n.joinRequestId === request.joinRequestId
+      )!
+    assertEquals(notification().accepted, -1)
+    readAllNotifications(manager)
+    assertEquals(notification().accepted, -1)
+    decideJoinRequest(manager, request.joinRequestId, accept)
+    assertEquals(notification().accepted, accept ? 1 : 0)
+    // The same state is returned for an unread manager notification too.
+    db.prepare('UPDATE notification SET readAt = NULL WHERE userId = ?').run(
+      manager,
+    )
+    assertEquals(notification().accepted, accept ? 1 : 0)
+    const outcome = listNotifications(applicant).items.find((n) =>
+      n.type === 'application'
+    )!
+    assertEquals(outcome.accepted, accept ? 1 : 0)
+    assertEquals(outcome.joinRequestId, 0)
+  }
 })

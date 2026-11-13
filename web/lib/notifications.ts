@@ -129,7 +129,7 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
       }
     case 'application':
       // For the applicant, the outcome; for a manager, the incoming request
-      return n.accepted === 1
+      return !n.joinRequestId && n.accepted === 1
         ? {
           kind: 'application',
           title: t`Tu rejoins ${n.project}`,
@@ -137,7 +137,7 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
             'Candidature acceptée : tu peux écrire dans #général.',
           ),
         }
-        : n.accepted === 0
+        : !n.joinRequestId && n.accepted === 0
         ? {
           kind: 'application',
           title: translate('Candidature non retenue'),
@@ -171,6 +171,7 @@ const toPage = (n: Item): Notification => ({
   application: n.type === 'application' && n.joinRequestId
     ? String(n.joinRequestId)
     : undefined,
+  accepted: n.accepted,
   ...sentence(n),
 })
 
