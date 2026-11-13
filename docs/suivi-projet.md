@@ -1069,6 +1069,13 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-503 · Suivre développeurs, projets et communautés
+
+Route `POST/api/follow/toggle` (utilisateur, projet, communauté) qui ajoute ou retire une ligne `follow`, avec limite de débit (§16) et refus de se suivre soi-même. Après le changement, `refreshListeners` relit les abonnements des connexions SSE du suiveur : un vrai follow fait désormais arriver `POST_CREATED` dans le fil en direct (§13.2), alors qu'avant seuls les follows du seed existaient. Côté interface, les boutons Suivre du profil, de la Home, de la page projet et de la liste des projets passent par `web/lib/follow.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+- **Livrable** : `api/follow.ts`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

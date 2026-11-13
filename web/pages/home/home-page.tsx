@@ -32,8 +32,8 @@ import {
   peopleChanged,
   type Person,
   personOf,
-  toggleFollowing,
 } from '/web/fixtures/people.ts'
+import { followUser } from '/web/lib/follow.ts'
 import {
   type Post,
   posts,
@@ -512,7 +512,7 @@ const Rail = () => {
     .filter((p) => p.owner !== me.login && p.needs.length)
     .slice(0, 3)
   const follow = (person: Person) => {
-    toggleFollowing(person.login)
+    followUser(person.login)
     notify({
       title: t`Tu suis ${person.name}`,
       body: 'Ses posts et republications arrivent dans ton fil.',

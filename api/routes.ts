@@ -111,6 +111,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import { FOLLOW_TARGETS, type FollowTarget, toggleFollow } from '/api/follow.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -1312,6 +1313,25 @@ const defs = {
     }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'POST/api/follow/toggle': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      toggleFollow(
+        ctx.session.userId,
+        input.targetType as FollowTarget,
+        input.target,
+      ),
+    input: OBJ({
+      targetType: LIST(FOLLOW_TARGETS, 'What is followed'),
+      target: STR('Login of a developer, or slug of a project or community'),
+    }),
+    output: OBJ({
+      following: BOOL('True when the developer now follows the target'),
+      followers: NUM('How many followers the target has after the change'),
+    }),
+    description: 'Follow or unfollow a developer, a project or a community',
   }),
 
   /*

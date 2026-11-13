@@ -31,8 +31,8 @@ import {
   projects,
   projectsChanged,
   type ProjectSlug,
-  toggleFollow,
 } from '/web/fixtures/projects.ts'
+import { followProject } from '/web/lib/follow.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { repoPath } from '/web/lib/links.ts'
 import { plural } from '/web/lib/plural.ts'
@@ -158,7 +158,7 @@ const Actions = ({ project }: { project: Project }) => {
     <div class='flex flex-wrap gap-3 pb-1'>
       <Button
         variant='secondary'
-        onClick={() => toggleFollow(project, me.login)}
+        onClick={() => followProject(project)}
       >
         {following ? <Check /> : <Plus />}
         {following ? 'Suivi' : 'Suivre'}

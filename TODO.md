@@ -207,7 +207,7 @@ Responsable : _à répartir_
 
 - [ ] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réactions dont « Utile », bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
 - [ ] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2)
-- [ ] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1)
+- [x] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1) — @niangoos
 - [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
 - [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
 - [x] **PAM-506** · « What can I work on? » calculé par le serveur, sans IA : demandes qui correspondent, besoins des autres projets, `good first issue`, chacun avec sa correspondance sur 100 (§10.3, §11) — @Mirak29
