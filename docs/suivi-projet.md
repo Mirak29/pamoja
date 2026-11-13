@@ -1069,6 +1069,13 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-302 · Personnalisation du profil enregistrée
+
+Le thème, la couleur d'accent, l'ordre des sections et les projets mis en avant sont désormais enregistrés par `POST/api/user/profile/update` (champs ajoutés à la route, à `updateProfile` et au schéma lu) ; une valeur de thème ou d'accent inconnue est ignorée et l'actuelle gardée. `GET/api/user/me` et le profil public `GET/api/user` les renvoient, et `web/lib/profile.ts` les adopte au chargement (`adoptSettings`) : chaque profil `/@login` s'affiche avec son propre thème, son accent et son ordre de sections, même après rechargement. Les styles de couverture prédéfinis (fil, grille…) restent dans la page, faute de colonne dédiée.
+
+- **Livrable** : `api/user.ts`, `api/profile.ts`, `api/routes.ts`, `api/profile_personalization_test.ts`, `web/lib/session.ts`, `web/lib/profile.ts`, `web/fixtures/profile-settings.ts` ; §9.2
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

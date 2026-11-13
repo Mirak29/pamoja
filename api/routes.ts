@@ -180,6 +180,11 @@ const identity = {
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
   cover: ARR(media, 'The photo of the cover: none or one (§9.2)'),
+  // Personalization of the profile (§9.2)
+  theme: STR('Profile theme id'),
+  accent: STR('Accent colour id'),
+  sectionOrder: ARR(STR('Section key'), 'Order of the profile sections'),
+  featured: ARR(STR('Project slug'), 'Projects highlighted, empty for all'),
 }
 
 const currentUser = {
@@ -1665,7 +1670,16 @@ const defs = {
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {
-      const { matchingMode: _, ...texts } = fields
+      // Only the text fields have a length limit; the rest is validated and
+      // stored by updateProfile (personalization, §9.2)
+      const {
+        matchingMode: _m,
+        theme: _t,
+        accent: _a,
+        sectionOrder: _s,
+        featured: _f,
+        ...texts
+      } = fields
       assertFits(texts)
       updateProfile(ctx.session.userId, fields)
       return getCurrentUser(ctx.session.userId)!
@@ -1678,6 +1692,14 @@ const defs = {
       city: STR('City'),
       website: STR('Website'),
       matchingMode,
+      theme: optional(STR('Profile theme id (§9.2); unknown ids are ignored')),
+      accent: optional(STR('Accent colour id (§9.2); unknown ids are ignored')),
+      sectionOrder: optional(
+        ARR(STR('Section key'), 'New order of the profile sections'),
+      ),
+      featured: optional(
+        ARR(STR('Project slug'), 'Projects highlighted, empty for all'),
+      ),
     }, 'The whole editable profile: an empty field is emptied'),
     output: profileSaved,
     description: 'Save the profile',

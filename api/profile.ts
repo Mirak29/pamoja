@@ -21,13 +21,30 @@ type ProfileRow = {
   website: string | null
   availability: string
   matchingFilters: string | null
+  theme: string
+  accent: string
+  sectionOrder: string | null
+  featured: string | null
+}
+
+// A JSON array of strings stored in a profile column, or an empty list
+const jsonStrings = (stored: string | null): string[] => {
+  try {
+    const value = JSON.parse(stored ?? '[]')
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
 }
 
 const getProfile = sql<ProfileRow, string>`
   SELECT user.userId, user.githubId, githubUsername AS login, githubLogin,
     avatarUrl,
     displayName,
-    headline, bio, country, city, website, availability, matchingFilters
+    headline, bio, country, city, website, availability, matchingFilters,
+    theme, accent, sectionOrder, featured
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE githubUsername = ? COLLATE NOCASE
@@ -97,6 +114,11 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     city: row.city ?? '',
     website: row.website ?? '',
     cover: coverOf(row.userId),
+    // Personalization of the profile (§9.2)
+    theme: row.theme,
+    accent: row.accent,
+    sectionOrder: jsonStrings(row.sectionOrder),
+    featured: jsonStrings(row.featured),
     available: row.availability === 'available',
     helpTypes: helpTypesOf(row.matchingFilters),
     skills,

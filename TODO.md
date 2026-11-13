@@ -136,7 +136,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 Responsable : _à répartir_
 
 - [x] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
-- [ ] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2)
+- [x] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2) — @niangoos
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`

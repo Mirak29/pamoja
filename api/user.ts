@@ -114,11 +114,16 @@ const getProfile = sql<
     website: string | null
     matchingMode: MatchingMode
     matchingFilters: string | null
+    theme: string
+    accent: string
+    sectionOrder: string | null
+    featured: string | null
   },
   number
 >`
   SELECT user.userId, githubUsername, githubLogin, avatarUrl, displayName, headline, bio,
-    country, city, website, matchingMode, matchingFilters
+    country, city, website, matchingMode, matchingFilters,
+    theme, accent, sectionOrder, featured
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE user.userId = ?
@@ -206,6 +211,11 @@ export const getCurrentUser = (userId: number) => {
     city: user.city ?? '',
     website: user.website ?? '',
     cover: coverOf(userId),
+    // Personalization of the profile (§9.2)
+    theme: user.theme,
+    accent: user.accent,
+    sectionOrder: jsonStrings(user.sectionOrder),
+    featured: jsonStrings(user.featured),
     matchingMode: user.matchingMode,
     // What the matching reads besides the mode (§7.3, §7.4)
     ...matchingFiltersOf(user.matchingFilters),
@@ -225,9 +235,46 @@ const writeProfile = sql<undefined, Record<string, string | number | null>>`
     city = :city,
     website = :website,
     matchingMode = :matchingMode,
+    theme = :theme,
+    accent = :accent,
+    sectionOrder = :sectionOrder,
+    featured = :featured,
     updatedAt = :updatedAt
   WHERE userId = :userId
 `.run
+
+// Personalization (§9.2): the ids of docs/identite/tokens.json. An unknown
+// value is ignored and the current one kept.
+export const PROFILE_THEMES = [
+  'minimal',
+  'terminal',
+  'cyber',
+  'clair',
+  'sombre',
+]
+export const PROFILE_ACCENTS = ['indigo', 'vert', 'ambre', 'corail']
+export const PROFILE_SECTIONS = [
+  'building',
+  'contributions',
+  'reputation',
+  'badges',
+  'activity',
+  'communities',
+  'map',
+  'graph',
+]
+
+// A JSON array of strings stored in a profile column, or an empty list
+const jsonStrings = (stored: string | null): string[] => {
+  try {
+    const value = JSON.parse(stored ?? '[]')
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
 
 export type ProfileFields = {
   displayName: string
@@ -237,10 +284,28 @@ export type ProfileFields = {
   city: string
   website: string
   matchingMode: MatchingMode
+  theme?: string | null
+  accent?: string | null
+  sectionOrder?: string[] | null
+  featured?: string[] | null
 }
 
 export const updateProfile = (userId: number, fields: ProfileFields) => {
   const current = getProfile(userId)!
+  const theme = PROFILE_THEMES.includes(fields.theme ?? '')
+    ? fields.theme!
+    : current.theme
+  const accent = PROFILE_ACCENTS.includes(fields.accent ?? '')
+    ? fields.accent!
+    : current.accent
+  const sectionOrder = fields.sectionOrder
+    ? JSON.stringify(
+      fields.sectionOrder.filter((key) => PROFILE_SECTIONS.includes(key)),
+    )
+    : current.sectionOrder
+  const featured = fields.featured
+    ? JSON.stringify([...new Set(fields.featured)])
+    : current.featured
   writeProfile({
     userId,
     displayName: clean(fields.displayName) ?? current.displayName,
@@ -250,6 +315,10 @@ export const updateProfile = (userId: number, fields: ProfileFields) => {
     city: clean(fields.city),
     website: clean(fields.website),
     matchingMode: fields.matchingMode,
+    theme,
+    accent,
+    sectionOrder,
+    featured,
     updatedAt: now(),
   })
   Entry.insert.PROFILE_UPDATED({ userId, source: 'platform' })

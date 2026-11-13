@@ -134,6 +134,11 @@ const save = async (changes: {
       city: user.city,
       website: user.website,
       matchingMode: user.matchingMode,
+      // Personalization kept as it is unless the change updates it (§9.2)
+      theme: user.theme,
+      accent: user.accent,
+      sectionOrder: user.sectionOrder,
+      featured: user.featured,
       ...changes.profile,
     })
   }
