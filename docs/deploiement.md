@@ -34,9 +34,13 @@ cp .env.production.example .env.production
 chmod 600 .env.production
 nano .env.production
 echo 'PUBLIC_HOST=demo.example.sn' > .env
+echo "MEILI_MASTER_KEY=$(openssl rand -hex 32)" >> .env
+chmod 600 .env
 ```
 
-`.env.production` est lu par l'app. `.env` est lu par Compose : il ne donne que le domaine à Caddy. Aucun des deux n'est commité, ni copié dans l'image.
+`.env.production` est lu par l'app. `.env` est lu par Compose : il donne le domaine à Caddy, et la clé de Meilisearch à la fois à l'app et à Meilisearch. Aucun des deux n'est commité, ni copié dans l'image.
+
+Meilisearch tourne dans le conteneur `meilisearch`, sans port ouvert : seule l'app le joint. Il ne garde qu'un index, que l'app reconstruit depuis SQLite à chaque démarrage.
 
 GitHub App : Callback URL `https://PUBLIC_HOST/login/github`, webhook `https://PUBLIC_HOST/api/github/webhook`.
 
@@ -50,7 +54,7 @@ docker compose --profile https up -d
 docker compose logs -f app
 ```
 
-Les logs montrent `server-start`, puis `backup`. Chaque événement est une ligne JSON (`at`, `level`, `event`, `props`). Caddy obtient le certificat seul, une fois le DNS en place.
+Les logs montrent `server-start`, `backup`, puis `search-reindexed` avec le nombre de documents de chaque index. Chaque événement est une ligne JSON (`at`, `level`, `event`, `props`). Caddy obtient le certificat seul, une fois le DNS en place.
 
 La première fois, la base est vide. Pour charger les données de démo, il faut arrêter le serveur, qui garde la base ouverte :
 

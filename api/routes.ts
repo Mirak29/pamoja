@@ -10,6 +10,7 @@ import {
   withNonce,
 } from '/api/github-oauth.ts'
 import { openEvents, refreshListeners } from '/api/events.ts'
+import { search } from '/api/search.ts'
 import {
   importRepository,
   listRepositories,
@@ -1311,6 +1312,68 @@ const defs = {
     }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  /*
+   * Search (§10.4)
+   */
+  'GET/api/search': route({
+    authorize: withSession,
+    // A query string carries text: the number is read from it, 50 at most
+    fn: (_, { q, limit }) =>
+      search(q.slice(0, 200), Math.min(50, Math.max(1, Number(limit) || 5))),
+    input: OBJ({
+      q: STR('What is typed; empty for a first look'),
+      limit: optional(STR('How many of each kind, 5 by default, 50 at most')),
+    }),
+    output: OBJ({
+      engine: LIST(['meilisearch', 'sql'], 'Which one answered'),
+      developers: ARR(OBJ({
+        id: NUM('User id'),
+        login: STR('GitHub login'),
+        name: STR('Display name'),
+        headline: STR('One line about them'),
+        city: STR('City'),
+        country: STR('Country'),
+        available: BOOL('Open to help'),
+        skills: ARR(STR('Skill')),
+      })),
+      projects: ARR(OBJ({
+        id: NUM('Project id'),
+        slug: STR('Slug'),
+        name: STR('Name'),
+        description: STR('Description'),
+        vision: STR('Vision'),
+        skills: ARR(STR('Skill')),
+      })),
+      communities: ARR(OBJ({
+        id: NUM('Community id'),
+        slug: STR('Slug'),
+        name: STR('Name'),
+        type: STR('technology, country or domain'),
+        description: STR('Description'),
+        members: NUM('Members'),
+      })),
+      posts: ARR(OBJ({
+        id: NUM('Post id'),
+        title: STR('Title, may be empty'),
+        body: STR('Text, its first 2000 characters'),
+        type: STR('Type of post'),
+        author: STR('Name of the author'),
+        community: STR('Name of its community, may be empty'),
+      })),
+      help_requests: ARR(OBJ({
+        id: NUM('Request id'),
+        title: STR('Title'),
+        description: STR('Text, its first 2000 characters'),
+        category: STR('Key of the type of help'),
+        status: STR('Status'),
+        skills: ARR(STR('Skill')),
+        project: STR('Name of its project, may be empty'),
+      })),
+    }),
+    description:
+      'Developers, projects, communities, posts and requests for help that match, by kind',
   }),
 
   'GET/api/project/channels': route({

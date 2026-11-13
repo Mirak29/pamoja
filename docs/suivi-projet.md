@@ -1031,6 +1031,44 @@ Vérifié :
 - **Livrable** : `web/ui/link.tsx`, `web/ui/link_test.ts`, `web/ui/back-button.tsx`, `web/ui/header.tsx`, `web/ui/navigation.tsx`, `web/ui/tabs.tsx`, `web/ui/button.tsx`, `web/lib/scroll-position.ts`, `web/pages/communities/communities-page.tsx`, imports de 44 fichiers ; §12.7
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-507 · Meilisearch
+
+La recherche globale passe maintenant par le serveur et par Meilisearch, comme le prévoit le §10.4. Jusqu'ici, elle se faisait dans le navigateur, sur les données déjà chargées : elle tolérait les fautes, mais elle ne voyait que ce que la page avait reçu.
+
+**Serveur** (`api/search.ts`, `GET/api/search`).
+- **Cinq index** : `developers`, `projects`, `communities`, `posts` et `help_requests`. Ils ne contiennent que ce que tout développeur connecté peut voir : ni projet non listé, ni post masqué, ni réponse, ni demande adressée à une seule personne, ni compte suspendu.
+- **Une seule source pour les documents** : les mêmes requêtes SQL servent à l'index et au repli `LIKE`. Ce qui est tapé reste du texte : `%` ne trouve rien.
+- **Reconstruction complète** : à chaque démarrage, puis chaque nuit. Elle remplit un index à côté, puis l'échange avec l'actuel, pour qu'une recherche ne tombe jamais sur un index à moitié rempli.
+- **Synchronisation** : elle lit les entries après la dernière vue, toutes les 3 s, et renvoie ou retire les documents concernés. Le curseur n'avance qu'après l'envoi : pendant une panne, les entries attendent dans SQLite.
+- **Repli** : si Meilisearch ne répond pas en 1,5 s, SQL prend le relais pendant 30 s, pour la recherche comme pour la synchronisation. Les logs reçoivent une erreur par pause, pas toutes les 3 s.
+
+**Navigateur.**
+- La palette (Ctrl+K) et la page Recherche demandent au serveur une fois la frappe arrêtée : une seule requête pour un mot de 9 lettres.
+- Un élément déjà connu de la page est affiché avec ses données habituelles. Un élément inconnu, comme un développeur qui vient de s'inscrire, est affiché avec ce que le serveur envoie.
+- Les posts et demandes d'aide de démo n'existent que dans le navigateur : ils sont toujours cherchés sur place et ajoutés aux résultats, comme les skills.
+- Sans réponse du serveur, la page cherche seule, comme avant.
+
+**Déploiement.** Le compose ajoute un conteneur `meilisearch` (`v1.56.0`, 256 Mo pour indexer, volume `search`), sans port ouvert. Sa clé est lue dans `.env` et transmise à l'app comme à Meilisearch.
+
+**Bugs trouvés au premier vrai essai.**
+- Supprimer un index absent crée une tâche Meilisearch qui échoue. L'attente d'une tâche accepte maintenant les échecs attendus, par leur code exact (`index_not_found`, `index_already_exists`), au lieu de tout ignorer.
+- Le pilote SQLite renvoie un `json_group_array` déjà décodé : les skills des développeurs revenaient vides. Les listes sont lues sous les deux formes, et un skill déclaré et lu sur GitHub n'apparaît plus deux fois. Le test le vérifie maintenant.
+- Le tag `sql` lit le texte brut : `ESCAPE '\\'` y valait deux caractères. Le caractère d'échappement est `!`.
+
+Vérifié :
+- avec un vrai Meilisearch `v1.56.0` et une copie de la base de dev : 5 009 développeurs, 66 projets, 308 communautés et 1 500 demandes indexés au démarrage ;
+- « postgress » trouve les développeuses en PostgreSQL, « typscript » trouve TypeScript, en 50 à 90 ms ;
+- un post publié est trouvé 2,6 s plus tard, même écrit « Kubernets » ;
+- Meilisearch arrêté, la recherche répond par SQL ; un Meilisearch neuf et vide est rempli au démarrage ;
+- sur une base seedée comme la démo : la palette montre développeurs, projets et skill pour « postgress », et la page Recherche trouve le post et la demande de démo « tuiles » à côté des résultats du serveur ;
+- `api/search_test.ts` : contenu public seulement, session obligatoire, texte et non motif, skills sans doublon, document retiré quand il est masqué ;
+- CI : format, lint, types et tests.
+
+Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclarés, mais Explorer filtre encore dans le navigateur.
+
+- **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -31,3 +31,11 @@ export const GITHUB_WEBHOOK_SECRET: string = PROD('GITHUB_WEBHOOK_SECRET', '')
 // The folder of the hourly copies of the database, a volume (§17.5): none
 // in dev, where the seed rebuilds the database at will
 export const BACKUP_DIR: string = PROD('BACKUP_DIR', '')
+
+// The search engine (§10.4), in its own container: without it, the search
+// runs in SQL. The key never leaves the server.
+export const MEILI_URL: string = (Deno.env.get('MEILI_URL') ?? '').replace(
+  /\/+$/,
+  '',
+)
+export const MEILI_MASTER_KEY: string = Deno.env.get('MEILI_MASTER_KEY') ?? ''

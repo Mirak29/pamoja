@@ -1,5 +1,5 @@
 # Pamoja on one machine (§17.4):
-#   docker compose up -d                     the app, on 127.0.0.1:8000
+#   docker compose up -d                     the app on 127.0.0.1:8000, its search
 #   docker compose --profile https up -d     the app behind Caddy (HTTPS)
 # See docs/deploiement.md.
 services:
@@ -10,6 +10,10 @@ services:
     image: ghcr.io/mirak29/pamoja:latest
     restart: unless-stopped
     env_file: .env.production
+    environment:
+      # The search (§10.4): its container, by its name on this network
+      MEILI_URL: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?a key of the search, in .env}
     # Local only: Caddy, a tunnel or the host's own proxy reaches it there
     ports:
       - '${APP_BIND:-127.0.0.1:8000}:8000'
@@ -18,6 +22,22 @@ services:
       # when the image changes
       - data:/data
     stop_grace_period: 30s
+    depends_on:
+      - meilisearch
+
+  # The index of the search: built from SQLite, which stays the truth. No
+  # port: only the app reaches it, and its key never leaves the server.
+  meilisearch:
+    image: getmeili/meilisearch:v1.56.0
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?a key of the search, in .env}
+      MEILI_NO_ANALYTICS: 'true'
+      # The machine has 4 GB: the index of the demo needs little
+      MEILI_MAX_INDEXING_MEMORY: 256 MiB
+    volumes:
+      - search:/meili_data
 
   # HTTPS with a certificate that renews itself, for a domain pointing here
   caddy:
@@ -41,5 +61,6 @@ services:
 
 volumes:
   data:
+  search:
   caddy_data:
   caddy_config:

@@ -578,6 +578,15 @@ Recherche globale sur développeurs, projets, communautés, publications, demand
 - **Contenu non public** jamais indexé : projets `unlisted`, messages des canaux.
 - **Accès** uniquement via `GET/api/search` côté serveur. La clé de Meilisearch ne quitte jamais le serveur.
 - **Repli** : si Meilisearch ne répond pas, `GET/api/search` bascule sur une recherche SQL `LIKE` et la page reste fonctionnelle. Toute la recherche passe par une seule fonction `search(query, filters)`.
+- **En place** (PAM-507, `api/search.ts`) :
+  - les documents sont lus dans SQLite par les mêmes requêtes pour l'index et pour le repli SQL ;
+  - Meilisearch est appelé en HTTP, sans dépendance de plus ;
+  - la reconstruction complète remplit un index à côté puis l'échange avec l'actuel (`swap-indexes`) : une recherche ne voit jamais un index à moitié rempli ;
+  - elle tourne à chaque démarrage, pas seulement quand un index est vide (quelques secondes pour la démo), puis chaque nuit ;
+  - la synchronisation lit les entries après la dernière vue, toutes les 3 s ; le curseur n'avance qu'après l'envoi, donc rien n'est perdu pendant une panne ;
+  - Meilisearch qui ne répond pas en 1,5 s laisse la place à SQL pendant 30 s, recherche et synchronisation comprises ;
+  - dans le navigateur, la palette et la page Recherche demandent au serveur une fois la frappe arrêtée (120 ms) ; un élément déjà connu de la page est affiché avec ses données habituelles ; les posts et demandes de démo, qui n'existent que dans le navigateur, sont ajoutés aux résultats, comme les skills ; sans réponse, la page cherche seule ;
+  - les filtres (pays, skill, disponibilité) sont déclarés dans l'index, mais Explorer filtre encore dans le navigateur.
 
 ### 10.5 Signalement et modération
 
@@ -1080,7 +1089,7 @@ L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des fo
 - **Publication, comme Defendable** : l'image est construite par GitHub, pas sur la VM. Le workflow `publish` tourne après une CI réussie sur `master` (ou à la main) et publie `ghcr.io/mirak29/pamoja` ; la machine fait `docker compose pull`. La VM de 2 Go ne compile rien, et une image n'est jamais publiée depuis du code qui a échoué à ses vérifications.
 - Fichiers : `Dockerfile`, `.dockerignore` (l'image ne reçoit que ce que le build lit), `docker-compose.yml` et `.env.production.example` à la racine ; `deploy/Caddyfile`. Sur la machine, il suffit de `docker-compose.yml`, `deploy/Caddyfile` et `.env.production`. L'app écoute sur `127.0.0.1:8000` ; Caddy est le profil `https` du compose. Marche à suivre dans `docs/deploiement.md`.
 - **`APP_ENV=prod` obligatoire** : c'est cette variable qui active le mode WAL dans `@01edu/db`.
-- Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker, formule Développeur pour la démo (1 cœur, 2 Go de mémoire, 30 Go de disque, 7 733 F CFA par mois) ; l'app, Caddy et Docker y tiennent en environ 1 Go. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume, version fixée, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
+- Hébergement chez Systalink (cloud souverain, datacenters à Dakar) : une VM avec Docker, formule Développeur pour la démo (1 cœur, 2 Go de mémoire, 30 Go de disque, 7 733 F CFA par mois) ; l'app, Caddy et Docker y tiennent en environ 1 Go. Une seule instance de l'app. Fichier SQLite sur un volume persistant. Meilisearch dans un second conteneur avec son propre volume (`search`), version fixée (`v1.56.0`), 256 Mo pour indexer, joignable uniquement depuis l'app (jamais exposé par Caddy), clé maître en variable d'environnement.
 - Caddy en reverse proxy : HTTPS automatique et **HTTP/2** (§13.5), sans mise en tampon des réponses SSE (`flush_interval -1` sur `/api/events`). Pas de directive `encode` : l'app compresse déjà ses réponses (§12.7), une seconde compression ne gagnerait rien et retarderait le flux SSE.
 - Les logs passent par `api/lib/log.ts`. En production, chaque événement est une ligne JSON sur la sortie du conteneur, lue avec `docker logs` : le logger de `@01edu/api` envoie les siens aux devtools de 01edu, que Pamoja n'utilise pas, et refuse de démarrer sans eux.
 
@@ -1160,7 +1169,7 @@ Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
 - [ ] **Fournisseur IA** : modèle de génération, modèle d'embeddings, budget.
 - [ ] **Hébergement Systalink**, à valider avant la fin de J2 : VM avec Docker ; IP publique et ports 80/443 ouverts (certificat HTTPS automatique de Caddy) ; sortie autorisée vers `api.github.com` et le fournisseur IA ; entrée des webhooks GitHub ; taille de disque ; offre de sauvegarde ; nom de domaine et DNS.
 - [ ] **Reverse proxy** : Caddy retenu (HTTP/2 actif par défaut avec HTTPS, réponses SSE transmises sans tampon). À vérifier une fois en prod : protocole h2 dans l'onglet Réseau et arrivée instantanée des notifications.
-- [ ] **Meilisearch** : version à fixer, emplacement du conteneur chez l'hébergeur, réglages de pertinence (champs cherchables et leur ordre) à ajuster après le seed.
+- [x] **Meilisearch** : version `v1.56.0`, conteneur `meilisearch` du compose sur la VM, sans port ouvert ; champs cherchables par ordre de pertinence dans `api/search.ts` (`SETTINGS`).
 - [x] **daisyUI** : écarté le 8 octobre, Tailwind v4 seul (§12.3).
 - [ ] **Seuils** de badges et poids du matching : ajuster après le seed.
 - [ ] **Mentions légales** : conditions d'utilisation et politique de confidentialité (données GitHub, emails).

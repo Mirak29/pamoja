@@ -4,7 +4,7 @@ import { Search } from '/web/assets/icons.tsx'
 import { helpChanged } from '/web/fixtures/help.ts'
 import { peopleChanged } from '/web/fixtures/people.ts'
 import { projectsChanged } from '/web/fixtures/projects.ts'
-import { search } from '/web/ui/command-palette.tsx'
+import { useSearch } from '/web/ui/command-palette.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
@@ -18,7 +18,8 @@ export const SearchPage = () => {
   helpChanged.value
   peopleChanged.value
   const q = url.params.q ?? ''
-  const groups = q.trim() ? search(q, 50) : []
+  const results = useSearch(q, 50, !!q.trim())
+  const groups = q.trim() ? results : []
   const total = groups.reduce((sum, group) => sum + group.items.length, 0)
   return (
     <Page title='Recherche' class='flex max-w-[880px] flex-col gap-6 pt-5'>

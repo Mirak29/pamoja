@@ -12,11 +12,17 @@ import {
   Tag,
   Users,
 } from '/web/assets/icons.tsx'
-import { communities } from '/web/fixtures/communities.ts'
-import { helpRequests } from '/web/fixtures/help.ts'
-import { people } from '/web/fixtures/people.ts'
-import { posts } from '/web/fixtures/posts.ts'
-import { projects } from '/web/fixtures/projects.ts'
+import { communities, type Community } from '/web/fixtures/communities.ts'
+import { type HelpRequest, helpRequests } from '/web/fixtures/help.ts'
+import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import { type Post, posts, savedId } from '/web/fixtures/posts.ts'
+import {
+  type Project,
+  projects,
+  type ProjectSlug,
+} from '/web/fixtures/projects.ts'
+import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
+import { api, type ApiOutput } from '/web/lib/api.ts'
 import { skills } from '/web/fixtures/skills.ts'
 import { fuzzyMatch } from '/web/lib/fuzzy.ts'
 import { initials } from '/web/ui/avatar.tsx'
@@ -62,85 +68,151 @@ type Result = {
   round?: boolean
 }
 
-export const search = (query: string, limit: number) => {
+// One result of each kind, from what the page knows of it: the server only
+// says which ones match, the page draws them as it draws them elsewhere
+const ofPerson = (p: Person): Result => ({
+  title: p.name,
+  sub: `@${p.login} · ${p.city}, ${p.country} · ${p.skills.join(', ')}`,
+  href: `@${p.login}`,
+  lead: initials(p.name),
+  round: true,
+})
+const ofProject = (p: Project): Result => ({
+  title: p.name,
+  sub: `${p.stack.join(', ')} · ${p.description}`,
+  href: `project/${p.slug}`,
+  lead: <FolderGit2 class='size-3.5' />,
+})
+const ofCommunity = (c: Community): Result => ({
+  title: c.name,
+  sub: `${c.type} · ${counted(c.members, 'membre')}`,
+  href: `community/${c.slug}`,
+  lead: <Users class='size-3.5' />,
+})
+const excerpt = (title: string, body: string) =>
+  title || (body.length > 80 ? `${body.slice(0, 78)}…` : body)
+const ofPost = (p: Post): Result => ({
+  title: excerpt(p.title, p.body),
+  sub: [
+    p.type,
+    people[p.author]?.name,
+    communities.find((c) => c.slug === p.community)?.name,
+  ].filter(Boolean).join(' · '),
+  href: `post/${p.id}`,
+  lead: <MessageSquare class='size-3.5' />,
+})
+const ofHelp = (help: HelpRequest): Result => ({
+  title: help.title,
+  sub: `${help.type}${
+    help.project ? ` · ${projects[help.project]?.name ?? help.project}` : ''
+  }`,
+  href: `help/${help.id}`,
+  lead: <LifeBuoy class='size-3.5' />,
+})
+
+// What the server found, as results. Known to the page: drawn from it;
+// new to it (someone who just joined): drawn from what the server sent.
+type Found = ApiOutput['GET/api/search']
+const COMMUNITY_TYPES: Record<string, string> = {
+  technology: 'Technologie',
+  country: 'Pays',
+  domain: 'Domaine',
+}
+const fromServer = (found: Found) => ({
+  developers: found.developers.map((d): Result =>
+    Object.hasOwn(people, d.login) ? ofPerson(people[d.login as Login]) : {
+      title: d.name,
+      sub: [
+        `@${d.login}`,
+        [d.city, d.country].filter(Boolean).join(', '),
+        d.skills.join(', '),
+      ].filter(Boolean).join(' · '),
+      href: `@${d.login}`,
+      lead: initials(d.name),
+      round: true,
+    }
+  ),
+  projects: found.projects.map((p): Result =>
+    Object.hasOwn(projects, p.slug)
+      ? ofProject(projects[p.slug as ProjectSlug])
+      : {
+        title: p.name,
+        sub: [p.skills.join(', '), p.description].filter(Boolean).join(' · '),
+        href: `project/${p.slug}`,
+        lead: <FolderGit2 class='size-3.5' />,
+      }
+  ),
+  communities: found.communities.map((c): Result => {
+    const known = communities.find((k) => k.slug === c.slug)
+    return known ? ofCommunity(known) : {
+      title: c.name,
+      sub: `${COMMUNITY_TYPES[c.type] ?? c.type} · ${
+        counted(c.members, 'membre')
+      }`,
+      href: `community/${c.slug}`,
+      lead: <Users class='size-3.5' />,
+    }
+  }),
+  posts: found.posts.map((p): Result => ({
+    title: excerpt(p.title, p.body),
+    sub: [p.type, p.author, p.community].filter(Boolean).join(' · '),
+    href: `post/${savedId(p.id)}`,
+    lead: <MessageSquare class='size-3.5' />,
+  })),
+  help: found.help_requests.map((help): Result => ({
+    title: help.title,
+    sub: [
+      helpCategories[help.category as HelpCategory] ?? help.category,
+      help.project,
+    ].filter(Boolean).join(' · '),
+    href: `help/${help.id}`,
+    lead: <LifeBuoy class='size-3.5' />,
+  })),
+})
+
+/**
+ * The results of a search, `limit` of each kind. With what the server
+ * found (§10.4), the demo posts and requests, which only the page has, are
+ * added to it; without (no answer yet, offline), the page searches alone.
+ */
+export const search = (query: string, limit: number, found?: Found) => {
+  const server = found && fromServer(found)
+  const demoPosts = posts.filter((p) =>
+    !p.parent && !p.hidden && (!found || p.demo) &&
+    fuzzyMatch(query, [p.title, p.body, p.type].join(' '))
+  ).map(ofPost)
+  const demoHelp = helpRequests.filter((help) =>
+    (!found || help.demo) &&
+    fuzzyMatch(query, [help.title, help.type, ...help.skills].join(' '))
+  ).map(ofHelp)
   const groups: [string, Result[]][] = [
     [
       'Développeurs',
-      Object.values(people)
+      server?.developers ?? Object.values(people)
         .filter((p) =>
           fuzzyMatch(
             query,
             [p.name, p.login, p.city, p.country, p.role, ...p.skills].join(' '),
           )
         )
-        .map((p) => ({
-          title: p.name,
-          sub: `@${p.login} · ${p.city}, ${p.country} · ${p.skills.join(', ')}`,
-          href: `@${p.login}`,
-          lead: initials(p.name),
-          round: true,
-        })),
+        .map(ofPerson),
     ],
     [
       'Projets',
-      Object.values(projects)
+      server?.projects ?? Object.values(projects)
         .filter((p) =>
           fuzzyMatch(query, [p.name, p.description, ...p.stack].join(' '))
         )
-        .map((p) => ({
-          title: p.name,
-          sub: `${p.stack.join(', ')} · ${p.description}`,
-          href: `project/${p.slug}`,
-          lead: <FolderGit2 class='size-3.5' />,
-        })),
+        .map(ofProject),
     ],
     [
       'Communautés',
-      communities
+      server?.communities ?? communities
         .filter((c) => fuzzyMatch(query, `${c.name} ${c.type}`))
-        .map((c) => ({
-          title: c.name,
-          sub: `${c.type} · ${counted(c.members, 'membre')}`,
-          href: `community/${c.slug}`,
-          lead: <Users class='size-3.5' />,
-        })),
+        .map(ofCommunity),
     ],
-    [
-      'Posts',
-      posts
-        .filter((p) =>
-          !p.parent && !p.hidden &&
-          fuzzyMatch(query, [p.title, p.body, p.type].join(' '))
-        )
-        .map((p) => ({
-          title: p.title ||
-            (p.body.length > 80 ? `${p.body.slice(0, 78)}…` : p.body),
-          sub: [
-            p.type,
-            people[p.author].name,
-            communities.find((c) => c.slug === p.community)?.name,
-          ].filter(Boolean).join(' · '),
-          href: `post/${p.id}`,
-          lead: <MessageSquare class='size-3.5' />,
-        })),
-    ],
-    [
-      'Demandes d’aide',
-      helpRequests
-        .filter((help) =>
-          fuzzyMatch(query, [help.title, help.type, ...help.skills].join(' '))
-        )
-        .map((help) => ({
-          title: help.title,
-          sub: `${help.type}${
-            help.project
-              ? ` · ${projects[help.project]?.name ?? help.project}`
-              : ''
-          }`,
-          href: `help/${help.id}`,
-          lead: <LifeBuoy class='size-3.5' />,
-        })),
-    ],
+    ['Posts', [...(server?.posts ?? []), ...demoPosts]],
+    ['Demandes d’aide', [...(server?.help ?? []), ...demoHelp]],
     [
       'Skills',
       skills
@@ -158,6 +230,40 @@ export const search = (query: string, limit: number) => {
     .filter((group) =>
       group.items.length && (query.trim() || group.label !== 'Skills')
     )
+}
+
+// The latest answer of the server, for the text it was asked
+const answer = signal<{ query: string; limit: number; found?: Found }>()
+let asking: ReturnType<typeof setTimeout> | undefined
+// Asked once typing pauses: a word typed is one request, not one a letter
+const ASK_AFTER_MS = 120
+
+/**
+ * The results of the search as one types: the server's answer once it
+ * comes, the page's own search meanwhile and when the server cannot answer
+ *
+ * @example
+ * const groups = useSearch(q, 4)
+ */
+export const useSearch = (query: string, limit: number, enabled = true) => {
+  useEffect(() => {
+    clearTimeout(asking)
+    // Closed, or nothing to show: nothing asked
+    if (!enabled) return
+    asking = setTimeout(() => {
+      api['GET/api/search'].fetch({ q: query, limit: String(limit) }).then(
+        (found) => answer.value = { query, limit, found },
+        () => answer.value = { query, limit },
+      )
+    }, ASK_AFTER_MS)
+    return () => clearTimeout(asking)
+  }, [query, limit, enabled])
+  const last = answer.value
+  // An answer for another text is not shown: the page searches meanwhile
+  const found = last?.query === query && last.limit === limit
+    ? last.found
+    : undefined
+  return search(query, limit, found)
 }
 
 const close = () => {
@@ -181,7 +287,8 @@ export const CommandPalette = () => {
   }, [open])
 
   const q = query.value
-  const results = open ? search(q, q.trim() ? 4 : 3) : []
+  const found = useSearch(q, q.trim() ? 4 : 3, open)
+  const results = open ? found : []
   // One list for the arrows: the active result is the one Enter opens
   const flat = results.flatMap((group) => group.items)
   const current = Math.min(active.value, Math.max(0, flat.length - 1))
