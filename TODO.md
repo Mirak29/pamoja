@@ -49,10 +49,10 @@ Après le bloc 1, les blocs 3 à 5 peuvent avancer en parallèle du bloc 2, selo
 
 - [x] **PAM-001** · Fixer les dates : J1 = 7 octobre, J10 = 16 octobre 2026
 - [ ] **PAM-002** · Répartir les blocs entre Abdou et niangoos, et noter le responsable sous chaque bloc
-- [ ] **PAM-003** · Valider l'offre Systalink avant la fin de J2 : VM avec Docker, IP publique et ports 80/443 ouverts (certificat Caddy), sortie vers `api.github.com` et le fournisseur IA, entrée des webhooks GitHub, taille de disque, sauvegardes, domaine et DNS (§17.4, §20)
-- [ ] **PAM-004** · Vérifier la disponibilité du domaine, de l'org GitHub `pamoja` et du nom de la GitHub App
-- [ ] **PAM-005** · Choisir le fournisseur IA, le modèle de génération, le modèle d'embeddings et le budget (§11)
-- [ ] **PAM-006** · Fixer la version de Meilisearch (§10.4)
+- [x] **PAM-003** · Valider l'offre Systalink avant la fin de J2 : VM avec Docker, IP publique et ports 80/443 ouverts (certificat Caddy), sortie vers `api.github.com` et le fournisseur IA, entrée des webhooks GitHub, taille de disque, sauvegardes, domaine et DNS (§17.4, §20) — VM Developer (1 cœur, 4 Go, 40 Go), ports 80/443 et sorties GitHub, GHCR, Groq vérifiés, webhooks joignables — @Mirak29
+- [x] **PAM-004** · Vérifier la disponibilité du domaine, de l'org GitHub `pamoja` et du nom de la GitHub App — domaine `pamoja-tech.duckdns.org`, app « Pamoja Demo » (`pamoja-demo`) ; pas d'org GitHub, le repo reste sous Mirak29 — @Mirak29
+- [ ] **PAM-005** · Choisir le fournisseur IA, le modèle de génération, le modèle d'embeddings et le budget (§11) — fait : Groq (compatible OpenAI) pour l'Assistant ; reste : le modèle d'embeddings
+- [x] **PAM-006** · Fixer la version de Meilisearch (§10.4) — `v1.56.0` — @Mirak29
 - [x] **PAM-007** · Identité visuelle validée : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) et prototype Pamoja v2 (§12.7)
 - [x] **PAM-008** · Prototype complet avec Claude Design : Pamoja v2, copié dans `docs/prototype/` avec la liste de ce que le code ne reprend pas (§12.7)
 - [x] **PAM-009** · ~~Installer le skill `hairline-create`~~ — abandonnée : figures isométriques maison à la place (voir journal)
@@ -69,13 +69,13 @@ Responsable : _à répartir_
 - [x] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
 - [x] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
 - [x] **PAM-108** · `web/lib/realtime.ts` : `onEvent`, détection de déconnexion à 20 s, reconnexion (§13.4)
-- [ ] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1)
+- [x] **PAM-109** · Créer la GitHub App : permissions en lecture (dont Actions, Checks, Commit statuses), événements (dont `workflow_run`, `check_run`, `status`), Callback URL, Setup URL, autorisation pendant l'installation (§5.1) — app de dev et app « Pamoja Demo » pour la prod — @Mirak29
 - [x] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
 - [x] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
 - [x] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
-- [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4)
-- [ ] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4)
-- [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5)
+- [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4) — fait : Dockerfile, `deno compile`, `APP_ENV=prod` (PAM-537) ; reste : `/dev/socle` est encore servi en prod
+- [x] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4) — Caddy HTTPS, HTTP/1.1, 2 et 3 ; Meilisearch sans port, vérifié de l'extérieur — @Mirak29
+- [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5) — fait : `VACUUM INTO` horaire gardé 7 jours (PAM-537) ; reste : la copie quotidienne hors de la VM
 - [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [x] **PAM-117** · CI : fmt, lint, tests sur chaque PR — @Mirak29
 - [x] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16) — @niangoos
@@ -168,7 +168,7 @@ Responsable : _à répartir_
 - [ ] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7)
 - [ ] **PAM-405** · Roadmap et milestones (§6.7)
 - [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
-- [ ] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6)
+- [x] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6) — `api/presence.ts` — @Mirak29
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
 - [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
 - [x] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3) ; demande d'aide et vidéo de démo du projet, les posts avec PAM-427 — @niangoos
@@ -260,7 +260,7 @@ Plus aucune nouvelle fonctionnalité.
 - [ ] **PAM-903** · Deux vrais comptes GitHub prêts ; PR #81 ouverte par Abdou, sans review (§18.1)
 - [ ] **PAM-904** · Pré-calculer les résumés IA et les embeddings du seed (§18.1)
 - [ ] **PAM-905** · Test de bout en bout du scénario, sur le modèle de `qa/` de Tournament (§12.8)
-- [ ] **PAM-906** · Vérifier en prod : protocole `h2`, notifications instantanées (§20)
+- [ ] **PAM-906** · Vérifier en prod : protocole `h2`, notifications instantanées (§20) — fait : `h2` (et `h3`) en prod ; reste : notifications instantanées
 - [ ] **PAM-907** · Tester une restauration de sauvegarde (§17.5)
 - [ ] **PAM-908** · Répéter le plan B webhook : Redeliver depuis la GitHub App, resynchronisation manuelle (§18.1)
 - [ ] **PAM-909** · Trois répétitions complètes et chronométrées en prod (§18.1)
@@ -365,3 +365,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-12 · Déploiement (PAM-537) : démo chez Systalink sur la formule Développeur (1 cœur, 2 Go, 30 Go) ; chaque page lue à sa première visite et l'anglais à la demande, 175 Ko au démarrage au lieu de 594 Ko ; un binaire sur Alpine, sans root ; sauvegardes faites par le serveur lui-même ; logs en JSON sur la sortie du conteneur, les devtools de 01edu n'étant pas les nôtres · §12.7, §17.4, §17.5
 - 2026-11-13 · Navigation au doigt (PAM-538), après des retours sur téléphone : le lien du routeur naviguait dès que le doigt se posait, un défilement ouvrait donc la carte touchée ; le lien de l'app attend le tap au doigt et au stylet, la souris reste immédiate. Cartes de communauté ouvertes en entier ; retour dans la barre du haut, par l'historique ou vers la section · §12.7
 - 2026-11-13 · Meilisearch en place (PAM-507) : un conteneur `v1.56.0` sans port ouvert, cinq index lus dans SQLite par les mêmes requêtes que le repli SQL, reconstruits à chaque démarrage puis chaque nuit par échange d'index, synchronisés par les entries toutes les 3 s ; la palette et la page Recherche passent par `GET/api/search`, les posts et demandes de démo restent cherchés dans le navigateur · §10.4, §17.4
+- 2026-11-13 · Point sur le TODO, vérifié dans le code et sur la VM : PAM-003, 004, 006, 109, 114 et 407 cochés ; PAM-005, 113, 115 et 906 à moitié faits, ce qui reste est noté sur leur ligne. Les écrans de PAM-401 à 405 et de PAM-501 à 512 existent sur données de démo, mais le serveur n'a pas encore leurs routes : follow, communautés, réactions, favoris, réponses, republications, signalements, board, roadmap, needs, candidatures, listing d'Explore
