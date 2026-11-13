@@ -1069,6 +1069,13 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-901 · Seed des 14 reviews confirmées de Moussa
+
+Ajout au seed des 14 preuves de review de Moussa (`REVIEW_HELP_CONFIRMED`, `source = demo`, éligibles, backdatées), réparties sur quatre demandeurs de trois pays (Sénégal, Ghana, Cameroun) et deux projets. Le profil continue d'afficher ses preuves de fixtures, que le seed reflète (§18.2) ; côté serveur, le matching compte désormais « 14 reviews confirmées » (+15, score 59 → 74, Moussa n'est plus un « nouveau profil ») et l'évaluateur de badges donne Trusted Reviewer Silver, plus First Responder et Cross-border Silver. `evaluateBadges` reçoit un indicateur `announce` : le seed écrit la progression des badges sans émettre d'entry `BADGE_UNLOCKED` ni de notification datées « maintenant », ce qui garde toutes les entries du seed en `source = demo`.
+
+- **Livrable** : `api/seed.ts`, `api/badges.ts`, `api/seed_test.ts`, `task-db-seed.ts` ; §8, §18.1
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

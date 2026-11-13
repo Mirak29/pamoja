@@ -255,7 +255,7 @@ Responsable : _à répartir_
 
 Plus aucune nouvelle fonctionnalité.
 
-- [ ] **PAM-901** · Seed final : profils de plusieurs pays, Moussa avec 14 reviews en `source = demo` (3 demandeurs, 2 projets) (§18.1)
+- [x] **PAM-901** · Seed final : profils de plusieurs pays, Moussa avec 14 reviews en `source = demo` (3 demandeurs, 2 projets) (§18.1) — @niangoos
 - [ ] **PAM-902** · Repo public OpenPay Africa sous le compte perso d'Abdou, app installée, webhook testé vers la prod (§18.1)
 - [ ] **PAM-903** · Deux vrais comptes GitHub prêts ; PR #81 ouverte par Abdou, sans review (§18.1)
 - [ ] **PAM-904** · Pré-calculer les résumés IA et les embeddings du seed (§18.1)
