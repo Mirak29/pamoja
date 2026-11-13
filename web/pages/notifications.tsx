@@ -19,6 +19,7 @@ import {
   applicationsChanged,
   decideApplication,
 } from '/web/fixtures/applications.ts'
+import { decideJoinRequest } from '/web/lib/applications.ts'
 import {
   type Notification,
   type NotificationCategory,
@@ -82,6 +83,21 @@ const Row = ({ notification }: { notification: Notification }) => {
   const application = applications.find((a) =>
     a.id === notification.application
   )
+  // A candidature from the server (PAM-403): its id is the join request, and
+  // the managers accept or refuse it here until it is read and handled
+  const serverJoin = notification.kind === 'application' &&
+    !!notification.application && notification.id.startsWith('s')
+  const pending = serverJoin
+    ? !notification.read
+    : application?.status === 'pending'
+  const decide = (accept: boolean) =>
+    serverJoin
+      ? decideJoinRequest(
+        Number(notification.application),
+        accept,
+        notification,
+      )
+      : application && decideApplication(application, accept)
   return (
     <div
       class={`-mt-px flex gap-3.5 border-t border-line px-5 py-4 ${
@@ -108,12 +124,12 @@ const Row = ({ notification }: { notification: Notification }) => {
           <span>{categoryLabels[notification.category]}</span>
           {notification.demo && <DemoBadge />}
         </div>
-        {application?.status === 'pending' && (
+        {pending && (
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'
               aria-label={t`Accepter : ${notification.title}`}
-              onClick={() => decideApplication(application, true)}
+              onClick={() => decide(true)}
               class='key key-primary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Accepter
@@ -121,7 +137,7 @@ const Row = ({ notification }: { notification: Notification }) => {
             <button
               type='button'
               aria-label={t`Refuser : ${notification.title}`}
-              onClick={() => decideApplication(application, false)}
+              onClick={() => decide(false)}
               class='key key-secondary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Refuser

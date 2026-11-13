@@ -103,6 +103,11 @@ const shown = (row: Row) => {
     eligible: payload.eligible === 0 ? 0 : 1,
     badge: String(payload.badge ?? ''),
     level: Number(payload.level ?? 0),
+    // A candidature to join a project (§6.6): -1 pending for the managers,
+    // 0 refused or 1 accepted for the applicant
+    joinRequestId: Number(payload.joinRequestId ?? 0),
+    projectSlug: String(payload.projectSlug ?? ''),
+    accepted: payload.accepted === 1 ? 1 : payload.accepted === 0 ? 0 : -1,
     readAt: row.readAt ?? 0,
     createdAt: row.createdAt,
   }

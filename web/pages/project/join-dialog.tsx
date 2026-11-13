@@ -1,9 +1,9 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
 import { Send } from '/web/assets/icons.tsx'
-import { apply } from '/web/fixtures/applications.ts'
-import { me, personOf } from '/web/fixtures/people.ts'
-import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
+import { applyToProject } from '/web/lib/applications.ts'
+import { personOf } from '/web/fixtures/people.ts'
+import type { Project } from '/web/fixtures/projects.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
@@ -38,13 +38,7 @@ const JoinForm = ({ project }: { project: Project }) => {
     if (!check({ how: !how.length && 'Choisis au moins une façon d’aider.' })) {
       return
     }
-    apply({
-      project: project.slug as ProjectSlug,
-      login: me.login,
-      areas: how,
-      availability,
-      message,
-    })
+    applyToProject(project, { areas: how, availability, message })
     navigate({ params: { dialog: null } })
     notify({
       title: 'Candidature envoyée',
