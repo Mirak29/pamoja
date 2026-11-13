@@ -111,6 +111,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import { toggleMembership } from '/api/community.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -1312,6 +1313,17 @@ const defs = {
     }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'POST/api/community/join': route({
+    authorize: withSession,
+    fn: (ctx, input) => toggleMembership(ctx.session.userId, input.slug),
+    input: OBJ({ slug: STR('Slug of the community to join or leave') }),
+    output: OBJ({
+      joined: BOOL('True when the developer is now a member'),
+      members: NUM('How many members the community has after the change'),
+    }),
+    description: 'Join or leave a community',
   }),
 
   /*

@@ -1069,6 +1069,15 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-502 · Rejoindre et quitter une communauté sur le serveur
+
+Route `POST/api/community/join` qui ajoute ou retire une ligne `communityMember` (par slug), avec limite de débit (§16) et refus d'une communauté inconnue. `refreshListeners` relit ensuite les abonnements SSE du membre : il reçoit (ou cesse de recevoir) les posts de la communauté en direct (§13.2). `GET/api/user/me` renvoyant déjà les communautés rejointes, l'état « Membre » est juste après un rechargement. Côté interface, les boutons Rejoindre et Quitter passent par `web/lib/communities.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+Reste pour clore PAM-502 : créer une communauté (ligne `community` + créateur modérateur + réindexation recherche) demande d'abord un listing des communautés lu depuis la base, sinon une communauté créée disparaît du listing fixture au rechargement ; à suivre dans une PR dédiée.
+
+- **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
