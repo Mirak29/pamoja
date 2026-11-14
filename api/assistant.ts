@@ -33,6 +33,8 @@ const CACHE_SIZE = 500
 export const KEPT = 60
 const HISTORY = 6
 export const QUESTION_MAX = 500
+// The ceiling of an answer, thinking included (PAM-540)
+const ANSWER_TOKENS = 700
 const MESSAGE_MAX = 1500
 // Items of each kind the model reads, and cards of the opening point
 const READ = 5
@@ -939,7 +941,7 @@ export const ask = async (userId: number, question: string, page = '') => {
         },
         ...turns,
         { role: 'user', content: asking },
-      ])
+      ], { use: 'assistant', maxTokens: ANSWER_TOKENS })
     } catch {
       return fallback()
     }

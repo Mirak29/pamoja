@@ -22,6 +22,8 @@ export const SUMMARIES_PER_DAY = 300
 // A summary shorter or longer than this is rejected
 const MIN = 60
 const MAX = 900
+// The ceiling of a summary, thinking included (PAM-540)
+const SUMMARY_TOKENS = 500
 
 type Candidate = { projectId: number; slug: string; name: string }
 
@@ -178,7 +180,7 @@ export const summarizeProjects = async (at = now()) => {
             role: 'user',
             content: `<donnees>\n${JSON.stringify(input)}\n</donnees>`,
           },
-        ], { temperature: 0.3 }),
+        ], { use: 'pulse', maxTokens: SUMMARY_TOKENS, temperature: 0.3 }),
       )
     } catch {
       // No model answered: the next run tries again

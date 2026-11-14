@@ -22,6 +22,8 @@ const DESCRIPTION_MIN = 20
 /** Proposals per developer and per hour (§16) */
 export const SUGGEST_RATE = { count: 20, per: 3600 }
 const CACHE_MS = 3600_000
+// The ceiling of a proposal, thinking included (PAM-540)
+const PROPOSAL_TOKENS = 600
 
 const SYSTEM =
   `Tu aides un développeur à présenter son projet open source sur Pamoja.
@@ -139,7 +141,7 @@ export const suggestImport = async (
           })
         }\n</repo>`,
       },
-    ]),
+    ], { use: 'import', maxTokens: PROPOSAL_TOKENS }),
   )
   const ai = Boolean(
     checked.skills.length || checked.needs.length || checked.description,
