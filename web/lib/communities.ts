@@ -2,6 +2,7 @@ import { api } from '/web/lib/api.ts'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { setInOrder } from '/web/lib/in-order.ts'
+import { notifyFailure } from '/web/lib/failure.ts'
 import { me, type Person } from '/web/fixtures/people.ts'
 import {
   adoptCommunities,
@@ -38,14 +39,6 @@ const typeKeys: Record<CommunityType, string> = {
   Domaine: 'domain',
 }
 
-const createFailed = () =>
-  notify({
-    title: 'Communauté non créée',
-    body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
-    icon: CircleAlert,
-    tone: 'danger',
-  })
-
 /**
  * Creates a community on the server, then in the page with the slug it gave:
  * its creator joins and moderates it. Null when the server refused.
@@ -61,8 +54,9 @@ export const createCommunity = async (
       description: draft.description,
     })
     return createLocal(draft, person, { slug: saved.slug })
-  } catch {
-    createFailed()
+  } catch (error) {
+    // A name refused or too many this hour says so, not « unreachable »
+    notifyFailure('Communauté non créée', error)
     return null
   }
 }

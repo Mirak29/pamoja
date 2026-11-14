@@ -1416,6 +1416,7 @@ export const english: Record<string, string> = {
   'Ta demande a expiré': 'Your request expired',
   'Une demande attend ton aide': 'A request is waiting for your help',
   'Réglages non enregistrés': 'Settings not saved',
+  'Communauté non créée': 'Community not created',
   'Action non enregistrée': 'Action not saved',
   'Carte non déplacée': 'Card not moved',
   'Signalement non enregistré': 'Report not saved',
