@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals'
 import type { Login, Person } from '/web/fixtures/people.ts'
+import type { ApiOutput } from '/web/lib/api.ts'
 export type CommunityType = 'Technologie' | 'Pays' | 'Domaine'
 
 export type Community = {
@@ -94,6 +95,37 @@ export const defaultRules = [
 // Changes of the communities the pages read: a join, a leave
 export const communitiesChanged = signal(0)
 
+// The type stored in English on the server, back to its French label
+const typeLabels: Record<string, CommunityType> = {
+  technology: 'Technologie',
+  country: 'Pays',
+  domain: 'Domaine',
+}
+
+/**
+ * Brings the communities read from GET/api/communities into the pages: one
+ * created on the server (or by another developer) joins the list, so it is
+ * there after a reload. A seeded community keeps its richer demo data and
+ * its page count; only new ones are added (§10.2).
+ */
+export const adoptCommunities = (list: ApiOutput['GET/api/communities']) => {
+  let added = 0
+  for (const community of list) {
+    if (communities.some((existing) => existing.slug === community.slug)) {
+      continue
+    }
+    communities.push({
+      slug: community.slug,
+      name: community.name,
+      type: typeLabels[community.type] ?? 'Domaine',
+      members: community.members,
+      description: community.description,
+    })
+    added++
+  }
+  added && communitiesChanged.value++
+}
+
 /** Sets the membership the page shows (POST/api/community/join saves it) */
 export const setMembership = (
   community: Community,
@@ -121,11 +153,15 @@ export const communityNamed = (name: string) =>
 export const createCommunity = (
   draft: Pick<Community, 'name' | 'type' | 'description'>,
   person: Person,
+  /** The slug the server gave it, when it was saved */
+  saved?: { slug: string },
 ) => {
-  const base = slugify(draft.name)
-  let slug = base
-  for (let k = 2; communities.some((c) => c.slug === slug); k++) {
-    slug = `${base}-${k}`
+  let slug = saved?.slug ?? slugify(draft.name)
+  if (!saved) {
+    const base = slug
+    for (let k = 2; communities.some((c) => c.slug === slug); k++) {
+      slug = `${base}-${k}`
+    }
   }
   const community: Community = {
     ...draft,

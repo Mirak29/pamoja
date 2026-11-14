@@ -2,7 +2,11 @@ import { assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { communitiesOf, userIdOfLogin } from '/api/user.ts'
-import { setMembership } from '/api/community.ts'
+import {
+  createCommunity,
+  listCommunities,
+  setMembership,
+} from '/api/community.ts'
 import { createSession } from '/api/session.ts'
 import { request } from '/api/testing.ts'
 
@@ -62,6 +66,98 @@ Deno.test('community: an unknown community is refused (PAM-502)', () => {
   seed()
   const abdou = userIdOfLogin('abdou')!
   assertThrows(() => setMembership(abdou, 'no-such-community', true))
+})
+
+const communityRow = (slug: string) =>
+  db.prepare(
+    `SELECT c.communityId, c.type, c.source, m.role, m.userId
+     FROM community c
+     LEFT JOIN communityMember m ON m.communityId = c.communityId
+     WHERE c.slug = ?`,
+  ).get(slug) as
+    | {
+      communityId: number
+      type: string
+      source: string
+      role: string
+      userId: number
+    }
+    | undefined
+
+Deno.test('community: created, its author its first moderator (PAM-502)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const out = createCommunity(abdou, {
+    name: 'Rust Afrique',
+    type: 'technology',
+    description: 'Pour parler Rust',
+  })
+  assertEquals(out.slug, 'rust-afrique')
+  const row = communityRow('rust-afrique')!
+  assertEquals([row.type, row.source], ['technology', 'platform'])
+  // Its creator is its only member, a moderator
+  assertEquals([row.role, row.userId], ['moderator', abdou])
+})
+
+Deno.test('community: a taken slug gets a suffix (PAM-502)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const first = createCommunity(abdou, {
+    name: 'Rust',
+    type: 'technology',
+    description: '',
+  })
+  const second = createCommunity(abdou, {
+    name: 'Rust',
+    type: 'technology',
+    description: '',
+  })
+  assertEquals(first.slug, 'rust')
+  assertEquals(second.slug, 'rust-2')
+})
+
+Deno.test('community: the listing has a created one, with the member state (PAM-502)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  createCommunity(abdou, {
+    name: 'Rust Afrique',
+    type: 'technology',
+    description: '',
+  })
+
+  // The creator sees it joined, with its one member
+  const forAbdou = listCommunities(abdou).find((c) =>
+    c.slug === 'rust-afrique'
+  )!
+  assertEquals([forAbdou.joined, forAbdou.members], [true, 1])
+  // Another developer sees it, not joined
+  const forMoussa = listCommunities(moussa).find((c) =>
+    c.slug === 'rust-afrique'
+  )!
+  assertEquals(forMoussa.joined, false)
+})
+
+Deno.test('community: a name is required, the type is known (PAM-502)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  assertThrows(() =>
+    createCommunity(abdou, { name: '  ', type: 'technology', description: '' })
+  )
+  assertThrows(() =>
+    createCommunity(abdou, { name: 'Zig', type: 'nope', description: '' })
+  )
+  assertThrows(() =>
+    createCommunity(abdou, {
+      name: 'x'.repeat(200),
+      type: 'domain',
+      description: '',
+    })
+  )
 })
 
 Deno.test('community: the page reads the communities joined at every session (PAM-502)', async () => {

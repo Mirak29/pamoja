@@ -1350,6 +1350,13 @@ Test de bout en bout sur la démo : une réponse enregistrée (vérifiée côté
 - **Livrable** : `web/pages/post-page.tsx` ; §12.2
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-502 (suite) · Créer une communauté et lire la liste sur le serveur
+
+Clôt le reste de PAM-502 noté le 13 nov. `POST/api/community/create` enregistre une communauté (type en anglais, slug tiré du nom avec un suffixe s'il est pris) et son créateur comme premier membre, un modérateur ; elle est réindexée dans la recherche quand Meilisearch est présent (sinon trouvée par SQLite, source de vérité, §10.4). `GET/api/communities` renvoie toutes les communautés avec leur nombre de membres et si le développeur y est. Côté interface, `web/lib/communities.ts` crée via le serveur puis dans la page avec le slug reçu, et `loadCommunities` (adopté par `adoptCommunities`) est lu au montage de la liste et d'une page de communauté : une communauté créée est donc là après un rechargement, et un lien direct vers elle marche. Une communauté seedée garde ses données de démo et son compte affiché ; seules les nouvelles rejoignent la liste.
+
+- **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/fixtures/communities.ts`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/communities/new-community-dialog.tsx` ; §10.2, §10.4
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

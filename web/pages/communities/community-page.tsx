@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { A } from '/web/ui/link.tsx'
 import { Plus } from '/web/assets/icons.tsx'
@@ -7,6 +8,7 @@ import {
   type Community,
   defaultRules,
 } from '/web/fixtures/communities.ts'
+import { loadCommunities } from '/web/lib/communities.ts'
 import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
 import { match } from '/web/fixtures/matching.ts'
 import {
@@ -43,7 +45,7 @@ import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { ProjectCard } from '/web/ui/project-card.tsx'
-import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
+import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { countsOf, emblemOf } from '/web/pages/communities/communities-page.tsx'
 import { Membership } from '/web/pages/communities/membership.tsx'
@@ -257,8 +259,18 @@ export const CommunityPage = () => {
   helpChanged.value
   projectsChanged.value
   const [, slug = '', tab = ''] = url.relativePath.slice(1).split('/')
+  // A community not in the pages: read the communities of the server, so a
+  // direct link to one created on it works after a reload (PAM-502)
+  const [tried, setTried] = useState(false)
+  useEffect(() => {
+    setTried(false)
+    if (communities.some((c) => c.slug === slug)) return setTried(true)
+    loadCommunities().finally(() => setTried(true))
+  }, [slug])
   const community = communities.find((c) => c.slug === slug)
-  if (!community) return <NotFound slug={slug} />
+  if (!community) {
+    return tried ? <NotFound slug={slug} /> : <LoadingState />
+  }
   const current = tabs.find(([key]) => key === tab)?.[0] ?? ''
   const joined = me.communities.includes(community.slug)
   const members = membersOf(community)
