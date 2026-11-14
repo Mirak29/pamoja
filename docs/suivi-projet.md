@@ -1343,6 +1343,13 @@ Vérifié : CI complète sous Windows et Linux, 257 tests ; globe vérifié dans
 - **Livrable** : `api/board.ts`, `api/reports.ts`, `api/posts.ts`, `api/help.ts`, `api/project-gallery.ts`, `api/lib/rate.ts`, `api/lib/json.ts`, `migrations/014-need-type.js`, `web/lib/failure.ts`, `web/fixtures/posts.ts`, `web/pages/profile/collaboration-map.tsx` et leurs tests ; §6.7, §10.1, §10.5
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-512 (correctif) · Les réponses s'affichent au rechargement d'un post
+
+Test de bout en bout sur la démo : une réponse enregistrée (vérifiée côté serveur par `GET/api/post/thread`) n'apparaissait pas en rouvrant la page du post. `Replies` (`web/pages/post-page.tsx`) a des hooks et lit les réponses du tableau `posts`, muté sur place quand le fil arrive après le premier rendu ; elle ne lisait pas `postsChanged`, donc ne se re-rendait pas (le piège signaux + hooks du socle). Elle lit maintenant le signal. Vérifié dans le navigateur : créer un post, répondre, recharger → « 1 réponse » et la réponse s'affichent.
+
+- **Livrable** : `web/pages/post-page.tsx` ; §12.2
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

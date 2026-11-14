@@ -161,6 +161,10 @@ const Article = ({ post }: { post: Post }) => {
 }
 
 const Replies = ({ post }: { post: Post }) => {
+  // This component has hooks and reads the replies from the posts array,
+  // mutated in place when the thread loads: subscribe to its signal so a
+  // reply read after the first render shows (§12.2, reload or shared link)
+  postsChanged.value
   const [draft, setDraft] = useState('')
   const count = descendantCount(post.id)
   const open = post.type === 'Question' && !post.acceptedReply
