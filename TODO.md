@@ -146,6 +146,7 @@ Responsable : _à répartir_
 - [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
 - [x] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11) — @Mirak29
 - [x] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11) — @Mirak29
+- [x] **PAM-540** · Coût de l'IA : plafond de tokens par appel, réflexion minimale, budget quotidien de Meta, consommation dans les logs (§11) — @Mirak29
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 - [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
 - [x] **PAM-314** · Écran Modifier le profil sur données fictives : thème, accent, sections, aperçu en direct (§9.2) — @niangoos
@@ -375,3 +376,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Résumé IA du Pulse (PAM-307) : tâche de fond toutes les 10 min sur les projets liés à un repo, rappel du modèle seulement si l'empreinte de son entrée change ; 5 projets par passage, 300 par jour ; seul le dernier résumé est gardé ; `PULSE_READY` relit le Pulse ouvert · §6.4, §11
 - 2026-11-14 · Proposition IA à l'import (PAM-310) : sur clic, pas à l'affichage ; skills limités au vocabulaire et ajoutés à ceux de GitHub, besoins et description validés puis modifiables ; pas de relecture à la resynchronisation, pour ne pas écraser ce que le propriétaire a corrigé · §5.4, §11
 - 2026-11-14 · Proximité sémantique (PAM-311) : vecteurs Gemini de 256 dimensions dans `Embedding` ; la demande a le sien avant sa première vague (4 s au plus), les profils en tâche de fond (90 textes toutes les 5 min, les plus actifs d'abord) ; 0 point sous un cosinus de 0,70, 10 dès 0,82, mesuré sur les profils de démo ; nouveau critère `semantic` dans « Pourquoi ce match ? » · §7.3, §11
+- 2026-11-14 · Coût de l'IA (PAM-540) : `max_completion_tokens` par usage (700, 500, 600) ; `reasoning_effort` `minimal` pour Meta et Gemini, `low` pour Groq ; Meta arrêté pour la journée au-delà de 1 $ (`AI_DAILY_BUDGET`), compté au tarif de Muse Spark ; ligne `model-call` dans les logs · §11

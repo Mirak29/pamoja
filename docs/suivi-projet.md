@@ -1197,6 +1197,21 @@ Vérifié sur une copie de la base : une demande créée par l'API (0,86 s, vect
 - **Livrable** : `api/embeddings.ts`, `api/embeddings_test.ts`, `api/lib/json-list.ts`, `api/matching.ts`, `api/help.ts`, `api/routes.ts`, `api/search.ts`, `api/server.ts`, `api/llm.ts`, `web/lib/help.ts`, `web/lib/english.ts` ; §7.3, §11
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-540 · Ce que coûte l'IA
+
+Après les quatre usages de l'IA, il fallait éviter qu'une réponse ou une journée coûte plus que prévu. `api/llm.ts` ajoute trois freins aux plafonds d'appels déjà là.
+
+- **Un plafond par appel**, réflexion comprise (`max_completion_tokens`) : 700 tokens pour l'Assistant, 500 pour le résumé du Pulse, 600 pour la proposition à l'import. Une réponse coupée à son plafond passe au fournisseur suivant, sans le mettre de côté : c'était la question, pas lui.
+- **Aussi peu de réflexion que possible.** Mesuré le 14 novembre sur une question de deux lignes : Muse Ember dépense 298 tokens à réfléchir à l'effort par défaut comme à `low`, et rend une réponse vide une fois son plafond atteint ; 33 à `minimal`. Gemini répond en 2,4 s à `minimal` au lieu de 9,9 s. Groq ne connaît pas `minimal` : `low`.
+- **Un budget quotidien pour Meta**, le seul qui facture : 1 $ par jour (UTC), tous usages confondus, compté au tarif de Muse Spark (1,25 $ et 4,25 $ le million de tokens), plafond du prix d'Ember. `AI_DAILY_BUDGET` le change. Une fois dépensé, Gemini puis Groq, gratuits, répondent jusqu'au lendemain. Le compte est en mémoire : un redémarrage repart de 0.
+
+Chaque appel écrit une ligne `model-call` (fournisseur, usage, tokens d'entrée, de sortie et de réflexion, coût, dépense du jour, durée), lue avec `docker logs`.
+
+Essayé avec les vraies clés sur une copie de la base : un résumé du Pulse coûte au plus 0,0017 $ (2,5 s), une proposition à l'import 0,0018 $ (1,9 s), une question à l'Assistant 0,004 à 0,005 $ (2,3 à 2,9 s) ; aucune réponse coupée. Le budget de 1 $ couvre donc environ 200 questions par jour sur Meta.
+
+- **Livrable** : `api/llm.ts`, `api/llm_test.ts`, `api/assistant.ts`, `api/pulse-summary.ts`, `api/import-suggest.ts`, `.env.production.example` ; §11
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
