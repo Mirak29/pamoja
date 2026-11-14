@@ -1077,6 +1077,8 @@ Le thème, la couleur d'accent, l'ordre des sections et les projets mis en avant
 
 Relecture `/simplify` : l'ordre complet est maintenant donné par le serveur (`sectionOrderOf`, `api/user.ts`), au lieu d'une liste vide à compléter par chaque client ; `completeOrder` reste dans la page comme garde-fou si les deux versions divergent. `jsonStrings`, copié dans `api/profile.ts` et `api/user.ts`, devient `stringsOf` (`api/lib/json.ts`), qui lit le JSON sous forme de texte ou déjà décodé. Les projets mis en avant passent par `assertSlugs` (30 au plus, slugs valides) ; les champs texte sont nommés pour leur limite au lieu d'être déduits par élimination.
 
+Relecture `/code-review` : l'écran « Modifier le profil » partait de `settingsOf(me.login)`, rempli seulement quand la page profil avait été chargée dans la session ; ouvert directement, il enregistrait les valeurs par défaut par-dessus le thème, l'accent, l'ordre et les projets mis en avant. `setUser` reprend maintenant la personnalisation de `GET/api/user/me`. Vérifié : thème Terminal enregistré, rechargement, écran d'édition ouvert directement, enregistrement : le serveur garde Terminal, Corail et l'ordre.
+
 - **Livrable** : `api/user.ts`, `api/profile.ts`, `api/routes.ts`, `api/profile_personalization_test.ts`, `web/lib/session.ts`, `web/lib/profile.ts`, `web/fixtures/profile-settings.ts` ; §9.2
 - **Par** : @niangoos
 
