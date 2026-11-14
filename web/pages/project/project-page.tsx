@@ -183,9 +183,11 @@ const Actions = ({ project }: { project: Project }) => {
 const Header = (
   { project, overview }: { project: Project; overview: boolean },
 ) => {
-  // Its own subscription: the requests may arrive after the projects, and a
-  // child with the same props is not rendered again
+  // Its own subscriptions: the requests may arrive after the projects, a
+  // follow changes the project in place, and a child with the same props is
+  // not rendered again
   helpChanged.value
+  projectsChanged.value
   // A project of the API holds a batch of its issues and PRs: the server
   // counts them all (§12.7)
   const openPullRequests = pullRequests.filter((pr) =>

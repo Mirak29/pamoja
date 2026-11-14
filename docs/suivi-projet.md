@@ -1079,6 +1079,8 @@ Route `POST/api/follow/toggle` (utilisateur, projet, communauté) qui ajoute ou 
 - la page applique l'état que le serveur confirme, et revient en arrière si la requête échoue.
 La règle va dans le cahier (§15) : une route qui active ou désactive reçoit l'état voulu. Le test couvre la requête rejouée et la relecture.
 
+Vérifié dans le navigateur : suivre Kofi, recharger, le bouton dit toujours « Suivi », un clic désabonne vraiment (écran et base d'accord). Sur la page d'un projet, le bouton ne changeait pas au clic (défaut antérieur à la PR) : l'en-tête lit le signal `helpChanged` et, avec le même objet `project` modifié sur place, n'était pas redessiné ; il lit maintenant aussi `projectsChanged`.
+
 - **Livrable** : `api/follow.ts`, `web/lib/session.ts`, `web/fixtures/people.ts`, `web/fixtures/projects.ts`, `docs/cahier-des-charges.md`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
 - **Par** : @niangoos
 
