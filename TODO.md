@@ -255,7 +255,7 @@ Responsable : _à répartir_
 
 Plus aucune nouvelle fonctionnalité.
 
-- [ ] **PAM-901** · Seed final : profils de plusieurs pays, Moussa avec 14 reviews en `source = demo` (3 demandeurs, 2 projets) (§18.1)
+- [x] **PAM-901** · Seed final : profils de plusieurs pays, Moussa avec 14 reviews en `source = demo` (3 demandeurs, 2 projets) (§18.1) — @niangoos
 - [ ] **PAM-902** · Repo public OpenPay Africa sous le compte perso d'Abdou, app installée, webhook testé vers la prod (§18.1)
 - [ ] **PAM-903** · Deux vrais comptes GitHub prêts ; PR #81 ouverte par Abdou, sans review (§18.1)
 - [ ] **PAM-904** · Pré-calculer les résumés IA et les embeddings du seed (§18.1)
@@ -366,4 +366,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-13 · Navigation au doigt (PAM-538), après des retours sur téléphone : le lien du routeur naviguait dès que le doigt se posait, un défilement ouvrait donc la carte touchée ; le lien de l'app attend le tap au doigt et au stylet, la souris reste immédiate. Cartes de communauté ouvertes en entier ; retour dans la barre du haut, par l'historique ou vers la section · §12.7
 - 2026-11-13 · Meilisearch en place (PAM-507) : un conteneur `v1.56.0` sans port ouvert, cinq index lus dans SQLite par les mêmes requêtes que le repli SQL, reconstruits à chaque démarrage puis chaque nuit par échange d'index, synchronisés par les entries toutes les 3 s ; la palette et la page Recherche passent par `GET/api/search`, les posts et demandes de démo restent cherchés dans le navigateur · §10.4, §17.4
 - 2026-11-13 · Point sur le TODO, vérifié dans le code et sur la VM : PAM-003, 004, 006, 109, 114 et 407 cochés ; PAM-005, 113, 115 et 906 à moitié faits, ce qui reste est noté sur leur ligne. Les écrans de PAM-401 à 405 et de PAM-501 à 512 existent sur données de démo, mais le serveur n'a pas encore leurs routes : follow, communautés, réactions, favoris, réponses, republications, signalements, board, roadmap, needs, candidatures, listing d'Explore
+- 2026-11-14 · Seed des reviews de Moussa (PAM-901) : 14 preuves `REVIEW_HELP_CONFIRMED` en `source = demo`, de quatre demandeurs et deux projets, backdatées ; les skills qu'elles prouvent sont écrits en `platform_activity` comme le fait une confirmation, et les badges sont calculés sans annoncer un déblocage daté du jour · §8, §18.1
 - 2026-11-14 · Follow enregistré (PAM-503) : `POST/api/follow` reçoit l'état voulu, jamais une bascule, et `GET/api/follows` donne à la page l'état du serveur à chaque session ; une requête rejouée ou un second onglet ne peut plus désabonner · §15

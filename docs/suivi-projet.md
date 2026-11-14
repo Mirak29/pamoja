@@ -1069,6 +1069,15 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-901 · Seed des 14 reviews confirmées de Moussa
+
+Ajout au seed des 14 preuves de review de Moussa (`REVIEW_HELP_CONFIRMED`, `source = demo`, éligibles, backdatées), réparties sur quatre demandeurs de trois pays (Sénégal, Ghana, Cameroun) et deux projets. Le profil continue d'afficher ses preuves de fixtures, que le seed reflète (§18.2) ; côté serveur, le matching compte désormais « 14 reviews confirmées » (+15, score 59 → 74, Moussa n'est plus un « nouveau profil ») et l'évaluateur de badges donne Trusted Reviewer Silver, plus First Responder et Cross-border Silver. `evaluateBadges` reçoit un indicateur `announce` : le seed écrit la progression des badges sans émettre d'entry `BADGE_UNLOCKED` ni de notification datées « maintenant », ce qui garde toutes les entries du seed en `source = demo`.
+
+**Revue (CodeRabbit et relecture).** Les skills prouvés par ces reviews manquaient : en production, chaque confirmation écrit une ligne `platform_activity` dans `userSkill` (`help-lifecycle.ts`), la source que le matching pèse le plus (100 contre 70 pour un skill déclaré). Le seed les écrit maintenant, datées de la plus ancienne review ; le test le vérifie. Le score de Moussa pour la demande de la démo (review de code sur OpenPay Africa, Go, SQLite, Backend) passe ainsi de 74 à 87, recalculé avec `rank` sur la base seedée ; le « 59 → 74 » plus haut est celui d'avant ces skills. Un commentaire annonçait l'Or à la 15e review : il est à 20 (`[3, 10, 20, 50]`), la démo montre « 15 / 20 vers Gold » (§18.2).
+
+- **Livrable** : `api/seed.ts`, `api/badges.ts`, `api/seed_test.ts`, `task-db-seed.ts` ; §8, §18.1
+- **Par** : @niangoos
+
 ### 2026-11-13 · PAM-503 · Suivre développeurs, projets et communautés
 
 Route `POST/api/follow/toggle` (utilisateur, projet, communauté) qui ajoute ou retire une ligne `follow`, avec limite de débit (§16) et refus de se suivre soi-même. Après le changement, `refreshListeners` relit les abonnements des connexions SSE du suiveur : un vrai follow fait désormais arriver `POST_CREATED` dans le fil en direct (§13.2), alors qu'avant seuls les follows du seed existaient. Côté interface, les boutons Suivre du profil, de la Home, de la page projet et de la liste des projets passent par `web/lib/follow.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
