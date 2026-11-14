@@ -89,10 +89,24 @@ export const adoptSettings = (
     ...(saved[key] ?? defaults),
     theme: settings.theme as ProfileTheme,
     accent: settings.accent as ProfileAccent,
-    order: settings.order as ProfileSection[],
+    order: completeOrder(settings.order),
     featured: settings.featured as ProjectSlug[],
   }
   profileChanged.value++
+}
+
+/**
+ * The order of the sections a profile shows: the one saved, then every
+ * section it does not name, in the default order. A profile never ordered
+ * has none saved (`[]`), and one saved before a section existed lacks it:
+ * neither may show fewer sections than it has.
+ */
+export const completeOrder = (order: string[]): ProfileSection[] => {
+  // The sections it names that exist, each once
+  const named = [...new Set(order)].filter((key): key is ProfileSection =>
+    defaults.order.includes(key as ProfileSection)
+  )
+  return [...named, ...defaults.order.filter((key) => !named.includes(key))]
 }
 
 export type ProfileDraft =
