@@ -347,14 +347,21 @@ export const personOf = (login: string): Person =>
     intents: [],
   }
 
-// Session changes until POST/api/follow/toggle exists (PAM-505)
+// Changes of the people the pages read: a follow, a profile read
 export const peopleChanged = signal(0)
 
-/** Follow or unfollow a developer: their posts and reposts reach the feed */
-export const toggleFollowing = (login: string) => {
-  const follows = me.follows ?? []
-  me.follows = follows.includes(login)
-    ? follows.filter((l) => l !== login)
-    : [...follows, login]
+/** Whether the developer follows someone, as the page shows it */
+export const isFollowing = (login: string) => (me.follows ?? []).includes(login)
+
+/** Sets a follow of a developer: their posts and reposts reach the feed */
+export const setFollowing = (login: string, follow: boolean) => {
+  const others = (me.follows ?? []).filter((l) => l !== login)
+  me.follows = follow ? [...others, login] : others
+  peopleChanged.value++
+}
+
+/** The developers followed, as the server holds them (GET/api/follows) */
+export const adoptFollowing = (logins: string[]) => {
+  me.follows = [...logins]
   peopleChanged.value++
 }

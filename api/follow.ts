@@ -65,13 +65,15 @@ const countFollows = sql<Window, { me: number; since: number }>`
 `.get
 
 /**
- * Toggles a follow: adds it when it is missing, removes it when it is there.
- * Returns the new state and how many followers the target now has.
+ * Sets a follow to the state the developer asked for. The same request sent
+ * twice, from a retry or a second tab, gives the same result: never a follow
+ * undone by a click meant to follow. Returns the state and the followers.
  */
-export const toggleFollow = (
+export const setFollow = (
   me: number,
   targetType: FollowTarget,
   target: string,
+  follow: boolean,
 ) => {
   const targetId = targetIdOf(targetType, target)
   if (!targetId) throw badRequest('Unknown target')
@@ -79,20 +81,41 @@ export const toggleFollow = (
     throw badRequest('One does not follow oneself')
   }
   within(countFollows, FOLLOW_RATE, me, 'Too many follows this hour')
-  const following = db.transaction(() => {
+  db.transaction(() => {
     const row = existing({ me, targetType, targetId })
-    if (row) {
-      remove({ followId: row.followId })
-      return false
+    if (row && !follow) remove({ followId: row.followId })
+    if (!row && follow) {
+      Follow.insert({ followerId: me, targetType, targetId, createdAt: now() })
     }
-    Follow.insert({ followerId: me, targetType, targetId, createdAt: now() })
-    return true
   })()
   // Every open connection of the follower now receives what the target
   // publishes, or stops receiving it (§13.2)
   refreshListeners(me)
   return {
-    following,
+    following: follow,
     followers: countFollowers({ targetType, targetId })?.n ?? 0,
   }
 }
+
+const followedUsers = sql<{ login: string }, number>`
+  SELECT user.githubUsername AS login FROM follow
+  JOIN user ON user.userId = follow.targetId
+  WHERE follow.followerId = ? AND follow.targetType = 'user'
+`.all
+const followedProjects = sql<{ slug: string }, number>`
+  SELECT project.slug FROM follow
+  JOIN project ON project.projectId = follow.targetId
+  WHERE follow.followerId = ? AND follow.targetType = 'project'
+`.all
+const followedCommunities = sql<{ slug: string }, number>`
+  SELECT community.slug FROM follow
+  JOIN community ON community.communityId = follow.targetId
+  WHERE follow.followerId = ? AND follow.targetType = 'community'
+`.all
+
+/** What a developer follows: the page starts from it at every load */
+export const followsOf = (me: number) => ({
+  users: followedUsers(me).map((row) => row.login),
+  projects: followedProjects(me).map((row) => row.slug),
+  communities: followedCommunities(me).map((row) => row.slug),
+})

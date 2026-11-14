@@ -2,7 +2,9 @@ import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
-import { toggleFollow } from '/api/follow.ts'
+import { followsOf, setFollow } from '/api/follow.ts'
+import { createSession } from '/api/session.ts'
+import { request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -10,33 +12,59 @@ const followRows = (me: number) =>
   (db.prepare('SELECT count(*) n FROM follow WHERE followerId = ?')
     .get(me) as { n: number }).n
 
-Deno.test('follow: toggle a developer, a project and a community (PAM-503)', () => {
+Deno.test('follow: the state asked for, a developer, a project and a community (PAM-503)', () => {
   restore()
   seed()
   const abdou = userIdOfLogin('abdou')!
 
-  // kofi is not among abdou's seeded follows: a clean follow, then unfollow
+  // kofi is not among abdou's seeded follows: a follow, then a stop
   const before = followRows(abdou)
-  const on = toggleFollow(abdou, 'user', 'kofi')
+  const on = setFollow(abdou, 'user', 'kofi', true)
   assertEquals(on.following, true)
   assert(on.followers >= 1)
   assertEquals(followRows(abdou), before + 1)
-  assertEquals(toggleFollow(abdou, 'user', 'kofi').following, false)
+  assertEquals(setFollow(abdou, 'user', 'kofi', false).following, false)
   assertEquals(followRows(abdou), before)
 
-  // Communities are joined, not followed, so none is followed in the seed
-  assertEquals(toggleFollow(abdou, 'community', 'go').following, true)
-  // A project toggles from whatever the seed set
-  const first = toggleFollow(abdou, 'project', 'africommerce')
-  const second = toggleFollow(abdou, 'project', 'africommerce')
-  assertEquals(first.following, !second.following)
+  // The same request twice, a retry or a second tab: the same state, never
+  // a follow undone by a click meant to follow
+  setFollow(abdou, 'project', 'africommerce', true)
+  const again = setFollow(abdou, 'project', 'africommerce', true)
+  assertEquals(again.following, true)
+  assert(followsOf(abdou).projects.includes('africommerce'))
+  setFollow(abdou, 'project', 'africommerce', false)
+  setFollow(abdou, 'project', 'africommerce', false)
+  assertEquals(followsOf(abdou).projects.includes('africommerce'), false)
+
+  // Communities are joined, not followed: none is followed in the seed
+  assertEquals(setFollow(abdou, 'community', 'go', true).following, true)
+  assertEquals(followsOf(abdou).communities, ['go'])
 })
 
 Deno.test('follow: refuses oneself and an unknown target (PAM-503)', () => {
   restore()
   seed()
   const abdou = userIdOfLogin('abdou')!
-  assertThrows(() => toggleFollow(abdou, 'user', 'abdou'))
-  assertThrows(() => toggleFollow(abdou, 'user', 'nobody-xyz'))
-  assertThrows(() => toggleFollow(abdou, 'project', 'no-such-project'))
+  assertThrows(() => setFollow(abdou, 'user', 'abdou', true))
+  assertThrows(() => setFollow(abdou, 'user', 'nobody-xyz', true))
+  assertThrows(() => setFollow(abdou, 'project', 'no-such-project', true))
+})
+
+Deno.test('follow: the page reads what is followed at every load (PAM-503)', async () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const cookie = `session=${await createSession(abdou, 'demo')}`
+  const me = async () =>
+    await (await request('/api/follows', { cookie })).json()
+
+  // What the seed gave, then a follow made through the API
+  const seeded = await me()
+  assertEquals(seeded.users.includes('kofi'), false)
+  const res = await request('/api/follow', {
+    body: { targetType: 'user', target: 'kofi', follow: true },
+    cookie,
+  })
+  assertEquals(res.status, 200)
+  assertEquals((await me()).users.includes('kofi'), true)
 })
