@@ -18,6 +18,9 @@ export const config: BuildOptions = {
   splitting: true,
   chunkNames: 'chunks/[name]-[hash]',
   outdir: 'dist',
+  // The pages of the team (/dev), served in dev only: the production build
+  // sets it false and drops them (§17.4)
+  define: { DEV_PAGES: 'true' },
 } as const
 
 /** The demo images of the fixtures, served next to the bundle */

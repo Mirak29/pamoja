@@ -1212,6 +1212,15 @@ Essayé avec les vraies clés sur une copie de la base : un résumé du Pulse co
 - **Livrable** : `api/llm.ts`, `api/llm_test.ts`, `api/assistant.ts`, `api/pulse-summary.ts`, `api/import-suggest.ts`, `.env.production.example` ; §11
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-113 · La page `/dev` n'est plus en production
+
+La page de l'équipe qui montre le socle de composants était servie en production à `/dev`. Le build pose maintenant une constante `DEV_PAGES` : `true` dans la configuration commune (`build-config.ts`, donc en dev), `false` dans `task-prod.ts`. `web/app.tsx` n'ajoute la route `dev` que si elle vaut `true` : en production, esbuild retire la route et le fichier de la page, et `/dev` répond la page introuvable.
+
+Vérifié : `deno task prod:build` ne produit plus de fichier `socle-*.js` ; un build avec la configuration de dev le produit toujours.
+
+- **Livrable** : `build-config.ts`, `task-prod.ts`, `web/app.tsx` ; §17.4
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

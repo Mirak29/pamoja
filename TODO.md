@@ -73,7 +73,7 @@ Responsable : _à répartir_
 - [x] **PAM-110** · Login GitHub : `GET/api/auth/github`, `POST/api/auth/github/callback`, `state`, cookie `session` (§5.3)
 - [x] **PAM-111** · Socle UI : thème généré depuis `docs/identite/tokens.json`, polices Google, système isométrique en utilitaires CSS (dalles, touches, puits, disques), layout sans en-tête de page, recherche centrée, routage en vrais chemins, thèmes clair et sombre (§6.2, §12.2, §12.3, §12.7) — @niangoos
 - [x] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
-- [ ] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4) — fait : Dockerfile, `deno compile`, `APP_ENV=prod` (PAM-537) ; reste : `/dev/socle` est encore servi en prod
+- [x] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4) — Dockerfile, `deno compile`, `APP_ENV=prod` (PAM-537) ; `/dev` retiré du build de production — @Mirak29
 - [x] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4) — Caddy HTTPS, HTTP/1.1, 2 et 3 ; Meilisearch sans port, vérifié de l'extérieur — @Mirak29
 - [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5) — fait : `VACUUM INTO` horaire gardé 7 jours (PAM-537) ; reste : la copie quotidienne hors de la VM
 - [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
@@ -377,3 +377,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Proposition IA à l'import (PAM-310) : sur clic, pas à l'affichage ; skills limités au vocabulaire et ajoutés à ceux de GitHub, besoins et description validés puis modifiables ; pas de relecture à la resynchronisation, pour ne pas écraser ce que le propriétaire a corrigé · §5.4, §11
 - 2026-11-14 · Proximité sémantique (PAM-311) : vecteurs Gemini de 256 dimensions dans `Embedding` ; la demande a le sien avant sa première vague (4 s au plus), les profils en tâche de fond (90 textes toutes les 5 min, les plus actifs d'abord) ; 0 point sous un cosinus de 0,70, 10 dès 0,82, mesuré sur les profils de démo ; nouveau critère `semantic` dans « Pourquoi ce match ? » · §7.3, §11
 - 2026-11-14 · Coût de l'IA (PAM-540) : `max_completion_tokens` par usage (700, 500, 600) ; `reasoning_effort` `minimal` pour Meta et Gemini, `low` pour Groq ; Meta arrêté pour la journée au-delà de 1 $ (`AI_DAILY_BUDGET`), compté au tarif de Muse Spark ; ligne `model-call` dans les logs · §11
+- 2026-11-14 · Page `/dev` hors production (PAM-113) : constante de build `DEV_PAGES`, `false` dans `task-prod.ts` ; esbuild retire la route et le code de la page · §17.4
