@@ -71,13 +71,19 @@ Vérifier depuis l'extérieur : la landing s'ouvre, la connexion GitHub aboutit,
 ## 4. La faire tourner plusieurs jours
 
 - **Elle redémarre seule** (`restart: unless-stopped`) après une panne ou un redémarrage de la VM. `docker compose ps` montre `healthy`.
-- **Sauvegardes** : le serveur copie la base toutes les heures avec `VACUUM INTO` dans `/data/backups` (`pamoja-AAAA-MM-JJTHH.db`) et garde 7 jours de copies. Il n'y a pas de cron à installer. Pour la copie quotidienne hors de la VM :
+- **Sauvegardes** : le serveur copie la base toutes les heures avec `VACUUM INTO` dans `/data/backups` (`pamoja-AAAA-MM-JJTHH.db`) et garde 7 jours de copies. Il n'y a pas de cron à installer sur la VM.
+- **Copie hors de la VM** (PAM-115) : depuis le poste de l'équipe, `deploy/pull-backup.sh` ramène la copie la plus récente dans `~/pamoja-backups` et y garde les 7 dernières. Elle passe par SSH (alias `pamoja`), sans fichier laissé sur la VM, et n'est gardée que si c'est une base SQLite entière. Sous Windows, avec la clé chargée dans l'agent SSH de Windows :
 
   ```bash
-  docker compose cp app:/data/backups ./backups
+  SSH=C:/Windows/System32/OpenSSH/ssh.exe bash deploy/pull-backup.sh
   ```
 
-  Puis envoyer la copie vers le stockage que propose Systalink (à fixer avec PAM-003).
+  Une fois par jour, par le Planificateur de tâches (PowerShell, à lancer une fois) :
+
+  ```powershell
+  $action = New-ScheduledTaskAction -Execute "C:\Program Files\Git\bin\bash.exe" -Argument "-lc 'SSH=C:/Windows/System32/OpenSSH/ssh.exe bash ~/Documents/pamoja/deploy/pull-backup.sh'"
+  Register-ScheduledTask -TaskName "Pamoja backup" -Action $action -Trigger (New-ScheduledTaskTrigger -Daily -At 9am)
+  ```
 - **Restaurer** une copie (ici `pamoja-X.db`, dans `./backups`) :
 
   ```bash

@@ -75,7 +75,7 @@ Responsable : _à répartir_
 - [x] **PAM-112** · Seed rejouable en une commande, toutes les données en `source = demo` (§14, §18.1)
 - [x] **PAM-113** · Dockerfile multi-stage + `deno compile` + `APP_ENV=prod` ; la page `/dev/socle` n'est servie qu'en dev (§17.4) — Dockerfile, `deno compile`, `APP_ENV=prod` (PAM-537) ; `/dev` retiré du build de production — @Mirak29
 - [x] **PAM-114** · Caddy (HTTPS, HTTP/2) + conteneur Meilisearch non exposé (§17.4) — Caddy HTTPS, HTTP/1.1, 2 et 3 ; Meilisearch sans port, vérifié de l'extérieur — @Mirak29
-- [ ] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5) — fait : `VACUUM INTO` horaire gardé 7 jours (PAM-537) ; reste : la copie quotidienne hors de la VM
+- [x] **PAM-115** · Sauvegardes : `VACUUM INTO` horaire, conservation 7 jours, copie quotidienne hors machine (§17.5) — `VACUUM INTO` horaire gardé 7 jours (PAM-537) ; copie quotidienne sur le poste de l'équipe par `deploy/pull-backup.sh` — @Mirak29
 - [x] **PAM-116** · Tunnel HTTPS pour les webhooks en dev (§5.6)
 - [x] **PAM-117** · CI : fmt, lint, tests sur chaque PR — @Mirak29
 - [x] **PAM-118** · Rendu Markdown sécurisé (sanitizer, liens externes `noopener nofollow`) partagé par tous les contenus (§16) — @niangoos
@@ -378,3 +378,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Proximité sémantique (PAM-311) : vecteurs Gemini de 256 dimensions dans `Embedding` ; la demande a le sien avant sa première vague (4 s au plus), les profils en tâche de fond (90 textes toutes les 5 min, les plus actifs d'abord) ; 0 point sous un cosinus de 0,70, 10 dès 0,82, mesuré sur les profils de démo ; nouveau critère `semantic` dans « Pourquoi ce match ? » · §7.3, §11
 - 2026-11-14 · Coût de l'IA (PAM-540) : `max_completion_tokens` par usage (700, 500, 600) ; `reasoning_effort` `minimal` pour Meta et Gemini, `low` pour Groq ; Meta arrêté pour la journée au-delà de 1 $ (`AI_DAILY_BUDGET`), compté au tarif de Muse Spark ; ligne `model-call` dans les logs · §11
 - 2026-11-14 · Page `/dev` hors production (PAM-113) : constante de build `DEV_PAGES`, `false` dans `task-prod.ts` ; esbuild retire la route et le code de la page · §17.4
+- 2026-11-14 · Copie hors de la VM (PAM-115) : pour le hackathon, sur le poste de l'équipe (`deploy/pull-backup.sh`, SSH, 7 copies gardées, une copie qui n'est pas une base SQLite rejetée) ; un stockage Systalink avant l'ouverture · §17.5
