@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks'
 import { Check } from '/web/assets/icons.tsx'
-import { type Community, toggleMembership } from '/web/fixtures/communities.ts'
-import { me } from '/web/fixtures/people.ts'
+import { type Community } from '/web/fixtures/communities.ts'
+import { joinOrLeave } from '/web/lib/communities.ts'
 import { Button } from '/web/ui/button.tsx'
 import { t } from '/web/lib/language.ts'
 
@@ -25,7 +25,7 @@ export const Membership = (
       <Button
         size={size}
         aria-label={t`Rejoindre ${community.name}`}
-        onClick={() => toggleMembership(community, me)}
+        onClick={() => joinOrLeave(community)}
       >
         Rejoindre
       </Button>
@@ -42,7 +42,7 @@ export const Membership = (
           size={34}
           onClick={() => {
             setAsking(false)
-            toggleMembership(community, me)
+            joinOrLeave(community)
           }}
         >
           Quitter

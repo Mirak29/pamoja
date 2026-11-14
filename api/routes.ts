@@ -111,6 +111,13 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import {
+  FOLLOW_TARGETS,
+  followsOf,
+  type FollowTarget,
+  setFollow,
+} from '/api/follow.ts'
+import { setMembership } from '/api/community.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -208,6 +215,7 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+  communities: ARR(STR('Slug of a community'), 'Communities joined'),
 }
 
 const profileSaved = OBJ(currentUser, 'The profile saved')
@@ -1317,6 +1325,51 @@ const defs = {
     }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first',
+  }),
+
+  'GET/api/follows': route({
+    authorize: withSession,
+    // The page starts from it at every session, never from what it guessed
+    fn: (ctx) => followsOf(ctx.session.userId),
+    output: OBJ({
+      users: ARR(STR('Login'), 'Developers followed'),
+      projects: ARR(STR('Slug'), 'Projects followed'),
+    }),
+    description: 'What the signed in developer follows',
+  }),
+
+  'POST/api/follow': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      setFollow(
+        ctx.session.userId,
+        input.targetType as FollowTarget,
+        input.target,
+        input.follow,
+      ),
+    input: OBJ({
+      targetType: LIST(FOLLOW_TARGETS, 'What is followed'),
+      target: STR('Login of a developer, or slug of a project or community'),
+      follow: BOOL('True to follow, false to stop: the state wanted'),
+    }),
+    output: OBJ({
+      following: BOOL('True when the developer follows the target'),
+      followers: NUM('How many followers the target has after the change'),
+    }),
+    description:
+      'Follow a developer, a project or a community, or stop following it',
+  }),
+
+  'POST/api/community/join': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      setMembership(ctx.session.userId, input.slug, input.join),
+    input: OBJ({
+      slug: STR('Slug of the community'),
+      join: BOOL('True to join, false to leave: the state wanted'),
+    }),
+    output: OBJ({ joined: BOOL('True when the developer is a member') }),
+    description: 'Join or leave a community',
   }),
 
   /*
