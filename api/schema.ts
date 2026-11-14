@@ -626,6 +626,8 @@ export const Reaction = createTable('reaction', {
   kind: { type: 'TEXT' },
 })
 unique('reaction_target', 'reaction', 'userId, targetType, targetId, kind')
+// The likes of the posts a feed shows, counted by post (PAM-501)
+index('reaction_by_target', 'reaction', 'targetType, targetId, kind')
 
 export const Bookmark = createTable('bookmark', {
   bookmarkId: { type: 'INTEGER', primary: true },

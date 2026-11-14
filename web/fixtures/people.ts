@@ -304,8 +304,10 @@ export const adoptDevelopers = (
   list: ApiOutput['GET/api/explore/developers'],
 ) => {
   const map = people as Record<string, Person>
+  let added = 0
   for (const dev of list) {
     if (map[dev.login]) continue
+    added++
     map[dev.login] = {
       login: dev.login,
       name: dev.name,
@@ -322,7 +324,8 @@ export const adoptDevelopers = (
       intents: dev.intents,
     }
   }
-  peopleChanged.value++
+  // Only a new developer redraws what reads the people
+  if (added) peopleChanged.value++
 }
 
 /** « Dakar, Sénégal », or what is known of it */

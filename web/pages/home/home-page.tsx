@@ -47,7 +47,7 @@ import {
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { confirmedHelpsOf, linksOf } from '/web/fixtures/reputation.ts'
-import { type Reason, scoreOf, tiesOf } from '/web/lib/for-you.ts'
+import { decay, type Reason, scoreOf, tiesOf } from '/web/lib/for-you.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -354,7 +354,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
           at: entry.at,
           // An event of one's own project weighs like a post of someone
           // followed
-          score: 4 * 0.5 ** (Math.max(0, now - entry.at) / (36 * 3600_000)),
+          score: 4 * decay(entry.at, now),
           key: `${project.slug}-${entry.at}-${entry.text}`,
           node: () => (
             <GithubEvent

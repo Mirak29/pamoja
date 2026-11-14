@@ -40,11 +40,25 @@ export type Reason =
 
 const HALF_LIFE = 36 * 3600 * 1000
 
-// A skill named in the text as a word: « Go » is not in « Google »
+/** What is left of a weight `at` gives at `now`: half every 36 hours */
+export const decay = (at: number, now: number) =>
+  0.5 ** (Math.max(0, now - at) / HALF_LIFE)
+
+// A skill named in the text as a word: « Go » is not in « Google ». Each
+// pattern is built once: the feed asks it for every post at every render
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-const mentions = (text: string, skill: string) =>
-  new RegExp(`(^|[^\\p{L}\\p{N}])${escape(skill)}($|[^\\p{L}\\p{N}])`, 'iu')
-    .test(text)
+const patterns = new Map<string, RegExp>()
+const mentions = (text: string, skill: string) => {
+  let pattern = patterns.get(skill)
+  if (!pattern) {
+    pattern = new RegExp(
+      `(^|[^\\p{L}\\p{N}])${escape(skill)}($|[^\\p{L}\\p{N}])`,
+      'iu',
+    )
+    patterns.set(skill, pattern)
+  }
+  return pattern.test(text)
+}
 
 /**
  * The score of a post for a reader, and the strongest reason it is shown.
@@ -88,8 +102,7 @@ export const scoreOf = (
     2 * post.reposts.length
   const relevance = reasons.reduce((sum, [weight]) => sum + weight, 0) +
     Math.min(1.5, Math.log2(1 + activity) / 2)
-  const age = Math.max(0, now - at)
-  const score = (1 + relevance) * 0.5 ** (age / HALF_LIFE)
+  const score = (1 + relevance) * decay(at, now)
   const [, reason] = reasons.reduce<[number, Reason | undefined]>(
     (best, next) => next[0] > best[0] ? next : best,
     [0, undefined],

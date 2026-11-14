@@ -128,16 +128,28 @@ const vectorOf = (lon: number, lat: number): Vector => [
   Math.sin(lat * RAD),
 ]
 
+// The sines of the view, computed once for all the points of a frame
+let basis = { lon: NaN, lat: NaN, cosLon: 1, sinLon: 0, cosLat: 1, sinLat: 0 }
+
 // Seen from the viewer: x to the right, y up, z towards the viewer
 const turn = (v: Vector, view: View): Vector => {
-  const lon = view.lon * RAD
-  const lat = view.lat * RAD
-  const front = v[0] * Math.cos(lon) + v[1] * Math.sin(lon)
-  const side = -v[0] * Math.sin(lon) + v[1] * Math.cos(lon)
+  if (view.lon !== basis.lon || view.lat !== basis.lat) {
+    basis = {
+      lon: view.lon,
+      lat: view.lat,
+      cosLon: Math.cos(view.lon * RAD),
+      sinLon: Math.sin(view.lon * RAD),
+      cosLat: Math.cos(view.lat * RAD),
+      sinLat: Math.sin(view.lat * RAD),
+    }
+  }
+  const { cosLon, sinLon, cosLat, sinLat } = basis
+  const front = v[0] * cosLon + v[1] * sinLon
+  const side = -v[0] * sinLon + v[1] * cosLon
   return [
     side,
-    Math.cos(lat) * v[2] - Math.sin(lat) * front,
-    Math.sin(lat) * v[2] + Math.cos(lat) * front,
+    cosLat * v[2] - sinLat * front,
+    sinLat * v[2] + cosLat * front,
   ]
 }
 
@@ -542,10 +554,31 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   }, [held])
 
   // The sea and the threads show at once, the land as soon as it is read
-  const [, setLandShown] = useState(landRings.length > 0)
+  const [landShown, setLandShown] = useState(landRings.length > 0)
   useEffect(() => {
     if (!landRings.length) loadLand().then(() => setLandShown(true))
   }, [])
+  // The land and the meridians move with the view only: a hover or a choice
+  // does not draw them again
+  const land = useMemo(
+    () => ({
+      ground: landOf(view),
+      lines: graticule.map((line) => pathOf(line, view)).join(''),
+    }),
+    [view.lon, view.lat, view.radius, landShown],
+  )
+  // The great circle to each country does not depend on the view
+  const arcs = useMemo(
+    () =>
+      new Map(
+        homeAt
+          ? nodes.filter((node) => node.kind === 'linked').map((
+            node,
+          ) => [node.code, arcOf(homeAt, node.at)])
+          : [],
+      ),
+    [nodes, homeAt],
+  )
 
   const zoom = (factor: number) =>
     flyTo({
@@ -752,9 +785,9 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
                 fill='var(--figure-edge)'
               />
               <circle cx={cx} cy={cy} r={view.radius} fill='var(--indigo)' />
-              <path d={landOf(view)} fill='var(--surface-100)' />
+              <path d={land.ground} fill='var(--surface-100)' />
               <path
-                d={graticule.map((line) => pathOf(line, view)).join('')}
+                d={land.lines}
                 fill='none'
                 stroke='var(--on-indigo)'
                 stroke-width='0.5'
@@ -770,7 +803,7 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
               />
               {homeAt && nodes.filter((node) => node.kind === 'linked').map(
                 ({ code, at, linked }) => {
-                  const d = pathOf(arcOf(homeAt, at), view)
+                  const d = pathOf(arcs.get(code) ?? arcOf(homeAt, at), view)
                   const width = (lit === code ? 1.2 : 0) + 1.2 +
                     2.2 * linked!.count / max
                   const dash = linked!.verified ? '0' : '4 3'
