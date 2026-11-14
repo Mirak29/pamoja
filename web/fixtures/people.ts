@@ -296,6 +296,35 @@ export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
 export const adoptProfile = (user: ApiOutput['GET/api/user']) =>
   adoptPerson(user)
 
+/**
+ * Developers read from the server for Explore (§10.3), added to the ones the
+ * page knows; a fixture or an already-adopted profile, richer, is kept
+ */
+export const adoptDevelopers = (
+  list: ApiOutput['GET/api/explore/developers'],
+) => {
+  const map = people as Record<string, Person>
+  for (const dev of list) {
+    if (map[dev.login]) continue
+    map[dev.login] = {
+      login: dev.login,
+      name: dev.name,
+      country: dev.country,
+      countryCode: '',
+      city: dev.city,
+      role: '',
+      skills: dev.skills,
+      headline: dev.headline,
+      bio: '',
+      helpTypes: [],
+      available: dev.available,
+      communities: [],
+      intents: dev.intents,
+    }
+  }
+  peopleChanged.value++
+}
+
 /** « Dakar, Sénégal », or what is known of it */
 export const placeOf = (person: Person) =>
   [person.city, translate(person.country)].filter(Boolean).join(', ')

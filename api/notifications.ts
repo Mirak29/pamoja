@@ -117,6 +117,10 @@ const shown = (row: Row) => {
     // 0 refused or 1 accepted; manager notifications follow the current request
     joinRequestId: Number(payload.joinRequestId ?? 0),
     projectSlug: String(payload.projectSlug ?? ''),
+    // A reply or an accepted answer links to its post (§10.1); onReply tells
+    // a reply to a reply apart from a reply to the post
+    postId: Number(payload.postId ?? 0),
+    onReply: payload.onReply === 1 ? 1 : 0,
     accepted: payload.joinRequestId
       ? JOIN_STATES[row.joinStatus ?? ''] ?? 0
       : payload.accepted === 1 || payload.accepted === 0

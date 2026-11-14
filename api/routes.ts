@@ -57,6 +57,7 @@ import {
 } from '/api/notifications.ts'
 import { previewWave } from '/api/matching.ts'
 import { listWork } from '/api/work.ts'
+import { listDevelopers } from '/api/explore.ts'
 import { ask, clearAssistant, getAssistant } from '/api/assistant.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
@@ -113,10 +114,13 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import {
+  acceptAnswer,
   createPost,
+  createReply,
   listPosts,
   listSaved,
   REACTION_KINDS,
+  readThread,
   toggleBookmark,
   toggleReaction,
 } from '/api/posts.ts'
@@ -159,7 +163,7 @@ const media = OBJ({
 }, 'An image or a file')
 
 // A post saved on the server (PAM-427): replies and reactions with PAM-501
-const savedPost = OBJ({
+const postFields = {
   id: NUM('Id of the post'),
   author: STR('Login of the author'),
   authorName: STR('Name of the author'),
@@ -173,7 +177,15 @@ const savedPost = OBJ({
   mine: ARR(STR('like'), 'The reactions of the developer'),
   bookmarked: BOOL('True when the developer saved the post'),
   createdAt: NUM('Publication, in seconds'),
-}, 'A post')
+}
+
+const savedPost = OBJ(postFields, 'A post')
+
+// A post of a thread carries its parent, so the page nests the replies
+const threadPost = OBJ({
+  ...postFields,
+  parentId: NUM('Id of the post it replies to, 0 for the root'),
+}, 'A post of a thread')
 
 const channelMessage = OBJ({
   id: NUM('Id of the message'),
@@ -963,6 +975,21 @@ const defs = {
     }),
     description: 'What the developer can work on, computed without AI (§10.3)',
   }),
+  'GET/api/explore/developers': route({
+    authorize: withSession,
+    fn: () => listDevelopers(),
+    output: ARR(OBJ({
+      login: STR('Login of Pamoja'),
+      name: STR('Display name'),
+      headline: STR('One line, empty if none'),
+      city: STR('City, empty if none'),
+      country: STR('Country name, empty if none'),
+      available: BOOL('Open to help'),
+      skills: ARR(STR('Technology')),
+      intents: ARR(STR('Intent of the onboarding')),
+    })),
+    description: 'Developers for Explore; the page filters them (§10.3)',
+  }),
   'GET/api/assistant': route({
     authorize: withSession,
     fn: (ctx, { page }) => getAssistant(ctx.session.userId, page ?? ''),
@@ -1084,6 +1111,8 @@ const defs = {
           joinRequestId: NUM('Candidature it is about, 0 if none (§6.6)'),
           projectSlug: STR('Slug of its project, empty if none'),
           accepted: NUM('-1 pending for a manager, 0 refused, 1 accepted'),
+          postId: NUM('Post it links to, 0 if none (§10.1)'),
+          onReply: NUM('1 when the reply answers a reply, else 0'),
           readAt: NUM('In seconds, 0 if unread'),
           createdAt: NUM('In seconds'),
         }),
@@ -1380,6 +1409,42 @@ const defs = {
     fn: (ctx) => listSaved(ctx.session.userId),
     output: ARR(savedPost),
     description: 'The posts the developer saved, newest first (§10.1)',
+  }),
+
+  'POST/api/post/reply': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      createReply(ctx.session.userId, input.postId, input.body),
+    input: OBJ({
+      postId: NUM('Id of the post replied to'),
+      body: STR('Markdown of the reply'),
+    }),
+    output: savedPost,
+    description: 'Reply to a post; its author is told (§10.1)',
+  }),
+
+  'POST/api/post/accept': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      acceptAnswer(ctx.session.userId, input.postId, input.replyId),
+    input: OBJ({
+      postId: NUM('Id of the question'),
+      replyId: NUM('Id of the reply accepted'),
+    }),
+    output: OBJ({ accepted: BOOL('True once the answer is accepted') }),
+    description: 'Accept a reply as the answer of a question (§8, §10.1)',
+  }),
+
+  'GET/api/post/thread': route({
+    authorize: withSession,
+    fn: (ctx, { postId }) => readThread(ctx.session.userId, Number(postId)),
+    input: OBJ({ postId: STR('Id of a post of the thread') }),
+    output: OBJ({
+      posts: ARR(threadPost, 'Every post of the thread, oldest first'),
+      rootId: NUM('Id of the first post of the thread'),
+      acceptedReplyId: NUM('Id of the accepted answer, 0 for none'),
+    }),
+    description: 'A post with its whole thread, for a shared link (§12.7)',
   }),
 
   'POST/api/reaction/toggle': route({

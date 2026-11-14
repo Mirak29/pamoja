@@ -1285,6 +1285,24 @@ Reste pour clore PAM-501 : partage par lien et pagination par curseur ; PAM-512 
 - **Livrable** : `api/posts.ts`, `api/reactions_test.ts`, `api/routes.ts`, `web/lib/reactions.ts`, `web/fixtures/posts.ts`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/saved-page.tsx` ; §10.1
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-512 (réponses) · Répondre, accepter une réponse, lire un fil sur le serveur
+
+`POST/api/post/reply` enregistre une réponse (un post avec un parent et une racine), prévient l'auteur du post et diffuse l'entry `POST_REPLIED`. `POST/api/post/accept` laisse l'auteur d'une question accepter une réponse une seule fois : la réponse devient une preuve d'Entraide pour son auteur (entry `ANSWER_ACCEPTED`, éligibilité figée §8.3, badges réévalués), qui est notifié. `GET/api/post/thread` renvoie un post et tout son fil (racine et réponses, chacun avec ses réactions et son parent) pour un lien partagé ou un rechargement. Côté interface, `web/lib/replies.ts` relie répondre et accepter aux routes (optimiste, remis en place en cas d'échec), la page d'un post charge son fil au montage, et `adoptThread` adopte les réponses du serveur. Les posts de démo (id de fixture) restent gérés dans la page.
+
+Exception assumée (§4) : la republication n'est pas branchée. Le schéma en fait un post (`repostOfId`) qui paraîtrait dans le fil des abonnés, or le fil n'a pas de rendu de republication ; la brancher déposerait des posts vides. Hors de la boucle de démo (§18), reportée avec son rendu.
+
+- **Livrable** : `api/posts.ts`, `api/replies_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/replies.ts`, `web/lib/notifications.ts`, `web/fixtures/posts.ts`, `web/ui/post.tsx`, `web/pages/post-page.tsx` ; §8, §10.1, §12.7
+- **Par** : @niangoos
+
+### 2026-11-14 · PAM-505 (développeurs) · Explorer les vrais développeurs
+
+`GET/api/explore/developers` renvoie tous les développeurs non suspendus avec ce que les filtres d'Explore utilisent : nom, headline, ville, **pays (nom, pas le code ISO)**, disponibilité, skills et intentions. La page les adopte au chargement (`web/lib/explore.ts`, `adoptDevelopers`), si bien qu'Explorer liste désormais les **vrais inscrits** et pas seulement les 9 profils de démo ; les filtres pays / skill / intention / disponibilité restent calculés dans la page sur cet ensemble complet.
+
+Reste pour clore PAM-505 : le listing serveur des **projets** (l'onglet Projets filtre encore les fixtures) et « Sur quoi travailler » (déjà serveur via `GET/api/work`).
+
+- **Livrable** : `api/explore.ts`, `api/explore_test.ts`, `api/routes.ts`, `web/lib/explore.ts`, `web/fixtures/people.ts`, `web/pages/explore/explore-page.tsx` ; §10.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

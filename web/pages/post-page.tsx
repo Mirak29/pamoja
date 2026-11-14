@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { A } from '/web/ui/link.tsx'
 import {
@@ -15,9 +15,9 @@ import {
   type Post,
   posts,
   postsChanged,
-  replyTo,
 } from '/web/fixtures/posts.ts'
 import { toggleLike } from '/web/lib/reactions.ts'
+import { loadThread, reply } from '/web/lib/replies.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -164,7 +164,7 @@ const Replies = ({ post }: { post: Post }) => {
   const open = post.type === 'Question' && !post.acceptedReply
   const send = () => {
     if (!draft.trim() || overLimit(draft, 'reply')) return
-    replyTo(post, me.login, draft.trim())
+    reply(post, draft.trim())
     setDraft('')
   }
   return (
@@ -225,6 +225,11 @@ const NotFound = () => (
 export const PostPage = () => {
   postsChanged.value
   const id = url.relativePath.slice(1).split('/')[1]
+  // A server post and its thread are read for a shared link and a reload
+  useEffect(() => {
+    const serverId = id.startsWith('s') ? Number(id.slice(1)) : NaN
+    if (Number.isInteger(serverId)) loadThread(serverId)
+  }, [id])
   const post = posts.find((p) => p.id === id && (!p.hidden || isMe(p.author)))
   if (!post) return <NotFound />
   const community = communities.find((c) => c.slug === post.community)
