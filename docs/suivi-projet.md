@@ -1230,6 +1230,15 @@ Vérifié en local avec un faux `ssh` : trois passages ne gardent que les deux d
 - **Livrable** : `deploy/pull-backup.sh`, `docs/deploiement.md` ; §17.5
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-508 · Signaler un contenu, masquage à 3 signalements
+
+`POST/api/report/create` enregistre un signalement (`report`, un par signaleur et par cible), produit l'entry `CONTENT_REPORTED` qui prévient les modérateurs, limite le débit et refuse de signaler son propre contenu. Au-delà de **trois signaleurs distincts**, un post ou un commentaire est masqué (`hiddenAt`) en attendant la décision d'un modérateur : `GET/api/posts` filtrant déjà `hiddenAt`, il **disparaît du feed pour tout le monde** (§10.5). Côté interface, `web/lib/reports.ts` branche le formulaire de signalement sur cette route pour le contenu serveur (id numérique), le contenu de démo restant géré dans la page.
+
+Reste pour clore PAM-508 : la file des modérateurs, leurs actions (ignorer, avertir, suspendre, retirer une preuve) et le bandeau pour l'auteur ; la page Modération lit encore les fixtures.
+
+- **Livrable** : `api/reports.ts`, `api/reports_test.ts`, `api/routes.ts`, `web/lib/reports.ts`, `web/ui/report-dialog.tsx` ; §10.5, §13.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

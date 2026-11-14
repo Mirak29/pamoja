@@ -6,8 +6,8 @@ import {
   type ReportKind,
   reportReasons,
   reportTarget,
-  submitReport,
 } from '/web/fixtures/reports.ts'
+import { submitReport } from '/web/lib/reports.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Textarea } from '/web/ui/input.tsx'

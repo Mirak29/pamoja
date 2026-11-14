@@ -121,6 +121,7 @@ import {
 } from '/api/follow.ts'
 import { setMembership } from '/api/community.ts'
 import { applyToProject, decideJoinRequest } from '/api/join.ts'
+import { REPORTABLE, reportContent } from '/api/reports.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -1436,6 +1437,29 @@ const defs = {
     }),
     output: OBJ({ status: STR('accepted or refused') }),
     description: 'Accept or refuse a candidature (§6.6)',
+  }),
+
+  'POST/api/report/create': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      reportContent(
+        ctx.session.userId,
+        input.targetType,
+        input.targetId,
+        input.reason,
+        input.comment,
+      ),
+    input: OBJ({
+      targetType: LIST(REPORTABLE, 'What is reported'),
+      targetId: NUM('Id of the content'),
+      reason: STR('Why it is reported'),
+      comment: STR('A note for the moderators, empty if none'),
+    }),
+    output: OBJ({
+      reported: BOOL('True once the report is saved'),
+      hidden: BOOL('True when this report hid the content (§10.5)'),
+    }),
+    description: 'Report content for the moderators (§10.5)',
   }),
 
   /*
