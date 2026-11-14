@@ -96,9 +96,6 @@ const dropOlder = sql<undefined, { projectId: number; keep: number }>`
   WHERE projectId = :projectId AND projectSummaryId < :keep
 `.run
 
-/** The last summary of a project, if any */
-export const summaryOf = (projectId: number) => getLast(projectId)
-
 /** What the model reads of a project: only what the Pulse counts and lists */
 export const inputOf = (project: Candidate, at = now()) => {
   const { since: _, summary: __, summaryAt: ___, ...counts } = pulseOf(

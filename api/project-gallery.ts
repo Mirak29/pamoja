@@ -5,7 +5,7 @@ import { mediaOf, setMediaOf } from '/api/media.ts'
 import { videoOf } from '/api/video-links.ts'
 import { Entry } from '/api/entries.ts'
 import { ProjectNeed } from '/api/schema.ts'
-import { LIMITS } from '/api/limits.ts'
+import { LIMITS, MAX_NEEDS } from '/api/limits.ts'
 
 // The gallery of a project page: 8 screenshots at most, uploaded like every
 // image (§17.3), set by the owner and the maintainers (§6.3)
@@ -73,9 +73,6 @@ export const setGallery = (me: number, slug: string, ids: number[]) => {
 // The information and the needs of a project, edited by the owner and the
 // maintainers from the Réglages tab (PAM-402, §6.3)
 
-/** At most this many needs on a project */
-export const NEEDS_MAX = 12
-
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 
 const writeInfo = sql<
@@ -139,7 +136,8 @@ export const updateProjectInfo = (
     }
     needs.push(title)
   }
-  if (needs.length > NEEDS_MAX) throw badRequest(`${NEEDS_MAX} needs at most`)
+  // The same cap as at import
+  if (needs.length > MAX_NEEDS) throw badRequest(`${MAX_NEEDS} needs at most`)
 
   db.transaction(() => {
     const at = now()

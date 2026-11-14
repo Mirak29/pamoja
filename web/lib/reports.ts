@@ -1,6 +1,6 @@
 import { api } from '/web/lib/api.ts'
-import { CircleAlert } from '/web/assets/icons.tsx'
-import { notify } from '/web/ui/toast.tsx'
+import { notifyFailure } from '/web/lib/failure.ts'
+import { serverIdOf } from '/web/fixtures/posts.ts'
 import {
   type ReportKind,
   submitReport as submitLocal,
@@ -18,19 +18,13 @@ const serverType: Partial<Record<ReportKind, string>> = {
 export const submitReport = (draft: Parameters<typeof submitLocal>[0]) => {
   submitLocal(draft)
   const targetType = serverType[draft.kind]
-  const targetId = Number(draft.target)
-  if (!targetType || !Number.isInteger(targetId) || targetId <= 0) return
+  // A post of the server is shown as « s12 »: its id is the number
+  const targetId = serverIdOf(draft.target)
+  if (!targetType || !targetId) return
   api['POST/api/report/create'].fetch({
     targetType,
     targetId,
     reason: draft.reason,
     comment: draft.comment,
-  }).catch(() =>
-    notify({
-      title: 'Signalement non enregistré',
-      body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
-      icon: CircleAlert,
-      tone: 'danger',
-    })
-  )
+  }).catch((error) => notifyFailure('Signalement non enregistré', error))
 }

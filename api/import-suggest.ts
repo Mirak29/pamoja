@@ -1,5 +1,4 @@
-import { respond } from '@01edu/api/response'
-import { now } from '@01edu/time'
+import { memoryWindow, within } from '/api/lib/rate.ts'
 import { readOptional } from '/api/github.ts'
 import { fetchRepository } from '/api/import.ts'
 import { LIMITS, MAX_NEEDS } from '/api/limits.ts'
@@ -22,6 +21,7 @@ const DESCRIPTION_MIN = 20
 /** Proposals per developer and per hour (§16) */
 export const SUGGEST_RATE = { count: 20, per: 3600 }
 const CACHE_MS = 3600_000
+const CACHE_SIZE = 200
 // The ceiling of a proposal, thinking included (PAM-540)
 const PROPOSAL_TOKENS = 600
 
@@ -79,7 +79,7 @@ export const checkSuggestion = (raw: unknown) => {
 }
 
 // Per developer: how many asked in the last hour
-const asked = new Map<number, number[]>()
+const asked = memoryWindow()
 const cache = new Map<string, { at: number; suggestion: Suggestion }>()
 
 /** Forgets the budget and the cache: for the tests */
@@ -89,18 +89,8 @@ export const resetSuggestions = () => {
 }
 
 const spend = (userId: number) => {
-  const at = now()
-  const mine = (asked.get(userId) ?? []).filter((time) =>
-    at - time < SUGGEST_RATE.per
-  )
-  if (mine.length >= SUGGEST_RATE.count) {
-    const retryAfter = Math.max(1, Math.ceil(mine[0] + SUGGEST_RATE.per - at))
-    throw new respond.TooManyRequestsError(
-      { message: 'Too many proposals', retryAfter },
-      { 'Retry-After': String(retryAfter) },
-    )
-  }
-  asked.set(userId, [...mine, at])
+  within(asked.count, SUGGEST_RATE, userId, 'Too many proposals')
+  asked.add(userId)
 }
 
 /** The proposal of the AI for a repo of the developer */
@@ -153,6 +143,10 @@ export const suggestImport = async (
     description: checked.description,
     ai,
   }
-  ai && cache.set(key, { at: Date.now(), suggestion })
+  if (ai) {
+    // The oldest leaves first: the cache stays small
+    cache.size >= CACHE_SIZE && cache.delete(cache.keys().next().value!)
+    cache.set(key, { at: Date.now(), suggestion })
+  }
   return suggestion
 }

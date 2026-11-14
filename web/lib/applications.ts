@@ -1,8 +1,5 @@
-import { api, reasonOf, retryAfterOf } from '/web/lib/api.ts'
-import { t } from '/web/lib/language.ts'
-import { waitLabel } from '/web/lib/messages.ts'
-import { CircleAlert } from '/web/assets/icons.tsx'
-import { notify } from '/web/ui/toast.tsx'
+import { api, reasonOf } from '/web/lib/api.ts'
+import { notifyFailure } from '/web/lib/failure.ts'
 import { Login, me } from '/web/fixtures/people.ts'
 import {
   applications,
@@ -33,20 +30,8 @@ const REFUSALS: Record<string, string> = {
   refused: 'Le serveur a refusé la demande.',
 }
 
-const failed = (title: string, error: unknown) => {
-  const reason = reasonOf(error)
-  const wait = retryAfterOf(error)
-  notify({
-    title,
-    body: wait
-      ? t`Trop de demandes d’un coup. Réessaie ${waitLabel(wait)}.`
-      : reason
-      ? REFUSALS[reason] ?? REFUSALS.refused
-      : 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
-    icon: CircleAlert,
-    tone: 'danger',
-  })
-}
+const failed = (title: string, error: unknown) =>
+  notifyFailure(title, error, REFUSALS)
 
 /** Apply to join a project */
 export const applyToProject = (

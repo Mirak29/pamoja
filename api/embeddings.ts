@@ -1,7 +1,7 @@
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { every } from '/api/lib/background.ts'
-import { listOf } from '/api/lib/json-list.ts'
+import { stringsOf } from '/api/lib/json.ts'
 import { cosine, DIMENSIONS, embed, EMBEDDING_MODEL } from '/api/llm.ts'
 import { Embedding } from '/api/schema.ts'
 // The entry table must exist before the queries below are prepared
@@ -105,7 +105,7 @@ const listIntents = sql<{ intent: string }, number>`
 export const profileText = (userId: number) => {
   const profile = getProfile(userId)
   if (!profile) return ''
-  const skills = listOf(profile.skills).filter((s) => typeof s === 'string')
+  const skills = stringsOf(profile.skills)
   const intents = listIntents(userId).map((row) => row.intent)
   return [
     profile.headline ?? '',
@@ -233,11 +233,15 @@ export const fillEmbeddings = async () => {
       row.helpRequestId,
       requestText({
         ...row,
-        skills: listOf(row.skills).filter((s) => typeof s === 'string'),
+        skills: stringsOf(row.skills),
       }),
     )
   }
-  for (const { userId } of listUsers()) due('user', userId, profileText(userId))
+  for (const { userId } of listUsers()) {
+    // The batch is full: the next run reads the rest
+    if (todo.length >= PER_RUN) break
+    due('user', userId, profileText(userId))
+  }
   let done = 0
   for (let i = 0; i < todo.length; i += BATCH) {
     const batch = todo.slice(i, i + BATCH)

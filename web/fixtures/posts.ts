@@ -474,10 +474,12 @@ export const acceptAnswer = (question: Post, answer: Post) => {
 /** A post saved on the server (PAM-427) keeps its id, prefixed */
 export const savedId = (id: number) => `s${id}`
 
-/**
- * Brings the posts read from GET/api/posts into the feed, newest first; a
- * post already shown stays as it is
- */
+/** The server id of a post, or undefined for a post of the demo */
+export const serverIdOf = (id: string) => {
+  const n = id.startsWith('s') ? Number(id.slice(1)) : NaN
+  return Number.isInteger(n) && n > 0 ? n : undefined
+}
+
 // A reaction count as a login list of that length, with `me` first when the
 // reaction is the developer's own (the page counts and checks membership)
 const reactionList = (count: number, mine: boolean): Login[] => {
@@ -486,36 +488,47 @@ const reactionList = (count: number, mine: boolean): Login[] => {
   return list
 }
 
+/**
+ * A post of the server as the pages hold it. The server gives counts and the
+ * developer's own reactions; the page keeps login lists, so a count is a list
+ * of that length with `me` in it when it is the developer's (PAM-501)
+ */
+const postFromServer = (
+  saved: ApiOutput['GET/api/posts'][number],
+  place: Pick<Post, 'parent' | 'root'> = {},
+): Post => {
+  hearOf(saved.author, saved.authorName, '')
+  return {
+    id: savedId(saved.id),
+    community: saved.community,
+    author: saved.author as Login,
+    type: saved.type as PostType,
+    title: saved.title,
+    body: saved.body,
+    at: saved.createdAt * 1000,
+    reactions: {
+      like: reactionList(saved.reactions.like, saved.mine.includes('like')),
+    },
+    bookmarks: saved.bookmarked ? [me.login as Login] : [],
+    reposts: [],
+    ...place,
+    media: saved.media,
+    video: saved.videoUrl || undefined,
+    demo: false,
+  }
+}
+
+/**
+ * Brings the posts read from GET/api/posts into the feed, newest first; a
+ * post already shown stays as it is
+ */
 export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
   const known = new Set(posts.map((post) => post.id))
-  let added = 0
-  for (const saved of [...list].reverse()) {
-    const id = savedId(saved.id)
-    if (known.has(id)) continue
-    added++
-    hearOf(saved.author, saved.authorName, '')
-    posts.unshift({
-      id,
-      community: saved.community,
-      author: saved.author as Login,
-      type: saved.type as PostType,
-      title: saved.title,
-      body: saved.body,
-      at: saved.createdAt * 1000,
-      // The server gives counts and the developer's own reactions; the page
-      // keeps login lists, so a count is a list of that length with `me` in
-      // it when it is the developer's (PAM-501)
-      reactions: {
-        like: reactionList(saved.reactions.like, saved.mine.includes('like')),
-      },
-      bookmarks: saved.bookmarked ? [me.login as Login] : [],
-      reposts: [],
-      media: saved.media,
-      video: saved.videoUrl || undefined,
-      demo: false,
-    })
-  }
-  added && changed()
+  const added = [...list].reverse().filter((saved) =>
+    !known.has(savedId(saved.id))
+  )
+  for (const saved of added) posts.unshift(postFromServer(saved))
+  added.length && changed()
 }
 
 /**
@@ -524,28 +537,11 @@ export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
  */
 export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
   for (const p of data.posts) {
-    const id = savedId(p.id)
-    if (posts.some((post) => post.id === id)) continue
-    hearOf(p.author, p.authorName, '')
-    posts.push({
-      id,
-      community: p.community,
-      author: p.author as Login,
-      type: p.type as PostType,
-      title: p.title,
-      body: p.body,
-      at: p.createdAt * 1000,
-      reactions: {
-        like: reactionList(p.reactions.like, p.mine.includes('like')),
-      },
-      bookmarks: p.bookmarked ? [me.login as Login] : [],
-      reposts: [],
+    if (posts.some((post) => post.id === savedId(p.id))) continue
+    posts.push(postFromServer(p, {
       parent: p.parentId ? savedId(p.parentId) : undefined,
       root: p.id === data.rootId ? undefined : savedId(data.rootId),
-      media: p.media,
-      video: p.videoUrl || undefined,
-      demo: false,
-    })
+    }))
   }
   const root = posts.find((post) => post.id === savedId(data.rootId))
   if (root && data.acceptedReplyId) {

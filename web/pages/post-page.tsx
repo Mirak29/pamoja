@@ -15,6 +15,7 @@ import {
   type Post,
   posts,
   postsChanged,
+  serverIdOf,
 } from '/web/fixtures/posts.ts'
 import { toggleLike } from '/web/lib/reactions.ts'
 import { loadThread, reply } from '/web/lib/replies.ts'
@@ -227,8 +228,8 @@ export const PostPage = () => {
   const id = url.relativePath.slice(1).split('/')[1]
   // A server post and its thread are read for a shared link and a reload
   useEffect(() => {
-    const serverId = id.startsWith('s') ? Number(id.slice(1)) : NaN
-    if (Number.isInteger(serverId)) loadThread(serverId)
+    const serverId = serverIdOf(id)
+    if (serverId) loadThread(serverId)
   }, [id])
   const post = posts.find((p) => p.id === id && (!p.hidden || isMe(p.author)))
   if (!post) return <NotFound />

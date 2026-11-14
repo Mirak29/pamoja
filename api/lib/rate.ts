@@ -29,3 +29,22 @@ export const within = (
     { 'Retry-After': String(retryAfter) },
   )
 }
+
+/**
+ * The actions of each developer kept in memory, for a limit `within` checks
+ * without the database: one instance serves Pamoja (§12), and a restart
+ * starts again from nothing. `me` 0 counts for everyone.
+ */
+export const memoryWindow = () => {
+  const times = new Map<number, number[]>()
+  return {
+    count: ({ me, since }: { me: number; since: number }): Window => {
+      const kept = (times.get(me) ?? []).filter((at) => at > since)
+      times.set(me, kept)
+      return { n: kept.length, oldest: kept[0] ?? null }
+    },
+    add: (me: number, at = now()) =>
+      times.set(me, [...times.get(me) ?? [], at]),
+    clear: () => times.clear(),
+  }
+}

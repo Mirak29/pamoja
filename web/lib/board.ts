@@ -1,6 +1,5 @@
 import { api } from '/web/lib/api.ts'
-import { CircleAlert } from '/web/assets/icons.tsx'
-import { notify } from '/web/ui/toast.tsx'
+import { notifyFailure } from '/web/lib/failure.ts'
 import {
   boardChanged,
   type BoardColumn,
@@ -13,14 +12,6 @@ import type { ProjectSlug } from '/web/fixtures/projects.ts'
 // The board read from the server (PAM-404): its cards take the place of the
 // page's, and a move is shown at once then saved; a failure puts it back. A
 // merged pull request moves its card to Done through the webhook (§6.7).
-
-const failed = () =>
-  notify({
-    title: 'Carte non déplacée',
-    body: 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
-    icon: CircleAlert,
-    tone: 'danger',
-  })
 
 /** Read a project's board from the server and show its cards */
 export const loadBoard = (slug: string) =>
@@ -39,8 +30,8 @@ export const moveTask = (slug: string, card: Card, column: BoardColumn) => {
   moveCard(slug as ProjectSlug, card, column)
   const taskId = Number(card.id)
   if (!Number.isInteger(taskId) || taskId <= 0) return
-  api['POST/api/task/move'].fetch({ taskId, column }).catch(() => {
+  api['POST/api/task/move'].fetch({ taskId, column }).catch((error) => {
     moveCard(slug as ProjectSlug, card, from)
-    failed()
+    notifyFailure('Carte non déplacée', error)
   })
 }

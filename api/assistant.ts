@@ -1,6 +1,7 @@
 import { respond } from '@01edu/api/response'
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
+import { memoryWindow, within } from '/api/lib/rate.ts'
 import { chat, hasModel, type Message } from '/api/llm.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { AssistantMessage } from '/api/schema.ts'
@@ -71,36 +72,22 @@ type Extras = {
  * Budget: counted in memory, one instance serves Pamoja (§12)
  */
 
-const DAY_MS = 86_400_000
-const askedBy = new Map<number, number[]>()
-let all: number[] = []
+const DAY = 24 * 3600
+// Each developer's questions; 0 holds everyone's
+const asked = memoryWindow()
+const ALL = 0
 
-const recent = (times: number[], at: number) =>
-  times.filter((time) => at - time < DAY_MS)
-
-const spend = (userId: number, at = Date.now()) => {
-  const mine = recent(askedBy.get(userId) ?? [], at)
-  all = recent(all, at)
-  const full = mine.length >= ASK_PER_DAY
-    ? mine
-    : all.length >= ASK_PER_DAY_ALL
-    ? all
-    : undefined
-  if (full) {
-    const retryAfter = Math.max(1, Math.ceil((full[0] + DAY_MS - at) / 1000))
-    throw new respond.TooManyRequestsError(
-      { message: 'Too many questions today', retryAfter },
-      { 'Retry-After': String(retryAfter) },
-    )
-  }
-  askedBy.set(userId, [...mine, at])
-  all.push(at)
+const spend = (userId: number) => {
+  const message = 'Too many questions today'
+  within(asked.count, { count: ASK_PER_DAY, per: DAY }, userId, message)
+  within(asked.count, { count: ASK_PER_DAY_ALL, per: DAY }, ALL, message)
+  asked.add(userId)
+  asked.add(ALL)
 }
 
 /** Forgets the budget and the cache: for the tests */
 export const resetAssistant = () => {
-  askedBy.clear()
-  all = []
+  asked.clear()
   cache.clear()
 }
 

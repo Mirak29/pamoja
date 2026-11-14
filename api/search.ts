@@ -1,5 +1,5 @@
 import { sql } from '@01edu/db'
-import { listOf } from '/api/lib/json-list.ts'
+import { numbersOf, stringsOf } from '/api/lib/json.ts'
 import { now } from '@01edu/time'
 import { every, later } from '/api/lib/background.ts'
 import { errorMessage, log } from '/api/lib/log.ts'
@@ -158,10 +158,7 @@ const helpRows = sql<
   ORDER BY helpRequest.helpRequestId
 `.all
 
-const names = (value: unknown) =>
-  listOf(value).filter((v): v is string => typeof v === 'string')
-const skillsOf = (value: unknown) =>
-  skillNamesOf(listOf(value).filter((v): v is number => typeof v === 'number'))
+const skillsOf = (value: unknown) => skillNamesOf(numbersOf(value))
 
 // Each kind, its documents from its rows
 const builders = {
@@ -169,7 +166,7 @@ const builders = {
     developerRows({ ...filter, at: now() }).map((row) => ({
       ...row,
       available: !!row.available,
-      skills: names(row.skills),
+      skills: stringsOf(row.skills),
     })),
   projects: (filter: Filter) =>
     projectRows(filter).map((row) => ({

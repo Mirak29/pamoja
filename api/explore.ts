@@ -3,6 +3,7 @@ import { now } from '@01edu/time'
 // The tables exist before the query below is prepared
 import '/api/schema.ts'
 import { countryName } from '/api/vocabulary.ts'
+import { stringsOf } from '/api/lib/json.ts'
 
 // Developers for Explore (§10.3): every one the page can list and filter by
 // country, skill, intention and availability — not only the demo profiles of
@@ -35,15 +36,6 @@ const rows = sql<Row, number>`
   ORDER BY profile.displayName
 `.all
 
-const list = (value: string): string[] => {
-  try {
-    const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.map(String) : []
-  } catch {
-    return []
-  }
-}
-
 /** Every developer for Explore, with what its filters need (§10.3) */
 export const listDevelopers = () =>
   rows(now()).map((row) => ({
@@ -53,6 +45,6 @@ export const listDevelopers = () =>
     city: row.city,
     country: row.country ? countryName(row.country) : '',
     available: !!row.available,
-    skills: list(row.skills),
-    intents: list(row.intents),
+    skills: stringsOf(row.skills),
+    intents: stringsOf(row.intents),
   }))
