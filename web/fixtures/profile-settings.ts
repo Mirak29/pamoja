@@ -71,6 +71,44 @@ export const profileChanged = signal(0)
 export const settingsOf = (login: Login): ProfileSettings =>
   saved[login] ?? defaults
 
+/**
+ * The appearance read from the server (GET/api/user, PAM-302) takes the place
+ * of what the page had, so a profile shows its own theme, accent and order.
+ */
+export const adoptSettings = (
+  login: string,
+  settings: {
+    theme: string
+    accent: string
+    order: string[]
+    featured: string[]
+  },
+) => {
+  const key = login as Login
+  saved[key] = {
+    ...(saved[key] ?? defaults),
+    theme: settings.theme as ProfileTheme,
+    accent: settings.accent as ProfileAccent,
+    order: completeOrder(settings.order),
+    featured: settings.featured as ProjectSlug[],
+  }
+  profileChanged.value++
+}
+
+/**
+ * The order of the sections a profile shows: the one saved, then every
+ * section it does not name, in the default order. A profile never ordered
+ * has none saved (`[]`), and one saved before a section existed lacks it:
+ * neither may show fewer sections than it has.
+ */
+export const completeOrder = (order: string[]): ProfileSection[] => {
+  // The sections it names that exist, each once
+  const named = [...new Set(order)].filter((key): key is ProfileSection =>
+    defaults.order.includes(key as ProfileSection)
+  )
+  return [...named, ...defaults.order.filter((key) => !named.includes(key))]
+}
+
 export type ProfileDraft =
   & ProfileSettings
   & Pick<Person, 'headline' | 'bio' | 'website' | 'skills'>
@@ -85,9 +123,18 @@ export const saveProfile = (login: Login, draft: ProfileDraft) => {
   if (skills.length) person.skills = skills
   saved[login] = settings
   profileChanged.value++
-  // Theme, accent, cover and order stay in the page until PAM-302
+  // The appearance persists on the server (PAM-302); the cover photo has its
+  // own route (POST/api/user/cover)
   saveMe({
-    profile: { headline, bio, website: website ?? '' },
+    profile: {
+      headline,
+      bio,
+      website: website ?? '',
+      theme: settings.theme,
+      accent: settings.accent,
+      sectionOrder: settings.order,
+      featured: settings.featured,
+    },
     skills: { skills, domains: person.domains ?? [] },
   })
 }

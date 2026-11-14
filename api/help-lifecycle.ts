@@ -342,7 +342,8 @@ const getProofSource = sql<
   WHERE helpRequest.helpRequestId = ?
 `.get
 
-const listSkillRows = sql<
+/** The skill rows a proof freezes, from a JSON list of skill ids (§8.3) */
+export const listSkillRows = sql<
   { skillId: number; slug: string; name: string },
   string
 >`
@@ -357,8 +358,8 @@ const setCompleted = sql<undefined, { helpRequestId: number; at: number }>`
     AND status IN ('review_submitted', 'delivered')
 `.run
 
-// A skill proven by a confirmed help weighs the most in the matching (§6.1)
-const addProvenSkill = sql<
+/** A skill proven by a confirmed help: it weighs the most (§6.1, §7.3) */
+export const addProvenSkill = sql<
   undefined,
   { userId: number; skillId: number; at: number }
 >`

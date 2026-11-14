@@ -1,3 +1,4 @@
+import { stringsOf } from '/api/lib/json.ts'
 import { db, sql } from '@01edu/db'
 import { DEFAULT_MIN_SCORE } from '/api/help-rules.ts'
 import { now } from '@01edu/time'
@@ -114,11 +115,16 @@ const getProfile = sql<
     website: string | null
     matchingMode: MatchingMode
     matchingFilters: string | null
+    theme: string
+    accent: string
+    sectionOrder: string | null
+    featured: string | null
   },
   number
 >`
   SELECT user.userId, githubUsername, githubLogin, avatarUrl, displayName, headline, bio,
-    country, city, website, matchingMode, matchingFilters
+    country, city, website, matchingMode, matchingFilters,
+    theme, accent, sectionOrder, featured
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE user.userId = ?
@@ -188,6 +194,17 @@ export const updateMatching = (userId: number, input: MatchingInput) =>
     at: now(),
   })
 
+const listCommunities = sql<{ slug: string }, number>`
+  SELECT community.slug FROM communityMember
+  JOIN community ON community.communityId = communityMember.communityId
+  WHERE communityMember.userId = ?
+  ORDER BY communityMember.joinedAt
+`.all
+
+/** The communities a developer joined, oldest first (§10.2) */
+export const communitiesOf = (userId: number) =>
+  listCommunities(userId).map((row) => row.slug)
+
 /** The signed in developer and their profile, prefilled from GitHub */
 export const getCurrentUser = (userId: number) => {
   const user = getProfile(userId)
@@ -206,11 +223,18 @@ export const getCurrentUser = (userId: number) => {
     city: user.city ?? '',
     website: user.website ?? '',
     cover: coverOf(userId),
+    // Personalization of the profile (§9.2)
+    theme: user.theme,
+    accent: user.accent,
+    sectionOrder: sectionOrderOf(user.sectionOrder),
+    featured: stringsOf(user.featured),
     matchingMode: user.matchingMode,
     // What the matching reads besides the mode (§7.3, §7.4)
     ...matchingFiltersOf(user.matchingFilters),
     ...skillsOf(userId),
     intents: listIntents(userId).map((row) => row.intent),
+    // The communities joined: the page starts from them at every session
+    communities: communitiesOf(userId),
   }
 }
 
@@ -225,9 +249,48 @@ const writeProfile = sql<undefined, Record<string, string | number | null>>`
     city = :city,
     website = :website,
     matchingMode = :matchingMode,
+    theme = :theme,
+    accent = :accent,
+    sectionOrder = :sectionOrder,
+    featured = :featured,
     updatedAt = :updatedAt
   WHERE userId = :userId
 `.run
+
+// Personalization (§9.2): the ids of docs/identite/tokens.json. An unknown
+// value is ignored and the current one kept.
+const PROFILE_THEMES = ['minimal', 'terminal', 'cyber', 'clair', 'sombre']
+const PROFILE_ACCENTS = ['indigo', 'vert', 'ambre', 'corail']
+const PROFILE_SECTIONS = [
+  'building',
+  'contributions',
+  'reputation',
+  'badges',
+  'activity',
+  'communities',
+  'map',
+  'graph',
+]
+
+/**
+ * The order of the sections a profile shows: the one saved, then every
+ * section it does not name, in the default order. A profile never ordered
+ * has none saved, and one saved before a section existed lacks it: the
+ * server always gives a full order.
+ */
+export const sectionOrderOf = (saved: unknown) => {
+  const named = [...new Set(stringsOf(saved))].filter((key) =>
+    PROFILE_SECTIONS.includes(key)
+  )
+  return [...named, ...PROFILE_SECTIONS.filter((key) => !named.includes(key))]
+}
+
+// A value of a list, or the current one when it is not in it
+const oneOf = (
+  list: string[],
+  value: string | null | undefined,
+  current: string,
+) => value && list.includes(value) ? value : current
 
 export type ProfileFields = {
   displayName: string
@@ -237,10 +300,22 @@ export type ProfileFields = {
   city: string
   website: string
   matchingMode: MatchingMode
+  theme?: string | null
+  accent?: string | null
+  sectionOrder?: string[] | null
+  featured?: string[] | null
 }
 
 export const updateProfile = (userId: number, fields: ProfileFields) => {
   const current = getProfile(userId)!
+  const theme = oneOf(PROFILE_THEMES, fields.theme, current.theme)
+  const accent = oneOf(PROFILE_ACCENTS, fields.accent, current.accent)
+  const sectionOrder = fields.sectionOrder
+    ? JSON.stringify(sectionOrderOf(fields.sectionOrder))
+    : current.sectionOrder
+  const featured = fields.featured
+    ? JSON.stringify([...new Set(fields.featured)])
+    : current.featured
   writeProfile({
     userId,
     displayName: clean(fields.displayName) ?? current.displayName,
@@ -250,6 +325,10 @@ export const updateProfile = (userId: number, fields: ProfileFields) => {
     city: clean(fields.city),
     website: clean(fields.website),
     matchingMode: fields.matchingMode,
+    theme,
+    accent,
+    sectionOrder,
+    featured,
     updatedAt: now(),
   })
   Entry.insert.PROFILE_UPDATED({ userId, source: 'platform' })

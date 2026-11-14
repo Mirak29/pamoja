@@ -2,6 +2,7 @@ import { computed, signal } from '@preact/signals'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { reloadHelpRequests } from '/web/lib/help.ts'
 import { adoptUser, me } from '/web/fixtures/people.ts'
+import { adoptSettings } from '/web/fixtures/profile-settings.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
 import {
@@ -13,6 +14,7 @@ import {
 import { notify } from '/web/ui/toast.tsx'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { loadPosts } from '/web/lib/posts.ts'
+import { loadFollows } from '/web/lib/follow.ts'
 
 type User = ApiOutput['GET/api/user/me']
 
@@ -26,6 +28,14 @@ export const signedIn = computed(() => !!currentUser.value)
 const setUser = (user: User) => {
   const first = currentUser.peek()?.userId !== user.userId
   adoptUser(user)
+  // Their appearance as saved: the edit screen starts from it, never from
+  // the defaults, which a save would write over it (§9.2)
+  adoptSettings(user.login, {
+    theme: user.theme,
+    accent: user.accent,
+    order: user.sectionOrder,
+    featured: user.featured,
+  })
   settings.matching = matchingModes[user.matchingMode]
   // The matching preferences saved on the server (§7.4)
   settings.minScore = user.minScore
@@ -38,6 +48,7 @@ const setUser = (user: User) => {
   currentUser.value = user
   if (first) {
     loadProjects()
+    loadFollows()
     reloadHelpRequests()
     loadPosts()
   }
@@ -134,6 +145,11 @@ const save = async (changes: {
       city: user.city,
       website: user.website,
       matchingMode: user.matchingMode,
+      // Personalization kept as it is unless the change updates it (§9.2)
+      theme: user.theme,
+      accent: user.accent,
+      sectionOrder: user.sectionOrder,
+      featured: user.featured,
       ...changes.profile,
     })
   }

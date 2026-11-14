@@ -7,8 +7,8 @@ import {
   projects,
   projectsChanged,
   projectsOf,
-  toggleFollow,
 } from '/web/fixtures/projects.ts'
+import { followProject } from '/web/lib/follow.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { DemoBadge } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
@@ -112,7 +112,7 @@ const MineCard = ({ project }: { project: Project }) => {
 }
 
 const unfollow = (project: Project) => {
-  toggleFollow(project, me.login)
+  followProject(project)
   notify({
     title: t`Tu ne suis plus ${project.name}`,
     body: 'Tu peux le suivre à nouveau depuis sa page.',

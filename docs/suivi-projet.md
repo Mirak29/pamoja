@@ -1069,6 +1069,68 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-901 · Seed des 14 reviews confirmées de Moussa
+
+Ajout au seed des 14 preuves de review de Moussa (`REVIEW_HELP_CONFIRMED`, `source = demo`, éligibles, backdatées), réparties sur quatre demandeurs de trois pays (Sénégal, Ghana, Cameroun) et deux projets. Le profil continue d'afficher ses preuves de fixtures, que le seed reflète (§18.2) ; côté serveur, le matching compte désormais « 14 reviews confirmées » (+15, score 59 → 74, Moussa n'est plus un « nouveau profil ») et l'évaluateur de badges donne Trusted Reviewer Silver, plus First Responder et Cross-border Silver. `evaluateBadges` reçoit un indicateur `announce` : le seed écrit la progression des badges sans émettre d'entry `BADGE_UNLOCKED` ni de notification datées « maintenant », ce qui garde toutes les entries du seed en `source = demo`.
+
+**Revue (CodeRabbit et relecture).** Les skills prouvés par ces reviews manquaient : en production, chaque confirmation écrit une ligne `platform_activity` dans `userSkill` (`help-lifecycle.ts`), la source que le matching pèse le plus (100 contre 70 pour un skill déclaré). Le seed les écrit maintenant, datées de la plus ancienne review ; le test le vérifie. Le score de Moussa pour la demande de la démo (review de code sur OpenPay Africa, Go, SQLite, Backend) passe ainsi de 74 à 87, recalculé avec `rank` sur la base seedée ; le « 59 → 74 » plus haut est celui d'avant ces skills. Un commentaire annonçait l'Or à la 15e review : il est à 20 (`[3, 10, 20, 50]`), la démo montre « 15 / 20 vers Gold » (§18.2).
+
+- **Livrable** : `api/seed.ts`, `api/badges.ts`, `api/seed_test.ts`, `task-db-seed.ts` ; §8, §18.1
+- **Par** : @niangoos
+
+### 2026-11-13 · PAM-503 · Suivre développeurs, projets et communautés
+
+Route `POST/api/follow/toggle` (utilisateur, projet, communauté) qui ajoute ou retire une ligne `follow`, avec limite de débit (§16) et refus de se suivre soi-même. Après le changement, `refreshListeners` relit les abonnements des connexions SSE du suiveur : un vrai follow fait désormais arriver `POST_CREATED` dans le fil en direct (§13.2), alors qu'avant seuls les follows du seed existaient. Côté interface, les boutons Suivre du profil, de la Home, de la page projet et de la liste des projets passent par `web/lib/follow.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+**Revue (relecture et CodeRabbit), corrigée.** La route était une bascule (`POST/api/follow/toggle`) et la page ne relisait jamais les abonnements : `me.follows` partait des fixtures ou d'une liste vide. Après un rechargement, un abonné voyait « Suivre » et son clic le désabonnait sur le serveur ; un second onglet ou une nouvelle tentative faisaient de même. Maintenant :
+- `POST/api/follow` reçoit l'état voulu (`follow: true/false`) : la même requête donne le même résultat ;
+- `GET/api/follows` donne les développeurs, projets et communautés suivis, lus à chaque session (`loadFollows`, comme `loadProjects`) ;
+- la page applique l'état que le serveur confirme, et revient en arrière si la requête échoue.
+La règle va dans le cahier (§15) : une route qui active ou désactive reçoit l'état voulu. Le test couvre la requête rejouée et la relecture.
+
+Vérifié dans le navigateur : suivre Kofi, recharger, le bouton dit toujours « Suivi », un clic désabonne vraiment (écran et base d'accord). Sur la page d'un projet, le bouton ne changeait pas au clic (défaut antérieur à la PR) : l'en-tête lit le signal `helpChanged` et, avec le même objet `project` modifié sur place, n'était pas redessiné ; il lit maintenant aussi `projectsChanged`.
+
+Seconde relecture de CodeRabbit, sur les requêtes concurrentes : deux clics rapides envoient des états opposés que le serveur pouvait enregistrer dans le désordre, la relecture du démarrage pouvait écraser un clic fait pendant qu'elle courait, et une réponse arrivée après un changement de compte s'appliquait au nouveau. `web/lib/in-order.ts` fait partir les écritures d'une même cible l'une après l'autre ; seule la dernière décide de l'affichage ; la relecture garde ce qui a été cliqué pendant qu'elle courait ; une réponse d'une autre session est ignorée. Testé (`web/lib/in-order_test.ts`) et vérifié dans le navigateur : trois clics rapides, écran et base d'accord, et encore après un rechargement.
+
+Relecture `/code-review` : un projet devenu non listé ne pouvait plus être quitté (la route ne retrouvait que les projets publics) ; il se quitte maintenant, sans pouvoir être suivi de nouveau. La limite de débit refusait aussi les désabonnements après 60 abonnements dans l'heure : seul un nouvel abonnement compte. Reste connu : la limite compte les abonnements encore présents, donc des allers-retours suivre / ne plus suivre ne l'atteignent pas ; il faudrait enregistrer chaque tentative.
+
+- **Livrable** : `api/follow.ts`, `web/lib/session.ts`, `web/fixtures/people.ts`, `web/fixtures/projects.ts`, `docs/cahier-des-charges.md`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
+- **Par** : @niangoos
+
+### 2026-11-13 · PAM-502 · Rejoindre et quitter une communauté sur le serveur
+
+Route `POST/api/community/join` qui ajoute ou retire une ligne `communityMember` (par slug), avec limite de débit (§16) et refus d'une communauté inconnue. `refreshListeners` relit ensuite les abonnements SSE du membre : il reçoit (ou cesse de recevoir) les posts de la communauté en direct (§13.2). `GET/api/user/me` renvoyant déjà les communautés rejointes, l'état « Membre » est juste après un rechargement. Côté interface, les boutons Rejoindre et Quitter passent par `web/lib/communities.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+Reste pour clore PAM-502 : créer une communauté (ligne `community` + créateur modérateur + réindexation recherche) demande d'abord un listing des communautés lu depuis la base, sinon une communauté créée disparaît du listing fixture au rechargement ; à suivre dans une PR dédiée.
+
+**Revue (relecture et CodeRabbit), corrigée.** La route basculait l'adhésion et la page ne relisait jamais les communautés rejointes (`GET/api/user/me` ne les donnait pas) : après un rechargement, un second onglet ou une nouvelle tentative, un clic pour rejoindre pouvait faire quitter. Maintenant :
+- `POST/api/community/join` reçoit l'état voulu (`join: true/false`) : la même requête donne le même résultat ;
+- les communautés rejointes viennent avec le développeur connecté (`communities` de `GET/api/user/me`, une seule requête partagée avec le profil public : `communitiesOf`) ;
+- la page applique l'état confirmé par le serveur, et revient en arrière si la requête échoue.
+Le nombre de membres affiché reste celui de la page tant que les communautés ne sont pas lues sur le serveur (`GET/api/communities`, PAM-502) : le compte du serveur d'une communauté seedée n'est pas celui que montre la démo.
+
+Vérifié dans le navigateur : rejoindre React, recharger, la page dit « Membre » ; quitter, la base suit.
+
+Seconde relecture de CodeRabbit : un départ lancé pendant qu'une adhésion était en route pouvait être défait par la réponse tardive de l'adhésion. Les écritures d'une même communauté partent l'une après l'autre et seule la dernière décide de l'affichage (`web/lib/in-order.ts`, le même que pour le follow) ; une réponse arrivée après un changement de compte est ignorée.
+
+Relecture `/code-review` : après 60 adhésions dans l'heure, même un départ était refusé ; seule une adhésion compte maintenant. Reste à trancher : un modérateur qui quitte perd son rôle (la ligne `communityMember` est supprimée, et il revient en simple membre) ; le cahier ne dit pas s'il faut l'en empêcher.
+
+- **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
+- **Par** : @niangoos
+
+### 2026-11-13 · PAM-302 · Personnalisation du profil enregistrée
+
+Le thème, la couleur d'accent, l'ordre des sections et les projets mis en avant sont désormais enregistrés par `POST/api/user/profile/update` (champs ajoutés à la route, à `updateProfile` et au schéma lu) ; une valeur de thème ou d'accent inconnue est ignorée et l'actuelle gardée. `GET/api/user/me` et le profil public `GET/api/user` les renvoient, et `web/lib/profile.ts` les adopte au chargement (`adoptSettings`) : chaque profil `/@login` s'affiche avec son propre thème, son accent et son ordre de sections, même après rechargement. Les styles de couverture prédéfinis (fil, grille…) restent dans la page, faute de colonne dédiée.
+
+**Revue (relecture et CodeRabbit), corrigée.** Un profil jamais ordonné a sa colonne `sectionOrder` vide, et le serveur renvoie alors `[]`. `adoptSettings` remplaçait l'ordre par défaut par cette liste vide : la page construit ses sections avec `order.map`, donc tous les profils du seed et tout nouvel inscrit n'en montraient plus aucune, et l'écran Modifier le profil non plus (enregistrer gardait `[]`). `completeOrder` donne maintenant l'ordre enregistré, puis toutes les sections qu'il ne nomme pas, dans l'ordre par défaut : un profil jamais ordonné les a toutes, et un profil ordonné avant l'ajout d'une section la garde. Testé (`web/fixtures/profile-settings_test.ts`) et vérifié dans le navigateur : le profil de Moussa montre ses sections.
+
+Relecture `/simplify` : l'ordre complet est maintenant donné par le serveur (`sectionOrderOf`, `api/user.ts`), au lieu d'une liste vide à compléter par chaque client ; `completeOrder` reste dans la page comme garde-fou si les deux versions divergent. `jsonStrings`, copié dans `api/profile.ts` et `api/user.ts`, devient `stringsOf` (`api/lib/json.ts`), qui lit le JSON sous forme de texte ou déjà décodé. Les projets mis en avant passent par `assertSlugs` (30 au plus, slugs valides) ; les champs texte sont nommés pour leur limite au lieu d'être déduits par élimination.
+
+Relecture `/code-review` : l'écran « Modifier le profil » partait de `settingsOf(me.login)`, rempli seulement quand la page profil avait été chargée dans la session ; ouvert directement, il enregistrait les valeurs par défaut par-dessus le thème, l'accent, l'ordre et les projets mis en avant. `setUser` reprend maintenant la personnalisation de `GET/api/user/me`. Vérifié : thème Terminal enregistré, rechargement, écran d'édition ouvert directement, enregistrement : le serveur garde Terminal, Corail et l'ordre.
+
+- **Livrable** : `api/user.ts`, `api/profile.ts`, `api/routes.ts`, `api/profile_personalization_test.ts`, `web/lib/session.ts`, `web/lib/profile.ts`, `web/fixtures/profile-settings.ts` ; §9.2
+- **Par** : @niangoos
+
 ### 2026-11-13 · PAM-403 · Candidatures pour rejoindre un projet
 
 `POST/api/project/join` enregistre une candidature (`joinRequest`, façons d'aider, disponibilité, message), refuse une candidature en double ou vers son propre projet, limite le débit, et notifie l'owner et les mainteneurs. `POST/api/project/join-request/decide` n'est permis qu'à un owner ou un mainteneur : accepter ajoute la personne à l'équipe (rôle `contributor`), produit l'entry `PROJECT_MEMBER_JOINED`, relit ses abonnements SSE et la prévient ; refuser la prévient aussi. Les notifications d'application portent le `joinRequestId`, si bien que le gestionnaire **accepte ou refuse directement depuis sa notification** (§6.6). Côté interface, `web/lib/applications.ts` relie le formulaire de candidature et les boutons Accepter/Refuser à ces routes, en conservant le chemin des candidatures de démo (fixtures).

@@ -1,3 +1,5 @@
+import { stringsOf } from '/api/lib/json.ts'
+import { communitiesOf, sectionOrderOf } from '/api/user.ts'
 import { sql } from '@01edu/db'
 import { listHelpActivity } from '/api/help.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
@@ -21,13 +23,18 @@ type ProfileRow = {
   website: string | null
   availability: string
   matchingFilters: string | null
+  theme: string
+  accent: string
+  sectionOrder: string | null
+  featured: string | null
 }
 
 const getProfile = sql<ProfileRow, string>`
   SELECT user.userId, user.githubId, githubUsername AS login, githubLogin,
     avatarUrl,
     displayName,
-    headline, bio, country, city, website, availability, matchingFilters
+    headline, bio, country, city, website, availability, matchingFilters,
+    theme, accent, sectionOrder, featured
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE githubUsername = ? COLLATE NOCASE
@@ -35,13 +42,6 @@ const getProfile = sql<ProfileRow, string>`
 
 const listIntents = sql<{ intent: string }, number>`
   SELECT intent FROM userIntent WHERE userId = ? ORDER BY userIntentId
-`.all
-
-const listCommunities = sql<{ slug: string }, number>`
-  SELECT community.slug FROM communityMember
-  JOIN community ON community.communityId = communityMember.communityId
-  WHERE communityMember.userId = ?
-  ORDER BY communityMember.joinedAt
 `.all
 
 // Public projects only: an unlisted one is reached by its link, not from a
@@ -97,12 +97,17 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     city: row.city ?? '',
     website: row.website ?? '',
     cover: coverOf(row.userId),
+    // Personalization of the profile (§9.2)
+    theme: row.theme,
+    accent: row.accent,
+    sectionOrder: sectionOrderOf(row.sectionOrder),
+    featured: stringsOf(row.featured),
     available: row.availability === 'available',
     helpTypes: helpTypesOf(row.matchingFilters),
     skills,
     domains,
     intents: listIntents(row.userId).map((r) => r.intent),
-    communities: listCommunities(row.userId).map((r) => r.slug),
+    communities: communitiesOf(row.userId),
     projects: listProjects(row.userId).map((project) => ({
       slug: project.slug,
       name: project.name,

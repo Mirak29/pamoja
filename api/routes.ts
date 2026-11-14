@@ -111,6 +111,13 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import {
+  FOLLOW_TARGETS,
+  followsOf,
+  type FollowTarget,
+  setFollow,
+} from '/api/follow.ts'
+import { setMembership } from '/api/community.ts'
 import { applyToProject, decideJoinRequest } from '/api/join.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
@@ -181,6 +188,11 @@ const identity = {
   city: STR('City, empty if none'),
   website: STR('Website, empty if none'),
   cover: ARR(media, 'The photo of the cover: none or one (§9.2)'),
+  // Personalization of the profile (§9.2)
+  theme: STR('Profile theme id'),
+  accent: STR('Accent colour id'),
+  sectionOrder: ARR(STR('Section key'), 'Order of the profile sections'),
+  featured: ARR(STR('Project slug'), 'Projects highlighted, empty for all'),
 }
 
 const currentUser = {
@@ -204,6 +216,7 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+  communities: ARR(STR('Slug of a community'), 'Communities joined'),
 }
 
 const profileSaved = OBJ(currentUser, 'The profile saved')
@@ -1318,6 +1331,51 @@ const defs = {
     description: 'The latest posts, newest first',
   }),
 
+  'GET/api/follows': route({
+    authorize: withSession,
+    // The page starts from it at every session, never from what it guessed
+    fn: (ctx) => followsOf(ctx.session.userId),
+    output: OBJ({
+      users: ARR(STR('Login'), 'Developers followed'),
+      projects: ARR(STR('Slug'), 'Projects followed'),
+    }),
+    description: 'What the signed in developer follows',
+  }),
+
+  'POST/api/follow': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      setFollow(
+        ctx.session.userId,
+        input.targetType as FollowTarget,
+        input.target,
+        input.follow,
+      ),
+    input: OBJ({
+      targetType: LIST(FOLLOW_TARGETS, 'What is followed'),
+      target: STR('Login of a developer, or slug of a project or community'),
+      follow: BOOL('True to follow, false to stop: the state wanted'),
+    }),
+    output: OBJ({
+      following: BOOL('True when the developer follows the target'),
+      followers: NUM('How many followers the target has after the change'),
+    }),
+    description:
+      'Follow a developer, a project or a community, or stop following it',
+  }),
+
+  'POST/api/community/join': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      setMembership(ctx.session.userId, input.slug, input.join),
+    input: OBJ({
+      slug: STR('Slug of the community'),
+      join: BOOL('True to join, false to leave: the state wanted'),
+    }),
+    output: OBJ({ joined: BOOL('True when the developer is a member') }),
+    description: 'Join or leave a community',
+  }),
+
   'POST/api/project/join': route({
     authorize: withSession,
     fn: (ctx, input) =>
@@ -1701,8 +1759,11 @@ const defs = {
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {
-      const { matchingMode: _, ...texts } = fields
-      assertFits(texts)
+      // The text fields have a length limit; the personalization is checked
+      // by updateProfile (§9.2), its projects as slugs
+      const { displayName, headline, bio, country, city, website } = fields
+      assertFits({ displayName, headline, bio, country, city, website })
+      assertSlugs(fields.featured ?? [], 'featured projects')
       updateProfile(ctx.session.userId, fields)
       return getCurrentUser(ctx.session.userId)!
     },
@@ -1714,6 +1775,14 @@ const defs = {
       city: STR('City'),
       website: STR('Website'),
       matchingMode,
+      theme: optional(STR('Profile theme id (§9.2); unknown ids are ignored')),
+      accent: optional(STR('Accent colour id (§9.2); unknown ids are ignored')),
+      sectionOrder: optional(
+        ARR(STR('Section key'), 'New order of the profile sections'),
+      ),
+      featured: optional(
+        ARR(STR('Project slug'), 'Projects highlighted, empty for all'),
+      ),
     }, 'The whole editable profile: an empty field is emptied'),
     output: profileSaved,
     description: 'Save the profile',

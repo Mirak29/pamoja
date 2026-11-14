@@ -297,7 +297,14 @@ const writeProgress = sql<undefined, Record<string, string | number>>`
  * proof withdrawn by moderation, §10.5) is only saved. Synchronous: it runs
  * inside the transaction of the proof.
  */
-export const evaluateBadges = (userId: number, at = now()) => {
+export const evaluateBadges = (
+  userId: number,
+  at = now(),
+  // The seed fills a developer's badges from backdated demo proofs: it writes
+  // the progress but does not announce an unlock (no BADGE_UNLOCKED entry, no
+  // notification), which would be dated now and read as « just earned » (§14)
+  announce = true,
+) => {
   const before = new Map(listBadges(userId).map((p) => [p.badge, p.level]))
   for (const badge of Object.keys(BADGES) as BadgeKey[]) {
     const measure = measures[badge](userId)
@@ -305,7 +312,7 @@ export const evaluateBadges = (userId: number, at = now()) => {
     const previous = before.get(badge)
     if (previous === undefined && !measure.count) continue
     writeProgress({ userId, badge, level, count: measure.count, at })
-    if (level <= (previous ?? 0)) continue
+    if (!announce || level <= (previous ?? 0)) continue
     Entry.insert.BADGE_UNLOCKED({
       userId,
       data: { badge, level },
