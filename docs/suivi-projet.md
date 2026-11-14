@@ -1160,6 +1160,17 @@ Essayé avec les vraies clés le 14 novembre. Baseten, prévu d'abord avec les c
 - **Livrable** : `api/llm.ts`, `api/assistant.ts`, `api/assistant_test.ts`, `.env.production.example` ; §11, §20
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-307 · Résumé IA du Pulse
+
+`api/pulse-summary.ts` écrit le résumé en tâche de fond, jamais pendant l'affichage d'une page (§11). Toutes les 10 minutes (la première fois une minute après le démarrage), il relit les projets liés à un repo et donne au modèle les chiffres du Pulse, les PRs mergées sur 7 jours avec leur auteur, les PRs sans review, les issues ouvertes (dont celles marquées `blocked`), les besoins et les demandes d'aide ouverts, dans un bloc `<donnees>` que le prompt présente comme des données, jamais des instructions. Le modèle n'est rappelé que si cette entrée a changé (empreinte SHA-256 gardée avec le résumé), au plus une fois toutes les 10 minutes par projet, 5 projets par passage, 300 résumés par jour. Un résumé trop court ou trop long est écarté ; le Markdown est retiré. Seul le dernier résumé d'un projet est gardé, et l'entry `PULSE_READY` fait relire le Pulse déjà ouvert.
+
+`GET/api/project/pulse` renvoie `summary` et `summaryAt`. L'onglet Pulse affiche le résumé dès la lecture du Pulse, sinon le résumé déterministe ; l'attente simulée de 2,6 s des premières maquettes est retirée. Les projets de démo gardent leurs résumés pré-calculés.
+
+Essayé sur une copie de la base avec les vraies clés : Meta (`muse-ember-1.0`) a résumé les deux projets liés à un repo en 4 s chacun, affichés dans l'onglet Pulse. Le premier prompt énumérait tous les chiffres à zéro d'une semaine calme : il demande maintenant une phrase pour une semaine calme et trois titres au plus.
+
+- **Livrable** : `api/pulse-summary.ts`, `api/pulse-summary_test.ts`, `api/pulse.ts`, `api/routes.ts`, `api/server.ts`, `web/fixtures/pulse.ts`, `web/lib/pulse.ts`, `web/lib/live-data.ts`, `web/pages/project/pulse-tab.tsx` ; §6.4
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

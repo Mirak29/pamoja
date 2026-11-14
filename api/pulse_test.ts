@@ -161,6 +161,8 @@ Deno.test('pulse: the last 7 days, counted on GitHub and on Pamoja', () => {
     reviewsAsked: 2,
     waitingReview: 2,
     releases: 1,
+    summary: '',
+    summaryAt: 0,
   })
   // Since a visit a day ago: what is older drops, waiting PRs stay
   const visit = pulseOf('openpay-africa', at - 1.5 * DAY, at)

@@ -9,7 +9,7 @@ import { Project } from '/api/schema.ts'
 // The deterministic Pulse of a project (PAM-306, §6.4): what happened over
 // the last 7 days, or since a given time (the last visit), counted in SQL
 // on the entries and on what GitHub synced. Shown even without the AI
-// summary (PAM-307).
+// summary (PAM-307), read here once written.
 
 const DAY = 24 * 3600
 export const PULSE_DAYS = 7
@@ -18,6 +18,13 @@ const PULSE_MAX_DAYS = 90
 
 const getProject = Project.sql<'projectId', string>`
   SELECT projectId FROM project WHERE slug = ?
+`.get
+
+const getSummary = sql<{ content: string; createdAt: number }, number>`
+  SELECT content, createdAt FROM projectSummary
+  WHERE projectId = ?
+  ORDER BY projectSummaryId DESC
+  LIMIT 1
 `.get
 
 type Counts = {
@@ -81,8 +88,12 @@ export const pulseOf = (slug: string, since?: number | null, at = now()) => {
     at,
     Math.max(at - PULSE_MAX_DAYS * DAY, since ?? at - PULSE_DAYS * DAY),
   )
+  const summary = getSummary(project.projectId)
   return {
     since: from,
     ...getCounts({ projectId: project.projectId, since: from })!,
+    // The AI summary, computed in the background (PAM-307); '' without one
+    summary: summary?.content ?? '',
+    summaryAt: summary?.createdAt ?? 0,
   }
 }

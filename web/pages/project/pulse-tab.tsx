@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact'
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect } from 'preact/hooks'
 import {
   CircleAlert,
   CircleCheck,
@@ -15,55 +15,35 @@ import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { prism } from '/web/ui/shapes.tsx'
 
-// The summary arrives a few seconds after the page, like PULSE_READY will
-// through SSE (PAM-307)
-const SUMMARY_DELAY = 2600
-
-const Summary = ({ text, fallback }: { text?: string; fallback: string }) => {
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setReady(true), SUMMARY_DELAY)
-    return () => clearTimeout(timer)
-  }, [])
-  return (
-    <section class='slab-selected flex flex-col gap-3 p-[22px]'>
-      <div class='flex flex-wrap items-center gap-3'>
-        <Eyebrow accent>Résumé IA</Eyebrow>
-        <span class='text-[13px] text-ink-muted'>
-          7 derniers jours, à partir de l’activité GitHub
-        </span>
-      </div>
-      {!text
-        ? (
-          // No AI summary for this project: the deterministic one (§11)
-          <div class='flex flex-col gap-1.5'>
-            <p class='max-w-[820px] text-[17px] leading-[27px] text-pretty'>
-              {fallback}
-            </p>
-            <span class='text-[12px] text-ink-muted'>
-              Résumé automatique : l’IA n’a pas encore analysé ce projet.
-            </span>
-          </div>
-        )
-        : ready
-        ? (
-          <p class='max-w-[820px] animate-[enter_250ms_ease-out] text-[17px] leading-[27px] text-pretty'>
-            {text}
+// The AI summary is stored by the server (§11): shown as soon as the Pulse
+// is read, the deterministic one meanwhile
+const Summary = ({ text, fallback }: { text?: string; fallback: string }) => (
+  <section class='slab-selected flex flex-col gap-3 p-[22px]'>
+    <div class='flex flex-wrap items-center gap-3'>
+      <Eyebrow accent>Résumé IA</Eyebrow>
+      <span class='text-[13px] text-ink-muted'>
+        7 derniers jours, à partir de l’activité GitHub
+      </span>
+    </div>
+    {text
+      ? (
+        <p class='max-w-[820px] animate-[enter_250ms_ease-out] text-[17px] leading-[27px] text-pretty'>
+          {text}
+        </p>
+      )
+      : (
+        // No AI summary for this project: the deterministic one (§11)
+        <div class='flex flex-col gap-1.5'>
+          <p class='max-w-[820px] text-[17px] leading-[27px] text-pretty'>
+            {fallback}
           </p>
-        )
-        : (
-          <div aria-busy='true' class='flex flex-col gap-[9px]'>
-            <div class='h-3 w-[94%] animate-skeleton rounded-sm bg-indigo-soft-side' />
-            <div class='h-3 w-[86%] animate-skeleton rounded-sm bg-indigo-soft-side' />
-            <div class='h-3 w-[58%] animate-skeleton rounded-sm bg-indigo-soft-side' />
-            <span class='text-[13px] text-ink-muted'>
-              Analyse de l’activité du projet…
-            </span>
-          </div>
-        )}
-    </section>
-  )
-}
+          <span class='text-[12px] text-ink-muted'>
+            Résumé automatique : l’IA n’a pas encore analysé ce projet.
+          </span>
+        </div>
+      )}
+  </section>
+)
 
 const Metric = (
   { label, value, height, warning }: {
@@ -292,7 +272,6 @@ export const PulseTab = ({ project }: { project: Project }) => {
   return (
     <div class='mr-2 flex flex-col gap-8'>
       <Summary
-        key={project.slug}
         text={pulse.summary}
         fallback={pulse.fallback}
       />
