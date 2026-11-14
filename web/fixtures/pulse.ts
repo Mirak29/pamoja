@@ -172,9 +172,9 @@ export const projectPulse = (project: Project) => {
   ]
 
   return {
-    // AI summary, absent while it is computed (PULSE_READY, PAM-307); the
-    // deterministic fallback of §11 when there is none
-    summary: summaries[project.slug],
+    // AI summary written by the server in the background (PULSE_READY,
+    // PAM-307), or the demo one; the deterministic fallback of §11 without
+    summary: (live ? live.summary : summaries[project.slug]) || undefined,
     fallback: project.sync === 'none'
       ? 'Ce projet n’est pas encore lié à un repo GitHub : le résumé suivra son activité.'
       : `Cette semaine : ${counted(week.merged, 'PR mergée', 'PRs mergées')}, ${

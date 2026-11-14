@@ -12,6 +12,7 @@ import { startRefresh } from '/api/sync.ts'
 import { startWorker } from '/api/webhooks.ts'
 import { startMediaCleanup } from '/api/media.ts'
 import { startStaleReviews } from '/api/tracking.ts'
+import { startPulseSummaries } from '/api/pulse-summary.ts'
 // What each GitHub event changes (§5.5): registered before the worker runs
 import '/api/github-events.ts'
 
@@ -34,6 +35,8 @@ if (APP_ENV !== 'test') {
   // Uploads never attached, after 24 h (§17.3)
   startMediaCleanup()
   startStaleReviews()
+  // The AI summary of the Pulse, when activity changed (§6.4, §11)
+  startPulseSummaries()
   // A copy of the database every hour, kept 7 days (§17.5)
   BACKUP_DIR && startBackups(BACKUP_DIR)
   // The index of the search, from SQLite and its entries (§10.4)

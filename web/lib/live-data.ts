@@ -3,6 +3,7 @@ import { reloadHelpRequests } from '/web/lib/help.ts'
 import { loadProjects } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
 import { loadNewPosts } from '/web/lib/posts.ts'
+import { reloadPulses } from '/web/lib/pulse.ts'
 
 // The data of the developer follows its entries without a refresh (§13): an
 // entry makes the page read it again. A burst of entries, like a merge with
@@ -60,6 +61,10 @@ onEvent([
   'HELP_REQUEST_DELIVERED',
   'HELP_REQUEST_CLOSED',
 ], reloadHelp)
+
+// A new AI summary of a Pulse already read (PAM-307)
+const readPulses = debounced(reloadPulses)
+onEvent('PULSE_READY', readPulses)
 
 // Entries sent while the connection was lost were missed: read them all
 onReconnect(() => {

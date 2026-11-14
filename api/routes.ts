@@ -1548,6 +1548,8 @@ const defs = {
       reviewsAsked: NUM('Code reviews asked for on Pamoja'),
       waitingReview: NUM('Open PRs without a review, now'),
       releases: NUM('Releases published'),
+      summary: STR('AI summary of the last 7 days; empty without one'),
+      summaryAt: NUM('When the summary was written, in seconds; 0 without'),
     }, 'What happened in a project (§6.4)'),
     description: 'The deterministic Pulse of a project',
   }),
