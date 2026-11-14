@@ -163,7 +163,7 @@ Responsable : _à répartir_
 
 Responsable : _à répartir_
 
-- [ ] **PAM-401** · Page projet complète : en-tête, onglets, galerie, vidéo de démo (§6.3) `[démo]`
+- [x] **PAM-401** · Page projet complète : en-tête, onglets, galerie, vidéo de démo (§6.3) `[démo]` — `GET/api/project` lit un projet public (ou privé pour un membre) par son slug, et la page d'un projet importé par quelqu'un d'autre le charge depuis l'API ; onglets board, roadmap et needs couverts par PAM-404, 405, 402 — @niangoos
 - [ ] **PAM-402** · Needs et « People who could help » (§6.6)
 - [x] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6) — @niangoos ; reste : changer le rôle d'un membre (`POST/api/project/member/role`, §3)
 - [x] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7) — @niangoos

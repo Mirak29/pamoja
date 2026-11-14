@@ -420,3 +420,14 @@ export const adoptProjects = (list: ApiProject[]) => {
   }
   projectsChanged.value++
 }
+
+/**
+ * Reads one project by its slug from the API into the pages, for a project
+ * someone else imported, which GET/api/projects (only mine) never returns
+ * (PAM-401). The output has the same shape as an item of that list.
+ */
+export const loadProject = (slug: string) =>
+  api['GET/api/project'].fetch({ slug }).then(
+    (project) => adoptProjects([project]),
+    () => {},
+  )
