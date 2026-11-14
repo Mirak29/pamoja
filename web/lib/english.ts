@@ -734,6 +734,18 @@ export const english: Record<string, string> = {
   '#suivi est écrit par la plateforme. Réponds en fil sous une alerte.':
     '#activity is posted by Pamoja. Reply in a thread under an alert.',
   'aidé par': 'helped by',
+  'Réponses': 'Replies',
+  'Tu suis {0}': 'You follow {0}',
+  'Tu as échangé avec {0}': 'You talked with {0}',
+  'Dans {0}, ta communauté': 'In {0}, your community',
+  'Sur {0}, un de tes projets': 'On {0}, one of your projects',
+  'Parle de {0}': 'About {0}',
+  '{0} n’a encore rien publié.': '{0} has not posted anything yet.',
+  '{0} n’a encore répondu à aucun post.':
+    '{0} has not replied to any post yet.',
+  '{0} n’a encore ni demandé ni donné d’aide.':
+    '{0} has not asked for or given help yet.',
+  'Voir plus ({0})': 'Show more ({0})',
   'Activité': 'Activity',
   'Dernière release': 'Latest release',
   'Objets · personnes, projets, états': 'Objects · people, projects, statuses',
@@ -1254,8 +1266,6 @@ export const english: Record<string, string> = {
   'signalement en attente': 'pending report',
   'signalements en attente': 'pending reports',
   '· l’auteur est notifié': '· the author is notified',
-  'Merci': 'Thanks',
-  'Utile': 'Helpful',
   'Construire quelque chose ensemble': 'Build something together',
   'Me mentorer': 'Mentor me',
   '· vérifié': '· verified',

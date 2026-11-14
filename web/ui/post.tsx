@@ -10,14 +10,12 @@ import {
   CornerDownRight,
   Flag,
   Heart,
-  Lightbulb,
   Link,
   MessageSquare,
   Minus,
   Plus,
   Repeat2,
   Share2,
-  ThumbsUp,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
@@ -30,7 +28,7 @@ import {
   postsChanged,
   replyTo,
   toggleBookmark,
-  toggleReaction,
+  toggleLike,
   toggleRepost,
 } from '/web/fixtures/posts.ts'
 import { projects } from '/web/fixtures/projects.ts'
@@ -172,7 +170,7 @@ const repost = (post: Post) => {
   })
 }
 
-/** Reply, repost, like, useful, then bookmark, share and report */
+/** Reply, repost, like, then bookmark, share and report */
 const Actions = (
   { post, size, replies, replying, onReply, before }: {
     post: Post
@@ -185,8 +183,6 @@ const Actions = (
   },
 ) => {
   const likes = post.reactions.like ?? []
-  const useful = post.reactions.useful ?? []
-  const thanks = post.reactions.thanks ?? []
   const saved = post.bookmarks?.includes(me.login) ?? false
   return (
     <div
@@ -212,28 +208,12 @@ const Actions = (
         onClick={() => repost(post)}
       />
       <ActionKey
-        icon={ThumbsUp}
+        icon={Heart}
         count={likes.length}
         pressed={likes.some(isMe)}
         label='J’aime'
         size={size}
-        onClick={() => toggleReaction(post, 'like', me.login)}
-      />
-      <ActionKey
-        icon={Lightbulb}
-        count={useful.length}
-        pressed={useful.some(isMe)}
-        label='Utile'
-        size={size}
-        onClick={() => toggleReaction(post, 'useful', me.login)}
-      />
-      <ActionKey
-        icon={Heart}
-        count={thanks.length}
-        pressed={thanks.some(isMe)}
-        label='Merci'
-        size={size}
-        onClick={() => toggleReaction(post, 'thanks', me.login)}
+        onClick={() => toggleLike(post, me.login)}
       />
       <span class='flex-1' />
       <ActionKey
@@ -715,7 +695,12 @@ const firstName = (login: string) =>
  * <PostCard post={post} repostBy='moussa' />
  */
 export const PostCard = (
-  { post, repostBy }: { post: Post; repostBy?: string },
+  { post, repostBy, because }: {
+    post: Post
+    repostBy?: string
+    /** Why « Pour toi » shows it */
+    because?: string
+  },
 ) => {
   postsChanged.value
   const [open, setOpen] = useState(false)
@@ -737,6 +722,9 @@ export const PostCard = (
             ? 'Tu as republié'
             : t`${firstName(repostBy)} a republié`}
         </span>
+      )}
+      {because && !repostBy && (
+        <span class='ml-14 text-[13px] text-ink-muted'>{because}</span>
       )}
       {parent && (
         <span class='ml-14 flex items-center gap-1.5 text-[13px] text-ink-muted'>

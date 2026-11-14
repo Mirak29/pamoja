@@ -35,7 +35,8 @@ export type Post = {
   title: string
   body: string
   at: number
-  reactions: { like?: Login[]; useful?: Login[]; thanks?: Login[] }
+  /** One reaction, J’aime (§10.1) */
+  reactions: { like?: Login[] }
   reposts: { by: Login; at: number }[]
   parent?: string
   root?: string
@@ -95,7 +96,7 @@ export const posts: Post[] = [
     body:
       `Sur un service de paiement, j’ai des ${BT}database is locked${BT} dès qu’on dépasse une dizaine de requêtes concurrentes.\n\nJ’ouvre mes transactions comme ça :\n\n${FENCE}go\ntx, err := db.BeginTx(ctx, nil)\n${FENCE}\n\nVous passez par un seul writer, ou par ${BT}BEGIN IMMEDIATE${BT} ?`,
     hoursAgo: 9,
-    reactions: { like: ['moussa', 'abdou'], useful: ['fatou'] },
+    reactions: { like: ['moussa', 'abdou', 'fatou'] },
   }),
   ...replies({ id: 'po1', community: 'go' }, 9, [
     [
@@ -118,10 +119,7 @@ export const posts: Post[] = [
       'Forages et bornes fontaines de 12 régions sur 14, en open data. Les contributions sont ouvertes : il manque encore Kaolack et Kolda.',
     hoursAgo: 50,
     media: [demoImage('senegal-maps-carte'), demoImage('senegal-maps-regions')],
-    reactions: {
-      like: ['abdou', 'fatou', 'moussa'],
-      thanks: ['kofi', 'yao'],
-    },
+    reactions: { like: ['abdou', 'fatou', 'moussa', 'kofi', 'yao'] },
     link: 'senegal-maps',
   }),
   ...replies({ id: 'po2', community: 'senegal-developers' }, 50, [
@@ -154,7 +152,7 @@ export const posts: Post[] = [
     hoursAgo: 70,
     media: [demoImage('ci-pipeline')],
     video: 'https://www.youtube.com/watch?v=R8_veQiYBjI',
-    reactions: { useful: ['abdou', 'kofi', 'zeinab', 'moussa'] },
+    reactions: { like: ['abdou', 'kofi', 'zeinab', 'moussa'] },
   }),
   ...replies({ id: 'po4', community: 'devops' }, 70, [
     [
@@ -208,7 +206,7 @@ export const posts: Post[] = [
     body:
       'Astuce de review : commence par lire les tests. Si tu ne comprends pas ce qui est testé, pose la question avant de lire le code.',
     hoursAgo: 4,
-    reactions: { like: ['abdou', 'zeinab', 'amina'], useful: ['yao', 'awa'] },
+    reactions: { like: ['abdou', 'zeinab', 'amina', 'yao', 'awa'] },
   }),
   ...replies({ id: 'po7', community: 'code-review' }, 4, [
     [
@@ -241,7 +239,7 @@ export const posts: Post[] = [
     body:
       'Ajoute aussi : relire les cas d’erreur. C’est souvent là que les tests manquent.',
     hoursAgo: 0.5,
-    reactions: { useful: ['yao', 'moussa'] },
+    reactions: { like: ['yao', 'moussa'] },
     parent: 'po7c2',
     root: 'po7',
   }),
@@ -284,10 +282,7 @@ export const posts: Post[] = [
     body:
       'Paiement à la livraison, confirmation par SMS et tableau de bord des vendeurs : tout est dans la vidéo. Trois minutes, promis, ça vaut le coup.',
     hoursAgo: 0.05,
-    reactions: {
-      like: ['awa', 'moussa', 'fatou', 'amina'],
-      thanks: ['abdou', 'yao'],
-    },
+    reactions: { like: ['awa', 'moussa', 'fatou', 'amina', 'abdou', 'yao'] },
     link: 'africommerce',
     video: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   }),
@@ -300,7 +295,7 @@ export const posts: Post[] = [
     body:
       'Pour ceux qui débutent avec les conteneurs : l’essentiel en moins de deux minutes, avant d’ouvrir le gabarit CI d’Amina.',
     hoursAgo: 12,
-    reactions: { useful: ['amina', 'yao'], thanks: ['kofi'] },
+    reactions: { like: ['amina', 'yao', 'kofi'] },
     video: 'https://www.youtube.com/watch?v=Gjnup-PuquQ',
   }),
 ]
@@ -337,12 +332,10 @@ export const childrenOf = (id: string) => {
 export const descendantCount = (id: string): number =>
   childrenOf(id).reduce((sum, child) => sum + 1 + descendantCount(child.id), 0)
 
-export type Reaction = 'like' | 'useful' | 'thanks'
-
-/** POST/api/reaction/toggle */
-export const toggleReaction = (post: Post, kind: Reaction, login: Login) => {
-  const list = post.reactions[kind] ?? []
-  post.reactions[kind] = list.includes(login)
+/** POST/api/reaction/toggle: J'aime, the one reaction of a post */
+export const toggleLike = (post: Post, login: Login) => {
+  const list = post.reactions.like ?? []
+  post.reactions.like = list.includes(login)
     ? list.filter((l) => l !== login)
     : [...list, login]
   changed()

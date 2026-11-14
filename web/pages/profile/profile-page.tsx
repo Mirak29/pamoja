@@ -1,4 +1,5 @@
 import { navigate, url } from '@01edu/signal-router'
+import { useEffect, useState } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
 import {
   Check,
@@ -53,6 +54,10 @@ import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Batched } from '/web/ui/infinite-list.tsx'
 import { Page } from '/web/ui/layout.tsx'
+import { PostCard } from '/web/ui/post.tsx'
+import { Tabs } from '/web/ui/tabs.tsx'
+import { type Post, posts, postsChanged } from '/web/fixtures/posts.ts'
+import { loadPostsOf } from '/web/lib/posts.ts'
 import { Cube } from '/web/ui/shapes.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import {
@@ -494,34 +499,104 @@ const Reputation = ({ login }: { login: Login }) => (
   </section>
 )
 
+// The tabs of the activity of a profile, kept in the address (?activite=)
+const activityTabs = [
+  ['posts', 'Posts'],
+  ['replies', 'Réponses'],
+  ['help', 'Aide'],
+] as const
+
+type ActivityTab = typeof activityTabs[number][0]
+
+// The activity shows a few lines, then more on demand: the sections below
+// stay within reach
+const ACTIVITY_PAGE = 5
+
+/**
+ * What a developer published, like on a social network: their posts, their
+ * replies, and the help asked or given (§9.1)
+ */
 const Activity = ({ login }: { login: Login }) => {
-  // The requests read with the profile join the list
+  // The requests and the posts read with the profile join the lists
   helpChanged.value
-  const list = helpRequests
-    .filter((h) => h.helper === login || h.author === login)
-    .sort((a, b) => b.at - a.at)
-    .slice(0, 4)
-  if (!list.length) return null
+  postsChanged.value
+  const [shown, setShown] = useState(ACTIVITY_PAGE)
+  useEffect(() => {
+    loadPostsOf(login)
+  }, [login])
+  const asked = url.params.activite
+  const tab: ActivityTab = activityTabs.some(([key]) => key === asked)
+    ? asked as ActivityTab
+    : 'posts'
+  const visible = (post: Post) =>
+    post.author === login && (!post.hidden || isMe(post.author))
+  const lists = {
+    posts: posts.filter((post) => visible(post) && !post.parent),
+    replies: posts.filter((post) => visible(post) && post.parent),
+    help: helpRequests.filter((h) => h.helper === login || h.author === login),
+  }
+  // Each tab and each profile starts again with a few lines
+  useEffect(() => setShown(ACTIVITY_PAGE), [tab, login])
+  const count = lists[tab].length
+  const first = people[login].name.split(' ')[0]
   return (
-    <section class='slab overflow-hidden'>
-      <SectionHeader title='Activité' />
-      {list.map((help) => (
-        <A
-          key={help.id}
-          href={`help/${help.id}`}
-          class='flex flex-col gap-1.5 border-t border-line px-5 py-3 text-ink no-underline hover:bg-surface-000 hover:no-underline'
-        >
-          <span class='text-[14px] text-pretty'>
-            {help.helper === login
-              ? t`A aidé ${firstName(help.author)} : ${help.title}`
-              : t`A demandé : ${help.title}`}
+    <section class='slab flex flex-col gap-3 overflow-hidden pb-4'>
+      <SectionHeader title='Activité'>
+        <Tabs
+          label='Activité'
+          current={tab}
+          wide
+          tabs={activityTabs.map(([key, label]) => ({
+            key,
+            label,
+            count: lists[key].length,
+            params: { activite: key === 'posts' ? null : key },
+          }))}
+        />
+      </SectionHeader>
+      <div class='flex flex-col gap-3 px-3'>
+        {tab === 'help'
+          ? [...lists.help].sort((a, b) => b.at - a.at).slice(0, shown).map((
+            help,
+          ) => (
+            <A
+              key={help.id}
+              href={`help/${help.id}`}
+              class='flex flex-col gap-1.5 rounded-md border-t border-line px-2 py-3 text-ink no-underline hover:bg-surface-000 hover:no-underline'
+            >
+              <span class='text-[14px] text-pretty'>
+                {help.helper === login
+                  ? t`A aidé ${firstName(help.author)} : ${help.title}`
+                  : t`A demandé : ${help.title}`}
+              </span>
+              <span class='flex items-center gap-2'>
+                <span class='text-[12px] text-ink-muted'>{ago(help.at)}</span>
+                <StatusBadge status={help.status} />
+              </span>
+            </A>
+          ))
+          : [...lists[tab]].sort((a, b) => b.at - a.at).slice(0, shown).map((
+            post,
+          ) => <PostCard key={post.id} post={post} />)}
+        {!count && (
+          <span class='px-2 text-[13px] text-ink-muted'>
+            {tab === 'posts'
+              ? t`${first} n’a encore rien publié.`
+              : tab === 'replies'
+              ? t`${first} n’a encore répondu à aucun post.`
+              : t`${first} n’a encore ni demandé ni donné d’aide.`}
           </span>
-          <span class='flex items-center gap-2'>
-            <span class='text-[12px] text-ink-muted'>{ago(help.at)}</span>
-            <StatusBadge status={help.status} />
-          </span>
-        </A>
-      ))}
+        )}
+        {count > shown && (
+          <button
+            type='button'
+            class='cursor-pointer self-start px-2 text-[13px] font-semibold text-indigo hover:underline'
+            onClick={() => setShown(shown + ACTIVITY_PAGE * 2)}
+          >
+            {t`Voir plus (${count - shown})`}
+          </button>
+        )}
+      </div>
     </section>
   )
 }
