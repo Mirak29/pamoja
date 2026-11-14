@@ -121,14 +121,33 @@ export const previewRepository = async (login: string, name: string) => {
   }
 }
 
-const uniqueSlug = (name: string) => {
-  const base = name.normalize('NFD').replace(/[̀-ͯ]/g, '')
+const baseSlug = (name: string) =>
+  name.normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ||
-    'projet'
+  'projet'
+
+const uniqueSlug = (name: string) => {
+  const base = baseSlug(name)
   let slug = base
   for (let k = 2; slugTaken(slug); k++) slug = `${base}-${k}`
   return slug
 }
+
+// A project of the developer with this slug and no repository yet: created
+// from scratch, or seeded for the demo. Importing its repo connects it
+// (§6.3) instead of making a second project of the same name.
+const getRepoless = sql<
+  { projectId: number; slug: string },
+  { me: number; slug: string }
+>`
+  SELECT projectId, slug FROM project
+  WHERE ownerId = :me AND slug = :slug AND NOT EXISTS (
+    SELECT 1 FROM repository WHERE repository.projectId = project.projectId)
+`.get
+
+const listNeedTitles = sql<{ title: string }, number>`
+  SELECT title FROM projectNeed WHERE projectId = ? AND status = 'open'
+`.all
 
 export type ImportInput = {
   name: string
@@ -169,8 +188,12 @@ export const importRepository = async (
 
   const at = now()
   const created = db.transaction(() => {
-    const slug = uniqueSlug(input.title || repo.name)
-    const projectId = Project.insert({
+    const repoless = getRepoless({
+      me: user.userId,
+      slug: baseSlug(input.title || repo.name),
+    })
+    const slug = repoless?.slug ?? uniqueSlug(input.title || repo.name)
+    const projectId = repoless?.projectId ?? Project.insert({
       ownerId: user.userId,
       name: input.title.trim() || repo.name,
       slug,
@@ -189,14 +212,16 @@ export const importRepository = async (
       createdAt: at,
       updatedAt: at,
     })
-    ProjectMember.insert({
+    // A project connected keeps its team and its needs; only new ones join
+    repoless || ProjectMember.insert({
       projectId,
       userId: user.userId,
       role: 'owner',
       joinedAt: at,
     })
+    const known = new Set(listNeedTitles(projectId).map((need) => need.title))
     for (const title of new Set(input.needs.map((need) => need.trim()))) {
-      title && ProjectNeed.insert({
+      title && !known.has(title) && ProjectNeed.insert({
         projectId,
         type: 'contribution',
         title,
@@ -222,8 +247,8 @@ export const importRepository = async (
     for (const issue of issues) {
       issue.pull_request || upsertIssue(repositoryId, issue)
     }
-    for (const pull of pulls) upsertPullRequest(repositoryId, pull)
-    Entry.insert.PROJECT_CREATED({
+    for (const pull of pulls) upsertPullRequest(repositoryId, pull) // A project connected changed; a new one was created (§13.3)
+    ;(repoless ? Entry.insert.PROJECT_UPDATED : Entry.insert.PROJECT_CREATED)({
       userId: user.userId,
       projectId,
       source: 'github',

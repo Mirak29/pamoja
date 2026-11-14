@@ -1364,6 +1364,13 @@ Le scénario de la démo (§18.2, étape 4) montre le résumé IA quelques secon
 - **Livrable** : `api/pulse-summary.ts`, `api/pulse-summary_test.ts`, `api/import.ts` ; §6.4, §18.2
 - **Par** : @Mirak29
 
+### 2026-11-14 · Démo · Importer OpenPay Africa rattache le repo au projet du seed
+
+Le seed crée le projet `openpay-africa` d'Abdou, sans repo, qui porte les 14 reviews de démo de Moussa. À l'étape 3 de la démo (§18.2), Abdou importe le vrai repo `openpay-africa` : l'import créait un second projet, `openpay-africa-2`, coupé de cet historique, et la page gardait le premier en données de démo. L'import rattache maintenant le repo à un projet du développeur de même slug qui n'en a pas encore (§6.3, « connecté à un repo plus tard ») : équipe et besoins gardés, seuls les besoins nouveaux ajoutés, entry `PROJECT_UPDATED`. Côté page, un projet de démo qui a un repo réel n'est plus gardé en données fictives : il s'affiche depuis le serveur, PRs, Pulse et résumé IA réels.
+
+- **Livrable** : `api/import.ts`, `api/import_test.ts`, `web/fixtures/repos.ts` ; §5.4, §6.3, §18.2
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

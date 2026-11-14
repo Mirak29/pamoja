@@ -349,12 +349,13 @@ const stageNames: Record<string, Project['stage']> = {
 /**
  * Brings the projects of the developer read from GET/api/projects into the
  * pages, with their GitHub issues and PRs. A project of the demo fixtures
- * keeps its richer story until the project screens read the API (PAM-401).
+ * keeps its richer story until a real repository is connected to it: from
+ * then on it is the live one, its PRs and its Pulse read from GitHub (§18.2).
  */
 export const adoptProjects = (list: ApiProject[]) => {
   const all = projects as Record<string, Project>
   for (const project of list) {
-    if (all[project.slug]?.demo) {
+    if (all[project.slug]?.demo && !project.repository) {
       // Its screenshots are real as soon as the server knows the project
       all[project.slug].shots = project.gallery
       all[project.slug].demoVideoUrl = project.demoVideoUrl

@@ -206,6 +206,32 @@ Deno.test('import: the project, its repo, issues and PRs', async () => {
   assertEquals(list[0].existing, 'openpay-africa')
 })
 
+Deno.test('import: a project of the same name without a repo is connected (§6.3)', async () => {
+  restore()
+  github()
+  const cookie = await login()
+  const me = (await call('/api/user/me', { cookie })).json
+  // OpenPay Africa exists, created from scratch (or seeded), without its repo
+  const at = Date.now() / 1000
+  const { projectId } = db.prepare(
+    `INSERT INTO project (ownerId, name, slug, description, visibility,
+      status, source, createdAt, updatedAt)
+     VALUES (?, 'OpenPay Africa', 'openpay-africa', 'Déjà là', 'public',
+      'beta', 'demo', ?, ?) RETURNING projectId`,
+  ).get(me.userId, at, at) as { projectId: number }
+  db.prepare(
+    "INSERT INTO projectMember (projectId, userId, role, joinedAt) VALUES (?, ?, 'owner', ?)",
+  ).run(projectId, me.userId, at)
+  const { json } = await call('/api/project/import', { body: project, cookie })
+  // The same project, now with its repo: no « openpay-africa-2 »
+  assertEquals(json.slug, 'openpay-africa')
+  const mine = (await call('/api/projects', { cookie })).json
+  assertEquals(mine.length, 1)
+  assertEquals(mine[0].description, 'Déjà là')
+  assertEquals(mine[0].members, [{ login: 'abdou', role: 'owner' }])
+  assertEquals(mine[0].repository.pullRequests.items[0].branch, 'feat/81')
+})
+
 Deno.test('import: refused for a repo of someone else, an org, or twice', async () => {
   restore()
   github()
