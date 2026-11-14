@@ -225,7 +225,7 @@ Responsable : _à répartir_
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
 - [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
-- [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5)
+- [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5) — réponse, réponse acceptée (preuve d'Entraide) et lecture d'un fil enregistrées sur le serveur (`POST/api/post/reply`, `POST/api/post/accept`, `GET/api/post/thread`) ; republication reportée avec son rendu dans le fil (exception §4, voir suivi) — @niangoos
 - [x] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
 - [x] **PAM-523** · Messages directs : modifier et supprimer son message (« modifié », « Message supprimé ») (§10.6)
 - [x] **PAM-524** · Messages directs : « en train d'écrire… » et statut en ligne, par la présence (§10.6, §13.6) — avec PAM-407

@@ -622,7 +622,7 @@ export const Reaction = createTable('reaction', {
   userId: { type: 'INTEGER', join: User },
   targetType: { type: 'TEXT' },
   targetId: { type: 'INTEGER' },
-  // like, useful or thanks
+  // like: the only reaction since PAM-539 (§10.1)
   kind: { type: 'TEXT' },
 })
 unique('reaction_target', 'reaction', 'userId, targetType, targetId, kind')
