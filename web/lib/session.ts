@@ -13,6 +13,7 @@ import {
 import { notify } from '/web/ui/toast.tsx'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { loadPosts } from '/web/lib/posts.ts'
+import { loadFollows } from '/web/lib/follow.ts'
 
 type User = ApiOutput['GET/api/user/me']
 
@@ -38,6 +39,7 @@ const setUser = (user: User) => {
   currentUser.value = user
   if (first) {
     loadProjects()
+    loadFollows()
     reloadHelpRequests()
     loadPosts()
   }

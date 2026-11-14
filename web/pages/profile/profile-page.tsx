@@ -24,10 +24,10 @@ import {
   type Person,
   personOf,
   placeOf,
-  toggleFollowing,
   websiteHref,
   websiteLabel,
 } from '/web/fixtures/people.ts'
+import { followUser } from '/web/lib/follow.ts'
 import {
   profileChanged,
   type ProfileSection,
@@ -145,7 +145,7 @@ const Actions = (
   }
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
-      <Button variant='secondary' onClick={() => toggleFollowing(login)}>
+      <Button variant='secondary' onClick={() => followUser(login)}>
         {following ? <Check /> : <UserPlus />}
         {following ? 'Suivi' : 'Suivre'}
       </Button>

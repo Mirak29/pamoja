@@ -1069,6 +1069,34 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
+### 2026-11-13 · PAM-901 · Seed des 14 reviews confirmées de Moussa
+
+Ajout au seed des 14 preuves de review de Moussa (`REVIEW_HELP_CONFIRMED`, `source = demo`, éligibles, backdatées), réparties sur quatre demandeurs de trois pays (Sénégal, Ghana, Cameroun) et deux projets. Le profil continue d'afficher ses preuves de fixtures, que le seed reflète (§18.2) ; côté serveur, le matching compte désormais « 14 reviews confirmées » (+15, score 59 → 74, Moussa n'est plus un « nouveau profil ») et l'évaluateur de badges donne Trusted Reviewer Silver, plus First Responder et Cross-border Silver. `evaluateBadges` reçoit un indicateur `announce` : le seed écrit la progression des badges sans émettre d'entry `BADGE_UNLOCKED` ni de notification datées « maintenant », ce qui garde toutes les entries du seed en `source = demo`.
+
+**Revue (CodeRabbit et relecture).** Les skills prouvés par ces reviews manquaient : en production, chaque confirmation écrit une ligne `platform_activity` dans `userSkill` (`help-lifecycle.ts`), la source que le matching pèse le plus (100 contre 70 pour un skill déclaré). Le seed les écrit maintenant, datées de la plus ancienne review ; le test le vérifie. Le score de Moussa pour la demande de la démo (review de code sur OpenPay Africa, Go, SQLite, Backend) passe ainsi de 74 à 87, recalculé avec `rank` sur la base seedée ; le « 59 → 74 » plus haut est celui d'avant ces skills. Un commentaire annonçait l'Or à la 15e review : il est à 20 (`[3, 10, 20, 50]`), la démo montre « 15 / 20 vers Gold » (§18.2).
+
+- **Livrable** : `api/seed.ts`, `api/badges.ts`, `api/seed_test.ts`, `task-db-seed.ts` ; §8, §18.1
+- **Par** : @niangoos
+
+### 2026-11-13 · PAM-503 · Suivre développeurs, projets et communautés
+
+Route `POST/api/follow/toggle` (utilisateur, projet, communauté) qui ajoute ou retire une ligne `follow`, avec limite de débit (§16) et refus de se suivre soi-même. Après le changement, `refreshListeners` relit les abonnements des connexions SSE du suiveur : un vrai follow fait désormais arriver `POST_CREATED` dans le fil en direct (§13.2), alors qu'avant seuls les follows du seed existaient. Côté interface, les boutons Suivre du profil, de la Home, de la page projet et de la liste des projets passent par `web/lib/follow.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+**Revue (relecture et CodeRabbit), corrigée.** La route était une bascule (`POST/api/follow/toggle`) et la page ne relisait jamais les abonnements : `me.follows` partait des fixtures ou d'une liste vide. Après un rechargement, un abonné voyait « Suivre » et son clic le désabonnait sur le serveur ; un second onglet ou une nouvelle tentative faisaient de même. Maintenant :
+- `POST/api/follow` reçoit l'état voulu (`follow: true/false`) : la même requête donne le même résultat ;
+- `GET/api/follows` donne les développeurs, projets et communautés suivis, lus à chaque session (`loadFollows`, comme `loadProjects`) ;
+- la page applique l'état que le serveur confirme, et revient en arrière si la requête échoue.
+La règle va dans le cahier (§15) : une route qui active ou désactive reçoit l'état voulu. Le test couvre la requête rejouée et la relecture.
+
+Vérifié dans le navigateur : suivre Kofi, recharger, le bouton dit toujours « Suivi », un clic désabonne vraiment (écran et base d'accord). Sur la page d'un projet, le bouton ne changeait pas au clic (défaut antérieur à la PR) : l'en-tête lit le signal `helpChanged` et, avec le même objet `project` modifié sur place, n'était pas redessiné ; il lit maintenant aussi `projectsChanged`.
+
+Seconde relecture de CodeRabbit, sur les requêtes concurrentes : deux clics rapides envoient des états opposés que le serveur pouvait enregistrer dans le désordre, la relecture du démarrage pouvait écraser un clic fait pendant qu'elle courait, et une réponse arrivée après un changement de compte s'appliquait au nouveau. `web/lib/in-order.ts` fait partir les écritures d'une même cible l'une après l'autre ; seule la dernière décide de l'affichage ; la relecture garde ce qui a été cliqué pendant qu'elle courait ; une réponse d'une autre session est ignorée. Testé (`web/lib/in-order_test.ts`) et vérifié dans le navigateur : trois clics rapides, écran et base d'accord, et encore après un rechargement.
+
+Relecture `/code-review` : un projet devenu non listé ne pouvait plus être quitté (la route ne retrouvait que les projets publics) ; il se quitte maintenant, sans pouvoir être suivi de nouveau. La limite de débit refusait aussi les désabonnements après 60 abonnements dans l'heure : seul un nouvel abonnement compte. Reste connu : la limite compte les abonnements encore présents, donc des allers-retours suivre / ne plus suivre ne l'atteignent pas ; il faudrait enregistrer chaque tentative.
+
+- **Livrable** : `api/follow.ts`, `web/lib/session.ts`, `web/fixtures/people.ts`, `web/fixtures/projects.ts`, `docs/cahier-des-charges.md`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
+- **Par** : @niangoos
+
 ### 2026-11-13 · PAM-502 · Rejoindre et quitter une communauté sur le serveur
 
 Route `POST/api/community/join` qui ajoute ou retire une ligne `communityMember` (par slug), avec limite de débit (§16) et refus d'une communauté inconnue. `refreshListeners` relit ensuite les abonnements SSE du membre : il reçoit (ou cesse de recevoir) les posts de la communauté en direct (§13.2). `GET/api/user/me` renvoyant déjà les communautés rejointes, l'état « Membre » est juste après un rechargement. Côté interface, les boutons Rejoindre et Quitter passent par `web/lib/communities.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
