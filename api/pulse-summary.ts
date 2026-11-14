@@ -1,7 +1,7 @@
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
-import { every } from '/api/lib/background.ts'
+import { every, later } from '/api/lib/background.ts'
 import { chat, hasModel } from '/api/llm.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { ProjectSummary } from '/api/schema.ts'
@@ -153,54 +153,77 @@ let spent: number[] = []
  * Summarizes the projects whose activity changed, a few at a time. Returns
  * how many were written: the tests call it themselves.
  */
+// What one project gave: a summary written, nothing to do, or no model
+type Outcome = 'written' | 'skipped' | 'unchanged' | 'failed'
+
+const summarize = async (project: Candidate, at: number): Promise<Outcome> => {
+  const last = getLast(project.projectId)
+  if (last && (at - last.createdAt) * 1000 < AGAIN_MS) return 'unchanged'
+  const input = inputOf(project, at)
+  const inputHash = await hashOf(input)
+  if (last?.inputHash === inputHash) return 'unchanged'
+  spent = spent.filter((time) => at - time < DAY)
+  if (spent.length >= SUMMARIES_PER_DAY) return 'failed'
+  spent.push(at)
+  let content = ''
+  try {
+    content = checkSummary(
+      await chat([
+        { role: 'system', content: SYSTEM },
+        {
+          role: 'user',
+          content: `<donnees>\n${JSON.stringify(input)}\n</donnees>`,
+        },
+      ], { use: 'pulse', maxTokens: SUMMARY_TOKENS, temperature: 0.3 }),
+    )
+  } catch {
+    // No model answered: the next run tries again
+    return 'failed'
+  }
+  if (!content) return 'skipped'
+  const keep = ProjectSummary.insert({
+    projectId: project.projectId,
+    period: PERIOD,
+    content,
+    inputHash,
+    createdAt: at,
+  })
+  dropOlder({ projectId: project.projectId, keep })
+  Entry.insert.PULSE_READY({
+    projectId: project.projectId,
+    data: { period: PERIOD },
+    source: 'platform',
+  })
+  return 'written'
+}
+
 export const summarizeProjects = async (at = now()) => {
   if (!hasModel()) return 0
   let written = 0
   let asked = 0
   for (const project of listCandidates()) {
     if (asked >= PER_RUN) break
-    const last = getLast(project.projectId)
-    if (last && (at - last.createdAt) * 1000 < AGAIN_MS) continue
-    const input = inputOf(project, at)
-    const inputHash = await hashOf(input)
-    if (last?.inputHash === inputHash) continue
-    spent = spent.filter((time) => at - time < DAY)
-    if (spent.length >= SUMMARIES_PER_DAY) break
-    spent.push(at)
-    asked++
-    let content = ''
-    try {
-      content = checkSummary(
-        await chat([
-          { role: 'system', content: SYSTEM },
-          {
-            role: 'user',
-            content: `<donnees>\n${JSON.stringify(input)}\n</donnees>`,
-          },
-        ], { use: 'pulse', maxTokens: SUMMARY_TOKENS, temperature: 0.3 }),
-      )
-    } catch {
-      // No model answered: the next run tries again
-      return written
-    }
-    if (!content) continue
-    const keep = ProjectSummary.insert({
-      projectId: project.projectId,
-      period: PERIOD,
-      content,
-      inputHash,
-      createdAt: at,
-    })
-    dropOlder({ projectId: project.projectId, keep })
-    Entry.insert.PULSE_READY({
-      projectId: project.projectId,
-      data: { period: PERIOD },
-      source: 'platform',
-    })
-    written++
+    const outcome = await summarize(project, at)
+    if (outcome === 'failed') return written
+    if (outcome !== 'unchanged') asked++
+    if (outcome === 'written') written++
   }
   return written
 }
+
+const getCandidate = sql<Candidate, number>`
+  SELECT projectId, slug, name FROM project WHERE projectId = ?
+`.get
+
+/**
+ * A project just imported is summarized at once, a few seconds after its
+ * page opens (§18.2), not at the next run of the background task
+ */
+export const summarizeSoon = (projectId: number) =>
+  later('pulse-summary-error', async () => {
+    const project = getCandidate(projectId)
+    if (project && hasModel()) await summarize(project, now())
+  })
 
 /** Forgets the budget: for the tests */
 export const resetSummaries = () => {

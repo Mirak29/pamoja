@@ -4,7 +4,11 @@ import { now } from '@01edu/time'
 import { entries } from '/api/entry-types.ts'
 import { resetModels } from '/api/llm.ts'
 import { pulseOf } from '/api/pulse.ts'
-import { resetSummaries, summarizeProjects } from '/api/pulse-summary.ts'
+import {
+  resetSummaries,
+  summarizeProjects,
+  summarizeSoon,
+} from '/api/pulse-summary.ts'
 import { Project, PullRequest, Repository, User } from '/api/schema.ts'
 
 // The AI summary of the Pulse (PAM-307, §6.4, §11)
@@ -139,4 +143,12 @@ Deno.test('pulse summary: no key, a failure or an invalid answer write nothing',
   reply = says('Actif.')
   assertEquals(await summarizeProjects(at), 0)
   assertEquals([stored(), pulseReady()], [0, 0])
+})
+
+Deno.test('pulse summary: a project just imported gets it within seconds', async () => {
+  const { projectId } = setup()
+  summarizeSoon(projectId)
+  // After the answer of the import, outside its work (later)
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  assertEquals([stored(), pulseReady()], [1, 1])
 })

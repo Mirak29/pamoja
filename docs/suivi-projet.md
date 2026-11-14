@@ -1357,6 +1357,13 @@ Clôt le reste de PAM-502 noté le 13 nov. `POST/api/community/create` enregistr
 - **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/fixtures/communities.ts`, `web/pages/communities/communities-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/communities/new-community-dialog.tsx` ; §10.2, §10.4
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-307 · Le résumé IA d'un projet importé arrive aussitôt
+
+Le scénario de la démo (§18.2, étape 4) montre le résumé IA quelques secondes après l'import, sans rafraîchir. La tâche de fond ne passait que toutes les 10 minutes : un projet importé pouvait attendre jusque-là. L'import appelle maintenant `summarizeSoon(projectId)`, qui résume ce projet juste après la réponse (`later`), avec le même prompt, le même budget et la même entry `PULSE_READY` que la tâche de fond, qui reprend ensuite son rythme. Le corps commun est `summarize(project, at)`.
+
+- **Livrable** : `api/pulse-summary.ts`, `api/pulse-summary_test.ts`, `api/import.ts` ; §6.4, §18.2
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

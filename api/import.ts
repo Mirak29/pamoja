@@ -10,6 +10,7 @@ import { Project, ProjectMember, ProjectNeed, Repository } from '/api/schema.ts'
 import { skillIdsOf, skillsFromGithub } from '/api/skills.ts'
 import { upsertIssue, upsertPullRequest } from '/api/sync.ts'
 import { scheduleSkillsRead } from '/api/pull-skills.ts'
+import { summarizeSoon } from '/api/pulse-summary.ts'
 import type { GithubIssue, GithubPull, GithubRepo } from '/api/sync.ts'
 
 // Level 1 import (§5.4): a public repo of the developer becomes a project,
@@ -241,5 +242,7 @@ export const importRepository = async (
   }
   // The skills of its open PRs, read after the answer (§7.1)
   scheduleSkillsRead()
+  // Its Pulse gets its AI summary within seconds (§6.4, §18.2)
+  summarizeSoon(created.projectId)
   return { slug: created.slug }
 }
