@@ -144,7 +144,7 @@ Responsable : _à répartir_
 - [x] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]` — @Mirak29
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
 - [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
-- [ ] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11)
+- [x] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11) — @Mirak29
 - [ ] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11)
 - [x] **PAM-312** · ~~Figures isométriques maison~~ — abandonnée : pas d'illustration décorative, le système isométrique encode les objets (voir journal)
 - [x] **PAM-313** · Écran Profil `/@login` sur données fictives : vue publique et vue connectée, stats, réputation, badges, preuves, Collaboration Map, carte de partage, proposer une collaboration (§9) `[démo]` — @niangoos
@@ -373,3 +373,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Candidatures (PAM-403) : façons d'aider et disponibilité tirées d'une seule liste (`api/vocabulary.ts`), vérifiées par le serveur, message limité à `LIMITS.note` ; chaque refus porte une raison que la page affiche, au lieu de « serveur injoignable » · §6.6, §16
 - 2026-11-14 · Fournisseurs IA (PAM-005) : `api/llm.ts` essaie Meta (`muse-ember-1.0`), puis Gemini (`gemini-3.5-flash`), puis Groq (`gpt-oss-120b`) ; un fournisseur qui échoue est laissé de côté 5 min ; embeddings Gemini en 256 dimensions ; `LLM_*` et l'API native d'Ollama retirés · §11
 - 2026-11-14 · Résumé IA du Pulse (PAM-307) : tâche de fond toutes les 10 min sur les projets liés à un repo, rappel du modèle seulement si l'empreinte de son entrée change ; 5 projets par passage, 300 par jour ; seul le dernier résumé est gardé ; `PULSE_READY` relit le Pulse ouvert · §6.4, §11
+- 2026-11-14 · Proposition IA à l'import (PAM-310) : sur clic, pas à l'affichage ; skills limités au vocabulaire et ajoutés à ceux de GitHub, besoins et description validés puis modifiables ; pas de relecture à la resynchronisation, pour ne pas écraser ce que le propriétaire a corrigé · §5.4, §11

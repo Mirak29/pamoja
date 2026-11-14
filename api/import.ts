@@ -50,7 +50,7 @@ const forbidden = (message: string) => new respond.ForbiddenError({ message })
 
 // The repo as GitHub describes it, read again at import: the server never
 // trusts what the page sent
-const fetchRepository = async (login: string, name: string) => {
+export const fetchRepository = async (login: string, name: string) => {
   const repo = await readOptional<GithubRepo>(
     `/repos/${encodeURIComponent(login)}/${encodeURIComponent(name)}`,
   )
@@ -110,7 +110,8 @@ export const previewRepository = async (login: string, name: string) => {
     pushedAt: stats.pushedAt ?? 0,
     release: stats.release?.tag ?? '',
     releasedAt: stats.release?.at ?? 0,
-    // Proposed from the languages and topics; the AI joins in with PAM-310
+    // Proposed from the languages and topics; the AI adds to them on a
+    // click (PAM-310, import-suggest.ts)
     skills: skillsFromGithub([
       ...stats.languages.map(([language]) => language),
       ...stats.topics,

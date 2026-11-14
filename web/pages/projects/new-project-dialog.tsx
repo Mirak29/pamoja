@@ -7,6 +7,7 @@ import {
   ExternalLink,
   FolderGit2,
   Github,
+  Sparkles,
 } from '/web/assets/icons.tsx'
 import { needSuggestions } from '/web/fixtures/projects.ts'
 import { readmeSummary } from '/api/lib/readme.ts'
@@ -292,6 +293,12 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
   const [picked, setPicked] = useState<string[]>([])
   const [needs, setNeeds] = useState<string[]>([])
   const [creating, setCreating] = useState(false)
+  // What the AI proposed on a click (PAM-310): added to what GitHub says,
+  // all of it editable before the project is created
+  const [proposed, setProposed] = useState<string[]>([])
+  const [proposedNeeds, setProposedNeeds] = useState<string[]>([])
+  const [description, setDescription] = useState('')
+  const [asking, setAsking] = useState(false)
   const load = () => {
     setFailed(false)
     api['GET/api/github/repository'].fetch({ name: repo.name }).then(
@@ -304,6 +311,45 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
   }
   useEffect(load, [])
 
+  const propose = async () => {
+    if (asking || !preview) return
+    setAsking(true)
+    try {
+      const idea = await api['POST/api/project/import/suggest'].fetch({
+        name: repo.name,
+      })
+      if (!idea.ai) {
+        notify({
+          title: 'L’IA n’a pas répondu',
+          body:
+            'Les skills lus sur GitHub restent proposés. Réessaie plus tard.',
+          icon: Sparkles,
+          tone: 'warning',
+        })
+        return
+      }
+      const added = idea.skills.filter((s) => !preview.skills.includes(s))
+      setProposed(added)
+      setPicked([...new Set([...picked, ...idea.skills])])
+      setProposedNeeds(idea.needs)
+      setNeeds([...new Set([...needs, ...idea.needs])])
+      idea.description && setDescription(idea.description)
+    } catch (err) {
+      notify({
+        title: 'Proposition impossible',
+        body: retryAfterOf(err)
+          ? t`Beaucoup de propositions cette heure-ci. Réessaie ${
+            waitLabel(retryAfterOf(err)!)
+          }.`
+          : 'Pamoja n’a pas pu lire le repo. Réessaie dans un instant.',
+        icon: Sparkles,
+        tone: 'danger',
+      })
+    } finally {
+      setAsking(false)
+    }
+  }
+
   const create = async () => {
     if (creating) return
     setCreating(true)
@@ -311,7 +357,7 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
       const { slug } = await api['POST/api/project/import'].fetch({
         name: repo.name,
         title: '',
-        description: '',
+        description: description.trim(),
         vision: '',
         skills: picked,
         needs,
@@ -402,10 +448,31 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
             </div>
           )}
           <div class='slab-selected mr-2 flex flex-col gap-3 px-[18px] py-4'>
-            <Eyebrow accent>Lu sur GitHub · à valider</Eyebrow>
+            <div class='flex flex-wrap items-center justify-between gap-3'>
+              <Eyebrow accent>Lu sur GitHub · à valider</Eyebrow>
+              <Button
+                variant='secondary'
+                size={34}
+                aria-busy={asking}
+                onClick={propose}
+              >
+                <Sparkles class='size-4' />
+                {asking ? 'Lecture du repo…' : 'Proposer avec l’IA'}
+              </Button>
+            </div>
+            <Field label='Description'>
+              <Textarea
+                rows={2}
+                value={description}
+                limit={LIMITS.projectDescription}
+                placeholder={preview.description ||
+                  'Ce que fait le projet, en une ou deux phrases'}
+                onInput={(event) => setDescription(event.currentTarget.value)}
+              />
+            </Field>
             <span class='text-[13px] font-semibold'>Skills</span>
             <div class='flex flex-wrap gap-2 pb-1'>
-              {preview.skills.map((skill) => (
+              {[...preview.skills, ...proposed].map((skill) => (
                 <OptionButton
                   key={skill}
                   pressed={picked.includes(skill)}
@@ -414,7 +481,7 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
                   {skill}
                 </OptionButton>
               ))}
-              {!preview.skills.length && (
+              {!preview.skills.length && !proposed.length && (
                 <span class='text-[13px] text-ink-muted'>
                   Aucun langage reconnu : ajoute la stack après l’import.
                 </span>
@@ -422,17 +489,24 @@ const RepoPreview = ({ repo, back }: { repo: RepoItem; back: () => void }) => {
             </div>
             <span class='text-[13px] font-semibold'>Besoins</span>
             <div class='flex flex-wrap gap-2 pb-1'>
-              {[...new Set([...needSuggestions, 'good first issue'])].map((
-                need,
-              ) => (
-                <OptionButton
-                  key={need}
-                  pressed={needs.includes(need)}
-                  onClick={() => setNeeds(toggle(needs, need))}
-                >
-                  {need}
-                </OptionButton>
-              ))}
+              {[
+                ...new Set([
+                  ...needSuggestions,
+                  'good first issue',
+                  ...proposedNeeds,
+                ]),
+              ]
+                .map((
+                  need,
+                ) => (
+                  <OptionButton
+                    key={need}
+                    pressed={needs.includes(need)}
+                    onClick={() => setNeeds(toggle(needs, need))}
+                  >
+                    {need}
+                  </OptionButton>
+                ))}
             </div>
             <span class='text-[12px] text-ink-muted'>
               Clique pour retirer ou ajouter. Rien n’est publié avant « Créer le
