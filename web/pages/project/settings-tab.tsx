@@ -17,6 +17,7 @@ import { notify } from '/web/ui/toast.tsx'
 import { importableRepos, linkRepo } from '/web/fixtures/repos.ts'
 import { MemberRows } from '/web/pages/project/team-tab.tsx'
 import { t } from '/web/lib/language.ts'
+import { saveProjectInfo } from '/web/lib/project-settings.ts'
 import { LIMITS } from '/api/limits.ts'
 
 type Draft = Pick<Project, 'name' | 'description' | 'needs'> & {
@@ -46,7 +47,7 @@ const Information = ({ project }: { project: Project }) => {
         tone: 'danger',
       })
     }
-    updateProject(
+    saveProjectInfo(
       project,
       { ...draft, name: draft.name.trim() },
       'Réglages du projet mis à jour',
