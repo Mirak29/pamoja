@@ -1261,6 +1261,19 @@ Testé (`web/pages/profile/collaboration_test.ts`) avec 1 000 collaborateurs dan
 - **Livrable** : `web/pages/profile/collaboration-map.tsx`, `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/collaboration_test.ts`, `web/ui/dialog.tsx` (`Drawer` efface ses paramètres), `web/lib/plural.ts` (`shortCount`), `web/lib/english.ts` ; §9.3
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-539 · Fil et profil comme un réseau social
+
+**Une seule réaction.** La barre d'un post avait J'aime, Utile et Merci à côté de Commenter, Republier, Enregistrer, Partager et Signaler : trop de boutons, et trois réactions proches. Il reste **J'aime**, un cœur ; les réactions de démo des trois sortes sont réunies dans J'aime. La page d'un post suit. La barre garde six boutons, ceux de X ou LinkedIn : Commenter, Republier, J'aime, puis Enregistrer, Partager, Signaler.
+
+**« Pour toi » classé.** L'onglet montrait tous les posts dans l'ordre du temps. Il est maintenant classé pour le lecteur, sans IA (`web/lib/for-you.ts`) : une personne suivie, une republication par une personne suivie, les personnes avec qui il a échangé (travail commun, réponses, J'aime, republications, dans les deux sens), ses communautés, ses projets, ses compétences nommées dans le texte ; l'activité du post compte un peu, jamais plus que tout cela ; le poids diminue de moitié toutes les 36 heures. Chaque post dit en une ligne pourquoi il est là (« Tu suis Fatou », « Tu as échangé avec Kofi »). Les événements GitHub de ses projets pèsent comme un post d'une personne suivie ; la demande d'aide qui correspond reste en 2ᵉ position. Les autres onglets restent dans l'ordre du temps.
+
+**L'activité d'un profil.** La section Activité ne montrait que des demandes d'aide. Elle a trois onglets, comme sur un réseau social : **Posts**, **Réponses** et **Aide**, avec leur nombre, cinq lignes puis « Voir plus ». L'onglet tient dans l'adresse (`?activite=`). Les posts du profil sont lus par `GET/api/posts?author=login` ; les réponses restent dans la page jusqu'à PAM-512.
+
+Testé : `web/lib/for-you_test.ts` (chaque lien relève un post et donne sa raison, « Go » n'est pas dans « Google », l'activité ne passe pas devant une personne suivie, demi-vie de 36 h, échanges dans les deux sens) et `api/posts_test.ts` (les posts d'un auteur). Vérifié dans le navigateur sur une copie de la base : Pour toi classé avec ses raisons, un seul cœur, onglets Posts / Réponses / Aide de Moussa, appel `GET/api/posts?author=moussa`.
+
+- **Livrable** : `web/lib/for-you.ts`, `web/lib/for-you_test.ts`, `web/pages/home/home-page.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/fixtures/posts.ts`, `web/pages/profile/profile-page.tsx`, `web/lib/posts.ts`, `api/posts.ts`, `api/routes.ts`, `api/posts_test.ts`, `web/assets/icons.tsx`, `web/lib/english.ts` ; §6.2, §9.1, §10.1
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

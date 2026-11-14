@@ -244,7 +244,7 @@ Sans session, `/` est la landing (le produit en une page, « Continuer avec GitH
 - **Onglets** : Pour toi, Abonnements, Communautés, Questions.
 - **Insertions** : les événements GitHub des projets de l'utilisateur, et une carte « Ce projet a besoin de toi » en 2ᵉ position quand une demande lui correspond.
 - **Colonne de droite**, à défilement indépendant : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs.
-- Le fil remplace la « discussion tendance » : les posts les plus actifs remontent dans Pour toi.
+- **Pour toi est classé pour le lecteur**, sans IA (`web/lib/for-you.ts`). Un post gagne des points par ce qui le relie au lecteur : une personne qu'il suit (3), une republication d'une personne suivie (2,5), une personne avec qui il a échangé (jusqu'à 3 : travail commun, réponses, J'aime et republications dans les deux sens), une de ses communautés (2), un de ses projets (2), ses compétences nommées dans le texte (jusqu'à 2). L'activité du post (J'aime, réponses, republications) ajoute au plus 1,5 : elle ne passe jamais devant le monde du lecteur. Le tout perd la moitié de son poids toutes les 36 heures. Les événements GitHub de ses projets pèsent comme un post d'une personne suivie. Chaque post dit en une ligne pourquoi il est là (« Tu suis Fatou », « Dans Go, ta communauté », « Parle de Go, Deno »). Les autres onglets restent dans l'ordre du temps.
 
 ### 6.3 Page projet
 
@@ -520,6 +520,7 @@ Le profil est un produit à part entière : public, partageable, indexable, serv
 - **Currently Building** : projets actifs avec le rôle et le travail de l'utilisateur (commits, PRs mergées, reviews).
 - **Real Contributions** : par projet, le rôle, les faits marquants et les liens vers les preuves.
 - **Activity stats** : projets, reviews vérifiées, contributions mergées, développeurs aidés, collaborations.
+- **Activité**, comme sur un réseau social : trois onglets, **Posts**, **Réponses** et **Aide** (demandes écrites ou aides données), chacun avec son nombre ; cinq lignes, puis « Voir plus (N) » dix par dix. L'onglet tient dans l'adresse (`?activite=replies` ou `help`). Les posts d'un profil sont lus par `GET/api/posts?author=login`.
 - **Réputation et badges** (§8).
 - **Sections** : Overview, Projects, Contributions, Reviews, Activity, Badges, Communities, GitHub. Une seule colonne, dans l'ordre choisi par le développeur.
 
@@ -542,7 +543,7 @@ Les données de pays viennent du profil déclaré ; un utilisateur sans pays n'a
 
 ### 10.1 Feed
 
-Le fil est l'Accueil (§6.2). Types de publication : Discussion, Question, Mise à jour de projet, Vitrine, Ressource, Opportunité, Release (une demande d'aide passe par son formulaire, §7.1). Contenu en Markdown avec blocs de code (sous-ensemble lu en éléments, jamais en HTML : gras, italique, `code`, liens `http`/`https`, listes, citations, titres, blocs de code ; les liens nus, `@login` et `#hashtag` deviennent cliquables ; les retours à la ligne sont gardés ; au-delà de 600 caractères ou 8 lignes, un post se replie dans le fil avec « … voir plus »), jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. **Une réponse est un post** rattaché à un autre, avec les mêmes actions (réagir, republier, répondre, signaler). Imbrication sans limite, avec des lignes de rattachement ; à l'ouverture, seules les réponses directes s'affichent, les suivantes se déplient à la demande. Interactions : réactions (dont « Utile »), republication, bookmark, partage par lien, abonnement à une personne, un projet ou une communauté. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
+Le fil est l'Accueil (§6.2). Types de publication : Discussion, Question, Mise à jour de projet, Vitrine, Ressource, Opportunité, Release (une demande d'aide passe par son formulaire, §7.1). Contenu en Markdown avec blocs de code (sous-ensemble lu en éléments, jamais en HTML : gras, italique, `code`, liens `http`/`https`, listes, citations, titres, blocs de code ; les liens nus, `@login` et `#hashtag` deviennent cliquables ; les retours à la ligne sont gardés ; au-delà de 600 caractères ou 8 lignes, un post se replie dans le fil avec « … voir plus »), jusqu'à 4 images, vidéos intégrées par lien (YouTube, Loom, Vimeo), liens vers un repo, une issue, une PR ou un projet. **Une réponse est un post** rattaché à un autre, avec les mêmes actions (réagir, republier, répondre, signaler). Imbrication sans limite, avec des lignes de rattachement ; à l'ouverture, seules les réponses directes s'affichent, les suivantes se déplient à la demande. Interactions : une seule réaction, **J'aime** (un cœur) — « Utile » et « Merci » sont retirés, la barre d'un post garde six boutons : Commenter, Republier, J'aime, puis Enregistrer, Partager, Signaler —, republication, bookmark, partage par lien, abonnement à une personne, un projet ou une communauté. Une question peut avoir une réponse acceptée (entry `ANSWER_ACCEPTED`). Pagination par curseur.
 
 ### 10.2 Communautés
 

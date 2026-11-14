@@ -118,3 +118,17 @@ Deno.test('posts: checked before anything is saved', async () => {
   }
   assertEquals((await kofi.call('/api/posts')).json, [])
 })
+
+// The activity of a profile reads the posts of its developer (§9.1)
+Deno.test('posts: those of one developer, for their profile', async () => {
+  restore()
+  const kofi = await dev('kofi')
+  const awa = await dev('awa')
+  await kofi.call('/api/post/create', post)
+  await awa.call('/api/post/create', { ...post, body: 'Le post d’Awa' })
+  const { status, json } = await awa.call('/api/posts?author=kofi')
+  assertEquals(status, 200)
+  assertEquals(json.map((p: { author: string }) => p.author), ['kofi'])
+  // Without an author, the whole feed
+  assertEquals((await awa.call('/api/posts')).json.length, 2)
+})

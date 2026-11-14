@@ -7,8 +7,6 @@ import {
   CornerDownRight,
   Flag,
   Heart,
-  Lightbulb,
-  ThumbsUp,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import { isMe, me, personOf } from '/web/fixtures/people.ts'
@@ -17,9 +15,8 @@ import {
   type Post,
   posts,
   postsChanged,
-  type Reaction,
   replyTo,
-  toggleReaction,
+  toggleLike,
 } from '/web/fixtures/posts.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
@@ -38,18 +35,13 @@ import { overLimit } from '/web/lib/limits.ts'
 import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
 import { VideoEmbed } from '/web/ui/video.tsx'
 
-const reactions = [
-  ['like', ThumbsUp, 'J’aime'],
-  ['useful', Lightbulb, 'Utile'],
-  ['thanks', Heart, 'Merci'],
-] as const
-
 const Article = ({ post }: { post: Post }) => {
   const author = personOf(post.author)
   const community = communities.find((c) => c.slug === post.community)
   const parent = post.parent && posts.find((p) => p.id === post.parent)
   const project = post.link && projects[post.link]
   const saved = post.bookmarks?.includes(me.login) ?? false
+  const likes = post.reactions.like ?? []
   return (
     <article class='slab flex flex-col gap-4 p-6'>
       {post.hidden && (
@@ -131,22 +123,14 @@ const Article = ({ post }: { post: Post }) => {
         </A>
       )}
       <div class='flex flex-wrap items-center gap-2.5 border-t border-line pt-4'>
-        <div class='flex flex-wrap gap-2 pb-1'>
-          {reactions.map(([kind, Icon, label]) => {
-            const list = post.reactions[kind as Reaction] ?? []
-            return (
-              <OptionButton
-                key={kind}
-                pressed={list.some(isMe)}
-                onClick={() => toggleReaction(post, kind, me.login)}
-              >
-                <Icon class='size-3.5' />
-                {label}
-                {list.length ? ` · ${list.length}` : ''}
-              </OptionButton>
-            )
-          })}
-        </div>
+        <OptionButton
+          pressed={likes.some(isMe)}
+          onClick={() => toggleLike(post, me.login)}
+        >
+          <Heart class='size-3.5' />
+          J’aime
+          {likes.length ? ` · ${likes.length}` : ''}
+        </OptionButton>
         <span class='flex-1' />
         <Button
           variant='secondary'

@@ -46,7 +46,8 @@ import {
   projectsChanged,
 } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
-import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { confirmedHelpsOf, linksOf } from '/web/fixtures/reputation.ts'
+import { type Reason, scoreOf, tiesOf } from '/web/lib/for-you.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
@@ -210,45 +211,140 @@ const HelpInsert = (
 // `node` is built only for the items a batch shows
 type FeedItem = { at: number; key: string; node: () => JSX.Element }
 
+/** What « Pour toi » knows of the reader: their world, and who they met */
+const readerOf = (mine: Project[]) => ({
+  login: me.login,
+  follows: me.follows ?? [],
+  communities: me.communities,
+  skills: me.skills,
+  projects: mine.map((project) => project.slug),
+  ties: tiesOf(
+    me.login,
+    posts.map((post) => ({
+      id: post.id,
+      author: post.author,
+      parent: post.parent,
+      likes: post.reactions.like ?? [],
+      reposts: post.reposts.map((repost) => repost.by),
+    })),
+    linksOf(me.login),
+  ),
+})
+
+/** Why a post is in « Pour toi », in a few words */
+const because = (reason?: Reason) => {
+  if (!reason) return undefined
+  switch (reason.kind) {
+    case 'follow':
+      return t`Tu suis ${firstName(reason.who)}`
+    case 'tie':
+      return t`Tu as échangé avec ${firstName(reason.who)}`
+    case 'community':
+      return t`Dans ${
+        communities.find((c) => c.slug === reason.slug)?.name ?? reason.slug
+      }, ta communauté`
+    case 'project':
+      return t`Sur ${
+        (projects as Record<string, Project>)[reason.slug]?.name ?? reason.slug
+      }, un de tes projets`
+    case 'skills':
+      return t`Parle de ${reason.skills.slice(0, 3).join(', ')}`
+    // A repost is said by the card itself
+    case 'repost':
+      return undefined
+  }
+}
+
 /** Posts, reposts, GitHub events and a matching help request (§6.2) */
 const feedItems = (tab: FeedTab): FeedItem[] => {
   const followed = me.follows ?? []
   const mine = myProjects()
   const slugs = mine.map((p) => p.slug)
-  const entries: { at: number; post: Post; repostBy?: Login; fol: boolean }[] =
-    []
+  const forYou = tab === 'for-you'
+  const reader = forYou ? readerOf(mine) : undefined
+  const now = Date.now()
+  // Replies of each thread, counted once for all the posts
+  const replies = new Map<string, number>()
+  for (const post of posts) {
+    const root = post.root ?? post.parent
+    if (root) replies.set(root, (replies.get(root) ?? 0) + 1)
+  }
+  type Entry = {
+    at: number
+    post: Post
+    repostBy?: Login
+    score: number
+    reason?: Reason
+  }
+  const entries: Entry[] = []
+  const push = (at: number, post: Post, repostBy?: Login) => {
+    const ranked = reader && scoreOf(
+      {
+        author: post.author,
+        community: post.community,
+        title: post.title,
+        body: post.body,
+        link: post.link,
+        likes: post.reactions.like ?? [],
+        replies: replies.get(post.id) ?? 0,
+        reposts: post.reposts.map((repost) => repost.by),
+      },
+      reader,
+      at,
+      now,
+      repostBy,
+    )
+    entries.push({
+      at,
+      post,
+      repostBy,
+      score: ranked?.score ?? 0,
+      reason: ranked?.reason,
+    })
+  }
   for (const post of posts) {
     if (post.parent || (post.hidden && !isMe(post.author))) continue
     const community = me.communities.includes(post.community)
     const fol = followed.includes(post.author) || isMe(post.author) ||
       (!!post.link && slugs.includes(post.link))
     if (
-      tab === 'for-you' || (tab === 'following' && fol) ||
+      forYou || (tab === 'following' && fol) ||
       (tab === 'communities' && community) ||
       (tab === 'questions' && post.type === 'Question')
-    ) entries.push({ at: post.at, post, fol })
-    if (tab !== 'for-you' && tab !== 'following') continue
+    ) push(post.at, post)
+    if (!forYou && tab !== 'following') continue
     for (const repost of post.reposts) {
       if (followed.includes(repost.by) || isMe(repost.by)) {
-        entries.push({ at: repost.at, post, repostBy: repost.by, fol: true })
+        push(repost.at, post, repost.by)
       }
     }
   }
+  // « Pour toi » by score, the other tabs by time
   entries.sort((a, b) =>
-    tab === 'questions'
+    forYou
+      ? b.score - a.score
+      : tab === 'questions'
       ? Number(!!a.post.acceptedReply) - Number(!!b.post.acceptedReply) ||
         b.at - a.at
       : b.at - a.at
   )
   const seen = new Set<string>()
-  let items: FeedItem[] = entries
+  type Scored = FeedItem & { score: number }
+  let items: Scored[] = entries
     .filter(({ post }) => !seen.has(post.id) && seen.add(post.id))
-    .map(({ at, post, repostBy }) => ({
+    .map(({ at, post, repostBy, score, reason }) => ({
       at,
+      score,
       key: post.id,
-      node: () => <PostCard post={post} repostBy={repostBy} />,
+      node: () => (
+        <PostCard
+          post={post}
+          repostBy={repostBy}
+          because={forYou ? because(reason) : undefined}
+        />
+      ),
     }))
-  if (tab === 'for-you' || tab === 'following') {
+  if (forYou || tab === 'following') {
     const events = mine.flatMap((project) =>
       recentActivityOf(project)
         .filter((entry) =>
@@ -256,6 +352,9 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
         )
         .map((entry) => ({
           at: entry.at,
+          // An event of one's own project weighs like a post of someone
+          // followed
+          score: 4 * 0.5 ** (Math.max(0, now - entry.at) / (36 * 3600_000)),
           key: `${project.slug}-${entry.at}-${entry.text}`,
           node: () => (
             <GithubEvent
@@ -267,16 +366,19 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
           ),
         }))
     )
-    items = [...items, ...events].sort((a, b) => b.at - a.at)
+    items = [...items, ...events].sort((a, b) =>
+      forYou ? b.score - a.score : b.at - a.at
+    )
   }
   // Every item: the page shows them by batches (§12.7)
-  if (tab === 'for-you') {
+  if (forYou) {
     const top = matchingRequests(me).find(({ request }) =>
       !dismissedHelp.value.includes(request.id)
     )
     if (top) {
       items.splice(Math.min(1, items.length), 0, {
         at: 0,
+        score: 0,
         key: `help-${top.request.id}`,
         node: () => <HelpInsert request={top.request} score={top.score} />,
       })

@@ -1353,14 +1353,15 @@ const defs = {
   'GET/api/posts': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
-    fn: (_, { after }) => listPosts(Number(after) || 0),
+    fn: (_, { after, author }) => listPosts(Number(after) || 0, author ?? ''),
     input: OBJ({
       after: optional(
         STR('Only the posts published after this time, in seconds'),
       ),
+      author: optional(STR('Only the posts of this GitHub login')),
     }),
     output: ARR(savedPost),
-    description: 'The latest posts, newest first',
+    description: 'The latest posts, newest first, or those of one developer',
   }),
 
   'GET/api/follows': route({

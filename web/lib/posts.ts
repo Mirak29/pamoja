@@ -15,11 +15,18 @@ import { signal } from '@preact/signals'
 
 /** The latest posts, into the feed */
 export const loadPosts = () =>
-  api['GET/api/posts'].fetch({ after: '' }).then((list) => {
+  api['GET/api/posts'].fetch({ after: '', author: '' }).then((list) => {
     adoptPosts(list)
     // Read with the others: none waits any more
     newPosts.value = []
   }, () => {})
+
+/** The posts of one developer, for the activity of their profile */
+export const loadPostsOf = (login: string) =>
+  api['GET/api/posts'].fetch({ after: '', author: login }).then(
+    adoptPosts,
+    () => {},
+  )
 
 type Saved = ApiOutput['GET/api/posts']
 
@@ -32,16 +39,17 @@ export const newPosts = signal<Saved>([])
 
 /** Reads only what is newer than the feed, and holds it */
 export const loadNewPosts = () =>
-  api['GET/api/posts'].fetch({ after: String(newestSavedAt()) }).then(
-    (list) => {
-      const held = new Set(newPosts.peek().map((post) => post.id))
-      const fresh = list.filter((post) =>
-        !held.has(post.id) && !isKnownPost(post.id)
-      )
-      fresh.length && (newPosts.value = [...fresh, ...newPosts.peek()])
-    },
-    () => {},
-  )
+  api['GET/api/posts'].fetch({ after: String(newestSavedAt()), author: '' })
+    .then(
+      (list) => {
+        const held = new Set(newPosts.peek().map((post) => post.id))
+        const fresh = list.filter((post) =>
+          !held.has(post.id) && !isKnownPost(post.id)
+        )
+        fresh.length && (newPosts.value = [...fresh, ...newPosts.peek()])
+      },
+      () => {},
+    )
 
 /** The posts held, into the feed */
 export const showNewPosts = () => {

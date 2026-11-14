@@ -85,6 +85,15 @@ const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
   LIMIT :limit
 `.all
 
+// The posts of one developer, for the activity of their profile
+const listByAuthor =
+  sql<PostRow, { author: string; limit: number }>`${postSelect}
+  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+    AND user.githubUsername = :author
+  ORDER BY post.createdAt DESC
+  LIMIT :limit
+`.all
+
 const getOne = sql<PostRow, number>`${postSelect}
   WHERE post.postId = ?
 `.get
@@ -105,13 +114,19 @@ const shown = (rows: PostRow[]) => {
   }))
 }
 
-/** The latest posts, newest first: what the feed reads */
 /**
- * The latest posts; with `after` (seconds), only those published since: a
- * feed open on the page reads just what is new
+ * The latest posts, newest first; with `after` (seconds), only those
+ * published since: a feed open on the page reads just what is new. With
+ * `author`, those of one developer, for their profile.
  */
-export const listPosts = (after = 0) =>
-  shown(after ? listSince({ after, limit: 50 }) : listRecent(50))
+export const listPosts = (after = 0, author = '') =>
+  shown(
+    author
+      ? listByAuthor({ author, limit: 50 })
+      : after
+      ? listSince({ after, limit: 50 })
+      : listRecent(50),
+  )
 
 /** Publishes a post with its images and its video, checked first */
 export const createPost = (me: number, input: PostInput) => {
