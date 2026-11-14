@@ -1,3 +1,4 @@
+import { communitiesOf } from '/api/user.ts'
 import { sql } from '@01edu/db'
 import { listHelpActivity } from '/api/help.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
@@ -35,13 +36,6 @@ const getProfile = sql<ProfileRow, string>`
 
 const listIntents = sql<{ intent: string }, number>`
   SELECT intent FROM userIntent WHERE userId = ? ORDER BY userIntentId
-`.all
-
-const listCommunities = sql<{ slug: string }, number>`
-  SELECT community.slug FROM communityMember
-  JOIN community ON community.communityId = communityMember.communityId
-  WHERE communityMember.userId = ?
-  ORDER BY communityMember.joinedAt
 `.all
 
 // Public projects only: an unlisted one is reached by its link, not from a
@@ -102,7 +96,7 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     skills,
     domains,
     intents: listIntents(row.userId).map((r) => r.intent),
-    communities: listCommunities(row.userId).map((r) => r.slug),
+    communities: communitiesOf(row.userId),
     projects: listProjects(row.userId).map((project) => ({
       slug: project.slug,
       name: project.name,

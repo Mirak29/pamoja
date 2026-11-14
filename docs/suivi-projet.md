@@ -1097,6 +1097,27 @@ Relecture `/code-review` : un projet devenu non listé ne pouvait plus être qui
 - **Livrable** : `api/follow.ts`, `web/lib/session.ts`, `web/fixtures/people.ts`, `web/fixtures/projects.ts`, `docs/cahier-des-charges.md`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
 - **Par** : @niangoos
 
+### 2026-11-13 · PAM-502 · Rejoindre et quitter une communauté sur le serveur
+
+Route `POST/api/community/join` qui ajoute ou retire une ligne `communityMember` (par slug), avec limite de débit (§16) et refus d'une communauté inconnue. `refreshListeners` relit ensuite les abonnements SSE du membre : il reçoit (ou cesse de recevoir) les posts de la communauté en direct (§13.2). `GET/api/user/me` renvoyant déjà les communautés rejointes, l'état « Membre » est juste après un rechargement. Côté interface, les boutons Rejoindre et Quitter passent par `web/lib/communities.ts` — changement affiché tout de suite, enregistré sur le serveur, remis en place en cas d'échec.
+
+Reste pour clore PAM-502 : créer une communauté (ligne `community` + créateur modérateur + réindexation recherche) demande d'abord un listing des communautés lu depuis la base, sinon une communauté créée disparaît du listing fixture au rechargement ; à suivre dans une PR dédiée.
+
+**Revue (relecture et CodeRabbit), corrigée.** La route basculait l'adhésion et la page ne relisait jamais les communautés rejointes (`GET/api/user/me` ne les donnait pas) : après un rechargement, un second onglet ou une nouvelle tentative, un clic pour rejoindre pouvait faire quitter. Maintenant :
+- `POST/api/community/join` reçoit l'état voulu (`join: true/false`) : la même requête donne le même résultat ;
+- les communautés rejointes viennent avec le développeur connecté (`communities` de `GET/api/user/me`, une seule requête partagée avec le profil public : `communitiesOf`) ;
+- la page applique l'état confirmé par le serveur, et revient en arrière si la requête échoue.
+Le nombre de membres affiché reste celui de la page tant que les communautés ne sont pas lues sur le serveur (`GET/api/communities`, PAM-502) : le compte du serveur d'une communauté seedée n'est pas celui que montre la démo.
+
+Vérifié dans le navigateur : rejoindre React, recharger, la page dit « Membre » ; quitter, la base suit.
+
+Seconde relecture de CodeRabbit : un départ lancé pendant qu'une adhésion était en route pouvait être défait par la réponse tardive de l'adhésion. Les écritures d'une même communauté partent l'une après l'autre et seule la dernière décide de l'affichage (`web/lib/in-order.ts`, le même que pour le follow) ; une réponse arrivée après un changement de compte est ignorée.
+
+Relecture `/code-review` : après 60 adhésions dans l'heure, même un départ était refusé ; seule une adhésion compte maintenant. Reste à trancher : un modérateur qui quitte perd son rôle (la ligne `communityMember` est supprimée, et il revient en simple membre) ; le cahier ne dit pas s'il faut l'en empêcher.
+
+- **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

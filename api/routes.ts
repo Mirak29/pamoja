@@ -117,6 +117,7 @@ import {
   type FollowTarget,
   setFollow,
 } from '/api/follow.ts'
+import { setMembership } from '/api/community.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -209,6 +210,7 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+  communities: ARR(STR('Slug of a community'), 'Communities joined'),
 }
 
 const profileSaved = OBJ(currentUser, 'The profile saved')
@@ -1351,6 +1353,18 @@ const defs = {
     }),
     description:
       'Follow a developer, a project or a community, or stop following it',
+  }),
+
+  'POST/api/community/join': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      setMembership(ctx.session.userId, input.slug, input.join),
+    input: OBJ({
+      slug: STR('Slug of the community'),
+      join: BOOL('True to join, false to leave: the state wanted'),
+    }),
+    output: OBJ({ joined: BOOL('True when the developer is a member') }),
+    description: 'Join or leave a community',
   }),
 
   /*

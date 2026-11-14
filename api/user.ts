@@ -188,6 +188,17 @@ export const updateMatching = (userId: number, input: MatchingInput) =>
     at: now(),
   })
 
+const listCommunities = sql<{ slug: string }, number>`
+  SELECT community.slug FROM communityMember
+  JOIN community ON community.communityId = communityMember.communityId
+  WHERE communityMember.userId = ?
+  ORDER BY communityMember.joinedAt
+`.all
+
+/** The communities a developer joined, oldest first (§10.2) */
+export const communitiesOf = (userId: number) =>
+  listCommunities(userId).map((row) => row.slug)
+
 /** The signed in developer and their profile, prefilled from GitHub */
 export const getCurrentUser = (userId: number) => {
   const user = getProfile(userId)
@@ -211,6 +222,8 @@ export const getCurrentUser = (userId: number) => {
     ...matchingFiltersOf(user.matchingFilters),
     ...skillsOf(userId),
     intents: listIntents(userId).map((row) => row.intent),
+    // The communities joined: the page starts from them at every session
+    communities: communitiesOf(userId),
   }
 }
 

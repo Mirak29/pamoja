@@ -91,16 +91,21 @@ export const defaultRules = [
   'Respecte les autres, signale ce qui pose problème.',
 ]
 
-// Session changes until POST/api/community/join exists (PAM-502)
+// Changes of the communities the pages read: a join, a leave
 export const communitiesChanged = signal(0)
 
-/** POST/api/community/join, or leave */
-export const toggleMembership = (community: Community, person: Person) => {
+/** Sets the membership the page shows (POST/api/community/join saves it) */
+export const setMembership = (
+  community: Community,
+  person: Person,
+  join: boolean,
+) => {
   const joined = person.communities.includes(community.slug)
-  person.communities = joined
-    ? person.communities.filter((slug) => slug !== community.slug)
-    : [...person.communities, community.slug]
-  community.members += joined ? -1 : 1
+  if (joined === join) return
+  person.communities = join
+    ? [...person.communities, community.slug]
+    : person.communities.filter((slug) => slug !== community.slug)
+  community.members += join ? 1 : -1
   communitiesChanged.value++
 }
 

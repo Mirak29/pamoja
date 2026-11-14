@@ -206,7 +206,7 @@ Responsable : _à répartir_
 Responsable : _à répartir_
 
 - [ ] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réactions dont « Utile », bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
-- [ ] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2)
+- [ ] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2) — fait : rejoindre et quitter sur le serveur, l'adhésion relue à chaque session ; reste : créer une communauté et lire la liste (`GET/api/communities`), encore dans la page — @niangoos
 - [x] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1) — @niangoos
 - [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
 - [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
@@ -368,3 +368,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-13 · Point sur le TODO, vérifié dans le code et sur la VM : PAM-003, 004, 006, 109, 114 et 407 cochés ; PAM-005, 113, 115 et 906 à moitié faits, ce qui reste est noté sur leur ligne. Les écrans de PAM-401 à 405 et de PAM-501 à 512 existent sur données de démo, mais le serveur n'a pas encore leurs routes : follow, communautés, réactions, favoris, réponses, republications, signalements, board, roadmap, needs, candidatures, listing d'Explore
 - 2026-11-14 · Seed des reviews de Moussa (PAM-901) : 14 preuves `REVIEW_HELP_CONFIRMED` en `source = demo`, de quatre demandeurs et deux projets, backdatées ; les skills qu'elles prouvent sont écrits en `platform_activity` comme le fait une confirmation, et les badges sont calculés sans annoncer un déblocage daté du jour · §8, §18.1
 - 2026-11-14 · Follow enregistré (PAM-503) : `POST/api/follow` reçoit l'état voulu, jamais une bascule, et `GET/api/follows` donne à la page l'état du serveur à chaque session ; une requête rejouée ou un second onglet ne peut plus désabonner · §15
+- 2026-11-14 · Communautés rejointes sur le serveur (PAM-502) : `POST/api/community/join` reçoit l'état voulu (`join`), jamais une bascule, et les communautés rejointes viennent avec le développeur connecté (`GET/api/user/me`) ; la page part du serveur à chaque session · §10.2, §15
