@@ -9,14 +9,17 @@ import {
 } from '/web/fixtures/people.ts'
 import {
   badgesOf,
+  type Link,
   linksOf,
   lockedBadgesOf,
   reputationChanged,
 } from '/web/fixtures/reputation.ts'
-import { Minus, Plus, RotateCcw } from '/web/assets/icons.tsx'
+import { ArrowLeft, Minus, Plus, RotateCcw } from '/web/assets/icons.tsx'
 import { initials } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
+import { Input } from '/web/ui/input.tsx'
+import { counted, shortCount } from '/web/lib/plural.ts'
 import {
   BadgeMedal,
   levelName,
@@ -60,26 +63,47 @@ const countryName = (code: string) =>
 
 // The list shows the strongest countries; the rest is one click away
 const MAX_COUNTRIES = 5
-const MAX_PEOPLE = 4
+const MAX_FACES = 4
+// The people of a country come a page at a time, searchable past one page:
+// a thousand collaborators never fill the screen
+const PAGE = 12
 
-type Linked = { count: number; verified: boolean; logins: Login[] }
+type Linked = {
+  count: number
+  verified: boolean
+  /** The people of the country, the strongest links first */
+  people: Link[]
+}
 
 /** Collaborations of a profile by country, its own country left out */
-const linkedCountries = (login: Login) => {
+export const linkedCountries = (login: Login, links = linksOf(login)) => {
   const home = people[login].countryCode
   const byCountry = new Map<string, Linked>()
-  for (const link of linksOf(login)) {
+  for (const link of links) {
     // A developer without a country is not on the map (§9.3)
     const code = personOf(link.login).countryCode
     if (!code || code === home) continue
     const entry = byCountry.get(code) ??
-      { count: 0, verified: false, logins: [] }
+      { count: 0, verified: false, people: [] }
     entry.count += link.count
     entry.verified ||= link.verified
-    entry.logins.push(link.login)
+    entry.people.push(link)
     byCountry.set(code, entry)
   }
+  for (const entry of byCountry.values()) {
+    entry.people.sort((a, b) => b.count - a.count)
+  }
   return [...byCountry].sort(([, a], [, b]) => b.count - a.count)
+}
+
+/** The people of a country matching a search, by name or login */
+export const peopleMatching = (list: Link[], query: string) => {
+  const words = query.trim().toLowerCase()
+  if (!words) return list
+  return list.filter(({ login }) =>
+    personOf(login).name.toLowerCase().includes(words) ||
+    login.toLowerCase().includes(words)
+  )
 }
 
 /*
@@ -348,7 +372,7 @@ const reducedMotion = () =>
 const ease = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-type Node = {
+type Marker = {
   code: string
   kind: 'home' | 'linked' | 'ghost'
   at: Vector
@@ -375,7 +399,7 @@ const mapOf = (login: Login) => {
   const toLink = [...new Set(Object.values(people).map((p) => p.countryCode))]
     .filter((code) => code !== home && !linked.has(code) && positions[code])
   const homeAt = positions[home] && vectorOf(...positions[home])
-  const nodes: Node[] = [
+  const nodes: Marker[] = [
     ...(homeAt ? [{ code: home, kind: 'home' as const, at: homeAt }] : []),
     ...ranked
       .filter(([code]) => positions[code])
@@ -429,7 +453,13 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   } = useMemo(() => mapOf(login), [login, version])
 
   const [hovered, setHovered] = useState<string | null>(null)
+  // The country whose people are listed beside the globe
+  const [chosen, setChosen] = useState<string | null>(null)
   const [allCountries, setAllCountries] = useState(false)
+  // On a touch screen the globe leaves the finger to the page until it is
+  // touched: then it is held, turns under the finger, and the page waits
+  const [held, setHeld] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
   // The globe opens turned away and flies to the countries, like a trip
   const [view, setView] = useState<View>(() =>
     reducedMotion() ? framing : {
@@ -446,6 +476,11 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   // The fingers on the globe: one turns it, two pinch to zoom
   const fingers = useRef(new Map<number, { x: number; y: number }>())
   const pinch = useRef<{ distance: number; radius: number } | null>(null)
+  // A press that has not moved yet: let go there, it is a tap, which picks
+  // the country under it or takes the globe in hand
+  const press = useRef<
+    { id: number; x: number; y: number; moved: boolean } | null
+  >(null)
   const spread = () => {
     const [a, b] = [...fingers.current.values()]
     return Math.hypot(a.x - b.x, a.y - b.y) || 1
@@ -483,9 +518,28 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
   }
 
   useEffect(() => {
+    setChosen(null)
+    setHeld(false)
     flyTo(framing)
     return () => cancelAnimationFrame(motion.current)
   }, [login])
+
+  // A held globe goes back to the page with a touch elsewhere or Escape
+  useEffect(() => {
+    if (!held) return
+    const away = (event: PointerEvent) => {
+      if (!box.current?.contains(event.target as Node)) setHeld(false)
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHeld(false)
+    }
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [held])
 
   // The sea and the threads show at once, the land as soon as it is read
   const [, setLandShown] = useState(landRings.length > 0)
@@ -506,14 +560,38 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
     const pair = frame([homeAt, vectorOf(...positions[code])])
     flyTo(tilt({ ...pair, radius: Math.max(420, pair.radius) }, 2))
   }
+  // From the list, the globe also flies to the country
+  const pick = (code: string) => {
+    setChosen(code)
+    if (positions[code]) focus(code)
+  }
 
   const seen = nodes
     .map((node) => ({ ...node, seen: turn(node.at, view) }))
     .filter((node) => node.seen[2] > 0)
     .sort((a, b) => a.seen[2] - b.seen[2])
-  const dim = (code: string) => hovered !== null && hovered !== code
+  // The linked country nearest a tap, within a fingertip: the markers of
+  // neighbours overlap once the globe is small
+  const countryAt = (event: PointerEvent) => {
+    const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect()
+    const x = (event.clientX - rect.left) * W / rect.width
+    const y = (event.clientY - rect.top) * H / rect.height
+    let best: { code: string; distance: number } | undefined
+    for (const node of seen) {
+      if (node.kind !== 'linked') continue
+      const [nx, ny] = screen(node.seen, view)
+      const distance = Math.hypot(nx - x, ny - y)
+      if (distance < 18 && (!best || distance < best.distance)) {
+        best = { code: node.code, distance }
+      }
+    }
+    return best?.code
+  }
+  const lit = hovered ?? chosen
+  const dim = (code: string) => lit !== null && lit !== code
   const hover = (code: string | null) => () => setHovered(code)
   const [cx, cy] = [W / 2, H / 2]
+  const country = chosen ? ranked.find(([code]) => code === chosen) : undefined
 
   return (
     <section class='slab flex flex-col gap-3 p-[22px]'>
@@ -525,434 +603,459 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
           depuis {person.country}
         </span>
       </div>
-      <div class='grid items-center gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'>
+      <div class='grid items-start gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'>
         <div class='relative flex flex-col gap-2'>
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            width='100%'
-            class='mx-auto block max-w-[440px] cursor-grab touch-pan-y select-none active:cursor-grabbing'
-            role='img'
-            tabIndex={0}
-            aria-label='Globe des collaborations. Flèches pour le tourner, plus et moins pour zoomer.'
-            onPointerDown={(event) => {
-              cancelAnimationFrame(motion.current)
-              fingers.current.set(event.pointerId, {
-                x: event.clientX,
-                y: event.clientY,
-              })
-              if (fingers.current.size === 2) {
-                drag.current = null
-                pinch.current = {
-                  distance: spread(),
-                  radius: current.current.radius,
+          {
+            /* Held, the frame of the globe is outlined: inside it the finger
+            turns the globe, outside it scrolls the page */
+          }
+          <div
+            ref={box}
+            class={`relative mx-auto w-full max-w-[440px] rounded-xl outline-2 outline-offset-2 transition-[outline-color] ${
+              held ? 'outline-indigo' : 'outline-transparent'
+            }`}
+          >
+            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              width='100%'
+              class={`block cursor-grab select-none active:cursor-grabbing ${
+                held ? 'touch-none' : ''
+              }`}
+              role='img'
+              tabIndex={0}
+              aria-label='Globe des collaborations. Flèches pour le tourner, plus et moins pour zoomer.'
+              onPointerDown={(event) => {
+                // A second finger makes a pinch, never a tap
+                press.current = fingers.current.size ? null : {
+                  id: event.pointerId,
+                  x: event.clientX,
+                  y: event.clientY,
+                  moved: false,
                 }
-              } else grab(event.clientX, event.clientY)
-              try {
-                event.currentTarget.setPointerCapture(event.pointerId)
-              } catch {
-                // A pointer already gone: nothing to follow
-              }
-            }}
-            onPointerMove={(event) => {
-              if (!fingers.current.has(event.pointerId)) return
-              fingers.current.set(event.pointerId, {
-                x: event.clientX,
-                y: event.clientY,
-              })
-              if (pinch.current && fingers.current.size >= 2) {
-                const { distance, radius } = pinch.current
-                return setView({
-                  ...current.current,
-                  radius: radiusWithin(radius * spread() / distance),
+                // Not held, a finger belongs to the page: it scrolls, or taps
+                if (event.pointerType === 'touch' && !held) return
+                cancelAnimationFrame(motion.current)
+                fingers.current.set(event.pointerId, {
+                  x: event.clientX,
+                  y: event.clientY,
                 })
-              }
-              const start = drag.current
-              if (!start) return
-              const scale = W /
-                event.currentTarget.getBoundingClientRect().width
-              const per = scale / start.from.radius / RAD
-              setView({
-                ...start.from,
-                lon: start.from.lon - (event.clientX - start.x) * per,
-                lat: Math.min(
-                  80,
-                  Math.max(
-                    -80,
-                    start.from.lat + (event.clientY - start.y) * per,
-                  ),
-                ),
-              })
-            }}
-            onPointerUp={release}
-            onPointerCancel={release}
-            // The wheel alone scrolls the page; with Ctrl or Cmd, which is
-            // also what a pinch on a trackpad sends, it zooms the globe
-            onWheel={(event) => {
-              if (!event.ctrlKey && !event.metaKey) return
-              event.preventDefault()
-              cancelAnimationFrame(motion.current)
-              const step = Math.max(-60, Math.min(60, event.deltaY))
-              setView({
-                ...current.current,
-                radius: radiusWithin(
-                  current.current.radius * Math.exp(-step / 200),
-                ),
-              })
-            }}
-            onKeyDown={(event) => {
-              const shift: Record<string, [number, number]> = {
-                ArrowLeft: [-8, 0],
-                ArrowRight: [8, 0],
-                ArrowUp: [0, 8],
-                ArrowDown: [0, -8],
-              }
-              if (event.key === '+' || event.key === '=') zoom(1.3)
-              else if (event.key === '-') zoom(1 / 1.3)
-              else if (shift[event.key]) {
-                const [lon, lat] = shift[event.key]
-                const from = current.current
-                flyTo({
-                  ...from,
-                  lon: from.lon + lon * 150 / from.radius,
+                if (fingers.current.size === 2) {
+                  drag.current = null
+                  pinch.current = {
+                    distance: spread(),
+                    radius: current.current.radius,
+                  }
+                } else grab(event.clientX, event.clientY)
+                try {
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                } catch {
+                  // A pointer already gone: nothing to follow
+                }
+              }}
+              onPointerMove={(event) => {
+                const tap = press.current
+                if (
+                  tap?.id === event.pointerId &&
+                  Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > 6
+                ) tap.moved = true
+                if (!fingers.current.has(event.pointerId)) return
+                fingers.current.set(event.pointerId, {
+                  x: event.clientX,
+                  y: event.clientY,
+                })
+                if (pinch.current && fingers.current.size >= 2) {
+                  const { distance, radius } = pinch.current
+                  return setView({
+                    ...current.current,
+                    radius: radiusWithin(radius * spread() / distance),
+                  })
+                }
+                const start = drag.current
+                if (!start) return
+                const scale = W /
+                  event.currentTarget.getBoundingClientRect().width
+                const per = scale / start.from.radius / RAD
+                setView({
+                  ...start.from,
+                  lon: start.from.lon - (event.clientX - start.x) * per,
                   lat: Math.min(
                     80,
-                    Math.max(-80, from.lat + lat * 150 / from.radius),
+                    Math.max(
+                      -80,
+                      start.from.lat + (event.clientY - start.y) * per,
+                    ),
                   ),
                 })
-              } else return
-              event.preventDefault()
-            }}
-          >
-            {
-              /* The colours of Pamoja: indigo sea, land in the colour of the
-              slabs. The sphere stands on the ground: its thickness is an
-              offset disc, never a blurred shadow */
-            }
-            <circle
-              cx={cx + 3.5}
-              cy={cy + 2}
-              r={view.radius}
-              fill='var(--figure-edge)'
-            />
-            <circle cx={cx} cy={cy} r={view.radius} fill='var(--indigo)' />
-            <path d={landOf(view)} fill='var(--surface-100)' />
-            <path
-              d={graticule.map((line) => pathOf(line, view)).join('')}
-              fill='none'
-              stroke='var(--on-indigo)'
-              stroke-width='0.5'
-              opacity='0.3'
-            />
-            <circle
-              cx={cx}
-              cy={cy}
-              r={view.radius}
-              fill='none'
-              stroke='var(--surface-100)'
-              stroke-width='2'
-            />
-            {homeAt && nodes.filter((node) => node.kind === 'linked').map(
-              ({ code, at, linked }) => {
-                const d = pathOf(arcOf(homeAt, at), view)
-                const width = (hovered === code ? 1.2 : 0) + 1.2 +
-                  2.2 * linked!.count / max
-                const dash = linked!.verified ? '0' : '4 3'
-                // A light halo keeps the thread readable over sea and land
+              }}
+              onPointerUp={(event) => {
+                const tap = press.current
+                press.current = null
+                if (tap?.id === event.pointerId && !tap.moved) {
+                  const code = countryAt(event)
+                  if (code) setChosen(code === chosen ? null : code)
+                  else if (event.pointerType === 'touch') setHeld(true)
+                }
+                release(event)
+              }}
+              // The page took the finger to scroll: no tap, nothing to follow
+              onPointerCancel={(event) => {
+                press.current = null
+                release(event)
+              }}
+              // The wheel alone scrolls the page; with Ctrl or Cmd, which is
+              // also what a pinch on a trackpad sends, it zooms the globe
+              onWheel={(event) => {
+                if (!event.ctrlKey && !event.metaKey) return
+                event.preventDefault()
+                cancelAnimationFrame(motion.current)
+                const step = Math.max(-60, Math.min(60, event.deltaY))
+                setView({
+                  ...current.current,
+                  radius: radiusWithin(
+                    current.current.radius * Math.exp(-step / 200),
+                  ),
+                })
+              }}
+              onKeyDown={(event) => {
+                const shift: Record<string, [number, number]> = {
+                  ArrowLeft: [-8, 0],
+                  ArrowRight: [8, 0],
+                  ArrowUp: [0, 8],
+                  ArrowDown: [0, -8],
+                }
+                if (event.key === '+' || event.key === '=') zoom(1.3)
+                else if (event.key === '-') zoom(1 / 1.3)
+                else if (shift[event.key]) {
+                  const [lon, lat] = shift[event.key]
+                  const from = current.current
+                  flyTo({
+                    ...from,
+                    lon: from.lon + lon * 150 / from.radius,
+                    lat: Math.min(
+                      80,
+                      Math.max(-80, from.lat + lat * 150 / from.radius),
+                    ),
+                  })
+                } else return
+                event.preventDefault()
+              }}
+            >
+              {
+                /* The colours of Pamoja: indigo sea, land in the colour of the
+                slabs. The sphere stands on the ground: its thickness is an
+                offset disc, never a blurred shadow */
+              }
+              <circle
+                cx={cx + 3.5}
+                cy={cy + 2}
+                r={view.radius}
+                fill='var(--figure-edge)'
+              />
+              <circle cx={cx} cy={cy} r={view.radius} fill='var(--indigo)' />
+              <path d={landOf(view)} fill='var(--surface-100)' />
+              <path
+                d={graticule.map((line) => pathOf(line, view)).join('')}
+                fill='none'
+                stroke='var(--on-indigo)'
+                stroke-width='0.5'
+                opacity='0.3'
+              />
+              <circle
+                cx={cx}
+                cy={cy}
+                r={view.radius}
+                fill='none'
+                stroke='var(--surface-100)'
+                stroke-width='2'
+              />
+              {homeAt && nodes.filter((node) => node.kind === 'linked').map(
+                ({ code, at, linked }) => {
+                  const d = pathOf(arcOf(homeAt, at), view)
+                  const width = (lit === code ? 1.2 : 0) + 1.2 +
+                    2.2 * linked!.count / max
+                  const dash = linked!.verified ? '0' : '4 3'
+                  // A light halo keeps the thread readable over sea and land
+                  return (
+                    <g
+                      key={code}
+                      fill='none'
+                      stroke-linecap='round'
+                      stroke-dasharray={dash}
+                      opacity={dim(code) ? 0.25 : 1}
+                    >
+                      <path
+                        d={d}
+                        stroke='var(--surface-100)'
+                        stroke-width={width + 2.4}
+                      />
+                      <path
+                        d={d}
+                        stroke='var(--indigo)'
+                        stroke-width={width}
+                      />
+                    </g>
+                  )
+                },
+              )}
+              {seen.map(({ code, kind, seen: at, linked }) => {
+                const [x, y] = screen(at, view)
+                // Markers grow with the zoom: dots on the whole globe,
+                // labelled discs once the countries stand apart
+                const k = Math.min(1, Math.max(0.5, view.radius / 330))
+                const labelled = k > 0.8
+                if (kind === 'home') {
+                  return (
+                    <g key={code}>
+                      <circle
+                        cx={x + 1.7 * k}
+                        cy={y + k}
+                        r={12 * k}
+                        fill='var(--figure-edge)'
+                      />
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={12 * k}
+                        fill='var(--indigo)'
+                        stroke='var(--surface-100)'
+                        stroke-width='1.5'
+                      />
+                      {labelled && (
+                        <text
+                          x={x}
+                          y={y + 3.2}
+                          text-anchor='middle'
+                          fill='var(--on-indigo)'
+                          font-size='9'
+                          class='font-display font-bold'
+                        >
+                          {initials(person.name)}
+                        </text>
+                      )}
+                    </g>
+                  )
+                }
+                if (kind === 'ghost') {
+                  return (
+                    <g key={code}>
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={7.5 * k}
+                        fill='var(--surface-100)'
+                        stroke='var(--line-control)'
+                        stroke-dasharray='2 1.5'
+                      />
+                      {labelled && (
+                        <text
+                          x={x}
+                          y={y + 2}
+                          text-anchor='middle'
+                          fill='var(--ink-muted)'
+                          font-size='5.5'
+                          class='font-mono font-semibold'
+                        >
+                          {code}
+                        </text>
+                      )}
+                    </g>
+                  )
+                }
+                const on = lit === code
+                // The number of people, in a pill as wide as the number
+                const count = shortCount(linked!.people.length)
+                const pill = Math.max(11, count.length * 3.8 + 5)
+                // A country is a disc, like the schools on the 01 globe, with
+                // its people in an indigo pill
                 return (
                   <g
                     key={code}
-                    fill='none'
-                    stroke-linecap='round'
-                    stroke-dasharray={dash}
-                    opacity={dim(code) ? 0.25 : 1}
+                    class='cursor-pointer'
+                    opacity={dim(code) ? 0.45 : 1}
+                    onMouseEnter={hover(code)}
+                    onMouseLeave={hover(null)}
                   >
-                    <path
-                      d={d}
-                      stroke='var(--surface-100)'
-                      stroke-width={width + 2.4}
-                    />
-                    <path
-                      d={d}
-                      stroke='var(--indigo)'
-                      stroke-width={width}
-                    />
-                  </g>
-                )
-              },
-            )}
-            {seen.map(({ code, kind, seen: at, linked }) => {
-              const [x, y] = screen(at, view)
-              // Markers grow with the zoom: dots on the whole globe, labelled
-              // discs once the countries stand apart
-              const k = Math.min(1, Math.max(0.5, view.radius / 330))
-              const labelled = k > 0.8
-              if (kind === 'home') {
-                return (
-                  <g key={code}>
                     <circle
                       cx={x + 1.7 * k}
                       cy={y + k}
-                      r={12 * k}
+                      r={10 * k}
                       fill='var(--figure-edge)'
                     />
                     <circle
                       cx={x}
                       cy={y}
-                      r={12 * k}
-                      fill='var(--indigo)'
-                      stroke='var(--surface-100)'
-                      stroke-width='1.5'
+                      r={10 * k}
+                      fill={on ? 'var(--indigo-soft)' : 'var(--surface-100)'}
+                      stroke={on ? 'var(--indigo)' : 'var(--figure-edge)'}
+                      stroke-width={on ? 1.6 : 0.8}
                     />
                     {labelled && (
-                      <text
-                        x={x}
-                        y={y + 3.2}
-                        text-anchor='middle'
-                        fill='var(--on-indigo)'
-                        font-size='9'
-                        class='font-display font-bold'
-                      >
-                        {initials(person.name)}
-                      </text>
+                      <>
+                        <text
+                          x={x}
+                          y={y + 2.4}
+                          text-anchor='middle'
+                          fill='var(--ink)'
+                          font-size='7'
+                          class='font-mono font-semibold'
+                        >
+                          {code}
+                        </text>
+                        <rect
+                          x={x + 8 - pill / 2}
+                          y={y - 13.5}
+                          width={pill}
+                          height='11'
+                          rx='5.5'
+                          fill='var(--indigo)'
+                          stroke='var(--surface-100)'
+                        />
+                        <text
+                          x={x + 8}
+                          y={y - 5.8}
+                          text-anchor='middle'
+                          fill='var(--on-indigo)'
+                          font-size='6'
+                          class='font-mono font-semibold'
+                        >
+                          {count}
+                        </text>
+                      </>
                     )}
                   </g>
                 )
+              })}
+              {
+                /* The country looked at is named in a pill, whatever the
+                zoom */
               }
-              if (kind === 'ghost') {
-                return (
-                  <g key={code}>
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={7.5 * k}
-                      fill='var(--surface-100)'
-                      stroke='var(--line-control)'
-                      stroke-dasharray='2 1.5'
-                    />
-                    {labelled && (
-                      <text
-                        x={x}
-                        y={y + 2}
-                        text-anchor='middle'
-                        fill='var(--ink-muted)'
-                        font-size='5.5'
-                        class='font-mono font-semibold'
-                      >
-                        {code}
-                      </text>
-                    )}
-                  </g>
-                )
-              }
-              const on = hovered === code
-              // A country is a disc, like the schools on the 01 globe, with
-              // its count in an indigo badge
-              return (
-                <g
-                  key={code}
-                  opacity={dim(code) ? 0.45 : 1}
-                  onMouseEnter={hover(code)}
-                  onMouseLeave={hover(null)}
-                >
-                  <circle
-                    cx={x + 1.7 * k}
-                    cy={y + k}
-                    r={10 * k}
-                    fill='var(--figure-edge)'
-                  />
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={10 * k}
-                    fill='var(--surface-100)'
-                    stroke={on ? 'var(--indigo)' : 'var(--figure-edge)'}
-                    stroke-width={on ? 1.6 : 0.8}
-                  />
-                  {labelled && (
-                    <>
-                      <text
-                        x={x}
-                        y={y + 2.4}
-                        text-anchor='middle'
-                        fill='var(--ink)'
-                        font-size='7'
-                        class='font-mono font-semibold'
-                      >
-                        {code}
-                      </text>
-                      <circle
-                        cx={x + 8}
-                        cy={y - 8}
-                        r='5.5'
-                        fill='var(--indigo)'
-                        stroke='var(--surface-100)'
+              {seen.filter((node) => node.code === lit).map(
+                ({ code, seen: at, linked }) => {
+                  const [x, y] = screen(at, view)
+                  const label = `${translate(countryName(code))} · ${
+                    counted(linked?.people.length ?? 0, 'personne')
+                  }`
+                  const width = label.length * 4.4 + 12
+                  return (
+                    <g key={code} pointer-events='none'>
+                      <rect
+                        x={x - width / 2}
+                        y={y - 30}
+                        width={width}
+                        height='14'
+                        rx='4'
+                        fill='var(--surface-100)'
+                        stroke='var(--figure-edge)'
                       />
                       <text
-                        x={x + 8}
-                        y={y - 5.8}
+                        x={x}
+                        y={y - 20.5}
                         text-anchor='middle'
-                        fill='var(--on-indigo)'
-                        font-size='6'
-                        class='font-mono font-semibold'
+                        fill='var(--ink)'
+                        font-size='7.5'
+                        class='font-semibold'
                       >
-                        {linked!.count}
+                        {label}
                       </text>
-                    </>
-                  )}
-                </g>
-              )
-            })}
-            {
-              /* The hovered country is named in a pill, whatever the zoom */
-            }
-            {seen.filter((node) => node.code === hovered).map(
-              ({ code, seen: at, linked }) => {
-                const [x, y] = screen(at, view)
-                const label = `${translate(countryName(code))} · ${
-                  linked?.count ?? 0
-                }`
-                const width = label.length * 4.6 + 12
-                return (
-                  <g key={code} pointer-events='none'>
-                    <rect
-                      x={x - width / 2}
-                      y={y - 28}
-                      width={width}
-                      height='14'
-                      rx='4'
-                      fill='var(--surface-100)'
-                      stroke='var(--figure-edge)'
-                    />
-                    <text
-                      x={x}
-                      y={y - 18.5}
-                      text-anchor='middle'
-                      fill='var(--ink)'
-                      font-size='7.5'
-                      class='font-semibold'
-                    >
-                      {label}
-                    </text>
-                  </g>
-                )
-              },
+                    </g>
+                  )
+                },
+              )}
+            </svg>
+            {held && (
+              <div class='absolute top-2.5 left-2.5'>
+                <Button size={32} onClick={() => setHeld(false)}>
+                  Terminé
+                </Button>
+              </div>
             )}
-          </svg>
-          <div class='absolute top-2.5 right-2.5 flex flex-col gap-1.5'>
-            <Button
-              variant='secondary'
-              size={32}
-              square
-              aria-label='Zoomer'
-              onClick={() => zoom(1.4)}
-            >
-              <Plus class='size-4' />
-            </Button>
-            <Button
-              variant='secondary'
-              size={32}
-              square
-              aria-label='Dézoomer'
-              onClick={() => zoom(1 / 1.4)}
-            >
-              <Minus class='size-4' />
-            </Button>
-            <Button
-              variant='secondary'
-              size={32}
-              square
-              aria-label='Recentrer'
-              onClick={() => flyTo(framing)}
-            >
-              <RotateCcw class='size-4' />
-            </Button>
+            <div class='absolute top-2.5 right-2.5 flex flex-col gap-1.5'>
+              <Button
+                variant='secondary'
+                size={32}
+                square
+                aria-label='Zoomer'
+                onClick={() => zoom(1.4)}
+              >
+                <Plus class='size-4' />
+              </Button>
+              <Button
+                variant='secondary'
+                size={32}
+                square
+                aria-label='Dézoomer'
+                onClick={() => zoom(1 / 1.4)}
+              >
+                <Minus class='size-4' />
+              </Button>
+              <Button
+                variant='secondary'
+                size={32}
+                square
+                aria-label='Recentrer'
+                onClick={() => flyTo(framing)}
+              >
+                <RotateCcw class='size-4' />
+              </Button>
+            </div>
           </div>
-          <span class='text-[12px] text-ink-muted'>
+          <span class='text-[12px] text-ink-muted pointer-coarse:hidden'>
             Glisse pour faire tourner le globe, pince ou Ctrl + molette pour
-            zoomer. Un pays de la liste t’y emmène.
+            zoomer. Un pays montre ses personnes.
+          </span>
+          <span class='hidden text-[12px] text-ink-muted pointer-coarse:inline'>
+            {held
+              ? translate(
+                'Un doigt fait tourner le globe, deux doigts zooment. « Terminé » rend la main à la page.',
+              )
+              : translate(
+                'Touche le globe pour le prendre en main, ou un pays pour voir ses personnes.',
+              )}
           </span>
         </div>
         <div class='flex flex-col gap-1.5'>
-          {ranked.slice(0, allCountries ? undefined : MAX_COUNTRIES).map((
-            [code, { count, logins }],
-          ) => (
-            <div
-              key={code}
-              class={`flex flex-col gap-1.5 rounded-md border px-3 py-2 ${
-                hovered === code
-                  ? 'border-indigo bg-indigo-soft'
-                  : 'border-transparent'
-              }`}
-              onMouseEnter={hover(code)}
-              onMouseLeave={hover(null)}
-            >
-              <span class='flex items-baseline justify-between gap-2'>
-                <button
-                  type='button'
-                  class='cursor-pointer text-left text-[14px] font-semibold text-ink hover:underline'
-                  aria-label={t`Centrer le globe sur ${
-                    translate(countryName(code))
-                  }`}
-                  onClick={() => focus(code)}
-                >
-                  {translate(countryName(code))}
-                </button>
-                <span class='font-mono text-[12px] text-indigo'>
-                  {count} {count > 1 ? 'collaborations' : 'collaboration'}
-                </span>
-              </span>
-              <span class='block h-1.5 overflow-hidden rounded-full bg-line'>
-                <span
-                  class='block h-full rounded-full bg-indigo'
-                  style={{ width: `${count / max * 100}%` }}
-                />
-              </span>
-              <span class='flex flex-wrap items-center gap-1.5'>
-                {logins.slice(0, MAX_PEOPLE).map((other) =>
-                  other in people
-                    ? (
-                      <A
-                        key={other}
-                        href={`@${other}`}
-                        aria-label={personOf(other).name}
-                        class='disc size-6 text-[10px] no-underline hover:no-underline'
-                      >
-                        {initials(personOf(other).name)}
-                      </A>
-                    )
-                    : (
-                      <span key={other} class='disc size-6 text-[10px]'>
-                        {initials(personOf(other).name)}
-                      </span>
-                    )
+          {country
+            ? (
+              <CountryPeople
+                key={country[0]}
+                code={country[0]}
+                linked={country[1]}
+                onBack={() => setChosen(null)}
+              />
+            )
+            : (
+              <>
+                {ranked.slice(0, allCountries ? undefined : MAX_COUNTRIES)
+                  .map(([code, linked]) => (
+                    <CountryRow
+                      key={code}
+                      code={code}
+                      linked={linked}
+                      max={max}
+                      on={hovered === code}
+                      onHover={hover}
+                      onPick={() => pick(code)}
+                    />
+                  ))}
+                {ranked.length > MAX_COUNTRIES && (
+                  <button
+                    type='button'
+                    class='cursor-pointer self-start px-3 text-[13px] font-semibold text-indigo hover:underline'
+                    onClick={() => setAllCountries(!allCountries)}
+                  >
+                    {allCountries
+                      ? translate('Voir moins de pays')
+                      : t`Voir les ${ranked.length} pays`}
+                  </button>
                 )}
-                <span class='text-[12px] text-ink-muted'>
-                  {logins.slice(0, MAX_PEOPLE)
-                    .map((other) => personOf(other).name.split(' ')[0])
-                    .join(', ')}
-                  {logins.length > MAX_PEOPLE &&
-                    ` +${logins.length - MAX_PEOPLE}`}
-                </span>
-              </span>
-            </div>
-          ))}
-          {ranked.length > MAX_COUNTRIES && (
-            <button
-              type='button'
-              class='cursor-pointer self-start px-3 text-[13px] font-semibold text-indigo hover:underline'
-              onClick={() => setAllCountries(!allCountries)}
-            >
-              {allCountries
-                ? translate('Voir moins de pays')
-                : t`Voir les ${ranked.length} pays`}
-            </button>
-          )}
-          {!ranked.length && (
-            <span class='text-[13px] text-ink-muted'>
-              Pas encore de collaboration hors de son pays. Le fil se tend à la
-              première.
-            </span>
-          )}
+                {!ranked.length && (
+                  <span class='text-[13px] text-ink-muted'>
+                    Pas encore de collaboration hors de son pays. Le fil se tend
+                    à la première.
+                  </span>
+                )}
+              </>
+            )}
           {(cross || crossLocked) && (
             <div class='mt-1 flex items-center gap-3 border-t border-line px-3 pt-3'>
               <BadgeMedal
@@ -995,5 +1098,186 @@ export const CollaborationMap = ({ login }: { login: Login }) => {
         démo.
       </span>
     </section>
+  )
+}
+
+/** A face that opens the profile, when the developer has one */
+const Face = ({ login }: { login: Login }) => {
+  const name = personOf(login).name
+  const shape = 'disc size-6 text-[10px]'
+  return login in people
+    ? (
+      <A
+        href={`@${login}`}
+        aria-label={name}
+        class={`${shape} no-underline hover:no-underline`}
+      >
+        {initials(name)}
+      </A>
+    )
+    : <span class={shape} aria-hidden='true'>{initials(name)}</span>
+}
+
+/** A country of the list: its share of the work, and a few of its faces */
+const CountryRow = (
+  { code, linked, max, on, onHover, onPick }: {
+    code: string
+    linked: Linked
+    max: number
+    on: boolean
+    onHover: (code: string | null) => () => void
+    onPick: () => void
+  },
+) => {
+  const name = translate(countryName(code))
+  const faces = linked.people.slice(0, MAX_FACES)
+  const left = linked.people.length - faces.length
+  return (
+    <div
+      class={`flex flex-col gap-1.5 rounded-md border px-3 py-2 ${
+        on ? 'border-indigo bg-indigo-soft' : 'border-transparent'
+      }`}
+      onMouseEnter={onHover(code)}
+      onMouseLeave={onHover(null)}
+    >
+      <span class='flex flex-wrap items-baseline justify-between gap-x-2'>
+        <button
+          type='button'
+          class='cursor-pointer text-left text-[14px] font-semibold text-ink hover:underline'
+          aria-label={t`Voir les personnes de ${name}`}
+          onClick={onPick}
+        >
+          {name}
+        </button>
+        <span class='font-mono text-[12px] whitespace-nowrap text-indigo'>
+          {counted(linked.people.length, 'personne')} ·{' '}
+          {counted(linked.count, 'collaboration')}
+        </span>
+      </span>
+      <span class='block h-1.5 overflow-hidden rounded-full bg-line'>
+        <span
+          class='block h-full rounded-full bg-indigo'
+          style={{ width: `${linked.count / max * 100}%` }}
+        />
+      </span>
+      <span class='flex flex-wrap items-center gap-1.5'>
+        {faces.map(({ login }) => <Face key={login} login={login} />)}
+        <span class='text-[12px] text-ink-muted'>
+          {faces.map(({ login }) => personOf(login).name.split(' ')[0])
+            .join(', ')}
+        </span>
+        {left > 0 && (
+          <button
+            type='button'
+            class='cursor-pointer text-[12px] font-semibold text-indigo hover:underline'
+            onClick={onPick}
+          >
+            {t`+${left} · voir qui`}
+          </button>
+        )}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Who, in a country: its people, the strongest links first, a page at a
+ * time, with a search once they pass a page
+ */
+const CountryPeople = (
+  { code, linked, onBack }: {
+    code: string
+    linked: Linked
+    onBack: () => void
+  },
+) => {
+  const [query, setQuery] = useState('')
+  const [shown, setShown] = useState(PAGE)
+  const name = translate(countryName(code))
+  const found = peopleMatching(linked.people, query)
+  const left = found.length - shown
+  return (
+    <div class='flex flex-col gap-2.5 px-3' aria-live='polite'>
+      <button
+        type='button'
+        class='inline-flex cursor-pointer items-center gap-1.5 self-start text-[13px] font-semibold text-indigo hover:underline'
+        onClick={onBack}
+      >
+        <ArrowLeft class='size-3.5' />
+        Tous les pays
+      </button>
+      <span class='flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1'>
+        <h3 class='font-display text-[17px] font-semibold'>{name}</h3>
+        <span class='font-mono text-[12px] text-indigo'>
+          {counted(linked.people.length, 'personne')} ·{' '}
+          {counted(linked.count, 'collaboration')}
+        </span>
+      </span>
+      {linked.people.length > PAGE && (
+        <Input
+          type='search'
+          compact
+          placeholder='Chercher une personne'
+          aria-label={t`Chercher parmi les personnes de ${name}`}
+          value={query}
+          onInput={(event) => {
+            setQuery(event.currentTarget.value)
+            setShown(PAGE)
+          }}
+        />
+      )}
+      <ul class='flex flex-col'>
+        {found.slice(0, shown).map(({ login, count }) => (
+          <li
+            key={login}
+            class='flex items-center gap-2.5 border-t border-line py-2'
+          >
+            <span class='disc size-8 shrink-0 text-[11px]' aria-hidden='true'>
+              {initials(personOf(login).name)}
+            </span>
+            <span class='flex min-w-0 flex-1 flex-col'>
+              {login in people
+                ? (
+                  <A
+                    href={`@${login}`}
+                    class='truncate text-[14px] font-semibold text-ink'
+                  >
+                    {personOf(login).name}
+                  </A>
+                )
+                : (
+                  <span class='truncate text-[14px] font-semibold'>
+                    {personOf(login).name}
+                  </span>
+                )}
+              <span class='truncate font-mono text-[11px] text-ink-muted'>
+                @{login}
+              </span>
+            </span>
+            <span class='shrink-0 font-mono text-[12px] text-indigo'>
+              {counted(count, 'lien')}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {left > 0 && (
+        <button
+          type='button'
+          class='cursor-pointer self-start text-[13px] font-semibold text-indigo hover:underline'
+          onClick={() => setShown(shown + PAGE)}
+        >
+          {t`Voir ${Math.min(PAGE, left)} de plus`}
+          <span class='font-normal text-ink-muted'>
+            {' · '}
+            {t`${left} restantes`}
+          </span>
+        </button>
+      )}
+      {!found.length && (
+        <span class='text-[13px] text-ink-muted'>
+          Personne de ce nom dans ce pays.
+        </span>
+      )}
+    </div>
   )
 }

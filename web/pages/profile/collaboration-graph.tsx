@@ -1,6 +1,6 @@
-import { url } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
 import { A } from '/web/ui/link.tsx'
-import { useState } from 'preact/hooks'
+import { useMemo, useState } from 'preact/hooks'
 import { daysAgo } from '/web/fixtures/clock.ts'
 import { communities } from '/web/fixtures/communities.ts'
 import { type Login, people, personOf } from '/web/fixtures/people.ts'
@@ -9,6 +9,7 @@ import {
   type Dimension,
   projectNameOf,
   proofs,
+  reputationChanged,
 } from '/web/fixtures/reputation.ts'
 import { initials } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -16,7 +17,7 @@ import { Drawer } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Input, Select } from '/web/ui/input.tsx'
 import { Cube, prism } from '/web/ui/shapes.tsx'
-import { counted, plural } from '/web/lib/plural.ts'
+import { counted, plural, shortCount } from '/web/lib/plural.ts'
 import { t, translate } from '/web/lib/language.ts'
 
 /*
@@ -49,6 +50,8 @@ type Mate = {
   login: string
   /** The places shared with the profile, the most shared first */
   places: string[]
+  /** Links by place */
+  byPlace: Record<string, number>
   /** Links by kind of work */
   kinds: Partial<Record<Dimension, number>>
   count: number
@@ -61,10 +64,7 @@ export type NetworkFilter = { only: Dimension | null; days: number | null }
 export const networkOf = (login: Login, { only, days }: NetworkFilter) => {
   const since = days ? daysAgo(days) : 0
   const places = new Map<string, Place>()
-  const mates = new Map<
-    string,
-    Mate & { shared: Map<string, number> }
-  >()
+  const mates = new Map<string, Mate>()
   const met = new Map<string, Set<string>>()
   for (const p of proofs) {
     if (only && p.dimension !== only) continue
@@ -99,7 +99,7 @@ export const networkOf = (login: Login, { only, days }: NetworkFilter) => {
     const mate = mates.get(other) ?? {
       login: other,
       places: [],
-      shared: new Map<string, number>(),
+      byPlace: {},
       kinds: {},
       count: 0,
       verified: false,
@@ -107,7 +107,7 @@ export const networkOf = (login: Login, { only, days }: NetworkFilter) => {
     mate.count++
     mate.kinds[p.dimension] = (mate.kinds[p.dimension] ?? 0) + 1
     mate.verified ||= p.verified
-    mate.shared.set(key, (mate.shared.get(key) ?? 0) + 1)
+    mate.byPlace[key] = (mate.byPlace[key] ?? 0) + 1
     mates.set(other, mate)
     met.set(key, (met.get(key) ?? new Set()).add(other))
   }
@@ -115,13 +115,32 @@ export const networkOf = (login: Login, { only, days }: NetworkFilter) => {
   return {
     places: [...places.values()].sort((a, b) => b.total - a.total),
     mates: [...mates.values()]
-      .map(({ shared, ...mate }) => ({
+      .map((mate) => ({
         ...mate,
-        places: [...shared].sort(([, a], [, b]) => b - a).map(([key]) => key),
+        places: Object.entries(mate.byPlace).sort(([, a], [, b]) => b - a)
+          .map(([key]) => key),
       }))
       .sort((a, b) => b.count - a.count),
   }
 }
+
+/** The work done with a person in a place; the others place counts it all */
+const linksIn = (mate: Mate, key: string) =>
+  key === OTHERS ? mate.count : mate.byPlace[key] ?? 0
+
+/**
+ * The people of a place, the most work there first. The « others » place
+ * holds the people whose main place is not on the star.
+ */
+export const peopleOf = (mates: Mate[], key: string, main: string[]) =>
+  key === OTHERS
+    ? mates.filter((mate) => !main.includes(mate.places[0]))
+    : mates.filter((mate) => mate.byPlace[key])
+      .sort((a, b) => b.byPlace[key] - a.byPlace[key])
+
+/** The places drawn on the star, the strongest first */
+const mainOf = (places: Place[]) =>
+  places.slice(0, PLACES).map((place) => place.key)
 
 const summary = (place: Place) =>
   place.kind === 'community'
@@ -194,6 +213,11 @@ const shades: [Dimension, string, string][] = [
 
 // On a phone, the strongest links as a ranking: the rest is in the panel
 const SHOWN = 8
+// A place beside the graph lists its first people, the rest in the panel
+const LISTED = 8
+// The panel shows its rows a page at a time: a network of thousands stays
+// light to open and to search
+const ROWS = 30
 
 /**
  * One collaborator: who, from where, on which places, and the work done
@@ -282,12 +306,16 @@ type Hub = {
   owned: boolean
   total: number
   summary: string
-  people: string[]
+  /** Its people, all of them, not only those drawn */
+  count: number
+  angle: number
   x: number
   y: number
 }
 type Point = Mate & {
   hub: string
+  /** The links shown beside the name: in the focused place, or in all */
+  here: number
   x: number
   y: number
   r: number
@@ -302,30 +330,47 @@ const at = ([rx, ry]: number[], angle: number) => ({
   sin: Math.sin(angle),
 })
 
-const starOf = (mates: Mate[], places: Place[]) => {
-  const main = places.slice(0, PLACES)
+// A disc grows with the work, by its area
+const radiusOf = (links: number, max: number) => 12 + 8 * Math.sqrt(links / max)
+
+/**
+ * The star: at most five places and fourteen people, whatever the size of the
+ * network. The places keep their seats; a focused place brings its own people
+ * to the outer ring, fanned out around it.
+ */
+export const starOf = (
+  mates: Mate[],
+  places: Place[],
+  focus: string | null,
+) => {
+  const main = mainOf(places)
   const rest = places.slice(PLACES)
   const shown = mates.slice(0, STAR)
   const hubOf = (mate: Mate) =>
-    main.find((place) => place.key === mate.places[0])?.key ?? OTHERS
+    main.includes(mate.places[0]) ? mate.places[0] : OTHERS
   const keys = [
-    ...main.map((place) => place.key),
+    ...main,
     ...(rest.length || shown.some((m) => hubOf(m) === OTHERS) ? [OTHERS] : []),
   ]
-  // Each place gets a share of the circle by its people, plus room for its
-  // name: a place without people shown still stands apart
-  const weights = keys.map((key) =>
-    shown.filter((mate) => hubOf(mate) === key).length + 2
+  // Each place gets a seat wide enough for its name, at most 40°, and the
+  // rest of the circle by its people shown: a place without people still
+  // stands apart from its neighbours
+  const counts = keys.map((key) =>
+    shown.filter((mate) => hubOf(mate) === key).length
   )
-  const total = weights.reduce((a, b) => a + b, 0)
+  const seat = Math.min(2 * Math.PI / 9, 1.6 * Math.PI / keys.length)
+  const spare = 2 * Math.PI - seat * keys.length
+  const spans = counts.map((count) =>
+    seat + spare * count / Math.max(1, shown.length)
+  )
   const max = Math.max(1, ...shown.map((mate) => mate.count))
   const hubs: Hub[] = []
   const points: Point[] = []
-  let start = -Math.PI / 2 - Math.PI * weights[0] / total
+  let start = -Math.PI / 2 - spans[0] / 2
   keys.forEach((key, i) => {
-    const span = 2 * Math.PI * weights[i] / total
-    const place = main.find((p) => p.key === key)
-    const members = shown.filter((mate) => hubOf(mate) === key)
+    const span = spans[i]
+    const place = places.find((p) => p.key === key)
+    const angle = start + span / 2
     hubs.push({
       key,
       name: place?.name ??
@@ -334,20 +379,40 @@ const starOf = (mates: Mate[], places: Place[]) => {
       owned: !!place?.owned,
       total: place?.total ?? rest.reduce((sum, p) => sum + p.total, 0),
       summary: place ? summary(place) : '',
-      people: members.map((mate) => mate.login),
-      ...at(INNER, start + span / 2),
+      count: peopleOf(mates, key, main).length,
+      angle,
+      ...at(INNER, angle),
     })
+    const members = shown.filter((mate) => hubOf(mate) === key)
     members.forEach((mate, j) => {
       points.push({
         ...mate,
         hub: key,
-        r: 12 + 8 * Math.sqrt(mate.count / max),
+        here: mate.count,
+        r: radiusOf(mate.count, max),
         ...at(OUTER, start + span * (j + 0.5) / members.length),
       })
     })
     start += span
   })
-  return { hubs, points }
+  const hub = hubs.find((h) => h.key === focus)
+  if (!hub) return { hubs, points, main }
+  // Focused, a place fans its people out around it, on half the ring at
+  // most: the threads never cross the centre
+  const members = peopleOf(mates, hub.key, main).slice(0, STAR)
+  const fan = Math.min(Math.PI, members.length * 0.45)
+  const most = Math.max(1, ...members.map((mate) => linksIn(mate, hub.key)))
+  return {
+    hubs,
+    main,
+    points: members.map((mate, j) => ({
+      ...mate,
+      hub: hub.key,
+      here: linksIn(mate, hub.key),
+      r: radiusOf(linksIn(mate, hub.key), most),
+      ...at(OUTER, hub.angle - fan / 2 + fan * (j + 0.5) / members.length),
+    })),
+  }
 }
 
 /** What was done together, in words: « 12 reviews · 5 aides » */
@@ -391,12 +456,14 @@ const pick = (
 
 /**
  * Collaboration Graph as a star, the projects first: the developer in the
- * centre, their main projects and communities around, then the people met
- * in each, named with their number of links (§9.3). Thicker threads for
- * more work. A place or a person shows its detail beside the graph, on
- * hover or kept by a click. The whole network is in the « Réseau de
- * travail » panel. Working links only, never follows. On a phone, where
- * names would be too small, the people as a ranking.
+ * centre, their main projects and communities around, each with its number
+ * of people, then the people met in each, named with their number of links
+ * (§9.3). Thicker threads for more work. A click on a place focuses it: its
+ * own people come to the outer ring. A place or a person shows its detail
+ * beside the graph, on hover or kept by a click. The whole network is in the
+ * « Réseau de travail » panel. Working links only, never follows. On a phone,
+ * where names would be too small, the people as a ranking, the places as
+ * chips that narrow it.
  */
 export const CollaborationGraph = ({ login }: { login: Login }) => {
   const [filter, setFilter] = useState<NetworkFilter>({
@@ -405,9 +472,17 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
   })
   const [hovered, setHovered] = useState<string | null>(null)
   const [selected, select] = useState<string | null>(null)
-  const network = networkOf(login, filter)
-  const { hubs, points } = starOf(network.mates, network.places)
-  const left = network.mates.length - points.length
+  // The place whose people are on the outer ring
+  const [focus, setFocus] = useState<string | null>(null)
+  // Computed once per filter and per new proof, not at each hover
+  const version = reputationChanged.value
+  const network = useMemo(() => networkOf(login, filter), [
+    login,
+    filter,
+    version,
+  ])
+  const { hubs, points, main } = starOf(network.mates, network.places, focus)
+  const left = network.mates.length - Math.min(STAR, network.mates.length)
   const max = Math.max(1, ...network.mates.map((mate) => mate.count))
   const hubMax = Math.max(
     1,
@@ -419,11 +494,29 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
   const active = hovered ?? selected
   const person = points.find((point) => `u:${point.login}` === active)
   const place = hubs.find((hub) => `p:${hub.key}` === active)
+  const focused = hubs.find((hub) => hub.key === focus)
   const lit = (hub: string, login?: string) =>
     !active || active === `p:${hub}` ||
     (!!login && active === `u:${login}`) ||
     (!login && person?.hub === hub)
-  const props = (key: string) => pick(key, select, selected, setHovered)
+  // A place kept by a click is also focused; let go, the star comes back.
+  // A person kept or let go leaves the focused place as it is
+  const keep = (key: string | null) => {
+    select(key)
+    if (key?.startsWith('p:')) setFocus(key.slice(2))
+    else if (!key && selected?.startsWith('p:')) setFocus(null)
+  }
+  // Back to the whole network
+  const reset = () => {
+    select(null)
+    setFocus(null)
+  }
+  const props = (key: string) => pick(key, keep, selected, setHovered)
+  const filterWith = (next: NetworkFilter) => {
+    setFilter(next)
+    reset()
+  }
+  const ranking = focus ? peopleOf(network.mates, focus, main) : network.mates
   return (
     <section
       id='profil-collaborations'
@@ -431,9 +524,9 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
     >
       <div class='flex flex-wrap items-center justify-between gap-3'>
         <Eyebrow>Collaboration Graph</Eyebrow>
-        <Filters filter={filter} setFilter={setFilter} />
+        <Filters filter={filter} setFilter={filterWith} />
       </div>
-      {points.length
+      {network.mates.length
         ? (
           <>
             {
@@ -508,11 +601,10 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
                 >
                   {initials(people[login].name)}
                 </text>
-                {hubs.map((hub, i) => (
+                {hubs.map((hub) => (
                   <HubNode
                     key={hub.key}
                     hub={hub}
-                    above={i % 2 === 1}
                     dimmed={!lit(hub.key)}
                     on={active === `p:${hub.key}`}
                     props={props(`p:${hub.key}`)}
@@ -531,35 +623,73 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
               <Detail
                 login={login}
                 network={network}
+                main={main}
                 person={person}
                 place={place}
                 placeName={placeName}
                 kept={!!selected && selected === active}
-                onPick={(key) => select(key)}
+                onPick={keep}
+                onBack={reset}
               />
             </div>
-            <div class='flex flex-col sm:hidden'>
+            <div class='flex flex-col gap-2 sm:hidden'>
+              <span class='text-[12px] text-ink-muted'>Par lieu</span>
+              <div class='flex flex-wrap gap-1.5'>
+                <OptionButton pressed={!focus} onClick={reset}>
+                  Tout le réseau
+                </OptionButton>
+                {hubs.filter((hub) => hub.count).map((hub) => (
+                  <OptionButton
+                    key={hub.key}
+                    pressed={focus === hub.key}
+                    class='max-w-full'
+                    onClick={() =>
+                      focus === hub.key ? reset() : keep(`p:${hub.key}`)}
+                  >
+                    <span class='truncate'>
+                      {hub.kind === 'community' ? `# ${hub.name}` : hub.name}
+                    </span>
+                    <span class='font-mono text-[12px] text-ink-muted'>
+                      {shortCount(hub.count)}
+                    </span>
+                  </OptionButton>
+                ))}
+              </div>
               <Legend />
-              {network.mates.slice(0, SHOWN).map((mate) => (
-                <CollaboratorRow
-                  key={mate.login}
-                  mate={mate}
-                  max={max}
-                  placeName={placeName}
-                />
-              ))}
+              <div class='flex flex-col'>
+                {ranking.slice(0, SHOWN).map((mate) => (
+                  <CollaboratorRow
+                    key={mate.login}
+                    mate={mate}
+                    max={max}
+                    placeName={placeName}
+                  />
+                ))}
+              </div>
             </div>
             <div class='flex flex-wrap items-center justify-between gap-3'>
               <Key />
-              <Button
-                variant='secondary'
-                size={34}
-                params={{ dialog: 'network' }}
-              >
-                {left
-                  ? t`Voir tout le réseau (+${left})`
-                  : translate('Voir tout le réseau')}
-              </Button>
+              {focused && focused.key !== OTHERS
+                ? (
+                  <Button
+                    variant='secondary'
+                    size={34}
+                    params={{ dialog: 'network', lieu: focused.key }}
+                  >
+                    {t`Voir ses ${shortCount(focused.count)} personnes`}
+                  </Button>
+                )
+                : (
+                  <Button
+                    variant='secondary'
+                    size={34}
+                    params={{ dialog: 'network', lieu: null }}
+                  >
+                    {left
+                      ? t`Voir tout le réseau (+${shortCount(left)})`
+                      : translate('Voir tout le réseau')}
+                  </Button>
+                )}
             </div>
           </>
         )
@@ -576,10 +706,8 @@ type NodeProps = ReturnType<typeof pick>
 
 /** A place on the inner ring: a cube for a project, a tile for a community */
 const HubNode = (
-  { hub, above, dimmed, on, props }: {
+  { hub, dimmed, on, props }: {
     hub: Hub
-    /** Every other name goes above its shape, so neighbours do not collide */
-    above: boolean
     dimmed: boolean
     on: boolean
     props: NodeProps
@@ -589,11 +717,14 @@ const HubNode = (
     ? prism(hub.x, hub.y + 6, 17, 10, 5)
     : prism(hub.x, hub.y + 10, 15, 8.7, 17)
   const ghost = hub.key === OTHERS
-  const y = above ? hub.y - 36 : hub.y + 34
+  // The name goes away from the centre, above in the upper half: two
+  // neighbours never write into the same gap
+  const y = Math.sin(hub.angle) < 0 ? hub.y - 36 : hub.y + 34
+  const count = shortCount(hub.count)
   return (
     <g
       {...props}
-      aria-label={hub.name}
+      aria-label={`${hub.name}, ${counted(hub.count, 'personne')}`}
       class={`${props.class} transition-opacity duration-200`}
       style={{ opacity: dimmed ? 0.3 : 1 }}
     >
@@ -621,6 +752,29 @@ const HubNode = (
             : 'var(--indigo-soft)'}
         />
       </g>
+      {hub.count > 0 && (
+        <g aria-hidden='true'>
+          <rect
+            x={hub.x + 12}
+            y={hub.y - 20}
+            width={Math.max(15, count.length * 6 + 8)}
+            height='15'
+            rx='7.5'
+            fill='var(--indigo)'
+            stroke='var(--surface-100)'
+          />
+          <text
+            x={hub.x + 12 + Math.max(15, count.length * 6 + 8) / 2}
+            y={hub.y - 9}
+            text-anchor='middle'
+            fill='var(--on-indigo)'
+            font-size='9.5'
+            class='font-mono font-semibold'
+          >
+            {count}
+          </text>
+        </g>
+      )}
       <text
         x={hub.x}
         y={y}
@@ -709,7 +863,7 @@ const StarNode = (
           {person.name.split(' ')[0]}
         </tspan>
         <tspan fill='var(--indigo)' font-size='11' class='font-mono' dx='4'>
-          {point.count}
+          {point.here}
         </tspan>
       </text>
     </g>
@@ -721,14 +875,16 @@ const StarNode = (
  * a person and the work done together, or else the network in a few lines.
  */
 const Detail = (
-  { login, network, person, place, placeName, kept, onPick }: {
+  { login, network, main, person, place, placeName, kept, onPick, onBack }: {
     login: Login
     network: ReturnType<typeof networkOf>
+    main: string[]
     person?: Point
     place?: Hub
     placeName: (key: string) => string
     kept: boolean
-    onPick: (key: string | null) => void
+    onPick: (key: string) => void
+    onBack: () => void
   },
 ) => {
   const box = 'well flex flex-col gap-3 self-start p-4'
@@ -738,7 +894,7 @@ const Detail = (
     <button
       type='button'
       class='cursor-pointer self-start text-[12px] font-semibold text-indigo hover:underline'
-      onClick={() => onPick(null)}
+      onClick={onBack}
     >
       Retour au réseau
     </button>
@@ -788,6 +944,7 @@ const Detail = (
   }
   if (place) {
     const href = hrefOf(place.key)
+    const members = peopleOf(network.mates, place.key, main)
     return (
       <aside class={box} aria-live={live}>
         <span class='flex items-center gap-2.5'>
@@ -796,36 +953,54 @@ const Detail = (
             {place.kind === 'community' ? `# ${place.name}` : place.name}
           </span>
         </span>
-        {place.summary && (
-          <span class='text-[12px] text-ink-muted'>{place.summary}</span>
-        )}
-        {place.people.length > 0 && (
+        <span class='text-[12px] text-ink-muted'>
+          {[counted(members.length, 'personne'), place.summary]
+            .filter(Boolean).join(' · ')}
+        </span>
+        {members.length > 0 && (
           <span class='flex flex-col gap-1.5'>
-            {place.people.map((other) => (
+            {members.slice(0, LISTED).map((mate) => (
               <button
-                key={other}
+                key={mate.login}
                 type='button'
                 class='flex cursor-pointer items-center gap-2 text-left text-[13px] hover:text-indigo'
-                onClick={() => onPick(`u:${other}`)}
+                onClick={() => onPick(`u:${mate.login}`)}
               >
-                <span class='disc size-6 text-[10px]'>
-                  {initials(personOf(other).name)}
+                <span class='disc size-6 shrink-0 text-[10px]'>
+                  {initials(personOf(mate.login).name)}
                 </span>
-                {personOf(other).name}
+                <span class='min-w-0 flex-1 truncate'>
+                  {personOf(mate.login).name}
+                </span>
+                <span class='font-mono text-[12px] text-indigo'>
+                  {linksIn(mate, place.key)}
+                </span>
               </button>
             ))}
           </span>
+        )}
+        {
+          /* Kept, the place is focused and the link is under the graph */
+        }
+        {members.length > LISTED && !kept && (
+          <Button
+            params={{
+              dialog: 'network',
+              lieu: place.key === OTHERS ? null : place.key,
+            }}
+            variant='secondary'
+            size={32}
+          >
+            {place.key === OTHERS
+              ? translate('Voir tout le réseau')
+              : t`Voir ses ${shortCount(members.length)} personnes`}
+          </Button>
         )}
         {href && (
           <Button href={href} variant='secondary' size={32}>
             {place.kind === 'community'
               ? 'Voir la communauté'
               : 'Voir le projet'}
-          </Button>
-        )}
-        {place.key === OTHERS && (
-          <Button params={{ dialog: 'network' }} variant='secondary' size={32}>
-            Voir tout le réseau
           </Button>
         )}
         {close}
@@ -865,7 +1040,8 @@ const Detail = (
         </span>
       )}
       <span class='text-[12px] text-ink-muted'>
-        Survole ou clique un projet ou une personne pour en voir le détail.
+        Survole un projet ou une personne pour en voir le détail ; clique un
+        projet pour amener ses personnes autour de lui.
       </span>
     </aside>
   )
@@ -892,10 +1068,31 @@ const Key = () => (
   </span>
 )
 
+/** « Voir 30 de plus », and how many are left */
+const More = (
+  { left, onMore }: { left: number; onMore: () => void },
+) =>
+  left > 0
+    ? (
+      <button
+        type='button'
+        class='cursor-pointer self-start pt-2 text-[13px] font-semibold text-indigo hover:underline'
+        onClick={onMore}
+      >
+        {t`Voir ${Math.min(ROWS, left)} de plus`}
+        <span class='font-normal text-ink-muted'>
+          {' · '}
+          {t`${left} restantes`}
+        </span>
+      </button>
+    )
+    : null
+
 /**
  * The whole working network in a side panel, for the profiles too big for
  * the graph: every person and every place, searchable, with the filters of
- * the graph.
+ * the graph, thirty rows at a time. Opened from a place (?lieu=), it holds
+ * the people of that place; each place of the list opens its own.
  */
 export const NetworkDrawer = ({ login }: { login: Login }) => {
   const [filter, setFilter] = useState<NetworkFilter>({
@@ -903,39 +1100,85 @@ export const NetworkDrawer = ({ login }: { login: Login }) => {
     days: null,
   })
   const [query, setQuery] = useState('')
-  if (url.params.dialog !== 'network') return null
-  const network = networkOf(login, filter)
+  const [shown, setShown] = useState({ mates: ROWS, places: ROWS })
+  const version = reputationChanged.value
+  const open = url.params.dialog === 'network'
+  const network = useMemo(
+    () => open ? networkOf(login, filter) : undefined,
+    [open, login, filter, version],
+  )
+  if (!network) return null
+  const scope = url.params.lieu || null
   const words = query.trim().toLowerCase()
   const match = (name: string) => !words || name.toLowerCase().includes(words)
   const placeName = (key: string) =>
     network.places.find((place) => place.key === key)?.name ?? ''
-  const mates = network.mates.filter((mate) =>
+  const within = scope
+    ? peopleOf(network.mates, scope, mainOf(network.places))
+    : network.mates
+  const mates = within.filter((mate) =>
     match(personOf(mate.login).name) ||
     mate.places.some((key) => match(placeName(key)))
   )
-  const places = network.places.filter((place) => match(place.name))
-  const max = Math.max(1, ...network.mates.map((mate) => mate.count))
+  const places = scope
+    ? []
+    : network.places.filter((place) => match(place.name))
+  const max = Math.max(1, ...within.map((mate) => mate.count))
+  const reset = () => setShown({ mates: ROWS, places: ROWS })
+  const scopeTo = (key: string | null) => {
+    reset()
+    navigate({ params: { lieu: key } })
+  }
   return (
     <Drawer
       id='network'
       label='Réseau de travail'
       width={480}
+      clear={['lieu']}
       header={<Eyebrow>Réseau de travail · {people[login].name}</Eyebrow>}
     >
       <div class='flex flex-col gap-4 p-[22px]'>
-        <Filters filter={filter} setFilter={setFilter} />
+        <Filters
+          filter={filter}
+          setFilter={(next) => {
+            setFilter(next)
+            reset()
+          }}
+        />
         <Input
           type='search'
-          placeholder='Chercher une personne, un projet ou une communauté'
+          placeholder={scope
+            ? 'Chercher une personne'
+            : 'Chercher une personne, un projet ou une communauté'}
           aria-label='Chercher dans le réseau'
           value={query}
-          onInput={(event) => setQuery(event.currentTarget.value)}
+          onInput={(event) => {
+            setQuery(event.currentTarget.value)
+            reset()
+          }}
         />
+        {scope && (
+          <span class='flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]'>
+            <span>
+              {'Dans '}
+              <span class='font-semibold'>
+                {placeName(scope) || translate('ce lieu')}
+              </span>
+            </span>
+            <button
+              type='button'
+              class='cursor-pointer font-semibold text-indigo hover:underline'
+              onClick={() => scopeTo(null)}
+            >
+              Tout le réseau
+            </button>
+          </span>
+        )}
         <h2 class='font-display text-[19px] leading-6 font-semibold'>
           {counted(mates.length, 'personne')}
         </h2>
         <div class='flex flex-col'>
-          {mates.map((mate) => (
+          {mates.slice(0, shown.mates).map((mate) => (
             <CollaboratorRow
               key={mate.login}
               mate={mate}
@@ -943,30 +1186,50 @@ export const NetworkDrawer = ({ login }: { login: Login }) => {
               placeName={placeName}
             />
           ))}
+          <More
+            left={mates.length - shown.mates}
+            onMore={() => setShown({ ...shown, mates: shown.mates + ROWS })}
+          />
         </div>
-        <h2 class='font-display text-[19px] leading-6 font-semibold'>
-          {counted(
-            places.length,
-            'projet ou communauté',
-            'projets ou communautés',
-          )}
-        </h2>
-        <div class='flex flex-col'>
-          {places.map((place) => (
-            <div
-              key={place.key}
-              class='flex items-center gap-3 border-t border-line py-2.5'
-            >
-              <Cube size={24} top={place.owned ? 'filled' : 'soft'} />
-              <span class='flex min-w-0 flex-1 flex-col gap-0.5'>
-                <span class='text-[14px] font-semibold'>{place.name}</span>
-                <span class='text-[12px] text-ink-muted'>
-                  {summary(place)} · {counted(place.people, 'personne')}
-                </span>
-              </span>
+        {!scope && (
+          <>
+            <h2 class='font-display text-[19px] leading-6 font-semibold'>
+              {counted(
+                places.length,
+                'projet ou communauté',
+                'projets ou communautés',
+              )}
+            </h2>
+            <div class='flex flex-col'>
+              {places.slice(0, shown.places).map((place) => (
+                <button
+                  key={place.key}
+                  type='button'
+                  class='flex cursor-pointer items-center gap-3 border-t border-line py-2.5 text-left hover:text-indigo'
+                  aria-label={t`Voir les personnes de ${place.name}`}
+                  onClick={() => scopeTo(place.key)}
+                >
+                  <Cube size={24} top={place.owned ? 'filled' : 'soft'} />
+                  <span class='flex min-w-0 flex-1 flex-col gap-0.5'>
+                    <span class='truncate text-[14px] font-semibold'>
+                      {place.kind === 'community'
+                        ? `# ${place.name}`
+                        : place.name}
+                    </span>
+                    <span class='text-[12px] text-ink-muted'>
+                      {summary(place)} · {counted(place.people, 'personne')}
+                    </span>
+                  </span>
+                </button>
+              ))}
+              <More
+                left={places.length - shown.places}
+                onMore={() =>
+                  setShown({ ...shown, places: shown.places + ROWS })}
+              />
             </div>
-          ))}
-        </div>
+          </>
+        )}
         {!mates.length && !places.length && (
           <span class='text-[13px] text-ink-muted'>
             Aucun lien de travail pour ces filtres.

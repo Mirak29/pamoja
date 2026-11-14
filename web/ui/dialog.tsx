@@ -142,15 +142,17 @@ export const Dialog = (
  * </Drawer>
  */
 export const Drawer = (
-  { id, label, header, width = 460, children }: {
+  { id, label, header, width = 460, clear, children }: {
     id: string
     label: string
     header: ComponentChildren
     width?: keyof typeof drawerWidths
+    /** The params of the drawer, cleared with it */
+    clear?: string[]
     children: ComponentChildren
   },
 ) => (
-  <ModalFrame id={id} label={label}>
+  <ModalFrame id={id} label={label} clear={clear}>
     <aside
       tabIndex={-1}
       autofocus
@@ -158,7 +160,7 @@ export const Drawer = (
         drawerWidths[width]
       }`}
     >
-      <Header>{header}</Header>
+      <Header clear={clear}>{header}</Header>
       {children}
     </aside>
   </ModalFrame>

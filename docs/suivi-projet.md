@@ -1248,6 +1248,19 @@ Reste : réordonner à l'intérieur d'une colonne (le glisser ne fait que change
 - **Livrable** : `api/board.ts`, `api/board_test.ts`, `api/lib/rank.ts`, `api/routes.ts`, `api/github-events.ts`, `api/seed.ts`, `web/lib/board.ts`, `web/pages/project/board-tab.tsx` ; §6.7, §13.3, §14
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-309 · Collaboration Map et Graph : gestes, qui, et passage à l'échelle
+
+**Les gestes au doigt.** Le globe avait `touch-action: pan-y` : le navigateur donnait un glissé vertical au défilement de la page pendant que le globe essayait aussi de tourner, si bien qu'un geste tantôt tournait, tantôt faisait défiler. Au doigt, le globe a maintenant deux états nets. Au repos, il ne réagit pas au glissé, qui fait défiler la page. Un toucher le prend en main : un cadre indigo marque la zone, `touch-action: none` s'y applique, un doigt tourne, deux zooment, et un bouton « Terminé » (ou un toucher hors du globe, ou Échap) le rend à la page. À la souris rien ne change. La phrase d'aide sous le globe suit le pointeur (`pointer-coarse`).
+
+**Savoir qui.** Les pastilles du globe donnent le nombre de personnes, abrégé au-delà de 999. Un pays touché sur le globe, ou choisi dans la liste (« +N · voir qui »), remplace la liste par ses personnes, classées par nombre de liens, avec un lien vers leur profil : douze à la fois, avec une recherche dès qu'il y en a plus de douze. Mille collaborateurs restent donc lisibles sans charger l'écran. Un toucher choisit le pays le plus proche du doigt : quand le globe est petit, les marqueurs des pays voisins se chevauchent.
+
+**Le graphe à l'échelle.** L'étoile ne dessine jamais plus de six lieux et quatorze personnes ; chaque lieu porte son nombre total de personnes. Un clic sur un lieu le met en avant : ses quatorze personnes principales viennent en éventail autour de lui, avec leurs liens dans ce lieu, et « Voir ses N personnes » ouvre le panneau du réseau limité à ce lieu (`?lieu=`, effacé à la fermeture). Ce panneau va par pages de trente lignes, et chaque lieu de sa liste ouvre ses personnes. Sur mobile, les lieux principaux deviennent des pastilles « Par lieu » qui limitent le classement. Chaque lieu a une place d'au moins 40° sur le cercle, et son nom est écrit vers l'extérieur : à 1 000 personnes, les noms des projets se chevauchaient. Le réseau n'est plus recalculé à chaque survol (`useMemo`).
+
+Testé (`web/pages/profile/collaboration_test.ts`) avec 1 000 collaborateurs dans trois pays et quarante projets : chaque pays liste ses personnes triées et la recherche les trouve ; l'étoile garde au plus six lieux et quatorze personnes ; un lieu mis en avant amène les siennes, triées par liens dans ce lieu. Vérifié dans le navigateur sur une copie de la base, avec les mêmes 1 000 personnes ajoutées le temps du test : gestes simulés au doigt en 375 px (au repos, pas de rotation ; en main, rotation ; un toucher dehors relâche), pays choisis sur le globe, Kenya à 600 personnes par pages, graphe en bureau avec un lieu mis en avant, panneau limité à un lieu, pastilles sur mobile.
+
+- **Livrable** : `web/pages/profile/collaboration-map.tsx`, `web/pages/profile/collaboration-graph.tsx`, `web/pages/profile/collaboration_test.ts`, `web/ui/dialog.tsx` (`Drawer` efface ses paramètres), `web/lib/plural.ts` (`shortCount`), `web/lib/english.ts` ; §9.3
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

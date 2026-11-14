@@ -29,3 +29,16 @@ export const counted = (count: number, one: string, many = `${one}s`) =>
  * badgeCount(12) // '9+'
  */
 export const badgeCount = (count: number) => count > 9 ? '9+' : count
+
+/**
+ * A count that keeps its place on a small marker: abbreviated past 999, in
+ * the language of the interface
+ *
+ * @example
+ * shortCount(1240) // '1,2 k' in French, '1.2K' in English
+ */
+export const shortCount = (count: number) =>
+  count < 1000 ? String(count) : new Intl.NumberFormat(language.peek(), {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(count)
