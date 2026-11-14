@@ -40,7 +40,9 @@ export const PROVIDERS: Provider[] = [
 ]
 
 // Embeddings come from Gemini alone: the other two have none for us
-const EMBEDDING = { provider: 'gemini', model: 'gemini-embedding-001' }
+/** The model of the vectors stored: a new one means new vectors */
+export const EMBEDDING_MODEL = 'gemini-embedding-001'
+const EMBEDDING = { provider: 'gemini', model: EMBEDDING_MODEL }
 /** The size of a vector: small, enough to compare a request and a profile */
 export const DIMENSIONS = 256
 

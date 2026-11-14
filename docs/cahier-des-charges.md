@@ -367,7 +367,7 @@ Déterministe, en SQL, explicable. Score sur 100 :
 | Skills requis possédés | 45 | `UserSkill`, pondéré par source : activité plateforme > GitHub > déclaré |
 | Type d'aide accepté | 15 | Intentions et préférences (ex. « Review code » coché) |
 | Aides confirmées sur ces skills | 15 | Entries `REVIEW_HELP_CONFIRMED` / `HELP_CONFIRMED` |
-| Proximité sémantique | 10 | Similarité d'embeddings demande / profil (§11) ; 0 si indisponible |
+| Proximité sémantique | 10 | Similarité d'embeddings demande / profil (§11, `api/embeddings.ts`) : 0 point sous un cosinus de 0,70, 10 points dès 0,82, linéaire entre les deux ; 0 sans vecteur |
 | Disponibilité | 10 | `Profile.availability` et activité récente |
 | Affinité | 5 | Mêmes communautés, projet suivi |
 
@@ -627,7 +627,7 @@ L'IA améliore le produit mais n'en est jamais une condition : chaque usage a un
 | --- | --- | --- | --- | --- |
 | Résumé Pulse | Entries du projet sur la période, besoins, demandes d'aide ouvertes | 3 à 5 phrases | En tâche de fond après des entries du projet, au plus une fois toutes les 10 min par projet | Pulse déterministe seul |
 | Extraction skills et besoins | README, langages, topics, issues ouvertes | JSON validé contre la liste de skills | À l'import, sur clic de l'utilisateur (« Proposer avec l'IA ») | Langages GitHub via `SkillAlias` |
-| Embeddings de matching | Texte de la demande d'aide ; profil (headline, bio, skills, activité) | Vecteur stocké en BLOB SQLite | À la création d'une demande ; à la mise à jour d'un profil | Critère « proximité sémantique » à 0 |
+| Embeddings de matching | Texte de la demande d'aide (titre, description, skills) ; profil (headline, bio, skills, intentions) | Vecteur Gemini de 256 dimensions, en BLOB SQLite (`Embedding`) | À la création d'une demande, avant sa première vague (4 s au plus) ; profils et demandes sans vecteur en tâche de fond toutes les 5 min, 90 textes par passage (quota gratuit de Gemini : 100 par minute), refaits quand leur texte change | Critère « proximité sémantique » à 0 |
 | Description de projet | README | Texte proposé, éditable | Sur clic de l'utilisateur, avec l'extraction | Champ vide |
 | Recommandations | Profil, historique, besoins des projets | Liste ordonnée pour « What can I work on? » | En tâche de fond, quotidienne | Tri par score de matching SQL |
 | Assistant (PAM-532) | Question du développeur, et ce que Pamoja a calculé pour lui (§10.3) | Réponse courte qui cite des éléments de la liste | Sur sa question, jamais à l'affichage d'une page | La liste calculée, sans phrase |

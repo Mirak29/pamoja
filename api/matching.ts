@@ -3,14 +3,15 @@ import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
 import { DAILY_MATCHES, NEWCOMER_BELOW, WAVE_SIZE } from '/api/help-rules.ts'
+import { proximityPoints, similarities } from '/api/embeddings.ts'
 import { createNotification } from '/api/notifications.ts'
 import { skillNamesOf } from '/api/skills.ts'
 import { matchingFiltersOf } from '/api/user.ts'
 
 // The matching (§7.3): deterministic, read in SQL, explainable. Each
 // developer gets a score out of 100 and the reasons behind it, shown in
-// « Pourquoi ce match ? ». The 10 points of semantic proximity wait for the
-// embeddings (PAM-311).
+// « Pourquoi ce match ? ». The 10 points of semantic proximity come from the
+// embeddings of the request and the profile (PAM-311, embeddings.ts).
 
 const DAY = 24 * 3600
 const ACTIVE_WITHIN = 14 * DAY
@@ -43,6 +44,7 @@ export type Reason =
   }
   | { kind: 'affinity'; points: number; community: string }
   | { kind: 'affinity'; points: number; follows: true }
+  | { kind: 'semantic'; points: number; similarity: number }
   | { kind: 'newcomer'; points: 0 }
 
 export type Candidate = {
@@ -55,6 +57,8 @@ export type Candidate = {
 }
 
 export type Need = {
+  // The request, once written: its vector gives the semantic proximity
+  helpRequestId?: number
   authorId: number
   category: string
   skills: number[]
@@ -219,6 +223,9 @@ export const rank = (
       ? listFollowers({ users, projectId: need.projectId }).map((r) => r.userId)
       : [],
   )
+  const near = need.helpRequestId
+    ? similarities(need.helpRequestId, [...weights.keys()])
+    : new Map<number, number>()
   const asked: Asked = {
     skills: skillNamesOf(need.skills),
     project: need.projectId ? getProjectSlug(need.projectId)?.slug : undefined,
@@ -254,6 +261,15 @@ export const rank = (
         points: Math.min(15, Math.round(mine.onSkills / 14 * 15)),
         count: mine.onSkills,
         review: need.category === 'code_review',
+      })
+    }
+    const similarity = near.get(profile.userId)
+    const semantic = similarity === undefined ? 0 : proximityPoints(similarity)
+    if (semantic) {
+      reasons.push({
+        kind: 'semantic',
+        points: semantic,
+        similarity: Math.round(similarity! * 100),
       })
     }
     const available = profile.availability === 'available'
@@ -372,6 +388,7 @@ export const sendWave = (helpRequestId: number, at = now()) =>
     const chosen = pickWave(
       rank(
         {
+          helpRequestId,
           authorId: request.authorId,
           category: request.category,
           skills: json<number[]>(request.skills, []),
@@ -433,6 +450,7 @@ const noReason = {
   active: null as boolean | null,
   community: null as string | null,
   follows: null as boolean | null,
+  similarity: null as number | null,
 }
 
 /** A reason as the API sends it: every field, null when it does not apply */

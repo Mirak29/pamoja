@@ -1732,6 +1732,7 @@ export const englishTemplates: Record<string, string> = {
   'Skills : {0} · {1} sur {2}': 'Skills: {0} · {1} of {2}',
   'Accepte les demandes « {0} »': 'Accepts “{0}” requests',
   'Proximité : {0}': 'Proximity: {0}',
+  'Profil proche de la demande · {0} %': 'Profile close to the request · {0}%',
   'Communauté {0} en commun': '{0} community in common',
   ' · aidé par {0}': ' · helped by {0}',
   ' · pris par {0}': ' · taken by {0}',
