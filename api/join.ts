@@ -6,6 +6,8 @@ import { Entry } from '/api/entries.ts'
 import { createNotification } from '/api/notifications.ts'
 import { refreshListeners } from '/api/events.ts'
 import { type Window, within } from '/api/lib/rate.ts'
+import { LIMITS } from '/api/limits.ts'
+import { joinAreas, joinAvailabilities } from '/api/vocabulary.ts'
 
 // Join a project (§6.6): a candidature the owner and the maintainers accept
 // or refuse, from their notification or the Team tab. Accepting adds the
@@ -13,9 +15,14 @@ import { type Window, within } from '/api/lib/rate.ts'
 
 export const JOIN_RATE = { count: 20, per: 3600 }
 
-const badRequest = (message: string) => new respond.BadRequestError({ message })
+// Each refusal says why with a stable `reason`: the page tells the
+// developer what happened, never « the server could not be reached »
+type Reason = 'unknown' | 'invalid' | 'member' | 'pending' | 'decided'
+const badRequest = (message: string, reason: Reason) =>
+  new respond.BadRequestError({ message, reason })
 const forbidden = (message: string) => new respond.ForbiddenError({ message })
-const conflict = (message: string) => new respond.ConflictError({ message })
+const conflict = (message: string, reason: Reason) =>
+  new respond.ConflictError({ message, reason })
 
 const getProject = sql<{ projectId: number; name: string }, string>`
   SELECT projectId, name FROM project WHERE slug = ? AND visibility = 'public'
@@ -77,13 +84,24 @@ export const applyToProject = (
   availability: string,
   message: string,
 ) => {
+  // The answers of the dialog, from its lists; a message no longer than
+  // the page lets one write (§16)
+  const known = (list: readonly string[], value: string) => list.includes(value)
+  if (
+    !areas.length || areas.length > joinAreas.length ||
+    !areas.every((area) => known(joinAreas, area)) ||
+    !known(joinAvailabilities, availability)
+  ) throw badRequest('Unknown areas or availability', 'invalid')
+  if (message.length > LIMITS.note) {
+    throw badRequest(`message: ${LIMITS.note} characters at most`, 'invalid')
+  }
   const project = getProject(slug)
-  if (!project) throw badRequest('Unknown project')
+  if (!project) throw badRequest('Unknown project', 'unknown')
   if (getRole({ projectId: project.projectId, userId: me })) {
-    throw conflict('You already belong to this project')
+    throw conflict('You already belong to this project', 'member')
   }
   if (pendingRequest({ projectId: project.projectId, userId: me })) {
-    throw conflict('A request is already pending')
+    throw conflict('A request is already pending', 'pending')
   }
   within(countRequests, JOIN_RATE, me, 'Too many requests this hour')
   const summary = summaryOf(areas, availability, message.trim())
@@ -91,7 +109,7 @@ export const applyToProject = (
     const joinRequestId = JoinRequest.insert({
       projectId: project.projectId,
       userId: me,
-      areas,
+      areas: [...new Set(areas)],
       availability,
       message: message.trim(),
       status: 'pending',
@@ -122,12 +140,14 @@ export const decideJoinRequest = (
   accept: boolean,
 ) => {
   const request = getRequest(joinRequestId)
-  if (!request) throw badRequest('Unknown request')
+  if (!request) throw badRequest('Unknown request', 'unknown')
   const role = getRole({ projectId: request.projectId, userId: me })?.role
   if (role !== 'owner' && role !== 'maintainer') {
     throw forbidden('Only the owner and the maintainers decide')
   }
-  if (request.status !== 'pending') throw conflict('Already decided')
+  if (request.status !== 'pending') {
+    throw conflict('Already decided', 'decided')
+  }
   db.transaction(() => {
     db.prepare(`UPDATE joinRequest SET status = ? WHERE joinRequestId = ?`)
       .run(accept ? 'accepted' : 'refused', joinRequestId)

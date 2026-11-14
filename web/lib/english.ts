@@ -1589,11 +1589,25 @@ export const english: Record<string, string> = {
   'Tu as tout vu.': 'You have seen everything.',
   'Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.':
     'You have seen everything. Follow developers or communities to see more posts.',
+  // Candidatures to join a project (PAM-403)
+  'Candidature non envoyée': 'Application not sent',
+  'Candidature déjà envoyée': 'Application already sent',
+  'Décision non enregistrée': 'Decision not saved',
+  'Tu fais déjà partie de cette équipe.': 'You are already on this team.',
+  'Ce projet n’existe plus ou n’est pas public.':
+    'This project no longer exists or is not public.',
+  'Vérifie tes réponses et réessaie.': 'Check your answers and try again.',
+  'Un autre membre de l’équipe a déjà répondu à cette candidature.':
+    'Another team member has already answered this application.',
+  'Le serveur a refusé la demande.': 'The server refused the request.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,
 // in their order in the French sentence
 export const englishTemplates: Record<string, string> = {
+  'Trop de demandes d’un coup. Réessaie {0}.':
+    'Too many requests at once. Try again {0}.',
+  'Elle attend la réponse de {0}.': 'It is waiting for {0} to answer.',
   'PR #{0} « {1} » approuvée par {2}.': 'PR #{0} “{1}” approved by {2}.',
   'Changements demandés sur la PR #{0} « {1} » par {2}.':
     'Changes requested on PR #{0} “{1}” by {2}.',

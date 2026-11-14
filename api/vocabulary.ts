@@ -95,6 +95,22 @@ export type MatchingMode = keyof typeof matchingModes
 
 // Help requests (§7.1): the stored type and its label, the level expected,
 // and the durations offered, in minutes
+/** How a developer offers to help a project they apply to (§6.6) */
+export const joinAreas = [
+  'Backend',
+  'Frontend',
+  'Tests',
+  'DevOps',
+  'Documentation',
+] as const
+
+/** How much time they can give it (§6.6) */
+export const joinAvailabilities = [
+  '1 à 2 h par semaine',
+  '4 h par semaine',
+  '8 h ou plus par semaine',
+] as const
+
 export const helpCategories = {
   code_review: 'Review de code',
   debugging: 'Debug',

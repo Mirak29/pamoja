@@ -1069,13 +1069,18 @@ Reste à faire : brancher les filtres d'Explorer sur l'index. Ils sont déclaré
 - **Livrable** : `api/search.ts`, `api/search_test.ts`, `api/routes.ts`, `api/server.ts`, `api/lib/env.ts`, `web/ui/command-palette.tsx`, `web/pages/search-page.tsx`, `docker-compose.yml`, `.env.production.example`, `docs/deploiement.md` ; §10.4, §17.4
 - **Par** : @Mirak29
 
-<!-- coderabbit-ai-generated:v1 -->
-
-<!-- coderabbit-ai-generated-section:v1:db421ab426d5c8a1b0b5ec1ffa4faf5c39ca79e4f1e4328d592bd8bcf0b6078a -->
-
 ### 2026-11-13 · PAM-403 · Candidatures pour rejoindre un projet
 
 `POST/api/project/join` enregistre une candidature (`joinRequest`, façons d'aider, disponibilité, message), refuse une candidature en double ou vers son propre projet, limite le débit, et notifie l'owner et les mainteneurs. `POST/api/project/join-request/decide` n'est permis qu'à un owner ou un mainteneur : accepter ajoute la personne à l'équipe (rôle `contributor`), produit l'entry `PROJECT_MEMBER_JOINED`, relit ses abonnements SSE et la prévient ; refuser la prévient aussi. Les notifications d'application portent le `joinRequestId`, si bien que le gestionnaire **accepte ou refuse directement depuis sa notification** (§6.6). Côté interface, `web/lib/applications.ts` relie le formulaire de candidature et les boutons Accepter/Refuser à ces routes, en conservant le chemin des candidatures de démo (fixtures).
+
+Correctifs de relecture : les actions suivent l’état actuel de la candidature, indépendamment de la lecture de la notification. Un échec d’envoi restaure l’état optimiste et garde le formulaire ouvert ; un échec de décision permet de réessayer. Le champ `message` est masqué dans les logs par la liste des clés sensibles.
+
+**Revue (relecture et CodeRabbit), corrigée.**
+- Le serveur n'avait aucune limite : le message dépassait `LIMITS.note` (1 000 caractères) sans refus, alors que la page compte jusque-là (§16), et les façons d'aider et la disponibilité n'étaient pas vérifiées (un test envoyait `~5 h par semaine`, que la page ne propose pas). Les listes vont dans `api/vocabulary.ts` (`joinAreas`, `joinAvailabilities`), lues par la page et vérifiées par le serveur ; un message trop long est refusé.
+- Chaque refus porte une raison stable (`member`, `pending`, `unknown`, `invalid`, `decided`). La page disait « Pamoja n'a pas pu joindre le serveur » pour tout échec, même quand le serveur avait répondu. Elle dit maintenant ce qui s'est passé ; une candidature déjà en attente (autre onglet, rechargement) est annoncée comme telle et reste affichée comme envoyée ; une décision déjà prise par un autre membre relit les notifications.
+- La boîte se fermait à la fin de l'envoi même si on l'avait annulée pour en ouvrir une autre : elle ne ferme plus que la sienne.
+- Les phrases de la candidature avaient leur anglais manquant : ajouté.
+- Le paragraphe de correctifs du second commit était sous PAM-304 (« Fermé sans réalisation »), avec des marqueurs laissés par CodeRabbit : il est revenu ici, les marqueurs sont retirés.
 
 - **Livrable** : `api/join.ts`, `api/join_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/applications.ts`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/pages/project/join-dialog.tsx` ; §3, §6.6, §13.3
 - **Par** : @niangoos
@@ -1325,8 +1330,3 @@ Abandonnée : figures décoratives qui ne disaient rien du produit. Le système 
 ### 2026-10-08 · PAM-304 · Developer Passport
 
 Fusionnée dans PAM-301 : le passeport devient la vue publique du profil, à la même adresse `/@login`.
-
-Correctifs de relecture : les actions suivent l’état actuel de la candidature, indépendamment de la lecture de la notification. Un échec d’envoi restaure l’état optimiste et garde le formulaire ouvert ; un échec de décision permet de réessayer. Le champ `message` est masqué dans les logs par la liste des clés sensibles.
-
-
-<!-- /coderabbit-ai-generated:v1 -->

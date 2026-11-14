@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { navigate } from '@01edu/signal-router'
+import { navigate, url } from '@01edu/signal-router'
 import { Send } from '/web/assets/icons.tsx'
 import { applyToProject } from '/web/lib/applications.ts'
 import { personOf } from '/web/fixtures/people.ts'
@@ -10,13 +10,11 @@ import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
+import { joinAreas, joinAvailabilities } from '/api/vocabulary.ts'
 
-const areas = ['Backend', 'Frontend', 'Tests', 'DevOps', 'Documentation']
-const availabilities = [
-  '1 à 2 h par semaine',
-  '4 h par semaine',
-  '8 h ou plus par semaine',
-]
+// The lists the server checks the answers against
+const areas = joinAreas
+const availabilities = joinAvailabilities
 
 const Choices = (
   { label, children }: { label: string; children: preact.ComponentChildren },
@@ -30,7 +28,7 @@ const Choices = (
 const JoinForm = ({ project }: { project: Project }) => {
   const owner = personOf(project.owner).name.split(' ')[0]
   const [how, setHow] = useState<string[]>([])
-  const [availability, setAvailability] = useState(availabilities[1])
+  const [availability, setAvailability] = useState<string>(availabilities[1])
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const { check, clear, field } = useFieldErrors<'how'>('join')
@@ -41,20 +39,35 @@ const JoinForm = ({ project }: { project: Project }) => {
       return
     }
     setSending(true)
+    let sent: 'sent' | 'pending'
     try {
-      await applyToProject(project, { areas: how, availability, message })
+      sent = await applyToProject(project, {
+        areas: how,
+        availability,
+        message,
+      })
     } catch {
       return
     } finally {
       setSending(false)
     }
-    navigate({ params: { dialog: null } })
-    notify({
-      title: 'Candidature envoyée',
-      body: t`${owner} la recevra dans ses notifications.`,
-      icon: Send,
-      tone: 'verified',
-    })
+    // Closed meanwhile (Annuler), maybe for another dialog: that one stays
+    if (url.params.dialog === 'join') navigate({ params: { dialog: null } })
+    notify(
+      sent === 'pending'
+        ? {
+          title: 'Candidature déjà envoyée',
+          body: t`Elle attend la réponse de ${owner}.`,
+          icon: Send,
+          tone: 'verified',
+        }
+        : {
+          title: 'Candidature envoyée',
+          body: t`${owner} la recevra dans ses notifications.`,
+          icon: Send,
+          tone: 'verified',
+        },
+    )
   }
 
   return (
