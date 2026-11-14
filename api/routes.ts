@@ -1670,17 +1670,11 @@ const defs = {
   'POST/api/user/profile/update': route({
     authorize: withSession,
     fn: (ctx, fields) => {
-      // Only the text fields have a length limit; the rest is validated and
-      // stored by updateProfile (personalization, §9.2)
-      const {
-        matchingMode: _m,
-        theme: _t,
-        accent: _a,
-        sectionOrder: _s,
-        featured: _f,
-        ...texts
-      } = fields
-      assertFits(texts)
+      // The text fields have a length limit; the personalization is checked
+      // by updateProfile (§9.2), its projects as slugs
+      const { displayName, headline, bio, country, city, website } = fields
+      assertFits({ displayName, headline, bio, country, city, website })
+      assertSlugs(fields.featured ?? [], 'featured projects')
       updateProfile(ctx.session.userId, fields)
       return getCurrentUser(ctx.session.userId)!
     },

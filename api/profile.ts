@@ -1,3 +1,5 @@
+import { stringsOf } from '/api/lib/json.ts'
+import { sectionOrderOf } from '/api/user.ts'
 import { sql } from '@01edu/db'
 import { listHelpActivity } from '/api/help.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
@@ -25,18 +27,6 @@ type ProfileRow = {
   accent: string
   sectionOrder: string | null
   featured: string | null
-}
-
-// A JSON array of strings stored in a profile column, or an empty list
-const jsonStrings = (stored: string | null): string[] => {
-  try {
-    const value = JSON.parse(stored ?? '[]')
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === 'string')
-      : []
-  } catch {
-    return []
-  }
 }
 
 const getProfile = sql<ProfileRow, string>`
@@ -117,8 +107,8 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     // Personalization of the profile (§9.2)
     theme: row.theme,
     accent: row.accent,
-    sectionOrder: jsonStrings(row.sectionOrder),
-    featured: jsonStrings(row.featured),
+    sectionOrder: sectionOrderOf(row.sectionOrder),
+    featured: stringsOf(row.featured),
     available: row.availability === 'available',
     helpTypes: helpTypesOf(row.matchingFilters),
     skills,

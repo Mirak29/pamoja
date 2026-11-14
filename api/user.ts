@@ -1,3 +1,4 @@
+import { stringsOf } from '/api/lib/json.ts'
 import { db, sql } from '@01edu/db'
 import { DEFAULT_MIN_SCORE } from '/api/help-rules.ts'
 import { now } from '@01edu/time'
@@ -214,8 +215,8 @@ export const getCurrentUser = (userId: number) => {
     // Personalization of the profile (§9.2)
     theme: user.theme,
     accent: user.accent,
-    sectionOrder: jsonStrings(user.sectionOrder),
-    featured: jsonStrings(user.featured),
+    sectionOrder: sectionOrderOf(user.sectionOrder),
+    featured: stringsOf(user.featured),
     matchingMode: user.matchingMode,
     // What the matching reads besides the mode (§7.3, §7.4)
     ...matchingFiltersOf(user.matchingFilters),
@@ -245,15 +246,9 @@ const writeProfile = sql<undefined, Record<string, string | number | null>>`
 
 // Personalization (§9.2): the ids of docs/identite/tokens.json. An unknown
 // value is ignored and the current one kept.
-export const PROFILE_THEMES = [
-  'minimal',
-  'terminal',
-  'cyber',
-  'clair',
-  'sombre',
-]
-export const PROFILE_ACCENTS = ['indigo', 'vert', 'ambre', 'corail']
-export const PROFILE_SECTIONS = [
+const PROFILE_THEMES = ['minimal', 'terminal', 'cyber', 'clair', 'sombre']
+const PROFILE_ACCENTS = ['indigo', 'vert', 'ambre', 'corail']
+const PROFILE_SECTIONS = [
   'building',
   'contributions',
   'reputation',
@@ -264,17 +259,25 @@ export const PROFILE_SECTIONS = [
   'graph',
 ]
 
-// A JSON array of strings stored in a profile column, or an empty list
-const jsonStrings = (stored: string | null): string[] => {
-  try {
-    const value = JSON.parse(stored ?? '[]')
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === 'string')
-      : []
-  } catch {
-    return []
-  }
+/**
+ * The order of the sections a profile shows: the one saved, then every
+ * section it does not name, in the default order. A profile never ordered
+ * has none saved, and one saved before a section existed lacks it: the
+ * server always gives a full order.
+ */
+export const sectionOrderOf = (saved: unknown) => {
+  const named = [...new Set(stringsOf(saved))].filter((key) =>
+    PROFILE_SECTIONS.includes(key)
+  )
+  return [...named, ...PROFILE_SECTIONS.filter((key) => !named.includes(key))]
 }
+
+// A value of a list, or the current one when it is not in it
+const oneOf = (
+  list: string[],
+  value: string | null | undefined,
+  current: string,
+) => value && list.includes(value) ? value : current
 
 export type ProfileFields = {
   displayName: string
@@ -292,16 +295,10 @@ export type ProfileFields = {
 
 export const updateProfile = (userId: number, fields: ProfileFields) => {
   const current = getProfile(userId)!
-  const theme = PROFILE_THEMES.includes(fields.theme ?? '')
-    ? fields.theme!
-    : current.theme
-  const accent = PROFILE_ACCENTS.includes(fields.accent ?? '')
-    ? fields.accent!
-    : current.accent
+  const theme = oneOf(PROFILE_THEMES, fields.theme, current.theme)
+  const accent = oneOf(PROFILE_ACCENTS, fields.accent, current.accent)
   const sectionOrder = fields.sectionOrder
-    ? JSON.stringify(
-      fields.sectionOrder.filter((key) => PROFILE_SECTIONS.includes(key)),
-    )
+    ? JSON.stringify(sectionOrderOf(fields.sectionOrder))
     : current.sectionOrder
   const featured = fields.featured
     ? JSON.stringify([...new Set(fields.featured)])
