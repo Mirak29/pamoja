@@ -27,6 +27,7 @@ import { loadNotifications, readOne } from '/web/lib/notifications.ts'
 const REFUSALS: Record<string, string> = {
   member: 'Tu fais déjà partie de cette équipe.',
   unknown: 'Ce projet n’existe plus ou n’est pas public.',
+  gone: 'Cette candidature n’existe plus.',
   invalid: 'Vérifie tes réponses et réessaie.',
   decided: 'Un autre membre de l’équipe a déjà répondu à cette candidature.',
   refused: 'Le serveur a refusé la demande.',

@@ -1600,6 +1600,7 @@ export const english: Record<string, string> = {
   'Un autre membre de l’équipe a déjà répondu à cette candidature.':
     'Another team member has already answered this application.',
   'Le serveur a refusé la demande.': 'The server refused the request.',
+  'Cette candidature n’existe plus.': 'This application no longer exists.',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,

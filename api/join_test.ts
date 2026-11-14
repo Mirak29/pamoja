@@ -65,6 +65,11 @@ Deno.test('join: apply then accept adds the member (PAM-403)', async () => {
   )
   assertEquals(roleIn('openpay-africa', moussa), 'contributor')
 
+  // A request that is not there says so, apart from an unknown project
+  assertEquals(
+    await refusal(() => decideJoinRequest(abdou, 999_999, true)),
+    'gone',
+  )
   // Deciding again is refused, and says so
   assertEquals(
     await refusal(() => decideJoinRequest(abdou, request.joinRequestId, true)),
@@ -112,6 +117,17 @@ Deno.test('join: the answers come from the lists of the dialog (PAM-403, §16)',
   // A message longer than the page lets one write
   const long = 'x'.repeat(LIMITS.note + 1)
   assertEquals(await refusal(apply(['Backend'], WEEKLY, long)), 'invalid')
+  // Repeated areas are counted once, not refused
+  assertEquals(
+    await refusal(
+      apply(
+        ['Backend', 'Backend', 'Tests', 'Tests', 'DevOps', 'DevOps'],
+        WEEKLY,
+      ),
+    ),
+    'accepted',
+  )
+  db.prepare('DELETE FROM joinRequest WHERE userId = ?').run(kofi)
   // Within the lists and the limit: sent, each area once
   assertEquals(
     await refusal(apply(['Backend', 'Backend', 'Tests'], WEEKLY, 'x')),

@@ -19,12 +19,12 @@ export const JOIN_RATE = { count: 20, per: 3600 }
 
 // Each refusal says why with a stable `reason`: the page tells the
 // developer what happened, never « the server could not be reached »
-type Reason = 'unknown' | 'invalid' | 'member' | 'pending' | 'decided'
+type Reason = 'unknown' | 'gone' | 'invalid' | 'member' | 'pending' | 'decided'
 const badRequest = (message: string, reason: Reason) =>
   new respond.BadRequestError({ message, reason })
-// Unknown, as elsewhere (help.ts): a 404
-const notFound = (message: string) =>
-  new respond.NotFoundError({ message, reason: 'unknown' })
+// Not there, as elsewhere (help.ts): a 404
+const notFound = (message: string, reason: Reason) =>
+  new respond.NotFoundError({ message, reason })
 const forbidden = (message: string) => new respond.ForbiddenError({ message })
 const conflict = (message: string, reason: Reason) =>
   new respond.ConflictError({ message, reason })
@@ -85,9 +85,11 @@ export const applyToProject = (
   // the page lets one write (§16)
   const areasKnown: readonly string[] = joinAreas
   const timesKnown: readonly string[] = joinAvailabilities
+  // Each area once: a repeated one is not a reason to refuse
+  const distinct = [...new Set(areas)]
   if (
-    !areas.length || areas.length > areasKnown.length ||
-    !areas.every((area) => areasKnown.includes(area)) ||
+    !distinct.length || distinct.length > areasKnown.length ||
+    !distinct.every((area) => areasKnown.includes(area)) ||
     !timesKnown.includes(availability)
   ) throw badRequest('Unknown areas or availability', 'invalid')
   const note = message.trim()
@@ -95,7 +97,7 @@ export const applyToProject = (
     throw badRequest(`message: ${LIMITS.note} characters at most`, 'invalid')
   }
   const project = getProject(slug)
-  if (!project) throw notFound('Unknown project')
+  if (!project) throw notFound('Unknown project', 'unknown')
   if (getRole({ projectId: project.projectId, userId: me })) {
     throw conflict('You already belong to this project', 'member')
   }
@@ -103,12 +105,12 @@ export const applyToProject = (
     throw conflict('A request is already pending', 'pending')
   }
   within(countRequests, JOIN_RATE, me, 'Too many requests this hour')
-  const summary = summaryOf(areas, availability, note)
+  const summary = summaryOf(distinct, availability, note)
   db.transaction(() => {
     const joinRequestId = JoinRequest.insert({
       projectId: project.projectId,
       userId: me,
-      areas: [...new Set(areas)],
+      areas: distinct,
       availability,
       message: note,
       status: 'pending',
@@ -139,7 +141,7 @@ export const decideJoinRequest = (
   accept: boolean,
 ) => {
   const request = getRequest(joinRequestId)
-  if (!request) throw notFound('Unknown request')
+  if (!request) throw notFound('Unknown request', 'gone')
   const role = getRole({ projectId: request.projectId, userId: me })?.role
   if (role !== 'owner' && role !== 'maintainer') {
     throw forbidden('Only the owner and the maintainers decide')
