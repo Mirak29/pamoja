@@ -136,7 +136,7 @@ Responsable : _à répartir_ · Prioritaire sur tous les autres blocs en cas de 
 Responsable : _à répartir_
 
 - [x] **PAM-301** · Profil à une seule adresse `/@login` : vue publique sans connexion (passeport), vue complète connecté, une colonne ; hero, contributions réelles, stats, chaque chiffre mène à ses preuves (§9.1) `[démo]`
-- [ ] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2)
+- [x] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2) — @niangoos
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
 - [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
@@ -369,3 +369,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Seed des reviews de Moussa (PAM-901) : 14 preuves `REVIEW_HELP_CONFIRMED` en `source = demo`, de quatre demandeurs et deux projets, backdatées ; les skills qu'elles prouvent sont écrits en `platform_activity` comme le fait une confirmation, et les badges sont calculés sans annoncer un déblocage daté du jour · §8, §18.1
 - 2026-11-14 · Follow enregistré (PAM-503) : `POST/api/follow` reçoit l'état voulu, jamais une bascule, et `GET/api/follows` donne à la page l'état du serveur à chaque session ; une requête rejouée ou un second onglet ne peut plus désabonner · §15
 - 2026-11-14 · Communautés rejointes sur le serveur (PAM-502) : `POST/api/community/join` reçoit l'état voulu (`join`), jamais une bascule, et les communautés rejointes viennent avec le développeur connecté (`GET/api/user/me`) ; la page part du serveur à chaque session · §10.2, §15
+- 2026-11-14 · Personnalisation du profil enregistrée (PAM-302) : thème, accent, ordre des sections et projets mis en avant sur le serveur ; un profil jamais ordonné garde toutes ses sections dans l'ordre par défaut · §9.2

@@ -2,6 +2,7 @@ import { signal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 import { adoptHelpRequests } from '/web/fixtures/help.ts'
 import { adoptProfile } from '/web/fixtures/people.ts'
+import { adoptSettings } from '/web/fixtures/profile-settings.ts'
 import { adoptProfileProjects } from '/web/fixtures/projects.ts'
 import { roleNames } from '/web/fixtures/repos.ts'
 import { api } from '/web/lib/api.ts'
@@ -32,6 +33,13 @@ const queryOf = (key: 'username' | 'githubId', value: string) =>
 /** What a profile read from the API brings to the pages */
 const adopt = (profile: ApiProfile) => {
   adoptProfile(profile)
+  // The profile shows its own theme, accent and section order (§9.2)
+  adoptSettings(profile.login, {
+    theme: profile.theme,
+    accent: profile.accent,
+    order: profile.sectionOrder,
+    featured: profile.featured,
+  })
   adoptProfileProjects(
     profile.login,
     profile.projects.map((project) => ({

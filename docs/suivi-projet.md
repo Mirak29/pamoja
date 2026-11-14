@@ -1118,6 +1118,19 @@ Relecture `/code-review` : après 60 adhésions dans l'heure, même un départ �
 - **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
 - **Par** : @niangoos
 
+### 2026-11-13 · PAM-302 · Personnalisation du profil enregistrée
+
+Le thème, la couleur d'accent, l'ordre des sections et les projets mis en avant sont désormais enregistrés par `POST/api/user/profile/update` (champs ajoutés à la route, à `updateProfile` et au schéma lu) ; une valeur de thème ou d'accent inconnue est ignorée et l'actuelle gardée. `GET/api/user/me` et le profil public `GET/api/user` les renvoient, et `web/lib/profile.ts` les adopte au chargement (`adoptSettings`) : chaque profil `/@login` s'affiche avec son propre thème, son accent et son ordre de sections, même après rechargement. Les styles de couverture prédéfinis (fil, grille…) restent dans la page, faute de colonne dédiée.
+
+**Revue (relecture et CodeRabbit), corrigée.** Un profil jamais ordonné a sa colonne `sectionOrder` vide, et le serveur renvoie alors `[]`. `adoptSettings` remplaçait l'ordre par défaut par cette liste vide : la page construit ses sections avec `order.map`, donc tous les profils du seed et tout nouvel inscrit n'en montraient plus aucune, et l'écran Modifier le profil non plus (enregistrer gardait `[]`). `completeOrder` donne maintenant l'ordre enregistré, puis toutes les sections qu'il ne nomme pas, dans l'ordre par défaut : un profil jamais ordonné les a toutes, et un profil ordonné avant l'ajout d'une section la garde. Testé (`web/fixtures/profile-settings_test.ts`) et vérifié dans le navigateur : le profil de Moussa montre ses sections.
+
+Relecture `/simplify` : l'ordre complet est maintenant donné par le serveur (`sectionOrderOf`, `api/user.ts`), au lieu d'une liste vide à compléter par chaque client ; `completeOrder` reste dans la page comme garde-fou si les deux versions divergent. `jsonStrings`, copié dans `api/profile.ts` et `api/user.ts`, devient `stringsOf` (`api/lib/json.ts`), qui lit le JSON sous forme de texte ou déjà décodé. Les projets mis en avant passent par `assertSlugs` (30 au plus, slugs valides) ; les champs texte sont nommés pour leur limite au lieu d'être déduits par élimination.
+
+Relecture `/code-review` : l'écran « Modifier le profil » partait de `settingsOf(me.login)`, rempli seulement quand la page profil avait été chargée dans la session ; ouvert directement, il enregistrait les valeurs par défaut par-dessus le thème, l'accent, l'ordre et les projets mis en avant. `setUser` reprend maintenant la personnalisation de `GET/api/user/me`. Vérifié : thème Terminal enregistré, rechargement, écran d'édition ouvert directement, enregistrement : le serveur garde Terminal, Corail et l'ordre.
+
+- **Livrable** : `api/user.ts`, `api/profile.ts`, `api/routes.ts`, `api/profile_personalization_test.ts`, `web/lib/session.ts`, `web/lib/profile.ts`, `web/fixtures/profile-settings.ts` ; §9.2
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

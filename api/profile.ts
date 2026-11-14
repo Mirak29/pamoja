@@ -1,4 +1,5 @@
-import { communitiesOf } from '/api/user.ts'
+import { stringsOf } from '/api/lib/json.ts'
+import { communitiesOf, sectionOrderOf } from '/api/user.ts'
 import { sql } from '@01edu/db'
 import { listHelpActivity } from '/api/help.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
@@ -22,13 +23,18 @@ type ProfileRow = {
   website: string | null
   availability: string
   matchingFilters: string | null
+  theme: string
+  accent: string
+  sectionOrder: string | null
+  featured: string | null
 }
 
 const getProfile = sql<ProfileRow, string>`
   SELECT user.userId, user.githubId, githubUsername AS login, githubLogin,
     avatarUrl,
     displayName,
-    headline, bio, country, city, website, availability, matchingFilters
+    headline, bio, country, city, website, availability, matchingFilters,
+    theme, accent, sectionOrder, featured
   FROM user
   JOIN profile ON profile.userId = user.userId
   WHERE githubUsername = ? COLLATE NOCASE
@@ -91,6 +97,11 @@ export const getPublicProfile = (login: string, signedIn: boolean) => {
     city: row.city ?? '',
     website: row.website ?? '',
     cover: coverOf(row.userId),
+    // Personalization of the profile (§9.2)
+    theme: row.theme,
+    accent: row.accent,
+    sectionOrder: sectionOrderOf(row.sectionOrder),
+    featured: stringsOf(row.featured),
     available: row.availability === 'available',
     helpTypes: helpTypesOf(row.matchingFilters),
     skills,
