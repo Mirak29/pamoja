@@ -3,6 +3,7 @@ import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { evaluateBadges } from '/api/badges.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
+import { addProvenSkill, listSkillRows } from '/api/help-lifecycle.ts'
 import {
   Community,
   CommunityMember,
@@ -12,7 +13,6 @@ import {
   Project,
   ProjectMember,
   ProjectNeed,
-  Skill,
   User,
   UserIntent,
 } from '/api/schema.ts'
@@ -24,6 +24,7 @@ import {
   type Project as ProjectFixture,
   type ProjectRole,
   projects,
+  type ProjectSlug,
 } from '/web/fixtures/projects.ts'
 
 // The demo data (§14, §18.1): the developers, communities and projects of
@@ -69,31 +70,14 @@ const backdate = sql<undefined, { id: number; at: number }>`
   UPDATE entryInternal SET createdAt = :at WHERE id = :id
 `.run
 
-// The skill rows a reputation proof freezes: id, slug and name (§8.3)
-const getSkillRow = Skill.sql<'skillId' | 'slug' | 'name', { name: string }>`
-  SELECT skillId, slug, name FROM skill WHERE name = :name
-`.get
-
+// The skill rows a proof freezes, the technology first when a name is
+// also a domain, as production resolves them (§8.3)
 const skillRowsOf = (names: string[]) =>
-  names.flatMap((name) => {
-    const row = getSkillRow({ name })
-    return row ? [row] : []
-  })
+  listSkillRows(JSON.stringify(skillIdsOf(names)))
 
 // owner/name of the GitHub repo of a project fixture
 const repoFullNameOf = (project: ProjectFixture) =>
   `${project.repoOwner ?? project.owner}/${project.repo ?? project.slug}`
-
-// A skill proven by a confirmed help, as the confirmation writes it in
-// production (help-lifecycle.ts): the source the matching weighs the most
-// (§6.1, §7.3). The first proof dates it: the others are ignored.
-const addProvenSkill = sql<
-  undefined,
-  { userId: number; skillId: number; at: number }
->`
-  INSERT OR IGNORE INTO userSkill (userId, skillId, source, createdAt)
-  VALUES (:userId, :skillId, 'platform_activity', :at)
-`.run
 
 // Moussa's confirmed reviews for the demo (§18.1): source = demo, across four
 // requesters and two projects, so Trusted Reviewer is Silver (10 to 19
@@ -434,17 +418,21 @@ export const seed = (githubIds = new Map<string, number>()) => {
      * GitHub through its frozen url.
      */
     const moussaId = userIds.get('moussa')
-    const projectBySlug = new Map(
-      (Object.values(projects) as ProjectFixture[]).map((p) => [p.slug, p]),
-    )
     if (moussaId) {
-      MOUSSA_REVIEWS.forEach((review, i) => {
+      // Oldest first: a skill proven again keeps the date of its first proof
+      const oldestFirst = [...MOUSSA_REVIEWS].sort((a, b) =>
+        b.daysAgo - a.daysAgo
+      )
+      oldestFirst.forEach((review, i) => {
         const requesterId = userIds.get(review.requester)
         const projectId = projectIdBySlug.get(review.project)
-        const project = projectBySlug.get(review.project)
+        const project = projects[review.project as ProjectSlug] as
+          | ProjectFixture
+          | undefined
         if (!requesterId || !projectId || !project) return
         const repository = repoFullNameOf(project)
         const createdAt = at - review.daysAgo * 24 * 60 * 60
+        const skills = skillRowsOf(review.skills)
         backdate({
           id: Entry.insert.REVIEW_HELP_CONFIRMED({
             userId: moussaId,
@@ -452,7 +440,7 @@ export const seed = (githubIds = new Map<string, number>()) => {
             helpRequestId: maybe(null),
             pullRequestId: maybe(null),
             requesterId,
-            skills: skillRowsOf(review.skills),
+            skills,
             helpCategory: 'code_review',
             eligible: 1,
             exclusionReason: '',
@@ -466,21 +454,11 @@ export const seed = (githubIds = new Map<string, number>()) => {
           }),
           at: createdAt,
         })
-      })
-      // The skills these reviews proved, dated by the oldest of them, as the
-      // confirmations would have written them
-      const oldestFirst = [...MOUSSA_REVIEWS].sort((a, b) =>
-        b.daysAgo - a.daysAgo
-      )
-      for (const review of oldestFirst) {
-        for (const { skillId } of skillRowsOf(review.skills)) {
-          addProvenSkill({
-            userId: moussaId,
-            skillId,
-            at: at - review.daysAgo * 24 * 60 * 60,
-          })
+        // The skills it proved, as the confirmation writes them
+        for (const { skillId } of skills) {
+          addProvenSkill({ userId: moussaId, skillId, at: createdAt })
         }
-      }
+      })
       // Fill the badge progress from these proofs, without announcing an
       // unlock dated now (§8.2)
       evaluateBadges(moussaId, at, false)
