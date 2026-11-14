@@ -225,47 +225,79 @@ type Stats = {
   release?: { tag: string; at: number | null } | null
 }
 
+// One project as the web shows it, from its row and the open issue / PR
+// counts of every repository in the batch
+const shownProject = (row: ProjectRow, counts: Map<number, Counts>) => {
+  const stats = parse<Stats>(row.stats, {})
+  const repositoryId = row.repositoryId
+  return {
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    vision: row.vision ?? '',
+    status: row.status,
+    skills: skillNamesOf(parse<number[]>(row.skills, [])),
+    createdAt: row.createdAt,
+    owner: row.ownerLogin,
+    members: listMembers(row.projectId),
+    followers: listFollowers(row.projectId).map((f) => f.login),
+    needs: listNeeds(row.projectId).map((n) => n.title),
+    gallery: galleryOf(row.projectId),
+    demoVideoUrl: row.demoVideoUrl ?? '',
+    repository: repositoryId
+      ? {
+        owner: row.repoOwner!,
+        name: row.repoName!,
+        syncMode: row.syncMode!,
+        about: row.readme ? readmeSummary(row.readme) : '',
+        stars: stats.stars ?? 0,
+        topics: stats.topics ?? [],
+        languages: (stats.languages ?? [])
+          .map(([name, share]) => ({ name, share })),
+        contributors: stats.contributors ?? 0,
+        release: stats.release?.tag ?? '',
+        releasedAt: stats.release?.at ?? 0,
+        lastSyncedAt: row.lastSyncedAt ?? 0,
+        ...counts.get(repositoryId)!,
+        issues: issuesOf(repositoryId),
+        pullRequests: pullsOf(repositoryId),
+      }
+      : undefined,
+  }
+}
+
 export const listMyProjects = (userId: number) => {
   const rows = listMine(userId)
   const counts = countsOf(rows.flatMap((row) => row.repositoryId ?? []))
-  return rows.map((row) => {
-    const stats = parse<Stats>(row.stats, {})
-    const repositoryId = row.repositoryId
-    return {
-      slug: row.slug,
-      name: row.name,
-      description: row.description,
-      vision: row.vision ?? '',
-      status: row.status,
-      skills: skillNamesOf(parse<number[]>(row.skills, [])),
-      createdAt: row.createdAt,
-      owner: row.ownerLogin,
-      members: listMembers(row.projectId),
-      followers: listFollowers(row.projectId).map((f) => f.login),
-      needs: listNeeds(row.projectId).map((n) => n.title),
-      gallery: galleryOf(row.projectId),
-      demoVideoUrl: row.demoVideoUrl ?? '',
-      repository: repositoryId
-        ? {
-          owner: row.repoOwner!,
-          name: row.repoName!,
-          syncMode: row.syncMode!,
-          about: row.readme ? readmeSummary(row.readme) : '',
-          stars: stats.stars ?? 0,
-          topics: stats.topics ?? [],
-          languages: (stats.languages ?? [])
-            .map(([name, share]) => ({ name, share })),
-          contributors: stats.contributors ?? 0,
-          release: stats.release?.tag ?? '',
-          releasedAt: stats.release?.at ?? 0,
-          lastSyncedAt: row.lastSyncedAt ?? 0,
-          ...counts.get(repositoryId)!,
-          issues: issuesOf(repositoryId),
-          pullRequests: pullsOf(repositoryId),
-        }
-        : undefined,
-    }
-  })
+  return rows.map((row) => shownProject(row, counts))
+}
+
+// A public project, or one the developer is a member of, by its slug
+const getBySlug = sql<ProjectRow, { slug: string; userId: number }>`
+  SELECT project.projectId, slug, project.name, description, vision, status,
+    project.skills, project.demoVideoUrl, project.createdAt,
+    owner.githubUsername AS ownerLogin,
+    repository.repositoryId, repository.owner AS repoOwner,
+    repository.name AS repoName, syncMode,
+    substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
+  FROM project
+  JOIN user owner ON owner.userId = project.ownerId
+  LEFT JOIN repository ON repository.projectId = project.projectId
+  WHERE project.slug = :slug AND (project.visibility = 'public'
+    OR EXISTS (SELECT 1 FROM projectMember
+      WHERE projectMember.projectId = project.projectId
+        AND projectMember.userId = :userId))
+`.get
+
+/**
+ * One project by its slug, for its public page (§6): any developer sees a
+ * public project, a member sees a private one too. Unknown or private: 404
+ */
+export const getProject = (userId: number, slug: string) => {
+  const row = getBySlug({ slug, userId })
+  if (!row) throw new respond.NotFoundError({ message: 'Project not found' })
+  const counts = countsOf(row.repositoryId ? [row.repositoryId] : [])
+  return shownProject(row, counts)
 }
 
 const getRepository = sql<

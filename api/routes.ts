@@ -19,6 +19,7 @@ import {
 import { suggestImport } from '/api/import-suggest.ts'
 import { embedOne, requestText } from '/api/embeddings.ts'
 import {
+  getProject,
   listMyProjects,
   listProjectIssues,
   listProjectPulls,
@@ -356,6 +357,42 @@ const pullBatch = OBJ({
   ),
   next: nextCursor,
 })
+
+// One project as the web shows it, shared by the list and the public page
+const projectShape = OBJ({
+  slug: STR(),
+  name: STR(),
+  description: STR(),
+  vision: STR(),
+  status: STR(),
+  skills: ARR(STR()),
+  createdAt: NUM(),
+  owner: STR('Login of the owner'),
+  members: ARR(OBJ({ login: STR(), role: STR() })),
+  followers: ARR(STR('Login')),
+  needs: ARR(STR('Open need')),
+  gallery: ARR(media, 'Screenshots of the project page, in order'),
+  demoVideoUrl: STR('Link of the demo video, empty if none'),
+  repository: optional(OBJ({
+    owner: STR(),
+    name: STR(),
+    syncMode: STR('poll or live'),
+    about: STR('First paragraphs of the README, 600 characters at most'),
+    stars: NUM(),
+    topics: ARR(STR()),
+    languages: ARR(OBJ({ name: STR(), share: NUM() })),
+    contributors: NUM(),
+    release: STR(),
+    releasedAt: NUM(),
+    lastSyncedAt: NUM(),
+    openIssues: NUM('Open issues, all of them'),
+    beginnerIssues: NUM('Open issues labelled good first issue'),
+    openPullRequests: NUM('Open PRs, all of them'),
+    waitingReview: NUM('Open PRs with no review yet'),
+    issues: issueBatch,
+    pullRequests: pullBatch,
+  })),
+}, 'A project')
 
 const conversationRights = {
   status: STR('pending, accepted; a declined request still reads pending'),
@@ -803,45 +840,18 @@ const defs = {
   'GET/api/projects': route({
     authorize: withSession,
     fn: (ctx) => listMyProjects(ctx.session.userId),
-    output: ARR(
-      OBJ({
-        slug: STR(),
-        name: STR(),
-        description: STR(),
-        vision: STR(),
-        status: STR(),
-        skills: ARR(STR()),
-        createdAt: NUM(),
-        owner: STR('Login of the owner'),
-        members: ARR(OBJ({ login: STR(), role: STR() })),
-        followers: ARR(STR('Login')),
-        needs: ARR(STR('Open need')),
-        gallery: ARR(media, 'Screenshots of the project page, in order'),
-        demoVideoUrl: STR('Link of the demo video, empty if none'),
-        repository: optional(OBJ({
-          owner: STR(),
-          name: STR(),
-          syncMode: STR('poll or live'),
-          about: STR('First paragraphs of the README, 600 characters at most'),
-          stars: NUM(),
-          topics: ARR(STR()),
-          languages: ARR(OBJ({ name: STR(), share: NUM() })),
-          contributors: NUM(),
-          release: STR(),
-          releasedAt: NUM(),
-          lastSyncedAt: NUM(),
-          openIssues: NUM('Open issues, all of them'),
-          beginnerIssues: NUM('Open issues labelled good first issue'),
-          openPullRequests: NUM('Open PRs, all of them'),
-          waitingReview: NUM('Open PRs with no review yet'),
-          issues: issueBatch,
-          pullRequests: pullBatch,
-        })),
-      }),
-      'Projects the developer is a member of',
-    ),
+    output: ARR(projectShape, 'Projects the developer is a member of'),
     description:
       'The projects of the signed-in developer, with the first batch of their issues and PRs',
+  }),
+
+  'GET/api/project': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => getProject(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: projectShape,
+    description:
+      'A public project by its slug, for its page; unknown or private: 404 (§6)',
   }),
 
   'GET/api/project/issues': route({

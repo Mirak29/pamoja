@@ -18,7 +18,7 @@ import {
   loadChannelStates,
   loadTracking,
 } from '/web/lib/channels.ts'
-import { useEffect } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import {
   helpChanged,
   helpRequests,
@@ -52,7 +52,8 @@ import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Cube } from '/web/ui/shapes.tsx'
-import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
+import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
+import { loadProject } from '/web/fixtures/repos.ts'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
 
@@ -335,6 +336,14 @@ export const ProjectPage = () => {
   projectsChanged.value
   applicationsChanged.value
   const [, slug = '', tab = ''] = url.relativePath.slice(1).split('/')
+  // A project not in the pages is one someone else imported: read it from
+  // the API, which GET/api/projects (only mine) never returns (PAM-401)
+  const [tried, setTried] = useState(false)
+  useEffect(() => {
+    setTried(false)
+    if (projects[slug as ProjectSlug]) return setTried(true)
+    loadProject(slug).finally(() => setTried(true))
+  }, [slug])
   const project = projects[slug as ProjectSlug]
   // A project the server knows: its channel messages and what I read there,
   // for the unread badge before the channels open (PAM-412)
@@ -345,7 +354,8 @@ export const ProjectPage = () => {
     loadChannelStates(slug as ProjectSlug)
     loadTracking(slug as ProjectSlug)
   }, [slug, saved])
-  if (!project) return <NotFound slug={slug} />
+  // Not in the pages yet: the first read, then unknown or private (§6)
+  if (!project) return tried ? <NotFound slug={slug} /> : <LoadingState />
   const current = (tabs.some(([key]) => key === tab) ? tab : '') as TabKey
   const Content = tabContents[current]
   return (

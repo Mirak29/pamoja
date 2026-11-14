@@ -1303,6 +1303,13 @@ Reste pour clore PAM-505 : le listing serveur des **projets** (l'onglet Projets 
 - **Livrable** : `api/explore.ts`, `api/explore_test.ts`, `api/routes.ts`, `web/lib/explore.ts`, `web/fixtures/people.ts`, `web/pages/explore/explore-page.tsx` ; §10.3
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-401 · Page d'un projet public par son slug
+
+`GET/api/projects` ne renvoyait que **mes** projets : un projet importé par quelqu'un d'autre n'avait aucune route pour s'afficher, et sa page tombait sur « projet introuvable ». Nouvelle route `GET/api/project` qui lit un projet par son slug — visible de tout développeur connecté s'il est public, d'un membre s'il est privé, sinon 404 (§6). Elle renvoie la même forme qu'un élément de `GET/api/projects` (en-tête, compétences, membres, abonnés, needs, galerie, vidéo, dépôt avec le premier lot d'issues et de PR) ; la construction de cette forme est partagée (`shownProject`), et sa description est un `OBJ` commun aux deux routes (`projectShape`). Côté interface, la page d'un projet absent des pages le lit depuis l'API (`loadProject`, adopté par `adoptProjects`) et montre un état de chargement avant de conclure à introuvable.
+
+- **Livrable** : `api/projects.ts`, `api/projects_test.ts`, `api/routes.ts`, `web/fixtures/repos.ts`, `web/pages/project/project-page.tsx` ; §6
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

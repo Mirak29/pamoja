@@ -7,6 +7,7 @@ import {
   ProjectMember,
   PullRequest,
   Repository,
+  User,
 } from '/api/schema.ts'
 import { login, request } from '/api/testing.ts'
 
@@ -167,4 +168,59 @@ Deno.test('projects: the issues and PRs of a project by batches', async () => {
     (await call('/api/project/pulls?slug=nope&before=', session)).status,
     404,
   )
+})
+
+// A project imported by someone else, read by its slug (PAM-401, §6)
+const byAnother = (visibility: string, slug: string) => {
+  const ownerId = User.insert({
+    githubId: 9000 + slug.length,
+    githubUsername: `other-${slug}`,
+    avatarUrl: '',
+    source: 'github',
+    createdAt: at,
+    updatedAt: at,
+  })
+  const projectId = Project.insert({
+    ownerId,
+    name: `Project ${slug}`,
+    slug,
+    description: 'Imported by another developer',
+    visibility,
+    status: 'active',
+    source: 'github',
+    createdAt: at,
+    updatedAt: at,
+  })
+  ProjectMember.insert({
+    projectId,
+    userId: ownerId,
+    role: 'owner',
+    joinedAt: at,
+  })
+}
+
+Deno.test('project: a public project is read by its slug, a private one is 404', async () => {
+  const { session } = await setup()
+  byAnother('public', 'open-project')
+  byAnother('private', 'secret-project')
+
+  // A public project someone else imported shows to anyone signed in
+  const open = await call('/api/project?slug=open-project', session)
+  assertEquals(open.status, 200)
+  assertEquals([open.json.slug, open.json.owner], [
+    'open-project',
+    'other-open-project',
+  ])
+
+  // A private one the reader is not a member of, and an unknown slug: 404
+  assertEquals(
+    (await call('/api/project?slug=secret-project', session)).status,
+    404,
+  )
+  assertEquals((await call('/api/project?slug=nope', session)).status, 404)
+
+  // The reader's own project reads the same way
+  const mine = await call('/api/project?slug=big-repo', session)
+  assertEquals(mine.status, 200)
+  assertEquals(mine.json.repository.name, 'big-repo')
 })
