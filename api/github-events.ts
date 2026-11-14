@@ -4,6 +4,7 @@ import { Entry, maybe } from '/api/entries.ts'
 import { seconds } from '/api/github.ts'
 import { scheduleSkillsRead } from '/api/pull-skills.ts'
 import { evaluateBadges, evaluateProject } from '/api/badges.ts'
+import { markPullRequestDone } from '/api/board.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
 import {
   type GithubReview,
@@ -112,6 +113,8 @@ registerHandler('pull_request', (payload) => {
     const author = userOf(pull.user)
     author && evaluateBadges(author)
     evaluateProject(repo.projectId)
+    // A merged pull request moves its card to Done (§6.7)
+    markPullRequestDone(pullRequestId, userId)
   } else if (action === 'closed') {
     Entry.insert.PR_CLOSED(relations)
   } else if (

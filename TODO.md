@@ -166,7 +166,7 @@ Responsable : _à répartir_
 - [ ] **PAM-401** · Page projet complète : en-tête, onglets, galerie, vidéo de démo (§6.3) `[démo]`
 - [ ] **PAM-402** · Needs et « People who could help » (§6.6)
 - [x] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6) — @niangoos ; reste : changer le rôle d'un membre (`POST/api/project/member/role`, §3)
-- [ ] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7)
+- [x] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7) — @niangoos
 - [ ] **PAM-405** · Roadmap et milestones (§6.7)
 - [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
 - [x] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6) — `api/presence.ts` — @Mirak29

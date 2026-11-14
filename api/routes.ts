@@ -113,6 +113,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
+import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
 import {
   FOLLOW_TARGETS,
   followsOf,
@@ -1460,6 +1461,51 @@ const defs = {
       hidden: BOOL('True when this report hid the content (§10.5)'),
     }),
     description: 'Report content for the moderators (§10.5)',
+  }),
+
+  'GET/api/project/board': route({
+    authorize: withSession,
+    fn: (_ctx, { slug }) => listBoard(slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      id: NUM('Id of the card'),
+      column: STR('backlog, ready, in_progress, review or done'),
+      title: STR('Title of the card'),
+      rank: STR('Fractional rank in its column'),
+    })),
+    description: 'The cards of a project board (§6.7)',
+  }),
+
+  'POST/api/task/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createTask(ctx.session.userId, input.slug, input.title),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      title: STR('Title of the card'),
+    }),
+    output: OBJ({
+      id: NUM('Id of the new card'),
+      column: STR('Its column: backlog'),
+      title: STR('Its title'),
+      rank: STR('Its rank'),
+    }),
+    description: 'Add an internal card to the Backlog (§6.7)',
+  }),
+
+  'POST/api/task/move': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      moveTask(ctx.session.userId, input.taskId, input.column),
+    input: OBJ({
+      taskId: NUM('Id of the card'),
+      column: LIST(BOARD_COLUMNS, 'The column to move it to'),
+    }),
+    output: OBJ({
+      id: NUM('Id of the card'),
+      column: STR('Its new column'),
+      rank: STR('Its new rank'),
+    }),
+    description: 'Move a card to a column (§6.7)',
   }),
 
   /*

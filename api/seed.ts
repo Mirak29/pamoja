@@ -13,9 +13,12 @@ import {
   Project,
   ProjectMember,
   ProjectNeed,
+  Task,
   User,
   UserIntent,
 } from '/api/schema.ts'
+import { rankBetween } from '/api/lib/rank.ts'
+import { boards } from '/web/fixtures/board.ts'
 import { setDeclaredSkills, skillIdsOf } from '/api/skills.ts'
 import { countryCodeOf, helpCategories, keyOf } from '/api/vocabulary.ts'
 import { communities } from '/web/fixtures/communities.ts'
@@ -462,6 +465,28 @@ export const seed = (githubIds = new Map<string, number>()) => {
       // Fill the badge progress from these proofs, without announcing an
       // unlock dated now (§8.2)
       evaluateBadges(moussaId, at, false)
+    }
+
+    /*
+     * Board cards (§6.7): the internal cards of each project, each with a
+     * fractional rank in its column
+     */
+    for (const [slug, cards] of Object.entries(boards)) {
+      const projectId = projectIdBySlug.get(slug)
+      if (!projectId || !cards) continue
+      const lastRank: Record<string, string> = {}
+      for (const task of cards) {
+        const rank = rankBetween(lastRank[task.column] ?? '', '')
+        lastRank[task.column] = rank
+        Task.insert({
+          projectId,
+          boardColumn: task.column,
+          title: task.title,
+          rank,
+          createdAt: at,
+          updatedAt: at,
+        })
+      }
     }
   })()
 

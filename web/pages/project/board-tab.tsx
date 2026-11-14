@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,8 +15,8 @@ import {
   boardColumns,
   boards,
   type Card,
-  moveCard,
 } from '/web/fixtures/board.ts'
+import { loadBoard, moveTask } from '/web/lib/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { me } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
@@ -179,11 +179,16 @@ export const BoardTab = ({ project }: { project: Project }) => {
   const [over, setOver] = useState<BoardColumn | null>(null)
   const [moved, setMoved] = useState<string | null>(null)
   const [announce, setAnnounce] = useState('')
+  // The board follows the server, demo projects included: the seed mirrors
+  // their cards, so a move persists (§6.7)
+  useEffect(() => {
+    loadBoard(project.slug)
+  }, [project.slug])
   const cards = boards[project.slug as ProjectSlug] ?? []
   const move = (card: Card, column: BoardColumn) => {
     const from = boardColumns.findIndex(([key]) => key === card.column)
     const to = boardColumns.findIndex(([key]) => key === column)
-    moveCard(project.slug as ProjectSlug, card, column)
+    moveTask(project.slug, card, column)
     setMoved(card.id)
     setAnnounce(t`« ${card.title} » est dans ${translate(boardColumns[to][1])}`)
     // The card is drawn again in its new column: keep the focus on its key
