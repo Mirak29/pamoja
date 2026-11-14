@@ -1,5 +1,4 @@
-import { ErrorWithData } from '@01edu/api-client'
-import { api, retryAfterOf } from '/web/lib/api.ts'
+import { api, reasonOf, retryAfterOf } from '/web/lib/api.ts'
 import { t } from '/web/lib/language.ts'
 import { waitLabel } from '/web/lib/messages.ts'
 import { CircleAlert } from '/web/assets/icons.tsx'
@@ -23,13 +22,8 @@ import { loadNotifications, readOne } from '/web/lib/notifications.ts'
 // the owner and maintainers, who accept or refuse it from their notification
 // (§6.6).
 
-// Why the server refused (api/join.ts): it answered, so « could not reach
-// the server » would be wrong
-const reasonOf = (error: unknown) =>
-  error instanceof ErrorWithData
-    ? (error.data as { reason?: string }).reason ?? 'refused'
-    : undefined
-
+// Why the server refused (api/join.ts, reasonOf): it answered, so « could
+// not reach the server » would be wrong
 const REFUSALS: Record<string, string> = {
   member: 'Tu fais déjà partie de cette équipe.',
   unknown: 'Ce projet n’existe plus ou n’est pas public.',
@@ -89,12 +83,11 @@ export const applyToProject = (
 
 /** Accept or refuse a candidature from its notification (§6.6) */
 export const decideJoinRequest = (
-  joinRequestId: number,
-  accept: boolean,
   notification: Notification,
+  accept: boolean,
 ) => {
   return api['POST/api/project/join-request/decide']
-    .fetch({ joinRequestId, accept })
+    .fetch({ joinRequestId: Number(notification.application), accept })
     .then((result) => {
       notification.accepted = accept ? 1 : 0
       readOne(notification)

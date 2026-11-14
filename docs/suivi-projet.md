@@ -1082,6 +1082,8 @@ Correctifs de relecture : les actions suivent l’état actuel de la candidature
 - Les phrases de la candidature avaient leur anglais manquant : ajouté.
 - Le paragraphe de correctifs du second commit était sous PAM-304 (« Fermé sans réalisation »), avec des marqueurs laissés par CodeRabbit : il est revenu ici, les marqueurs sont retirés.
 
+Relecture `/simplify` : la requête qui enregistre une décision devient une constante comme les autres ; les requêtes du rôle d'un membre et des gestionnaires d'un projet viennent de `channels.ts` (`getRole`) et `badges.ts` (`listKeepers`) au lieu de copies ; un index `join_request_user (userId, createdAt)` sert la limite de débit ; un projet inconnu répond 404 comme ailleurs ; l'état d'une candidature se lit dans une table au lieu de cinq ternaires ; `reasonOf` rejoint `retryAfterOf` (`web/lib/api.ts`) et `isServer` est partagé. Vérifié : candidature (200), doublon (409 `pending`), réponse inconnue (400 `invalid`), projet inconnu (404 `unknown`), puis acceptation depuis la notification, qui ajoute Moussa à l'équipe.
+
 - **Livrable** : `api/join.ts`, `api/join_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/applications.ts`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/pages/project/join-dialog.tsx` ; §3, §6.6, §13.3
 - **Par** : @niangoos
 

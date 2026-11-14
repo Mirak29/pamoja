@@ -192,7 +192,8 @@ const serverUnread = signal<Record<string, number>>({})
 /** A tab of the center: a category, or all of them (`''`) */
 export type NotificationTab = NotificationCategory | ''
 
-const isServer = (n: Notification) => n.id.startsWith('s')
+/** A notification of the server, not of the demo data */
+export const isServer = (n: Notification) => n.id.startsWith('s')
 const orderOf = (n: Notification) => n.at
 
 // The rows of the server join the shared array, each once

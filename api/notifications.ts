@@ -46,6 +46,13 @@ export const createNotification = (
  * The inbox (§7.4)
  */
 
+// The state of a candidature, for the managers' notifications (§6.6)
+const JOIN_STATES: Record<string, number> = {
+  pending: -1,
+  accepted: 1,
+  refused: 0,
+}
+
 type Row = {
   notificationId: number
   type: string
@@ -111,15 +118,9 @@ const shown = (row: Row) => {
     joinRequestId: Number(payload.joinRequestId ?? 0),
     projectSlug: String(payload.projectSlug ?? ''),
     accepted: payload.joinRequestId
-      ? row.joinStatus === 'pending'
-        ? -1
-        : row.joinStatus === 'accepted'
-        ? 1
-        : 0
-      : payload.accepted === 1
-      ? 1
-      : payload.accepted === 0
-      ? 0
+      ? JOIN_STATES[row.joinStatus ?? ''] ?? 0
+      : payload.accepted === 1 || payload.accepted === 0
+      ? payload.accepted
       : -1,
     readAt: row.readAt ?? 0,
     createdAt: row.createdAt,

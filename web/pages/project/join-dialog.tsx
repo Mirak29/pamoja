@@ -10,11 +10,8 @@ import { Field, FieldError, Textarea, useFieldErrors } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
-import { joinAreas, joinAvailabilities } from '/api/vocabulary.ts'
-
 // The lists the server checks the answers against
-const areas = joinAreas
-const availabilities = joinAvailabilities
+import { joinAreas, joinAvailabilities } from '/api/vocabulary.ts'
 
 const Choices = (
   { label, children }: { label: string; children: preact.ComponentChildren },
@@ -28,7 +25,9 @@ const Choices = (
 const JoinForm = ({ project }: { project: Project }) => {
   const owner = personOf(project.owner).name.split(' ')[0]
   const [how, setHow] = useState<string[]>([])
-  const [availability, setAvailability] = useState<string>(availabilities[1])
+  const [availability, setAvailability] = useState<string>(
+    joinAvailabilities[1],
+  )
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const { check, clear, field } = useFieldErrors<'how'>('join')
@@ -53,21 +52,19 @@ const JoinForm = ({ project }: { project: Project }) => {
     }
     // Closed meanwhile (Annuler), maybe for another dialog: that one stays
     if (url.params.dialog === 'join') navigate({ params: { dialog: null } })
-    notify(
-      sent === 'pending'
+    notify({
+      ...(sent === 'pending'
         ? {
           title: 'Candidature déjà envoyée',
           body: t`Elle attend la réponse de ${owner}.`,
-          icon: Send,
-          tone: 'verified',
         }
         : {
           title: 'Candidature envoyée',
           body: t`${owner} la recevra dans ses notifications.`,
-          icon: Send,
-          tone: 'verified',
-        },
-    )
+        }),
+      icon: Send,
+      tone: 'verified',
+    })
   }
 
   return (
@@ -76,7 +73,7 @@ const JoinForm = ({ project }: { project: Project }) => {
         {t`Rejoindre ${project.name}`}
       </h2>
       <Choices label='Comment veux-tu aider ?'>
-        {areas.map((area, i) => (
+        {joinAreas.map((area, i) => (
           <OptionButton
             key={area}
             id={i ? undefined : 'join-how'}
@@ -99,7 +96,7 @@ const JoinForm = ({ project }: { project: Project }) => {
         <FieldError id='join-how-error'>{field('how').error}</FieldError>
       )}
       <Choices label='Disponibilité'>
-        {availabilities.map((value) => (
+        {joinAvailabilities.map((value) => (
           <OptionButton
             key={value}
             pressed={value === availability}

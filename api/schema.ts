@@ -311,6 +311,8 @@ export const JoinRequest = createTable('joinRequest', {
   createdAt: { type: 'REAL' },
 })
 index('join_request_project', 'joinRequest', 'projectId, status')
+// The requests of a developer this hour, for the rate limit (§16)
+index('join_request_user', 'joinRequest', 'userId, createdAt')
 
 export const ProjectNeed = createTable('projectNeed', {
   projectNeedId: { type: 'INTEGER', primary: true },

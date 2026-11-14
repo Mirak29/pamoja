@@ -37,6 +37,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
 import {
+  isServer,
   loadNotificationBatch,
   notificationLists,
   readAll,
@@ -90,7 +91,7 @@ const Row = ({ notification }: { notification: Notification }) => {
   // A candidature from the server (PAM-403): its id is the join request, and
   // the managers accept or refuse it here until the request is resolved
   const serverJoin = notification.kind === 'application' &&
-    !!notification.application && notification.id.startsWith('s')
+    !!notification.application && isServer(notification)
   const pending = serverJoin
     ? notification.accepted === -1
     : application?.status === 'pending'
@@ -102,11 +103,7 @@ const Row = ({ notification }: { notification: Notification }) => {
     }
     setDeciding(true)
     try {
-      await decideJoinRequest(
-        Number(notification.application),
-        accept,
-        notification,
-      )
+      await decideJoinRequest(notification, accept)
     } catch {
       // The helper reports the failure; keep the decision available for retry.
     } finally {
