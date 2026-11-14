@@ -42,6 +42,32 @@ Deno.test('follow: the state asked for, a developer, a project and a community (
   assertEquals(followRows(abdou), before2 + 1)
 })
 
+Deno.test('follow: a project gone unlisted can still be unfollowed, and stopping is never limited (PAM-503)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  setFollow(abdou, 'project', 'africommerce', true)
+  db.prepare("UPDATE project SET visibility = 'unlisted' WHERE slug = ?")
+    .run('africommerce')
+  // Not followed again while unlisted, but the follow there can go
+  assertThrows(() => setFollow(abdou, 'project', 'africommerce', true))
+  assertEquals(
+    setFollow(abdou, 'project', 'africommerce', false).following,
+    false,
+  )
+  assertEquals(followsOf(abdou).projects.includes('africommerce'), false)
+
+  // The hour's follows used up: a new one is refused, stopping one is not
+  const at = Date.now() / 1000
+  const insert = db.prepare(
+    `INSERT INTO follow (followerId, targetType, targetId, createdAt)
+     VALUES (?, 'community', ?, ?)`,
+  )
+  for (let i = 0; i < 60; i++) insert.run(abdou, 100_000 + i, at)
+  assertThrows(() => setFollow(abdou, 'user', 'kofi', true))
+  assertEquals(setFollow(abdou, 'user', 'moussa', false).following, false)
+})
+
 Deno.test('follow: refuses oneself and an unknown target (PAM-503)', () => {
   restore()
   seed()

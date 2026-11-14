@@ -1083,6 +1083,8 @@ Vérifié dans le navigateur : suivre Kofi, recharger, le bouton dit toujours «
 
 Seconde relecture de CodeRabbit, sur les requêtes concurrentes : deux clics rapides envoient des états opposés que le serveur pouvait enregistrer dans le désordre, la relecture du démarrage pouvait écraser un clic fait pendant qu'elle courait, et une réponse arrivée après un changement de compte s'appliquait au nouveau. `web/lib/in-order.ts` fait partir les écritures d'une même cible l'une après l'autre ; seule la dernière décide de l'affichage ; la relecture garde ce qui a été cliqué pendant qu'elle courait ; une réponse d'une autre session est ignorée. Testé (`web/lib/in-order_test.ts`) et vérifié dans le navigateur : trois clics rapides, écran et base d'accord, et encore après un rechargement.
 
+Relecture `/code-review` : un projet devenu non listé ne pouvait plus être quitté (la route ne retrouvait que les projets publics) ; il se quitte maintenant, sans pouvoir être suivi de nouveau. La limite de débit refusait aussi les désabonnements après 60 abonnements dans l'heure : seul un nouvel abonnement compte. Reste connu : la limite compte les abonnements encore présents, donc des allers-retours suivre / ne plus suivre ne l'atteignent pas ; il faudrait enregistrer chaque tentative.
+
 - **Livrable** : `api/follow.ts`, `web/lib/session.ts`, `web/fixtures/people.ts`, `web/fixtures/projects.ts`, `docs/cahier-des-charges.md`, `api/follow_test.ts`, `api/routes.ts`, `web/lib/follow.ts`, `web/pages/home/home-page.tsx`, `web/pages/profile/profile-page.tsx`, `web/pages/projects/projects-page.tsx`, `web/pages/project/project-page.tsx` ; §10.1, §13.2, §14.1
 - **Par** : @niangoos
 

@@ -19,18 +19,25 @@ export const FOLLOW_RATE = { count: 60, per: 3600 }
 
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 
-const getProjectId = sql<{ projectId: number }, string>`
-  SELECT projectId FROM project WHERE slug = ? AND visibility = 'public'
+// A project followed must be public; one stopped may have become unlisted
+// since, and its follow must still go
+const getProjectId = sql<{ projectId: number }, { slug: string; any: number }>`
+  SELECT projectId FROM project
+  WHERE slug = :slug AND (visibility = 'public' OR :any)
 `.get
 
-// The public handle a client sends (a login or a slug) to the id the follow
-// stores; undefined when nothing public matches
-const targetIdOf = (targetType: FollowTarget, target: string) => {
+// The handle a client sends (a login or a slug) to the id the follow
+// stores; undefined when nothing matches
+const targetIdOf = (
+  targetType: FollowTarget,
+  target: string,
+  follow: boolean,
+) => {
   switch (targetType) {
     case 'user':
       return userIdOfLogin(target)
     case 'project':
-      return getProjectId(target)?.projectId
+      return getProjectId({ slug: target, any: follow ? 0 : 1 })?.projectId
     case 'community':
       return communityIdOf(target)
   }
@@ -73,12 +80,13 @@ export const setFollow = (
   target: string,
   follow: boolean,
 ) => {
-  const targetId = targetIdOf(targetType, target)
+  const targetId = targetIdOf(targetType, target, follow)
   if (!targetId) throw badRequest('Unknown target')
   if (targetType === 'user' && targetId === me) {
     throw badRequest('One does not follow oneself')
   }
-  within(countFollows, FOLLOW_RATE, me, 'Too many follows this hour')
+  // Only a new follow counts: stopping one is never refused
+  follow && within(countFollows, FOLLOW_RATE, me, 'Too many follows this hour')
   follow
     ? add({ me, targetType, targetId, at: now() })
     : remove({ me, targetType, targetId })
