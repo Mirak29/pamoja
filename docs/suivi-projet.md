@@ -1239,6 +1239,15 @@ Reste pour clore PAM-508 : la file des modérateurs, leurs actions (ignorer, ave
 - **Livrable** : `api/reports.ts`, `api/reports_test.ts`, `api/routes.ts`, `web/lib/reports.ts`, `web/ui/report-dialog.tsx` ; §10.5, §13.3
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-404 · Board sur le serveur, rang fractionnaire, PR mergée → Done
+
+Les cartes du board sont enregistrées : `GET/api/project/board` les liste par colonne et par rang, `POST/api/task/create` ajoute une carte au Backlog, `POST/api/task/move` la déplace. Le **rang est fractionnaire** (`api/lib/rank.ts`, `rankBetween`) : une carte prend une position entre deux autres sans renuméroter la colonne, donc deux personnes déplacent des cartes en même temps sans perte (§6.7, §14). Chaque changement, réservé aux membres, produit une entry `TASK_UPDATED`. Une **PR mergée passe sa carte en Done** : le webhook `pull_request` appelle `markPullRequestDone` après `PR_MERGED` (`api/github-events.ts`). Le seed crée les cartes des projets de démo ; côté interface, `board-tab` lit le board du serveur (`web/lib/board.ts`) et un déplacement est enregistré, remis en place en cas d'échec.
+
+Reste : réordonner à l'intérieur d'une colonne (le glisser ne fait que changer de colonne aujourd'hui) et la Roadmap (PAM-405).
+
+- **Livrable** : `api/board.ts`, `api/board_test.ts`, `api/lib/rank.ts`, `api/routes.ts`, `api/github-events.ts`, `api/seed.ts`, `web/lib/board.ts`, `web/pages/project/board-tab.tsx` ; §6.7, §13.3, §14
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
