@@ -1,4 +1,4 @@
-import { makeClient } from '@01edu/api-client'
+import { ErrorWithData, makeClient } from '@01edu/api-client'
 import type { RouteDefinitions } from '/api/routes.ts'
 
 const BASE_URL = document.baseURI.endsWith('/')
@@ -22,6 +22,15 @@ export const retryAfterOf = (err: unknown) => {
   const seconds = (err as { data?: { retryAfter?: number } }).data?.retryAfter
   return err instanceof Error && seconds ? seconds : undefined
 }
+
+/**
+ * Why the server refused, when it answered and said it (`reason` of the
+ * error, as `retryAfter`): undefined when it was not reached
+ */
+export const reasonOf = (err: unknown) =>
+  err instanceof ErrorWithData
+    ? (err.data as { reason?: string }).reason ?? 'refused'
+    : undefined
 
 export type ApiOutput = {
   [K in keyof typeof api]: Awaited<ReturnType<typeof api[K]['fetch']>>

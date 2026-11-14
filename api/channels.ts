@@ -50,7 +50,11 @@ const getProject = sql<{ projectId: number }, string>`
   SELECT projectId FROM project WHERE slug = ?
 `.get
 
-const getRole = sql<{ role: string }, { projectId: number; userId: number }>`
+/** The role of a developer in a project, if they belong to it */
+export const getRole = sql<
+  { role: string },
+  { projectId: number; userId: number }
+>`
   SELECT role FROM projectMember
   WHERE projectId = :projectId AND userId = :userId
 `.get

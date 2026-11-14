@@ -164,7 +164,7 @@ Responsable : _à répartir_
 
 - [ ] **PAM-401** · Page projet complète : en-tête, onglets, galerie, vidéo de démo (§6.3) `[démo]`
 - [ ] **PAM-402** · Needs et « People who could help » (§6.6)
-- [ ] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6)
+- [x] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6) — @niangoos ; reste : changer le rôle d'un membre (`POST/api/project/member/role`, §3)
 - [ ] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7)
 - [ ] **PAM-405** · Roadmap et milestones (§6.7)
 - [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
@@ -370,3 +370,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Follow enregistré (PAM-503) : `POST/api/follow` reçoit l'état voulu, jamais une bascule, et `GET/api/follows` donne à la page l'état du serveur à chaque session ; une requête rejouée ou un second onglet ne peut plus désabonner · §15
 - 2026-11-14 · Communautés rejointes sur le serveur (PAM-502) : `POST/api/community/join` reçoit l'état voulu (`join`), jamais une bascule, et les communautés rejointes viennent avec le développeur connecté (`GET/api/user/me`) ; la page part du serveur à chaque session · §10.2, §15
 - 2026-11-14 · Personnalisation du profil enregistrée (PAM-302) : thème, accent, ordre des sections et projets mis en avant sur le serveur ; un profil jamais ordonné garde toutes ses sections dans l'ordre par défaut · §9.2
+- 2026-11-14 · Candidatures (PAM-403) : façons d'aider et disponibilité tirées d'une seule liste (`api/vocabulary.ts`), vérifiées par le serveur, message limité à `LIMITS.note` ; chaque refus porte une raison que la page affiche, au lieu de « serveur injoignable » · §6.6, §16

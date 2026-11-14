@@ -127,6 +127,27 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: t`${who} attend ta réponse`,
         body: t`L’aide sur « ${n.title} » t’a-t-elle aidé ?`,
       }
+    case 'application':
+      // For the applicant, the outcome; for a manager, the incoming request
+      return !n.joinRequestId && n.accepted === 1
+        ? {
+          kind: 'application',
+          title: t`Tu rejoins ${n.project}`,
+          body: translate(
+            'Candidature acceptée : tu peux écrire dans #général.',
+          ),
+        }
+        : !n.joinRequestId && n.accepted === 0
+        ? {
+          kind: 'application',
+          title: translate('Candidature non retenue'),
+          body: t`${n.project} n’a pas retenu ta candidature cette fois.`,
+        }
+        : {
+          kind: 'application',
+          title: t`${who} veut rejoindre ${n.project}`,
+          body: n.excerpt,
+        }
     default:
       return { kind: 'help', title: n.title, body: '' }
   }
@@ -140,10 +161,17 @@ const toPage = (n: Item): Notification => ({
     ? `help/${n.helpRequestId}`
     : n.type === 'badge_unlocked'
     ? `@${me.login}`
+    : n.type === 'application' && n.projectSlug
+    ? `project/${n.projectSlug}/team`
     : 'notifications',
   at: n.createdAt * 1000,
   read: n.readAt > 0,
   demo: false,
+  // A candidature a manager can accept from the notification (§6.6)
+  application: n.type === 'application' && n.joinRequestId
+    ? String(n.joinRequestId)
+    : undefined,
+  accepted: n.accepted,
   ...sentence(n),
 })
 
@@ -164,7 +192,8 @@ const serverUnread = signal<Record<string, number>>({})
 /** A tab of the center: a category, or all of them (`''`) */
 export type NotificationTab = NotificationCategory | ''
 
-const isServer = (n: Notification) => n.id.startsWith('s')
+/** A notification of the server, not of the demo data */
+export const isServer = (n: Notification) => n.id.startsWith('s')
 const orderOf = (n: Notification) => n.at
 
 // The rows of the server join the shared array, each once

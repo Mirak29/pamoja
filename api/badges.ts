@@ -341,7 +341,8 @@ export const badgesOf = (userId: number) => {
   })
 }
 
-const listKeepers = sql<{ userId: number }, number>`
+/** The owners and maintainers of a project: who manages it (§3) */
+export const listKeepers = sql<{ userId: number }, number>`
   SELECT userId FROM projectMember
   WHERE projectId = ? AND role IN ('owner', 'maintainer')
 `.all

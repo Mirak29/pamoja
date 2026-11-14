@@ -118,6 +118,7 @@ import {
   setFollow,
 } from '/api/follow.ts'
 import { setMembership } from '/api/community.ts'
+import { applyToProject, decideJoinRequest } from '/api/join.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -1038,6 +1039,9 @@ const defs = {
           eligible: NUM('1 unless a confirmed help does not count (§8.4)'),
           badge: STR('Key of a badge unlocked, empty if none'),
           level: NUM('Level of that badge, 0 if none'),
+          joinRequestId: NUM('Candidature it is about, 0 if none (§6.6)'),
+          projectSlug: STR('Slug of its project, empty if none'),
+          accepted: NUM('-1 pending for a manager, 0 refused, 1 accepted'),
           readAt: NUM('In seconds, 0 if unread'),
           createdAt: NUM('In seconds'),
         }),
@@ -1370,6 +1374,38 @@ const defs = {
     }),
     output: OBJ({ joined: BOOL('True when the developer is a member') }),
     description: 'Join or leave a community',
+  }),
+
+  'POST/api/project/join': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      applyToProject(
+        ctx.session.userId,
+        input.slug,
+        input.areas,
+        input.availability,
+        input.message,
+      ),
+    input: OBJ({
+      slug: STR('Slug of the project to join'),
+      areas: ARR(STR('How they can help'), 'Backend, Frontend, Tests…'),
+      availability: STR('How much time they can give'),
+      message: STR('A word for the team, empty if none'),
+    }),
+    output: OBJ({ applied: BOOL('True once the candidature is sent') }),
+    description: 'Apply to join a project (§6.6)',
+  }),
+
+  'POST/api/project/join-request/decide': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      decideJoinRequest(ctx.session.userId, input.joinRequestId, input.accept),
+    input: OBJ({
+      joinRequestId: NUM('Id of the candidature'),
+      accept: BOOL('True to accept, false to refuse'),
+    }),
+    output: OBJ({ status: STR('accepted or refused') }),
+    description: 'Accept or refuse a candidature (§6.6)',
   }),
 
   /*
@@ -1822,6 +1858,7 @@ export const routeHandler = makeRouter({
     'code',
     'state',
     'body',
+    'message',
     'bio',
     'headline',
     'description',

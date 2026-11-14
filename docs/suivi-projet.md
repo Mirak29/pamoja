@@ -1131,6 +1131,24 @@ Relecture `/code-review` : l'écran « Modifier le profil » partait de `setting
 - **Livrable** : `api/user.ts`, `api/profile.ts`, `api/routes.ts`, `api/profile_personalization_test.ts`, `web/lib/session.ts`, `web/lib/profile.ts`, `web/fixtures/profile-settings.ts` ; §9.2
 - **Par** : @niangoos
 
+### 2026-11-13 · PAM-403 · Candidatures pour rejoindre un projet
+
+`POST/api/project/join` enregistre une candidature (`joinRequest`, façons d'aider, disponibilité, message), refuse une candidature en double ou vers son propre projet, limite le débit, et notifie l'owner et les mainteneurs. `POST/api/project/join-request/decide` n'est permis qu'à un owner ou un mainteneur : accepter ajoute la personne à l'équipe (rôle `contributor`), produit l'entry `PROJECT_MEMBER_JOINED`, relit ses abonnements SSE et la prévient ; refuser la prévient aussi. Les notifications d'application portent le `joinRequestId`, si bien que le gestionnaire **accepte ou refuse directement depuis sa notification** (§6.6). Côté interface, `web/lib/applications.ts` relie le formulaire de candidature et les boutons Accepter/Refuser à ces routes, en conservant le chemin des candidatures de démo (fixtures).
+
+Correctifs de relecture : les actions suivent l’état actuel de la candidature, indépendamment de la lecture de la notification. Un échec d’envoi restaure l’état optimiste et garde le formulaire ouvert ; un échec de décision permet de réessayer. Le champ `message` est masqué dans les logs par la liste des clés sensibles.
+
+**Revue (relecture et CodeRabbit), corrigée.**
+- Le serveur n'avait aucune limite : le message dépassait `LIMITS.note` (1 000 caractères) sans refus, alors que la page compte jusque-là (§16), et les façons d'aider et la disponibilité n'étaient pas vérifiées (un test envoyait `~5 h par semaine`, que la page ne propose pas). Les listes vont dans `api/vocabulary.ts` (`joinAreas`, `joinAvailabilities`), lues par la page et vérifiées par le serveur ; un message trop long est refusé.
+- Chaque refus porte une raison stable (`member`, `pending`, `unknown`, `invalid`, `decided`). La page disait « Pamoja n'a pas pu joindre le serveur » pour tout échec, même quand le serveur avait répondu. Elle dit maintenant ce qui s'est passé ; une candidature déjà en attente (autre onglet, rechargement) est annoncée comme telle et reste affichée comme envoyée ; une décision déjà prise par un autre membre relit les notifications.
+- La boîte se fermait à la fin de l'envoi même si on l'avait annulée pour en ouvrir une autre : elle ne ferme plus que la sienne.
+- Les phrases de la candidature avaient leur anglais manquant : ajouté.
+- Le paragraphe de correctifs du second commit était sous PAM-304 (« Fermé sans réalisation »), avec des marqueurs laissés par CodeRabbit : il est revenu ici, les marqueurs sont retirés.
+
+Relecture `/simplify` : la requête qui enregistre une décision devient une constante comme les autres ; les requêtes du rôle d'un membre et des gestionnaires d'un projet viennent de `channels.ts` (`getRole`) et `badges.ts` (`listKeepers`) au lieu de copies ; un index `join_request_user (userId, createdAt)` sert la limite de débit ; un projet inconnu répond 404 comme ailleurs ; l'état d'une candidature se lit dans une table au lieu de cinq ternaires ; `reasonOf` rejoint `retryAfterOf` (`web/lib/api.ts`) et `isServer` est partagé. Vérifié : candidature (200), doublon (409 `pending`), réponse inconnue (400 `invalid`), projet inconnu (404 `unknown`), puis acceptation depuis la notification, qui ajoute Moussa à l'équipe. Relecture `/code-review` : une candidature disparue répondait la raison d'un projet inconnu, et la page disait « Ce projet n'existe plus » ; elle a sa raison (`gone`) et son message. Les façons d'aider sont dédoublonnées avant d'être comptées : une liste répétée n'est plus refusée.
+
+- **Livrable** : `api/join.ts`, `api/join_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/applications.ts`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/pages/project/join-dialog.tsx` ; §3, §6.6, §13.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

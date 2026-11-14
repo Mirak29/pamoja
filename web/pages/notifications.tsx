@@ -1,4 +1,5 @@
 import type { JSX } from 'preact'
+import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import {
   Check,
@@ -19,6 +20,7 @@ import {
   applicationsChanged,
   decideApplication,
 } from '/web/fixtures/applications.ts'
+import { decideJoinRequest } from '/web/lib/applications.ts'
 import {
   type Notification,
   type NotificationCategory,
@@ -35,6 +37,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
 import {
+  isServer,
   loadNotificationBatch,
   notificationLists,
   readAll,
@@ -78,10 +81,35 @@ const open = (notification: Notification) => {
 }
 
 const Row = ({ notification }: { notification: Notification }) => {
+  notificationsChanged.value
+  applicationsChanged.value
+  const [deciding, setDeciding] = useState(false)
   const Icon = icons[notification.kind]
   const application = applications.find((a) =>
     a.id === notification.application
   )
+  // A candidature from the server (PAM-403): its id is the join request, and
+  // the managers accept or refuse it here until the request is resolved
+  const serverJoin = notification.kind === 'application' &&
+    !!notification.application && isServer(notification)
+  const pending = serverJoin
+    ? notification.accepted === -1
+    : application?.status === 'pending'
+  const decide = async (accept: boolean) => {
+    if (deciding) return
+    if (!serverJoin) {
+      if (application) decideApplication(application, accept)
+      return
+    }
+    setDeciding(true)
+    try {
+      await decideJoinRequest(notification, accept)
+    } catch {
+      // The helper reports the failure; keep the decision available for retry.
+    } finally {
+      setDeciding(false)
+    }
+  }
   return (
     <div
       class={`-mt-px flex gap-3.5 border-t border-line px-5 py-4 ${
@@ -108,12 +136,12 @@ const Row = ({ notification }: { notification: Notification }) => {
           <span>{categoryLabels[notification.category]}</span>
           {notification.demo && <DemoBadge />}
         </div>
-        {application?.status === 'pending' && (
+        {pending && !deciding && (
           <div class='flex flex-wrap gap-2.5 pt-2 pb-1'>
             <button
               type='button'
               aria-label={t`Accepter : ${notification.title}`}
-              onClick={() => decideApplication(application, true)}
+              onClick={() => decide(true)}
               class='key key-primary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Accepter
@@ -121,7 +149,7 @@ const Row = ({ notification }: { notification: Notification }) => {
             <button
               type='button'
               aria-label={t`Refuser : ${notification.title}`}
-              onClick={() => decideApplication(application, false)}
+              onClick={() => decide(false)}
               class='key key-secondary h-[34px] rounded-md px-3.5 text-[13px]'
             >
               Refuser

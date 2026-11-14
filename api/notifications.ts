@@ -46,6 +46,13 @@ export const createNotification = (
  * The inbox (§7.4)
  */
 
+// The state of a candidature, for the managers' notifications (§6.6)
+const JOIN_STATES: Record<string, number> = {
+  pending: -1,
+  accepted: 1,
+  refused: 0,
+}
+
 type Row = {
   notificationId: number
   type: string
@@ -54,6 +61,7 @@ type Row = {
   payload: string
   readAt: number | null
   createdAt: number
+  joinStatus: string | null
 }
 
 // By batches, newest first (§12.7)
@@ -63,9 +71,11 @@ type Row = {
 const inbox = (where: string) =>
   sql<Row, Slice & { userId: number; category?: string }>`
     SELECT notificationId, type, category, actor.githubUsername AS actor,
-      payload, readAt, notification.createdAt
+      payload, readAt, notification.createdAt, joinRequest.status AS joinStatus
     FROM notification
     LEFT JOIN user AS actor ON actor.userId = notification.actorId
+    LEFT JOIN joinRequest ON notification.type = 'application'
+      AND joinRequest.joinRequestId = json_extract(payload, '$.joinRequestId')
     WHERE notification.userId = :userId ${where}
       AND ${after('notification.createdAt', 'notificationId')}
     ORDER BY notification.createdAt DESC, notificationId DESC
@@ -103,6 +113,15 @@ const shown = (row: Row) => {
     eligible: payload.eligible === 0 ? 0 : 1,
     badge: String(payload.badge ?? ''),
     level: Number(payload.level ?? 0),
+    // A candidature to join a project (§6.6): -1 pending for the managers,
+    // 0 refused or 1 accepted; manager notifications follow the current request
+    joinRequestId: Number(payload.joinRequestId ?? 0),
+    projectSlug: String(payload.projectSlug ?? ''),
+    accepted: payload.joinRequestId
+      ? JOIN_STATES[row.joinStatus ?? ''] ?? 0
+      : payload.accepted === 1 || payload.accepted === 0
+      ? payload.accepted
+      : -1,
     readAt: row.readAt ?? 0,
     createdAt: row.createdAt,
   }
