@@ -33,6 +33,30 @@ Deno.test('community: join and leave on the server, by the state asked (PAM-502)
   assertEquals(memberRows(abdou), before)
 })
 
+Deno.test('community: leaving is never limited (PAM-502)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  // The hour's joins used up: a new join is refused, leaving is not
+  const at = Date.now() / 1000
+  const community = db.prepare(
+    `INSERT INTO community (slug, name, type, description, source, createdAt)
+     VALUES (?, ?, 'domain', '', 'platform', ?) RETURNING communityId`,
+  )
+  const member = db.prepare(
+    `INSERT INTO communityMember (communityId, userId, role, joinedAt)
+     VALUES (?, ?, 'member', ?)`,
+  )
+  for (let i = 0; i < 60; i++) {
+    const { communityId } = community.get(`limit-${i}`, `Limite ${i}`, at) as {
+      communityId: number
+    }
+    member.run(communityId, abdou, at)
+  }
+  assertThrows(() => setMembership(abdou, 'react', true))
+  assertEquals(setMembership(abdou, 'go', false).joined, false)
+})
+
 Deno.test('community: an unknown community is refused (PAM-502)', () => {
   restore()
   seed()

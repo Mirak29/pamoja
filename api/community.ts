@@ -38,12 +38,8 @@ const countJoins = sql<Window, { me: number; since: number }>`
 export const setMembership = (me: number, slug: string, join: boolean) => {
   const communityId = communityIdOf(slug)
   if (!communityId) throw badRequest('Unknown community')
-  within(
-    countJoins,
-    MEMBERSHIP_RATE,
-    me,
-    'Too many community changes this hour',
-  )
+  // Only a join counts: leaving is never refused
+  join && within(countJoins, MEMBERSHIP_RATE, me, 'Too many joins this hour')
   join ? add({ me, communityId, at: now() }) : remove({ me, communityId })
   // The member's open connections now receive the community's posts, or stop
   // receiving them (§13.2)

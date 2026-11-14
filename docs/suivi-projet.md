@@ -1085,6 +1085,8 @@ Vérifié dans le navigateur : rejoindre React, recharger, la page dit « Membre
 
 Seconde relecture de CodeRabbit : un départ lancé pendant qu'une adhésion était en route pouvait être défait par la réponse tardive de l'adhésion. Les écritures d'une même communauté partent l'une après l'autre et seule la dernière décide de l'affichage (`web/lib/in-order.ts`, le même que pour le follow) ; une réponse arrivée après un changement de compte est ignorée.
 
+Relecture `/code-review` : après 60 adhésions dans l'heure, même un départ était refusé ; seule une adhésion compte maintenant. Reste à trancher : un modérateur qui quitte perd son rôle (la ligne `communityMember` est supprimée, et il revient en simple membre) ; le cahier ne dit pas s'il faut l'en empêcher.
+
 - **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
 - **Par** : @niangoos
 
