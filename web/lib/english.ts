@@ -406,6 +406,16 @@ export const english: Record<string, string> = {
   'Créer de zéro': 'Create from scratch',
   'Créer la communauté': 'Create community',
   'Créer le projet': 'Create project',
+  'Proposer avec l’IA': 'Suggest with AI',
+  'Lecture du repo…': 'Reading the repo…',
+  'L’IA n’a pas répondu': 'The AI did not answer',
+  'Les skills lus sur GitHub restent proposés. Réessaie plus tard.':
+    'The skills read from GitHub are still suggested. Try again later.',
+  'Proposition impossible': 'Could not suggest',
+  'Beaucoup de propositions cette heure-ci. Réessaie {0}.':
+    'Many suggestions this hour. Try again {0}.',
+  'Pamoja n’a pas pu lire le repo. Réessaie dans un instant.':
+    'Pamoja could not read the repo. Try again in a moment.',
   'Créer un post': 'Create a post',
   'Créer une demande': 'Create a request',
   'D’accord': 'Got it',
@@ -970,7 +980,6 @@ export const english: Record<string, string> = {
   'sur GitHub': 'on GitHub',
   '7 derniers jours, à partir de l’activité GitHub':
     'Last 7 days, from GitHub activity',
-  'Analyse de l’activité du projet…': 'Analyzing the project activity…',
   'Une review ne lève pas un bloqueur : il reste affiché jusqu’à la fermeture de l’issue.':
     'A review does not lift a blocker: it stays shown until the issue is closed.',
   'Survole un indicateur pour voir sa règle.':

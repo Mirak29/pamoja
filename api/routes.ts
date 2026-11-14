@@ -16,6 +16,7 @@ import {
   listRepositories,
   previewRepository,
 } from '/api/import.ts'
+import { suggestImport } from '/api/import-suggest.ts'
 import {
   listMyProjects,
   listProjectIssues,
@@ -661,6 +662,22 @@ const defs = {
       existing: STR('Slug of its Pamoja project, empty if not imported'),
     }),
     description: 'What the import shows before it is confirmed',
+  }),
+
+  'POST/api/project/import/suggest': route({
+    authorize: withSession,
+    fn: (ctx, { name }) => {
+      const userId = ctx.session.userId
+      return suggestImport({ userId, login: getLogin(userId) }, name)
+    },
+    input: OBJ({ name: STR('Repository name, owned by the developer') }),
+    output: OBJ({
+      skills: ARR(STR('Skill of the vocabulary'), 'GitHub first, then AI'),
+      needs: ARR(STR('Need proposed'), 'Empty without the AI'),
+      description: STR('Description proposed; empty without the AI'),
+      ai: BOOL('Whether a model answered'),
+    }),
+    description: 'What the AI proposes for a repository before its import',
   }),
 
   'POST/api/project/import': route({

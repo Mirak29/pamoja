@@ -1171,6 +1171,19 @@ Essayé sur une copie de la base avec les vraies clés : Meta (`muse-ember-1.0`)
 - **Livrable** : `api/pulse-summary.ts`, `api/pulse-summary_test.ts`, `api/pulse.ts`, `api/routes.ts`, `api/server.ts`, `web/fixtures/pulse.ts`, `web/lib/pulse.ts`, `web/lib/live-data.ts`, `web/pages/project/pulse-tab.tsx` ; §6.4
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-310 · L'IA propose skills, besoins et description à l'import
+
+Dans l'aperçu d'un repo, « Proposer avec l'IA » appelle `POST/api/project/import/suggest` (`api/import-suggest.ts`). Le serveur relit le repo comme à l'import, sans croire la page, puis donne au modèle le nom, la description GitHub, les langages, les topics, les 20 premières issues ouvertes et les 6 000 premiers caractères du README, dans un bloc `<repo>` présenté comme des données. Il demande un JSON et n'en garde que ce qui est valide : des skills du vocabulaire écrits à l'identique (8 au plus, ajoutés après ceux de GitHub), 5 besoins de 3 à 80 caractères, une description de 20 à 300 caractères. Sans modèle ou s'il échoue, la réponse dit `ai: false` et la page prévient sans rien changer. 20 propositions par heure et par développeur ; une même version du repo (son dernier push) est servie depuis le cache pendant une heure.
+
+Côté page, l'aperçu gagne un champ Description, envoyé à l'import (vide, la description GitHub reste). Les skills et les besoins proposés s'ajoutent aux choix et sont cochés ; tout reste modifiable avant « Créer le projet ».
+
+La proposition n'est pas refaite à la resynchronisation : elle écraserait ce que le propriétaire a corrigé.
+
+Essayé avec les vraies clés : sur un repo de scoring crédit en Python, Meta a proposé Python, quatre besoins tirés du README et une description juste, en 4 s ; sur le repo de profil (README de 4 300 caractères), huit skills et une description en 6 s. Le repo `pamoja`, sans README ni topics ni issues, ne donne que les langages : la proposition reste maigre, comme son entrée. Vérifié dans la fenêtre d'import sur une copie de la base.
+
+- **Livrable** : `api/import-suggest.ts`, `api/import-suggest_test.ts`, `api/import.ts`, `api/routes.ts`, `web/pages/projects/new-project-dialog.tsx`, `web/lib/english.ts` ; §5.4, §11
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
