@@ -4,6 +4,8 @@ import { every } from '/api/lib/background.ts'
 import { listOf } from '/api/lib/json-list.ts'
 import { cosine, DIMENSIONS, embed, EMBEDDING_MODEL } from '/api/llm.ts'
 import { Embedding } from '/api/schema.ts'
+// The entry table must exist before the queries below are prepared
+import '/api/entries.ts'
 
 // The embeddings of the matching (PAM-311, §7.3, §11): a vector for each
 // profile (headline, bio, skills, intents) and each help request (title,
