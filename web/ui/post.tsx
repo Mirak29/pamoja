@@ -27,10 +27,9 @@ import {
   posts,
   postsChanged,
   replyTo,
-  toggleBookmark,
-  toggleLike,
   toggleRepost,
 } from '/web/fixtures/posts.ts'
+import { toggleBookmark, toggleLike } from '/web/lib/reactions.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -213,7 +212,7 @@ const Actions = (
         pressed={likes.some(isMe)}
         label='J’aime'
         size={size}
-        onClick={() => toggleLike(post, me.login)}
+        onClick={() => toggleLike(post)}
       />
       <span class='flex-1' />
       <ActionKey
@@ -248,7 +247,7 @@ const Actions = (
 /** Keep a post, or let it go; a kept post is in /saved */
 export const save = (post: Post) => {
   const saved = !post.bookmarks?.includes(me.login)
-  toggleBookmark(post, me.login)
+  toggleBookmark(post)
   notify(
     saved
       ? {

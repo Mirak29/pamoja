@@ -16,8 +16,8 @@ import {
   posts,
   postsChanged,
   replyTo,
-  toggleLike,
 } from '/web/fixtures/posts.ts'
+import { toggleLike } from '/web/lib/reactions.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -125,7 +125,7 @@ const Article = ({ post }: { post: Post }) => {
       <div class='flex flex-wrap items-center gap-2.5 border-t border-line pt-4'>
         <OptionButton
           pressed={likes.some(isMe)}
-          onClick={() => toggleLike(post, me.login)}
+          onClick={() => toggleLike(post)}
         >
           <Heart class='size-3.5' />
           J’aime

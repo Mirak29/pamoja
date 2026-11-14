@@ -1274,6 +1274,17 @@ Testé : `web/lib/for-you_test.ts` (chaque lien relève un post et donne sa rais
 - **Livrable** : `web/lib/for-you.ts`, `web/lib/for-you_test.ts`, `web/pages/home/home-page.tsx`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/fixtures/posts.ts`, `web/pages/profile/profile-page.tsx`, `web/lib/posts.ts`, `api/posts.ts`, `api/routes.ts`, `api/posts_test.ts`, `web/assets/icons.tsx`, `web/lib/english.ts` ; §6.2, §9.1, §10.1
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-501 (réactions et favoris) · Réagir et enregistrer sur le serveur
+
+`POST/api/reaction/toggle` (`like`, la seule réaction depuis PAM-539) et `POST/api/bookmark/toggle` enregistrent une réaction ou un favori, un par développeur et par cible. `GET/api/posts` renvoie désormais, pour chaque post, le nombre de chaque réaction, celles du développeur et s'il l'a enregistré ; `GET/api/saved` liste les posts qu'il a gardés. Côté interface, `web/lib/reactions.ts` relie les réactions et le bouton Enregistrer aux routes (optimiste, remis en place en cas d'échec) pour les posts du serveur ; `adoptPosts` adopte les compteurs, et la page Enregistrés lit `GET/api/saved`. Les posts de démo (id de fixture) restent gérés dans la page.
+
+
+Rapproché de PAM-539 à la fusion : PAM-539 ne garde qu'une réaction, « J'aime ». Le serveur n'accepte donc que `like` (une autre réaction répond 400), un post renvoie `reactions: { like }`, et le bouton « J'aime » du fil et de la page d'un post (`toggleLike`, `web/lib/reactions.ts`) passe par cette route : affiché tout de suite, enregistré, remis en place si l'envoi échoue. Le test compte deux « J'aime » sur un post et vérifie qu'une autre réaction est refusée.
+Reste pour clore PAM-501 : partage par lien et pagination par curseur ; PAM-512 couvre réponses, réponse acceptée et republications.
+
+- **Livrable** : `api/posts.ts`, `api/reactions_test.ts`, `api/routes.ts`, `web/lib/reactions.ts`, `web/fixtures/posts.ts`, `web/ui/post.tsx`, `web/pages/post-page.tsx`, `web/pages/saved-page.tsx` ; §10.1
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

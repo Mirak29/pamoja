@@ -5,8 +5,11 @@ import { type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
-import { Post } from '/api/schema.ts'
+import { Bookmark, Post, Reaction } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
+
+/** The reactions a post can get (§10.1): one since PAM-539, « J'aime » */
+export const REACTION_KINDS = ['like']
 
 // Posts saved on the server with their images and their video (PAM-427,
 // §10.1, §17.3): written from the composers, read by the feed. Replies,
@@ -98,20 +101,58 @@ const getOne = sql<PostRow, number>`${postSelect}
   WHERE post.postId = ?
 `.get
 
-const shown = (rows: PostRow[]) => {
-  const media = mediaOf('post', rows.map((row) => row.postId))
-  return rows.map((row) => ({
-    id: row.postId,
-    author: row.author,
-    authorName: row.authorName,
-    community: row.community ?? '',
-    type: row.type,
-    title: row.title ?? '',
-    body: row.body,
-    media: media.get(row.postId) ?? [],
-    videoUrl: row.videoUrl ?? '',
-    createdAt: row.createdAt,
-  }))
+// Reactions and bookmarks of a batch of posts (§10.1), read with the feed
+const reactionRows = sql<
+  { targetId: number; kind: string; n: number; mine: number },
+  { me: number; ids: string }
+>`
+  SELECT targetId, kind, count(*) AS n, max(userId = :me) AS mine FROM reaction
+  WHERE targetType = 'post' AND targetId IN (SELECT value FROM json_each(:ids))
+  GROUP BY targetId, kind
+`.all
+
+const bookmarkRows = sql<{ postId: number }, { me: number; ids: string }>`
+  SELECT postId FROM bookmark
+  WHERE userId = :me AND postId IN (SELECT value FROM json_each(:ids))
+`.all
+
+const shown = (me: number, rows: PostRow[]) => {
+  const ids = rows.map((row) => row.postId)
+  const media = mediaOf('post', ids)
+  const reactions = new Map<
+    number,
+    { counts: Record<string, number>; mine: string[] }
+  >()
+  const bookmarked = new Set<number>()
+  if (ids.length) {
+    const json = JSON.stringify(ids)
+    for (const r of reactionRows({ me, ids: json })) {
+      const entry = reactions.get(r.targetId) ?? { counts: {}, mine: [] }
+      entry.counts[r.kind] = r.n
+      if (r.mine) entry.mine.push(r.kind)
+      reactions.set(r.targetId, entry)
+    }
+    for (const b of bookmarkRows({ me, ids: json })) bookmarked.add(b.postId)
+  }
+  return rows.map((row) => {
+    const r = reactions.get(row.postId)
+    return {
+      id: row.postId,
+      author: row.author,
+      authorName: row.authorName,
+      community: row.community ?? '',
+      type: row.type,
+      title: row.title ?? '',
+      body: row.body,
+      media: media.get(row.postId) ?? [],
+      videoUrl: row.videoUrl ?? '',
+      reactions: { like: r?.counts.like ?? 0 },
+      // The kinds the developer reacted with, and whether they saved it
+      mine: r?.mine ?? [],
+      bookmarked: bookmarked.has(row.postId),
+      createdAt: row.createdAt,
+    }
+  })
 }
 
 /**
@@ -119,14 +160,76 @@ const shown = (rows: PostRow[]) => {
  * published since: a feed open on the page reads just what is new. With
  * `author`, those of one developer, for their profile.
  */
-export const listPosts = (after = 0, author = '') =>
+export const listPosts = (me: number, after = 0, author = '') =>
   shown(
+    me,
     author
       ? listByAuthor({ author, limit: 50 })
       : after
       ? listSince({ after, limit: 50 })
       : listRecent(50),
   )
+
+// Posts the developer saved, newest saved first (§10.1)
+const listBookmarked = sql<PostRow, number>`${postSelect}
+  JOIN bookmark ON bookmark.postId = post.postId AND bookmark.userId = ?
+  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+  ORDER BY bookmark.createdAt DESC
+  LIMIT 50
+`.all
+
+/** The posts the developer bookmarked, for the « Enregistrés » page */
+export const listSaved = (me: number) => shown(me, listBookmarked(me))
+
+const postExists = sql<{ postId: number }, number>`
+  SELECT postId FROM post WHERE postId = ? AND hiddenAt IS NULL
+`.get
+
+const getReaction = sql<
+  { reactionId: number },
+  { me: number; postId: number; kind: string }
+>`
+  SELECT reactionId FROM reaction
+  WHERE userId = :me AND targetType = 'post' AND targetId = :postId
+    AND kind = :kind
+`.get
+const deleteReaction = sql<undefined, number>`
+  DELETE FROM reaction WHERE reactionId = ?
+`.run
+
+const getBookmark = sql<
+  { bookmarkId: number },
+  { me: number; postId: number }
+>`
+  SELECT bookmarkId FROM bookmark WHERE userId = :me AND postId = :postId
+`.get
+const deleteBookmark = sql<undefined, number>`
+  DELETE FROM bookmark WHERE bookmarkId = ?
+`.run
+
+/** React to a post with a kind, or take the reaction back (§10.1) */
+export const toggleReaction = (me: number, postId: number, kind: string) => {
+  if (!REACTION_KINDS.includes(kind)) throw badRequest('Unknown reaction')
+  if (!postExists(postId)) throw badRequest('Unknown post')
+  const row = getReaction({ me, postId, kind })
+  if (row) deleteReaction(row.reactionId)
+  else {Reaction.insert({
+      userId: me,
+      targetType: 'post',
+      targetId: postId,
+      kind,
+    })}
+  return { reacted: !row }
+}
+
+/** Save a post or remove it from the saved ones (§10.1) */
+export const toggleBookmark = (me: number, postId: number) => {
+  if (!postExists(postId)) throw badRequest('Unknown post')
+  const row = getBookmark({ me, postId })
+  if (row) deleteBookmark(row.bookmarkId)
+  else Bookmark.insert({ userId: me, postId, createdAt: now() })
+  return { bookmarked: !row }
+}
 
 /** Publishes a post with its images and its video, checked first */
 export const createPost = (me: number, input: PostInput) => {
@@ -171,5 +274,5 @@ export const createPost = (me: number, input: PostInput) => {
     })
     return postId
   })()
-  return shown([getOne(postId)!])[0]
+  return shown(me, [getOne(postId)!])[0]
 }
