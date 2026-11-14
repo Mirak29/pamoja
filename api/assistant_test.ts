@@ -2,6 +2,7 @@ import { assertEquals, assertStringIncludes } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { ASK_PER_DAY, resetAssistant } from '/api/assistant.ts'
+import { resetModels } from '/api/llm.ts'
 import {
   HelpRequest,
   Issue,
@@ -20,27 +21,34 @@ import { login, request } from '/api/testing.ts'
 const restore = makeRestorePoint()
 const at = now()
 
-// A fake Ollama: what it answers, and what it was sent
+// A fake Groq: what it answers, and what it was sent
 let reply: (body: { messages: { content: string }[] }) => Response
 let sent: { messages: { content: string }[] }[] = []
 const realFetch = globalThis.fetch
 globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
   const url = new URL(input instanceof Request ? input.url : String(input))
-  if (url.hostname !== 'ollama.test') return realFetch(input, init)
+  if (url.hostname !== 'api.groq.com') return realFetch(input, init)
   const body = JSON.parse(String(init?.body))
   sent.push(body)
   return Promise.resolve(reply(body))
 }
 const says = (content: string) => () =>
-  new Response(JSON.stringify({ message: { role: 'assistant', content } }))
+  new Response(
+    JSON.stringify({ choices: [{ message: { role: 'assistant', content } }] }),
+  )
 
 const setup = async ({ key = true } = {}) => {
   restore()
   resetAssistant()
   sent = []
-  key ? Deno.env.set('LLM_API_KEY', 'test-key') : Deno.env.delete('LLM_API_KEY')
-  Deno.env.set('LLM_BASE_URL', 'http://ollama.test')
-  Deno.env.set('LLM_MODEL_NAME', 'test-model')
+  resetModels()
+  // Groq alone: Meta and Gemini are left out without their key
+  for (const name of ['META_API_KEY', 'GEMINI_API_KEY']) {
+    Deno.env.delete(name)
+  }
+  key
+    ? Deno.env.set('GROQ_API_KEY', 'test-key')
+    : Deno.env.delete('GROQ_API_KEY')
   const session = await login()
   const cookie = `session=${session}`
   const me = await (await request('/api/user/me', { cookie })).json()
@@ -170,30 +178,42 @@ Deno.test('assistant: 30 questions a day, then a 429', async () => {
   assertEquals((await ask('Une de plus')).status, 429)
 })
 
-Deno.test('assistant: the API compatible with OpenAI, a key with spaces, no Markdown', async () => {
+Deno.test('assistant: a provider that fails passes to the next, then rests', async () => {
   const { ask, needId } = await setup()
-  Deno.env.set('LLM_BASE_URL', 'http://ollama.test/v1')
-  let path = ''
+  Deno.env.set('META_API_KEY', ' test-key ')
+  const hosts: string[] = []
   reply = () =>
     new Response(JSON.stringify({
       choices: [{
-        message: { content: `Va sur **Payments** : [ need:${needId} ].` },
+        message: {
+          content:
+            `<think>Je cherche.</think>Va sur **Payments** : [ need:${needId} ].`,
+        },
       }],
     }))
   const fake = globalThis.fetch
   globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    path = new URL(input instanceof Request ? input.url : String(input))
-      .pathname
+    const url = new URL(input instanceof Request ? input.url : String(input))
+    hosts.push(url.hostname)
+    // Meta is down: Groq answers
+    if (url.hostname === 'api.meta.ai') {
+      return Promise.resolve(new Response('{}', { status: 400 }))
+    }
     return fake(input, init)
   }
   try {
     const { json } = await ask('Par où commencer ?')
-    assertEquals(
-      [path, json.content],
-      ['/v1/chat/completions', 'Va sur Payments : « Un dev Go ».'],
-    )
+    assertEquals(json.content, 'Va sur Payments : « Un dev Go ».')
+    await ask('Et ensuite ?')
+    // Meta was tried once, then left to rest
+    assertEquals(hosts, [
+      'api.meta.ai',
+      'api.groq.com',
+      'api.groq.com',
+    ])
   } finally {
     globalThis.fetch = fake
+    Deno.env.delete('META_API_KEY')
   }
 })
 

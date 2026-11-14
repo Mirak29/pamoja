@@ -1,6 +1,7 @@
 import { respond } from '@01edu/api/response'
 import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
+import { chat, hasModel, type Message } from '/api/llm.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { AssistantMessage } from '/api/schema.ts'
 import { skillNamesOf, skillsOf } from '/api/skills.ts'
@@ -28,8 +29,6 @@ export const ASK_PER_DAY_ALL = 2000
 // A same question on the same context, served again without the model
 const CACHE_MS = 10 * 60_000
 const CACHE_SIZE = 500
-// After this, the point is shown without a sentence of the model
-const TIMEOUT_MS = 20_000
 /** Messages kept by conversation; those that go with a question */
 export const KEPT = 60
 const HISTORY = 6
@@ -38,17 +37,6 @@ const MESSAGE_MAX = 1500
 // Items of each kind the model reads, and cards of the opening point
 const READ = 5
 const POINT_CARDS = 5
-
-// Optional: without a key, the Assistant shows its point (§11). Read when
-// asked, never in the repo (`.env-local`). The base URL says which API:
-// ending in /v1, the one compatible with OpenAI; otherwise the native one
-// of Ollama (`/api/chat`)
-const llm = () => ({
-  url: (Deno.env.get('LLM_BASE_URL') || 'https://api.groq.com/openai/v1')
-    .replace(/\/+$/, ''),
-  key: Deno.env.get('LLM_API_KEY') ?? '',
-  model: Deno.env.get('LLM_MODEL_NAME') ?? '',
-})
 
 /** Something the developer can open: a request, a need, an issue */
 export type Card = {
@@ -833,41 +821,6 @@ const remember = (key: string, answer: string) => {
   cache.set(key, { at: Date.now(), answer })
 }
 
-type Reply = {
-  // The native API of Ollama
-  message?: { content?: unknown }
-  // The API compatible with OpenAI
-  choices?: { message?: { content?: unknown } }[]
-}
-
-const chat = async (messages: { role: string; content: string }[]) => {
-  const { url, key, model } = llm()
-  const openai = url.endsWith('/v1')
-  const res = await fetch(
-    openai ? `${url}/chat/completions` : `${url}/api/chat`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify(
-        openai
-          ? { model, messages, stream: false, temperature: 0.2 }
-          : { model, messages, stream: false, options: { temperature: 0.2 } },
-      ),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    },
-  )
-  if (!res.ok) throw new Error(`The model answered ${res.status}`)
-  const body = await res.json() as Reply
-  const content = openai
-    ? body.choices?.[0]?.message?.content
-    : body.message?.content
-  if (typeof content !== 'string') throw new Error('No answer')
-  return content
-}
-
 /*
  * The conversation: kept for the developer alone (§11)
  */
@@ -955,11 +908,10 @@ export const ask = async (userId: number, question: string, page = '') => {
     throw new respond.BadRequestError({ message: 'Invalid question' })
   }
   const context = contextFor(userId, page)
-  const { key, model } = llm()
   // The exchange before this question, oldest first
   const turns = listLast({ userId, limit: HISTORY }).reverse()
     .filter((row) => row.content)
-    .map((row) => ({
+    .map((row): Message => ({
       role: row.role === 'assistant' ? 'assistant' : 'user',
       content: row.content.slice(0, MESSAGE_MAX),
     }))
@@ -967,7 +919,7 @@ export const ask = async (userId: number, question: string, page = '') => {
     write(userId, 'user', asking)
     return write(userId, 'assistant', '', pointOf(context))
   }
-  if (!key || !model) return fallback()
+  if (!hasModel()) return fallback()
   spend(userId)
   const cacheKey = JSON.stringify([
     userId,
