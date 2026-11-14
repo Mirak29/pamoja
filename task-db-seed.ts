@@ -30,5 +30,5 @@ if (path !== ':memory:') {
 const { parseGithubIds, seed } = await import('/api/seed.ts')
 const counts = seed(parseGithubIds(Deno.env.get('SEED_GITHUB_IDS')))
 console.log(
-  `Seed terminé : ${counts.developers} développeurs, ${counts.communities} communautés, ${counts.projects} projets (source = demo).`,
+  `Seed terminé : ${counts.developers} développeurs, ${counts.communities} communautés, ${counts.projects} projets, ${counts.reviews} reviews (source = demo).`,
 )

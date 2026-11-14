@@ -1,6 +1,9 @@
 import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
-import { Entry } from '/api/entries.ts'
+import { Entry, maybe } from '/api/entries.ts'
+import { evaluateBadges } from '/api/badges.ts'
+import { RULES_VERSION } from '/api/reputation.ts'
+import { addProvenSkill, listSkillRows } from '/api/help-lifecycle.ts'
 import {
   Community,
   CommunityMember,
@@ -21,6 +24,7 @@ import {
   type Project as ProjectFixture,
   type ProjectRole,
   projects,
+  type ProjectSlug,
 } from '/web/fixtures/projects.ts'
 
 // The demo data (§14, §18.1): the developers, communities and projects of
@@ -66,6 +70,145 @@ const backdate = sql<undefined, { id: number; at: number }>`
   UPDATE entryInternal SET createdAt = :at WHERE id = :id
 `.run
 
+// The skill rows a proof freezes, the technology first when a name is
+// also a domain, as production resolves them (§8.3)
+const skillRowsOf = (names: string[]) =>
+  listSkillRows(JSON.stringify(skillIdsOf(names)))
+
+// owner/name of the GitHub repo of a project fixture
+const repoFullNameOf = (project: ProjectFixture) =>
+  `${project.repoOwner ?? project.owner}/${project.repo ?? project.slug}`
+
+// Moussa's confirmed reviews for the demo (§18.1): source = demo, across four
+// requesters and two projects, so Trusted Reviewer is Silver (10 to 19
+// reviews) and has Gold's diversity (3 requesters, 2 projects) already; the
+// real review of the demo makes it 15 / 20 toward Gold (§8.2, §8.4, §18.2).
+// The dates are spread so no requester–helper pair breaks the anti-abuse cap
+// of two confirmations per 30 days (§8.4).
+type SeedReview = {
+  requester: string
+  project: string
+  pr: number
+  skills: string[]
+  state: 'approved' | 'changes_requested' | 'commented'
+  daysAgo: number
+}
+
+const MOUSSA_REVIEWS: SeedReview[] = [
+  {
+    requester: 'abdou',
+    project: 'openpay-africa',
+    pr: 42,
+    skills: ['Go', 'SQLite'],
+    state: 'approved',
+    daysAgo: 212,
+  },
+  {
+    requester: 'fatou',
+    project: 'openpay-africa',
+    pr: 51,
+    skills: ['Go', 'Backend'],
+    state: 'changes_requested',
+    daysAgo: 196,
+  },
+  {
+    requester: 'abdou',
+    project: 'openpay-africa',
+    pr: 58,
+    skills: ['Go', 'SQLite', 'Backend'],
+    state: 'approved',
+    daysAgo: 160,
+  },
+  {
+    requester: 'fatou',
+    project: 'openpay-africa',
+    pr: 63,
+    skills: ['SQLite', 'Backend'],
+    state: 'approved',
+    daysAgo: 124,
+  },
+  {
+    requester: 'abdou',
+    project: 'openpay-africa',
+    pr: 71,
+    skills: ['Go', 'PostgreSQL'],
+    state: 'approved',
+    daysAgo: 108,
+  },
+  {
+    requester: 'fatou',
+    project: 'openpay-africa',
+    pr: 77,
+    skills: ['Go', 'SQLite'],
+    state: 'commented',
+    daysAgo: 52,
+  },
+  {
+    requester: 'abdou',
+    project: 'openpay-africa',
+    pr: 84,
+    skills: ['Go', 'Backend'],
+    state: 'approved',
+    daysAgo: 40,
+  },
+  {
+    requester: 'kofi',
+    project: 'africommerce',
+    pr: 12,
+    skills: ['Go', 'Backend'],
+    state: 'approved',
+    daysAgo: 230,
+  },
+  {
+    requester: 'amina',
+    project: 'africommerce',
+    pr: 18,
+    skills: ['Go', 'SQLite'],
+    state: 'approved',
+    daysAgo: 204,
+  },
+  {
+    requester: 'kofi',
+    project: 'africommerce',
+    pr: 23,
+    skills: ['Go'],
+    state: 'changes_requested',
+    daysAgo: 168,
+  },
+  {
+    requester: 'amina',
+    project: 'africommerce',
+    pr: 29,
+    skills: ['Go', 'Backend'],
+    state: 'approved',
+    daysAgo: 132,
+  },
+  {
+    requester: 'kofi',
+    project: 'africommerce',
+    pr: 35,
+    skills: ['Go', 'SQLite', 'Backend'],
+    state: 'approved',
+    daysAgo: 100,
+  },
+  {
+    requester: 'amina',
+    project: 'africommerce',
+    pr: 41,
+    skills: ['SQLite', 'Backend'],
+    state: 'approved',
+    daysAgo: 62,
+  },
+  {
+    requester: 'kofi',
+    project: 'africommerce',
+    pr: 48,
+    skills: ['Go', 'TypeScript'],
+    state: 'approved',
+    daysAgo: 30,
+  },
+]
+
 /**
  * Reads `abdou:84472218,moussa:…`: a demo developer that is a real GitHub
  * account in the demo (§18.1). Logging in with that account then opens the
@@ -82,6 +225,7 @@ export const seed = (githubIds = new Map<string, number>()) => {
   const at = now()
   const userIds = new Map<string, number>()
   const communityIds = new Map<string, number>()
+  const projectIdBySlug = new Map<string, number>()
   const list = Object.values(people) as Person[]
 
   db.transaction(() => {
@@ -191,6 +335,7 @@ export const seed = (githubIds = new Map<string, number>()) => {
         // Its stack: what « Sur quoi puis-je travailler ? » matches (§10.3)
         skills: skillIdsOf(project.stack),
       })
+      projectIdBySlug.set(project.slug, projectId)
       backdate({
         id: Entry.insert.PROJECT_CREATED({
           userId: ownerId,
@@ -265,11 +410,65 @@ export const seed = (githubIds = new Map<string, number>()) => {
         })
       }
     }
+
+    /*
+     * Reputation: Moussa's confirmed reviews (§8, §18.1). Each one freezes
+     * what the decision used (§8.3) and is backdated so the badge grew over
+     * time. No pull request or help request row is seeded: the proof links to
+     * GitHub through its frozen url.
+     */
+    const moussaId = userIds.get('moussa')
+    if (moussaId) {
+      // Oldest first: a skill proven again keeps the date of its first proof
+      const oldestFirst = [...MOUSSA_REVIEWS].sort((a, b) =>
+        b.daysAgo - a.daysAgo
+      )
+      oldestFirst.forEach((review, i) => {
+        const requesterId = userIds.get(review.requester)
+        const projectId = projectIdBySlug.get(review.project)
+        const project = projects[review.project as ProjectSlug] as
+          | ProjectFixture
+          | undefined
+        if (!requesterId || !projectId || !project) return
+        const repository = repoFullNameOf(project)
+        const createdAt = at - review.daysAgo * 24 * 60 * 60
+        const skills = skillRowsOf(review.skills)
+        backdate({
+          id: Entry.insert.REVIEW_HELP_CONFIRMED({
+            userId: moussaId,
+            projectId,
+            helpRequestId: maybe(null),
+            pullRequestId: maybe(null),
+            requesterId,
+            skills,
+            helpCategory: 'code_review',
+            eligible: 1,
+            exclusionReason: '',
+            rulesVersion: RULES_VERSION,
+            repository,
+            prNumber: review.pr,
+            url: `https://github.com/${repository}/pull/${review.pr}`,
+            githubReviewId: 910000 + i,
+            reviewState: review.state,
+            source,
+          }),
+          at: createdAt,
+        })
+        // The skills it proved, as the confirmation writes them
+        for (const { skillId } of skills) {
+          addProvenSkill({ userId: moussaId, skillId, at: createdAt })
+        }
+      })
+      // Fill the badge progress from these proofs, without announcing an
+      // unlock dated now (§8.2)
+      evaluateBadges(moussaId, at, false)
+    }
   })()
 
   return {
     developers: userIds.size,
     communities: communityIds.size,
     projects: Object.keys(projects).length,
+    reviews: userIds.has('moussa') ? MOUSSA_REVIEWS.length : 0,
   }
 }
