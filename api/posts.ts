@@ -46,6 +46,9 @@ const getCommunity = sql<{ communityId: number }, string>`
   SELECT communityId FROM community WHERE slug = ?
 `.get
 
+/** The id of a community by its slug, undefined when there is none */
+export const communityIdOf = (slug: string) => getCommunity(slug)?.communityId
+
 type PostRow = {
   postId: number
   author: string

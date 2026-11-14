@@ -207,7 +207,7 @@ Responsable : _à répartir_
 
 - [ ] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réactions dont « Utile », bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
 - [ ] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2)
-- [ ] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1)
+- [x] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1) — @niangoos
 - [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
 - [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
 - [x] **PAM-506** · « What can I work on? » calculé par le serveur, sans IA : demandes qui correspondent, besoins des autres projets, `good first issue`, chacun avec sa correspondance sur 100 (§10.3, §11) — @Mirak29
@@ -367,3 +367,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-13 · Meilisearch en place (PAM-507) : un conteneur `v1.56.0` sans port ouvert, cinq index lus dans SQLite par les mêmes requêtes que le repli SQL, reconstruits à chaque démarrage puis chaque nuit par échange d'index, synchronisés par les entries toutes les 3 s ; la palette et la page Recherche passent par `GET/api/search`, les posts et demandes de démo restent cherchés dans le navigateur · §10.4, §17.4
 - 2026-11-13 · Point sur le TODO, vérifié dans le code et sur la VM : PAM-003, 004, 006, 109, 114 et 407 cochés ; PAM-005, 113, 115 et 906 à moitié faits, ce qui reste est noté sur leur ligne. Les écrans de PAM-401 à 405 et de PAM-501 à 512 existent sur données de démo, mais le serveur n'a pas encore leurs routes : follow, communautés, réactions, favoris, réponses, republications, signalements, board, roadmap, needs, candidatures, listing d'Explore
 - 2026-11-14 · Seed des reviews de Moussa (PAM-901) : 14 preuves `REVIEW_HELP_CONFIRMED` en `source = demo`, de quatre demandeurs et deux projets, backdatées ; les skills qu'elles prouvent sont écrits en `platform_activity` comme le fait une confirmation, et les badges sont calculés sans annoncer un déblocage daté du jour · §8, §18.1
+- 2026-11-14 · Follow enregistré (PAM-503) : `POST/api/follow` reçoit l'état voulu, jamais une bascule, et `GET/api/follows` donne à la page l'état du serveur à chaque session ; une requête rejouée ou un second onglet ne peut plus désabonner · §15

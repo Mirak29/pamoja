@@ -318,11 +318,25 @@ export const needSuggestions = [
 // Session changes until the project routes exist (PAM-401)
 export const projectsChanged = signal(0)
 
-/** POST/api/follow/toggle on a project */
-export const toggleFollow = (project: Project, login: Login) => {
-  project.followers = project.followers.includes(login)
-    ? project.followers.filter((l) => l !== login)
-    : [...project.followers, login]
+/** Sets a follow of a project by a developer (POST/api/follow) */
+export const setProjectFollow = (
+  project: Project,
+  login: Login,
+  follow: boolean,
+) => {
+  const others = project.followers.filter((l) => l !== login)
+  project.followers = follow ? [...others, login] : others
+  projectsChanged.value++
+}
+
+/** The projects a developer follows, as the server holds them */
+export const adoptProjectFollows = (login: Login, slugs: string[]) => {
+  for (const project of Object.values(projects) as Project[]) {
+    const others = project.followers.filter((l) => l !== login)
+    project.followers = slugs.includes(project.slug)
+      ? [...others, login]
+      : others
+  }
   projectsChanged.value++
 }
 
