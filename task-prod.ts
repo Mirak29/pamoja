@@ -12,6 +12,8 @@ await build({
   minify: true,
   // The licenses stay in the packages: not sent with each page
   legalComments: 'none',
+  // No /dev page in production (§17.4)
+  define: { ...config.define, DEV_PAGES: 'false' },
 })
 copyMocks()
 

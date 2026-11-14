@@ -112,9 +112,8 @@ const SearchPage = lazyPage(() =>
 const SettingsPage = lazyPage(() =>
   import('/web/pages/settings-page.tsx').then((page) => page.SettingsPage)
 )
-const SoclePage = lazyPage(() =>
-  import('/web/pages/socle.tsx').then((page) => page.SoclePage)
-)
+// Set by the build (build-config.ts): the /dev page is not in production
+declare const DEV_PAGES: boolean
 
 const routes: Record<string, ReturnType<typeof lazyPage>> = {
   '': HomePage,
@@ -123,7 +122,11 @@ const routes: Record<string, ReturnType<typeof lazyPage>> = {
   community: CommunityPage,
   communities: CommunitiesPage,
   saved: SavedPage,
-  dev: SoclePage,
+  ...DEV_PAGES && {
+    dev: lazyPage(() =>
+      import('/web/pages/socle.tsx').then((page) => page.SoclePage)
+    ),
+  },
   explore: ExplorePage,
   onboarding: OnboardingPage,
   moderation: ModerationPage,
