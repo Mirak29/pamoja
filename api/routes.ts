@@ -57,6 +57,7 @@ import {
 } from '/api/notifications.ts'
 import { previewWave } from '/api/matching.ts'
 import { listWork } from '/api/work.ts'
+import { listDevelopers } from '/api/explore.ts'
 import { ask, clearAssistant, getAssistant } from '/api/assistant.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
@@ -973,6 +974,21 @@ const defs = {
       firstStep: optional(workItem),
     }),
     description: 'What the developer can work on, computed without AI (§10.3)',
+  }),
+  'GET/api/explore/developers': route({
+    authorize: withSession,
+    fn: () => listDevelopers(),
+    output: ARR(OBJ({
+      login: STR('Login of Pamoja'),
+      name: STR('Display name'),
+      headline: STR('One line, empty if none'),
+      city: STR('City, empty if none'),
+      country: STR('Country name, empty if none'),
+      available: BOOL('Open to help'),
+      skills: ARR(STR('Technology')),
+      intents: ARR(STR('Intent of the onboarding')),
+    })),
+    description: 'Developers for Explore; the page filters them (§10.3)',
   }),
   'GET/api/assistant': route({
     authorize: withSession,

@@ -2,6 +2,7 @@ import { counted } from '/web/lib/plural.ts'
 import { useEffect, useState } from 'preact/hooks'
 import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
+import { loadDevelopers } from '/web/lib/explore.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { openAssistant } from '/web/lib/assistant.ts'
 import type { ComponentChildren, JSX } from 'preact'
@@ -602,6 +603,11 @@ const tabs = [
 
 /** /explore, /explore/projects, /explore/work (§10.3) */
 export const ExplorePage = () => {
+  // Every developer comes from the server, so a real sign-up is findable and
+  // not only the demo profiles (§10.3)
+  useEffect(() => {
+    loadDevelopers()
+  }, [])
   // Read here: the projects and requests of the API arrive after the first
   // render, and the tabs list them
   projectsChanged.value

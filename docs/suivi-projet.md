@@ -1294,6 +1294,15 @@ Exception assumée (§4) : la republication n'est pas branchée. Le schéma en f
 - **Livrable** : `api/posts.ts`, `api/replies_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/replies.ts`, `web/lib/notifications.ts`, `web/fixtures/posts.ts`, `web/ui/post.tsx`, `web/pages/post-page.tsx` ; §8, §10.1, §12.7
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-505 (développeurs) · Explorer les vrais développeurs
+
+`GET/api/explore/developers` renvoie tous les développeurs non suspendus avec ce que les filtres d'Explore utilisent : nom, headline, ville, **pays (nom, pas le code ISO)**, disponibilité, skills et intentions. La page les adopte au chargement (`web/lib/explore.ts`, `adoptDevelopers`), si bien qu'Explorer liste désormais les **vrais inscrits** et pas seulement les 9 profils de démo ; les filtres pays / skill / intention / disponibilité restent calculés dans la page sur cet ensemble complet.
+
+Reste pour clore PAM-505 : le listing serveur des **projets** (l'onglet Projets filtre encore les fixtures) et « Sur quoi travailler » (déjà serveur via `GET/api/work`).
+
+- **Livrable** : `api/explore.ts`, `api/explore_test.ts`, `api/routes.ts`, `web/lib/explore.ts`, `web/fixtures/people.ts`, `web/pages/explore/explore-page.tsx` ; §10.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
