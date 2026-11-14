@@ -112,7 +112,14 @@ import {
   skills,
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
-import { createPost, listPosts } from '/api/posts.ts'
+import {
+  createPost,
+  listPosts,
+  listSaved,
+  REACTION_KINDS,
+  toggleBookmark,
+  toggleReaction,
+} from '/api/posts.ts'
 import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
 import {
   FOLLOW_TARGETS,
@@ -162,6 +169,9 @@ const savedPost = OBJ({
   body: STR('Markdown'),
   media: ARR(media, 'Images, in order'),
   videoUrl: STR('Link of the video, empty if none'),
+  reactions: OBJ({ like: NUM('Likes') }, 'How many of each reaction'),
+  mine: ARR(STR('like'), 'The reactions of the developer'),
+  bookmarked: BOOL('True when the developer saved the post'),
   createdAt: NUM('Publication, in seconds'),
 }, 'A post')
 
@@ -1353,7 +1363,8 @@ const defs = {
   'GET/api/posts': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
-    fn: (_, { after, author }) => listPosts(Number(after) || 0, author ?? ''),
+    fn: (ctx, { after, author }) =>
+      listPosts(ctx.session.userId, Number(after) || 0, author ?? ''),
     input: OBJ({
       after: optional(
         STR('Only the posts published after this time, in seconds'),
@@ -1362,6 +1373,33 @@ const defs = {
     }),
     output: ARR(savedPost),
     description: 'The latest posts, newest first, or those of one developer',
+  }),
+
+  'GET/api/saved': route({
+    authorize: withSession,
+    fn: (ctx) => listSaved(ctx.session.userId),
+    output: ARR(savedPost),
+    description: 'The posts the developer saved, newest first (§10.1)',
+  }),
+
+  'POST/api/reaction/toggle': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      toggleReaction(ctx.session.userId, input.postId, input.kind),
+    input: OBJ({
+      postId: NUM('Id of the post'),
+      kind: LIST(REACTION_KINDS, 'like: the only reaction (§10.1)'),
+    }),
+    output: OBJ({ reacted: BOOL('True when the reaction is now on') }),
+    description: 'React to a post, or take the reaction back (§10.1)',
+  }),
+
+  'POST/api/bookmark/toggle': route({
+    authorize: withSession,
+    fn: (ctx, input) => toggleBookmark(ctx.session.userId, input.postId),
+    input: OBJ({ postId: NUM('Id of the post') }),
+    output: OBJ({ bookmarked: BOOL('True when the post is now saved') }),
+    description: 'Save a post or remove it from the saved ones (§10.1)',
   }),
 
   'GET/api/follows': route({

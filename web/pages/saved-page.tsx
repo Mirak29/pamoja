@@ -1,5 +1,7 @@
+import { useEffect } from 'preact/hooks'
 import { isMe, me } from '/web/fixtures/people.ts'
 import { posts, postsChanged } from '/web/fixtures/posts.ts'
+import { loadSaved } from '/web/lib/reactions.ts'
 import { Button } from '/web/ui/button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { PostCard } from '/web/ui/post.tsx'
@@ -7,6 +9,10 @@ import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 
 /** /saved: the posts kept with « Enregistrer », newest first (§6.2) */
 export const SavedPage = () => {
+  // The saved posts come from the server, those of the demo stay in the page
+  useEffect(() => {
+    loadSaved()
+  }, [])
   postsChanged.value
   const saved = posts
     .filter((post) =>

@@ -6,6 +6,7 @@ import { pushNotification } from '/web/fixtures/notifications.ts'
 import {
   hearOf,
   type Login,
+  me,
   people,
   type Person,
 } from '/web/fixtures/people.ts'
@@ -477,6 +478,14 @@ export const savedId = (id: number) => `s${id}`
  * Brings the posts read from GET/api/posts into the feed, newest first; a
  * post already shown stays as it is
  */
+// A reaction count as a login list of that length, with `me` first when the
+// reaction is the developer's own (the page counts and checks membership)
+const reactionList = (count: number, mine: boolean): Login[] => {
+  const list = Array.from({ length: Math.max(0, count) }, () => '' as Login)
+  if (mine && list.length) list[0] = me.login as Login
+  return list
+}
+
 export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
   const known = new Set(posts.map((post) => post.id))
   let added = 0
@@ -493,7 +502,13 @@ export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
       title: saved.title,
       body: saved.body,
       at: saved.createdAt * 1000,
-      reactions: {},
+      // The server gives counts and the developer's own reactions; the page
+      // keeps login lists, so a count is a list of that length with `me` in
+      // it when it is the developer's (PAM-501)
+      reactions: {
+        like: reactionList(saved.reactions.like, saved.mine.includes('like')),
+      },
+      bookmarks: saved.bookmarked ? [me.login as Login] : [],
       reposts: [],
       media: saved.media,
       video: saved.videoUrl || undefined,
