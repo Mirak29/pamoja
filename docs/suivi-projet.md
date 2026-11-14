@@ -1083,6 +1083,8 @@ Le nombre de membres affiché reste celui de la page tant que les communautés n
 
 Vérifié dans le navigateur : rejoindre React, recharger, la page dit « Membre » ; quitter, la base suit.
 
+Seconde relecture de CodeRabbit : un départ lancé pendant qu'une adhésion était en route pouvait être défait par la réponse tardive de l'adhésion. Les écritures d'une même communauté partent l'une après l'autre et seule la dernière décide de l'affichage (`web/lib/in-order.ts`, le même que pour le follow) ; une réponse arrivée après un changement de compte est ignorée.
+
 - **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
 - **Par** : @niangoos
 

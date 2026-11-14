@@ -1,6 +1,7 @@
 import { api } from '/web/lib/api.ts'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { notify } from '/web/ui/toast.tsx'
+import { inOrder } from '/web/lib/in-order.ts'
 import { me } from '/web/fixtures/people.ts'
 import { type Community, setMembership } from '/web/fixtures/communities.ts'
 
@@ -26,11 +27,24 @@ const failed = () =>
 
 /** Join a community, or leave it */
 export const joinOrLeave = (community: Community) => {
+  // The developer who clicked: an answer that comes once another one signed
+  // in is not theirs
+  const who = me.login
   const join = !me.communities.includes(community.slug)
   setMembership(community, me, join)
-  api['POST/api/community/join'].fetch({ slug: community.slug, join }).then(
-    (saved) => setMembership(community, me, saved.joined),
+  // The writes about one community leave in order, the last one decides
+  const { answer, current } = inOrder(
+    `community:${community.slug}`,
+    () => api['POST/api/community/join'].fetch({ slug: community.slug, join }),
+  )
+  answer.then(
+    (saved) => {
+      if (me.login === who && current()) {
+        setMembership(community, me, saved.joined)
+      }
+    },
     () => {
+      if (me.login !== who || !current()) return
       setMembership(community, me, !join)
       failed()
     },
