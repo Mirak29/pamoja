@@ -1327,7 +1327,6 @@ const defs = {
     output: OBJ({
       users: ARR(STR('Login'), 'Developers followed'),
       projects: ARR(STR('Slug'), 'Projects followed'),
-      communities: ARR(STR('Slug'), 'Communities followed'),
     }),
     description: 'What the signed in developer follows',
   }),

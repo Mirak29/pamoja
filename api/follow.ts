@@ -1,7 +1,7 @@
-import { db, sql } from '@01edu/db'
+import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
-import { Follow } from '/api/schema.ts'
+import { communityIdOf } from '/api/posts.ts'
 import { refreshListeners } from '/api/events.ts'
 import { userIdOfLogin } from '/api/user.ts'
 import { type Window, within } from '/api/lib/rate.ts'
@@ -22,9 +22,6 @@ const badRequest = (message: string) => new respond.BadRequestError({ message })
 const getProjectId = sql<{ projectId: number }, string>`
   SELECT projectId FROM project WHERE slug = ? AND visibility = 'public'
 `.get
-const getCommunityId = sql<{ communityId: number }, string>`
-  SELECT communityId FROM community WHERE slug = ?
-`.get
 
 // The public handle a client sends (a login or a slug) to the id the follow
 // stores; undefined when nothing public matches
@@ -35,20 +32,21 @@ const targetIdOf = (targetType: FollowTarget, target: string) => {
     case 'project':
       return getProjectId(target)?.projectId
     case 'community':
-      return getCommunityId(target)?.communityId
+      return communityIdOf(target)
   }
 }
 
-const existing = sql<
-  { followId: number },
-  { me: number; targetType: string; targetId: number }
->`
-  SELECT followId FROM follow
-  WHERE followerId = :me AND targetType = :targetType AND targetId = :targetId
-`.get
+type Target = { me: number; targetType: string; targetId: number }
 
-const remove = sql<undefined, { followId: number }>`
-  DELETE FROM follow WHERE followId = :followId
+// The unique index follow_target keeps one row per follower and target: a
+// follow already there is left as it is
+const add = sql<undefined, Target & { at: number }>`
+  INSERT OR IGNORE INTO follow (followerId, targetType, targetId, createdAt)
+  VALUES (:me, :targetType, :targetId, :at)
+`.run
+const remove = sql<undefined, Target>`
+  DELETE FROM follow
+  WHERE followerId = :me AND targetType = :targetType AND targetId = :targetId
 `.run
 
 const countFollowers = sql<
@@ -81,13 +79,9 @@ export const setFollow = (
     throw badRequest('One does not follow oneself')
   }
   within(countFollows, FOLLOW_RATE, me, 'Too many follows this hour')
-  db.transaction(() => {
-    const row = existing({ me, targetType, targetId })
-    if (row && !follow) remove({ followId: row.followId })
-    if (!row && follow) {
-      Follow.insert({ followerId: me, targetType, targetId, createdAt: now() })
-    }
-  })()
+  follow
+    ? add({ me, targetType, targetId, at: now() })
+    : remove({ me, targetType, targetId })
   // Every open connection of the follower now receives what the target
   // publishes, or stops receiving it (§13.2)
   refreshListeners(me)
@@ -107,15 +101,9 @@ const followedProjects = sql<{ slug: string }, number>`
   JOIN project ON project.projectId = follow.targetId
   WHERE follow.followerId = ? AND follow.targetType = 'project'
 `.all
-const followedCommunities = sql<{ slug: string }, number>`
-  SELECT community.slug FROM follow
-  JOIN community ON community.communityId = follow.targetId
-  WHERE follow.followerId = ? AND follow.targetType = 'community'
-`.all
 
 /** What a developer follows: the page starts from it at every load */
 export const followsOf = (me: number) => ({
   users: followedUsers(me).map((row) => row.login),
   projects: followedProjects(me).map((row) => row.slug),
-  communities: followedCommunities(me).map((row) => row.slug),
 })

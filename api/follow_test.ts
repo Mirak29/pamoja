@@ -36,9 +36,10 @@ Deno.test('follow: the state asked for, a developer, a project and a community (
   setFollow(abdou, 'project', 'africommerce', false)
   assertEquals(followsOf(abdou).projects.includes('africommerce'), false)
 
-  // Communities are joined, not followed: none is followed in the seed
+  // A community can be followed too, by its slug
+  const before2 = followRows(abdou)
   assertEquals(setFollow(abdou, 'community', 'go', true).following, true)
-  assertEquals(followsOf(abdou).communities, ['go'])
+  assertEquals(followRows(abdou), before2 + 1)
 })
 
 Deno.test('follow: refuses oneself and an unknown target (PAM-503)', () => {
