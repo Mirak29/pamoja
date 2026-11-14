@@ -1184,6 +1184,19 @@ Essayé avec les vraies clés : sur un repo de scoring crédit en Python, Meta a
 - **Livrable** : `api/import-suggest.ts`, `api/import-suggest_test.ts`, `api/import.ts`, `api/routes.ts`, `web/pages/projects/new-project-dialog.tsx`, `web/lib/english.ts` ; §5.4, §11
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-311 · Proximité sémantique du matching
+
+`api/embeddings.ts` donne un vecteur Gemini (`gemini-embedding-001`, 256 dimensions, normalisé) à chaque profil (headline, bio, skills, intentions) et à chaque demande d'aide (titre, description, skills), rangé en BLOB dans la table `Embedding` existante avec l'empreinte de son texte. La route de création calcule le vecteur de la demande avant de l'écrire, 4 s au plus : la première vague le compte déjà. Toutes les 5 minutes, une tâche de fond fait les vecteurs manquants ou dont le texte a changé, les demandes ouvertes puis les profils, les plus actifs d'abord, 90 textes par passage : l'offre gratuite de Gemini refuse au-delà de 100 par minute (vu en essai, erreur 429).
+
+Le matching (`rank`) lit le cosinus de la demande et de chaque candidat : 0 point sous 0,70, 10 points dès 0,82, linéaire entre les deux. Le barème vient d'une mesure sur les profils de démo. Pour une review de webhook de paiement en Go, moussa (backend Go) obtient 0,83, wanjiru (backend et DevOps) 0,80, et les profils frontend, data ou mobile 0,68 à 0,69. Pour un crash Flutter, kofi (mobile Flutter) obtient 0,80, les autres 0,69 à 0,72. Le premier barème (0,62 à 0,85) donnait encore 3 à 4 points à des profils sans rapport. Le nouveau critère `semantic` s'affiche dans « Pourquoi ce match ? » : « Profil proche de la demande · 82 % ».
+
+`listOf` (une liste JSON que le pilote rend en texte ou déjà lue) passe de `api/search.ts` à `api/lib/json-list.ts`, partagé.
+
+Vérifié sur une copie de la base : une demande créée par l'API (0,86 s, vecteur compris) envoie sa première vague avec la proximité (moussa +10, wanjiru +7, zeinab +5), affichée sur la page de la demande.
+
+- **Livrable** : `api/embeddings.ts`, `api/embeddings_test.ts`, `api/lib/json-list.ts`, `api/matching.ts`, `api/help.ts`, `api/routes.ts`, `api/search.ts`, `api/server.ts`, `api/llm.ts`, `web/lib/help.ts`, `web/lib/english.ts` ; §7.3, §11
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

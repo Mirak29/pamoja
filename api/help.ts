@@ -1,4 +1,5 @@
 import { db, sql } from '@01edu/db'
+import { keepRequestVector } from '/api/embeddings.ts'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
@@ -147,7 +148,12 @@ const countRequests = sql<Window, { me: number; since: number }>`
  * Publishes a request, open for 7 days (§7.2). On a PR, one request at a
  * time: the check and the insert are one transaction.
  */
-export const createHelpRequest = (userId: number, input: HelpInput) => {
+export const createHelpRequest = (
+  userId: number,
+  input: HelpInput,
+  // Its embedding, computed before (PAM-311); the background fills it if not
+  prepared?: { text: string; vector?: Float32Array },
+) => {
   const { title, description, videoUrl, skills } = checked(input)
   const media = input.media ?? []
   if (media.length > HELP_MEDIA_MAX) {
@@ -191,6 +197,7 @@ export const createHelpRequest = (userId: number, input: HelpInput) => {
     })
     return helpRequestId
   })()
+  prepared && keepRequestVector(helpRequestId, prepared.text, prepared.vector)
   // The first wave goes out at once (§7.3)
   sendWave(helpRequestId)
   return helpRequestId

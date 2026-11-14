@@ -17,6 +17,7 @@ import {
   previewRepository,
 } from '/api/import.ts'
 import { suggestImport } from '/api/import-suggest.ts'
+import { embedOne, requestText } from '/api/embeddings.ts'
 import {
   listMyProjects,
   listProjectIssues,
@@ -368,7 +369,15 @@ const helpRequest = OBJ(helpRequestFields, 'A help request (§7.1)')
 // A criterion of « Pourquoi ce match ? » (§7.3); its fields depend on kind
 const reason = OBJ({
   kind: LIST(
-    ['skills', 'type', 'confirmed', 'availability', 'affinity', 'newcomer'],
+    [
+      'skills',
+      'type',
+      'confirmed',
+      'semantic',
+      'availability',
+      'affinity',
+      'newcomer',
+    ],
     'Criterion',
   ),
   points: NUM('Points out of 100'),
@@ -381,6 +390,7 @@ const reason = OBJ({
   active: optional(BOOL('Active in the last 14 days')),
   community: optional(STR('Community in common')),
   follows: optional(BOOL('Follows the project')),
+  similarity: optional(NUM('Cosine of the request and the profile, percent')),
 })
 
 const matchedFields = {
@@ -864,12 +874,15 @@ const defs = {
 
   'POST/api/help/create': route({
     authorize: withSession,
-    fn: (ctx, input) => {
+    fn: async (ctx, input) => {
       assertKnown(input.skills, skills, 'skills')
       if (!helpDurations.includes(input.estimatedMinutes)) {
         throw new respond.BadRequestError({ message: 'Unknown duration' })
       }
-      const id = createHelpRequest(ctx.session.userId, input)
+      // Its vector first, so that the first wave weighs the proximity
+      const text = requestText(input)
+      const vector = input.title.trim() ? await embedOne(text) : undefined
+      const id = createHelpRequest(ctx.session.userId, input, { text, vector })
       return getHelpRequest(id)!
     },
     input: OBJ({

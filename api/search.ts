@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { listOf } from '/api/lib/json-list.ts'
 import { now } from '@01edu/time'
 import { every, later } from '/api/lib/background.ts'
 import { errorMessage, log } from '/api/lib/log.ts'
@@ -157,17 +158,6 @@ const helpRows = sql<
   ORDER BY helpRequest.helpRequestId
 `.all
 
-// A JSON list of the database: the driver gives it as text or already read
-const listOf = (value: unknown): unknown[] => {
-  if (Array.isArray(value)) return value
-  if (typeof value !== 'string') return []
-  try {
-    const list = JSON.parse(value)
-    return Array.isArray(list) ? list : []
-  } catch {
-    return []
-  }
-}
 const names = (value: unknown) =>
   listOf(value).filter((v): v is string => typeof v === 'string')
 const skillsOf = (value: unknown) =>

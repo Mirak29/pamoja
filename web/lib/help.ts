@@ -107,6 +107,8 @@ export const criterionOf = (reason: Reason) => {
       return reason.review
         ? counted(reason.count ?? 0, 'review confirmée', 'reviews confirmées')
         : counted(reason.count ?? 0, 'aide confirmée', 'aides confirmées')
+    case 'semantic':
+      return t`Profil proche de la demande · ${reason.similarity ?? 0} %`
     case 'availability':
       return translate(
         !reason.available
