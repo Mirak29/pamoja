@@ -133,7 +133,12 @@ import {
   type FollowTarget,
   setFollow,
 } from '/api/follow.ts'
-import { setMembership } from '/api/community.ts'
+import {
+  COMMUNITY_TYPES,
+  createCommunity,
+  listCommunities,
+  setMembership,
+} from '/api/community.ts'
 import { applyToProject, decideJoinRequest } from '/api/join.ts'
 import { REPORTABLE, reportContent } from '/api/reports.ts'
 import { pulseOf } from '/api/pulse.ts'
@@ -1553,6 +1558,42 @@ const defs = {
     }),
     output: OBJ({ joined: BOOL('True when the developer is a member') }),
     description: 'Join or leave a community',
+  }),
+
+  'GET/api/communities': route({
+    authorize: withSession,
+    fn: (ctx) => listCommunities(ctx.session.userId),
+    output: ARR(
+      OBJ({
+        slug: STR('Slug of the community'),
+        name: STR(),
+        type: STR('technology, country or domain'),
+        description: STR(),
+        members: NUM('How many members'),
+        joined: BOOL('True when the developer is a member'),
+      }),
+      'Every community, oldest first',
+    ),
+    description:
+      'Every community, for the list and a created one after a reload',
+  }),
+
+  'POST/api/community/create': route({
+    authorize: withSession,
+    fn: (ctx, input) => createCommunity(ctx.session.userId, input),
+    input: OBJ({
+      name: STR('Name of the community'),
+      type: LIST(COMMUNITY_TYPES, 'technology, country or domain'),
+      description: STR('Description, empty for a default one'),
+    }),
+    output: OBJ({
+      slug: STR('Slug given by the server, from the name'),
+      name: STR(),
+      type: STR('technology, country or domain'),
+      description: STR(),
+    }),
+    description:
+      'Create a community; the developer is its first member, a moderator (§10.2)',
   }),
 
   'POST/api/project/join': route({

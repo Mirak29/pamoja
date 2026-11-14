@@ -1,3 +1,4 @@
+import { useEffect } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
 import { Plus } from '/web/assets/icons.tsx'
 import {
@@ -5,6 +6,7 @@ import {
   communitiesChanged,
   type Community,
 } from '/web/fixtures/communities.ts'
+import { loadCommunities } from '/web/lib/communities.ts'
 import { me } from '/web/fixtures/people.ts'
 import { posts, postsChanged } from '/web/fixtures/posts.ts'
 import { counted } from '/web/lib/plural.ts'
@@ -74,6 +76,11 @@ const CommunityCard = ({ community }: { community: Community }) => {
 export const CommunitiesPage = () => {
   communitiesChanged.value
   postsChanged.value
+  // The communities of the server join the list: one created on it, or by
+  // another developer, is there too (PAM-502)
+  useEffect(() => {
+    loadCommunities()
+  }, [])
   return (
     <Page title='Communautés' class='flex flex-col gap-9 pt-5'>
       <div class='flex justify-end'>

@@ -5,8 +5,8 @@ import { Users } from '/web/assets/icons.tsx'
 import {
   communityNamed,
   type CommunityType,
-  createCommunity,
 } from '/web/fixtures/communities.ts'
+import { createCommunity } from '/web/lib/communities.ts'
 import { me } from '/web/fixtures/people.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
@@ -25,18 +25,19 @@ const NewCommunity = () => {
     'community',
   )
   const existing = name.trim() ? communityNamed(name) : undefined
-  const create = () => {
+  const create = async () => {
     const valid = check({
       name: !name.trim()
         ? 'Donne un nom à la communauté.'
         : existing && t`La communauté ${existing.name} existe déjà.`,
     })
     if (!valid) return
-    const community = createCommunity({
+    const community = await createCommunity({
       name: name.trim(),
       type,
       description: description.trim() || 'Nouvelle communauté sur Pamoja.',
     }, me)
+    if (!community) return
     navigate({ href: `community/${community.slug}` })
     notify({
       title: 'Communauté créée',
