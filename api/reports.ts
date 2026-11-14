@@ -5,6 +5,7 @@ import { Report } from '/api/schema.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
+import { reportReasons } from '/api/vocabulary.ts'
 
 // Report content for the moderators (§10.5). A reporter reports a target
 // once; past three distinct reporters a post or comment is hidden, pending a
@@ -23,6 +24,14 @@ const HIDEABLE = ['post', 'comment']
 
 const getPost = sql<{ authorId: number; hiddenAt: number | null }, number>`
   SELECT authorId, hiddenAt FROM post WHERE postId = ?
+`.get
+
+// The other targets: a help request, a developer's profile
+const helpExists = sql<{ id: number }, number>`
+  SELECT helpRequestId AS id FROM helpRequest WHERE helpRequestId = ?
+`.get
+const userExists = sql<{ id: number }, number>`
+  SELECT userId AS id FROM user WHERE userId = ?
 `.get
 
 const existing = sql<
@@ -59,7 +68,14 @@ export const reportContent = (
   comment: string,
 ) => {
   if (!REPORTABLE.includes(targetType)) throw badRequest('Unknown target')
+  if (!Object.hasOwn(reportReasons, reason)) throw badRequest('Unknown reason')
   if (comment.length > LIMITS.note) throw badRequest('Comment too long')
+  const known = targetType === 'help_request'
+    ? helpExists(targetId)
+    : targetType === 'profile'
+    ? userExists(targetId)
+    : true
+  if (!known) throw badRequest('Unknown content')
   const post = HIDEABLE.includes(targetType) ? getPost(targetId) : undefined
   if (HIDEABLE.includes(targetType)) {
     if (!post) throw badRequest('Unknown content')

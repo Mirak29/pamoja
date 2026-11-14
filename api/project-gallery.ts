@@ -152,7 +152,8 @@ export const updateProjectInfo = (
       if (kept.has(title)) continue
       ProjectNeed.insert({
         projectId: project.projectId,
-        type: 'skill',
+        // The type of every need written on Pamoja (import.ts, seed.ts)
+        type: 'contribution',
         title,
         skills: [],
         status: 'open',

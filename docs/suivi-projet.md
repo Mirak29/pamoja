@@ -1319,6 +1319,30 @@ Exception assumée (§4) : le **calcul serveur des « personnes qui peuvent aide
 - **Livrable** : `api/project-gallery.ts`, `api/project_settings_test.ts`, `api/routes.ts`, `web/lib/project-settings.ts`, `web/pages/project/settings-tab.tsx` ; §6.3, §13.3
 - **Par** : @niangoos
 
+### 2026-11-14 · Relectures `/simplify` et `/code-review` du 14 novembre
+
+Relecture de tout ce qui a été fusionné le 14 novembre (PAM-005, 307, 310, 311, 540, 113, 115, 508, 404, 309, 539, 501, 512, 505, 401, 402).
+
+**Corrigé.**
+- Un post du serveur signalé n'atteignait jamais le serveur : la page envoyait son id affiché (`s12`). Une seule fonction, `serverIdOf`, à côté de `savedId`, sert désormais les réactions, les réponses, la page d'un post et les signalements.
+- Le board d'un projet privé était illisible pour ses membres : `GET/api/project/board` ne cherchait que les projets publics.
+- Le motif d'un signalement n'était pas vérifié : c'est maintenant une clé de `reportReasons` (la page traduit le libellé), et un signalement sur une demande d'aide ou un profil qui n'existe pas est refusé.
+- Les besoins enregistrés depuis les Réglages avaient le type `skill`, ceux de l'import `contribution` : un seul type ; la migration 014 corrige les besoins déjà écrits.
+- Une demande d'aide est vérifiée (champs, limite du jour) avant que son embedding soit demandé.
+- Deux « J'aime » ou deux favoris envoyés en même temps ne répondent plus 500 (`ON CONFLICT DO NOTHING`).
+- Les posts d'un développeur se lisent quelle que soit la casse de son login.
+- Sous une réponse masquée, ses propres réponses quittent aussi le fil.
+- Les « J'aime » du serveur ne sont plus des listes de faux logins : la page garde les logins connus et le nombre des autres (`likeCountOf`), que le classement « Pour toi » compte aussi.
+- Un message d'échec partagé (`notifyFailure`) dit « trop de demandes », « refusé » ou « serveur injoignable » au lieu de toujours « injoignable ». Les lectures de listes JSON passent par `api/lib/json.ts`, les limites en mémoire par `within` (`memoryWindow`, qui oublie un développeur inactif), un seul plafond de besoins (10).
+- Index `reaction_by_target` pour compter les « J'aime » du fil ; le globe ne recalcule sa terre, son quadrillage et ses arcs que quand la vue change ; les motifs des skills du classement sont construits une fois.
+
+**Laissé, noté.** La route `GET/api/posts` sert encore trois lectures ; Explore renvoie le nom du pays et non son code ; des imports ne servent qu'à créer les tables avant les requêtes.
+
+Vérifié : CI complète sous Windows et Linux, 257 tests ; globe vérifié dans le navigateur sur une copie de la base.
+
+- **Livrable** : `api/board.ts`, `api/reports.ts`, `api/posts.ts`, `api/help.ts`, `api/project-gallery.ts`, `api/lib/rate.ts`, `api/lib/json.ts`, `migrations/014-need-type.js`, `web/lib/failure.ts`, `web/fixtures/posts.ts`, `web/pages/profile/collaboration-map.tsx` et leurs tests ; §6.7, §10.1, §10.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -22,8 +22,13 @@ export const BOARD_COLUMNS = [
 const badRequest = (m: string) => new respond.BadRequestError({ message: m })
 const forbidden = (m: string) => new respond.ForbiddenError({ message: m })
 
-const getProjectId = sql<{ projectId: number }, string>`
-  SELECT projectId FROM project WHERE slug = ? AND visibility = 'public'
+// A public project, or a private one the developer is a member of
+const getProjectId = sql<{ projectId: number }, { slug: string; me: number }>`
+  SELECT projectId FROM project
+  WHERE slug = :slug AND (visibility = 'public' OR EXISTS (
+    SELECT 1 FROM projectMember
+    WHERE projectMember.projectId = project.projectId
+      AND projectMember.userId = :me))
 `.get
 
 const isMember = (projectId: number, userId: number) =>
@@ -82,15 +87,15 @@ const card = (t: TaskRow) => ({
 })
 
 /** The cards of a project's board, by column and rank (§6.7) */
-export const listBoard = (slug: string) => {
-  const project = getProjectId(slug)
+export const listBoard = (me: number, slug: string) => {
+  const project = getProjectId({ slug, me })
   if (!project) throw badRequest('Unknown project')
   return listTasks(project.projectId).map(card)
 }
 
 /** Add an internal card to the Backlog; only a member may (§6.7) */
 export const createTask = (me: number, slug: string, title: string) => {
-  const project = getProjectId(slug)
+  const project = getProjectId({ slug, me })
   if (!project) throw badRequest('Unknown project')
   if (!isMember(project.projectId, me)) {
     throw forbidden('Only members add cards')

@@ -148,6 +148,20 @@ const countRequests = sql<Window, { me: number; since: number }>`
  * Publishes a request, open for 7 days (§7.2). On a PR, one request at a
  * time: the check and the insert are one transaction.
  */
+/**
+ * What a request must pass before anything is spent on it: its fields and
+ * the daily limit of its author (§16)
+ */
+export const assertCanCreate = (userId: number, input: HelpInput) => {
+  checked(input)
+  if ((input.media ?? []).length > HELP_MEDIA_MAX) {
+    throw new respond.BadRequestError({
+      message: `${HELP_MEDIA_MAX} images at most`,
+    })
+  }
+  within(countRequests, HELP_RATE, userId, 'Too many help requests today')
+}
+
 export const createHelpRequest = (
   userId: number,
   input: HelpInput,

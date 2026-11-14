@@ -286,6 +286,7 @@ const feedItems = (tab: FeedTab): FeedItem[] => {
         body: post.body,
         link: post.link,
         likes: post.reactions.like ?? [],
+        otherLikes: post.otherLikes,
         replies: replies.get(post.id) ?? 0,
         reposts: post.reposts.map((repost) => repost.by),
       },

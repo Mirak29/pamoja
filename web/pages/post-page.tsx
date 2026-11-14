@@ -12,6 +12,7 @@ import { communities } from '/web/fixtures/communities.ts'
 import { isMe, me, personOf } from '/web/fixtures/people.ts'
 import {
   descendantCount,
+  likeCountOf,
   type Post,
   posts,
   postsChanged,
@@ -130,7 +131,7 @@ const Article = ({ post }: { post: Post }) => {
         >
           <Heart class='size-3.5' />
           J’aime
-          {likes.length ? ` · ${likes.length}` : ''}
+          {likeCountOf(post) ? ` · ${likeCountOf(post)}` : ''}
         </OptionButton>
         <span class='flex-1' />
         <Button

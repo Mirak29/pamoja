@@ -62,6 +62,7 @@ import { listDevelopers } from '/api/explore.ts'
 import { ask, clearAssistant, getAssistant } from '/api/assistant.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
+  assertCanCreate,
   createHelpRequest,
   getHelpRequest,
   HELP_TABS,
@@ -917,7 +918,9 @@ const defs = {
       if (!helpDurations.includes(input.estimatedMinutes)) {
         throw new respond.BadRequestError({ message: 'Unknown duration' })
       }
-      // Its vector first, so that the first wave weighs the proximity
+      // Refused before anything is spent; then its vector, so that the first
+      // wave weighs the proximity
+      assertCanCreate(ctx.session.userId, input)
       const text = requestText(input)
       const vector = input.title.trim() ? await embedOne(text) : undefined
       const id = createHelpRequest(ctx.session.userId, input, { text, vector })
@@ -1609,7 +1612,7 @@ const defs = {
 
   'GET/api/project/board': route({
     authorize: withSession,
-    fn: (_ctx, { slug }) => listBoard(slug),
+    fn: (ctx, { slug }) => listBoard(ctx.session.userId, slug),
     input: OBJ({ slug: STR('Slug of the project') }),
     output: ARR(OBJ({
       id: NUM('Id of the card'),

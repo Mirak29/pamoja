@@ -129,6 +129,8 @@ Deno.test('posts: those of one developer, for their profile', async () => {
   const { status, json } = await awa.call('/api/posts?author=kofi')
   assertEquals(status, 200)
   assertEquals(json.map((p: { author: string }) => p.author), ['kofi'])
+  // A login is the same whatever its case, as in its address
+  assertEquals((await awa.call('/api/posts?author=KOFI')).json.length, 1)
   // Without an author, the whole feed
   assertEquals((await awa.call('/api/posts')).json.length, 2)
 })

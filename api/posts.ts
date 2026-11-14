@@ -5,7 +5,7 @@ import { type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
-import { Bookmark, Post, Reaction } from '/api/schema.ts'
+import { Post } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
 import { createNotification } from '/api/notifications.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
@@ -95,7 +95,7 @@ const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
 const listByAuthor =
   sql<PostRow, { author: string; limit: number }>`${postSelect}
   WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
-    AND user.githubUsername = :author
+    AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
 `.all
@@ -199,6 +199,15 @@ const getReaction = sql<
 const deleteReaction = sql<undefined, number>`
   DELETE FROM reaction WHERE reactionId = ?
 `.run
+// A second toggle at the same time finds the row written: it stays
+const addReaction = sql<
+  undefined,
+  { me: number; postId: number; kind: string }
+>`
+  INSERT INTO reaction (userId, targetType, targetId, kind)
+  VALUES (:me, 'post', :postId, :kind)
+  ON CONFLICT DO NOTHING
+`.run
 
 const getBookmark = sql<
   { bookmarkId: number },
@@ -209,6 +218,10 @@ const getBookmark = sql<
 const deleteBookmark = sql<undefined, number>`
   DELETE FROM bookmark WHERE bookmarkId = ?
 `.run
+const addBookmark = sql<undefined, { me: number; postId: number; at: number }>`
+  INSERT INTO bookmark (userId, postId, createdAt) VALUES (:me, :postId, :at)
+  ON CONFLICT DO NOTHING
+`.run
 
 /** React to a post with a kind, or take the reaction back (§10.1) */
 export const toggleReaction = (me: number, postId: number, kind: string) => {
@@ -216,12 +229,7 @@ export const toggleReaction = (me: number, postId: number, kind: string) => {
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getReaction({ me, postId, kind })
   if (row) deleteReaction(row.reactionId)
-  else {Reaction.insert({
-      userId: me,
-      targetType: 'post',
-      targetId: postId,
-      kind,
-    })}
+  else addReaction({ me, postId, kind })
   return { reacted: !row }
 }
 
@@ -230,7 +238,7 @@ export const toggleBookmark = (me: number, postId: number) => {
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getBookmark({ me, postId })
   if (row) deleteBookmark(row.bookmarkId)
-  else Bookmark.insert({ userId: me, postId, createdAt: now() })
+  else addBookmark({ me, postId, at: now() })
   return { bookmarked: !row }
 }
 
@@ -435,7 +443,15 @@ export const readThread = (me: number, postId: number) => {
   const post = getFull(postId)
   if (!post) throw badRequest('Unknown post')
   const rootId = post.rootId ?? post.postId
-  const rows = listThread({ root: rootId })
+  // Oldest first, so a parent comes before its replies: a reply whose parent
+  // was hidden leaves with it (§10.5)
+  const kept = new Set<number>()
+  const rows = listThread({ root: rootId }).filter((row) => {
+    const visible = row.postId === rootId ||
+      (row.parentId !== null && kept.has(row.parentId))
+    visible && kept.add(row.postId)
+    return visible
+  })
   const parents = new Map(rows.map((row) => [row.postId, row.parentId]))
   const roots = getFull(rootId)
   return {

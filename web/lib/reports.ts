@@ -1,6 +1,7 @@
 import { api } from '/web/lib/api.ts'
 import { notifyFailure } from '/web/lib/failure.ts'
 import { serverIdOf } from '/web/fixtures/posts.ts'
+import { keyOf, reportReasons } from '/api/vocabulary.ts'
 import {
   type ReportKind,
   submitReport as submitLocal,
@@ -20,11 +21,13 @@ export const submitReport = (draft: Parameters<typeof submitLocal>[0]) => {
   const targetType = serverType[draft.kind]
   // A post of the server is shown as « s12 »: its id is the number
   const targetId = serverIdOf(draft.target)
-  if (!targetType || !targetId) return
+  // The page shows the reason in words, the server keeps its key
+  const reason = keyOf(reportReasons, draft.reason)
+  if (!targetType || !targetId || !reason) return
   api['POST/api/report/create'].fetch({
     targetType,
     targetId,
-    reason: draft.reason,
+    reason,
     comment: draft.comment,
   }).catch((error) => notifyFailure('Signalement non enregistré', error))
 }

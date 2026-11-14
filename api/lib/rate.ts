@@ -40,7 +40,7 @@ export const memoryWindow = () => {
   return {
     count: ({ me, since }: { me: number; since: number }): Window => {
       const kept = (times.get(me) ?? []).filter((at) => at > since)
-      times.set(me, kept)
+      kept.length ? times.set(me, kept) : times.delete(me)
       return { n: kept.length, oldest: kept[0] ?? null }
     },
     add: (me: number, at = now()) =>

@@ -25,6 +25,8 @@ export type Ranked = {
   body: string
   link?: string
   likes: string[]
+  /** Likes counted beyond the logins known */
+  otherLikes?: number
   replies: number
   reposts: string[]
 }
@@ -98,7 +100,8 @@ export const scoreOf = (
     reasons.push([Math.min(2, skills.length), { kind: 'skills', skills }])
   }
   // Activity counts, but never as much as the reader's own world
-  const activity = post.likes.length + 2 * post.replies +
+  const activity = post.likes.length + (post.otherLikes ?? 0) +
+    2 * post.replies +
     2 * post.reposts.length
   const relevance = reasons.reduce((sum, [weight]) => sum + weight, 0) +
     Math.min(1.5, Math.log2(1 + activity) / 2)

@@ -22,6 +22,7 @@ import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
 import {
   childrenOf,
   descendantCount,
+  likeCountOf,
   type Post,
   posts,
   postsChanged,
@@ -210,7 +211,7 @@ const Actions = (
       />
       <ActionKey
         icon={Heart}
-        count={likes.length}
+        count={likeCountOf(post)}
         pressed={likes.some(isMe)}
         label='J’aime'
         size={size}

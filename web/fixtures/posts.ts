@@ -36,8 +36,10 @@ export type Post = {
   title: string
   body: string
   at: number
-  /** One reaction, J’aime (§10.1) */
+  /** One reaction, J’aime (§10.1): who the page knows liked it */
   reactions: { like?: Login[] }
+  /** Likes counted by the server beyond those logins (PAM-501) */
+  otherLikes?: number
   reposts: { by: Login; at: number }[]
   parent?: string
   root?: string
@@ -480,18 +482,14 @@ export const serverIdOf = (id: string) => {
   return Number.isInteger(n) && n > 0 ? n : undefined
 }
 
-// A reaction count as a login list of that length, with `me` first when the
-// reaction is the developer's own (the page counts and checks membership)
-const reactionList = (count: number, mine: boolean): Login[] => {
-  const list = Array.from({ length: Math.max(0, count) }, () => '' as Login)
-  if (mine && list.length) list[0] = me.login as Login
-  return list
-}
+/** How many like a post: the logins known, and the others counted */
+export const likeCountOf = (post: Post) =>
+  (post.reactions.like?.length ?? 0) + (post.otherLikes ?? 0)
 
 /**
- * A post of the server as the pages hold it. The server gives counts and the
- * developer's own reactions; the page keeps login lists, so a count is a list
- * of that length with `me` in it when it is the developer's (PAM-501)
+ * A post of the server as the pages hold it. The server gives a count and
+ * whether the developer liked it: their login, and the others as a number
+ * (PAM-501)
  */
 const postFromServer = (
   saved: ApiOutput['GET/api/posts'][number],
@@ -506,9 +504,9 @@ const postFromServer = (
     title: saved.title,
     body: saved.body,
     at: saved.createdAt * 1000,
-    reactions: {
-      like: reactionList(saved.reactions.like, saved.mine.includes('like')),
-    },
+    reactions: { like: saved.mine.includes('like') ? [me.login as Login] : [] },
+    otherLikes: saved.reactions.like -
+      (saved.mine.includes('like') ? 1 : 0),
     bookmarks: saved.bookmarked ? [me.login as Login] : [],
     reposts: [],
     ...place,

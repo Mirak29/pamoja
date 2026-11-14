@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
-import { makeRestorePoint } from '@01edu/db'
+import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
 import {
@@ -78,4 +78,22 @@ Deno.test('accept: a reply must belong to the question (PAM-512)', () => {
 
   // The reply of another question does not count for this one
   assertThrows(() => acceptAnswer(abdou, one, reply.id))
+})
+
+Deno.test('thread: a hidden reply leaves with its own replies (PAM-508)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const post = question(abdou, 'Une question')
+  const reply = createReply(moussa, post, 'Une réponse')
+  const under = createReply(abdou, reply.id, 'Une réponse à la réponse')
+  const other = createReply(moussa, post, 'Une autre réponse')
+  db.prepare('UPDATE post SET hiddenAt = 1 WHERE postId = ?').run(reply.id)
+  // The root and the other reply; nothing points to the hidden one
+  assertEquals(
+    readThread(abdou, post).posts.map((p) => p.id),
+    [post, other.id],
+  )
+  assert(!readThread(abdou, post).posts.some((p) => p.id === under.id))
 })
