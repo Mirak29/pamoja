@@ -7,6 +7,9 @@ import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
 import { Bookmark, Post, Reaction } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
+import { createNotification } from '/api/notifications.ts'
+import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
+import { evaluateBadges } from '/api/badges.ts'
 
 /** The reactions a post can get (§10.1): one since PAM-539, « J'aime » */
 export const REACTION_KINDS = ['like']
@@ -275,4 +278,173 @@ export const createPost = (me: number, input: PostInput) => {
     return postId
   })()
   return shown(me, [getOne(postId)!])[0]
+}
+
+// A reply, an accepted answer and a thread read (PAM-512, §10.1, §12.7).
+// A reply is a post with a parent; accepting an answer makes it count as
+// Community Help for its author (§8).
+
+type Full = {
+  postId: number
+  authorId: number
+  communityId: number | null
+  type: string
+  title: string | null
+  body: string
+  parentId: number | null
+  rootId: number | null
+  acceptedReplyId: number | null
+}
+
+const getFull = sql<Full, number>`
+  SELECT postId, authorId, communityId, type, title, body,
+    parentId, rootId, acceptedReplyId
+  FROM post WHERE postId = ? AND hiddenAt IS NULL
+`.get
+
+// The whole thread, the root and its replies, oldest first; the page nests
+// it by parent. The root itself has no rootId, so it is matched by its id.
+const listThread = sql<
+  PostRow & { parentId: number | null },
+  { root: number }
+>`
+  SELECT post.postId, post.parentId, user.githubUsername AS author,
+    profile.displayName AS authorName, community.slug AS community,
+    post.type, post.title, post.body, post.videoUrl, post.createdAt
+  FROM post
+  JOIN user ON user.userId = post.authorId
+  JOIN profile ON profile.userId = post.authorId
+  LEFT JOIN community ON community.communityId = post.communityId
+  WHERE (post.postId = :root OR post.rootId = :root) AND post.hiddenAt IS NULL
+  ORDER BY post.createdAt ASC
+  LIMIT 200
+`.all
+
+const setAccepted = sql<
+  undefined,
+  { postId: number; replyId: number; at: number }
+>`
+  UPDATE post SET acceptedReplyId = :replyId, updatedAt = :at
+  WHERE postId = :postId
+`.run
+
+const excerpt = (post: Full) => (post.title || post.body).slice(0, 90)
+
+/** Publishes a reply to a post; its author is told (§10.1) */
+export const createReply = (me: number, parentId: number, text: string) => {
+  const body = text.trim()
+  if (!body) throw badRequest('A reply needs a body')
+  if (body.length > LIMITS.reply) throw badRequest('Text too long')
+  const parent = getFull(parentId)
+  if (!parent) throw badRequest('Unknown post')
+  within(countPosts, POST_RATE, me, 'Too many posts this hour')
+  const rootId = parent.rootId ?? parent.postId
+  const replyId = db.transaction(() => {
+    const at = now()
+    const replyId = Post.insert({
+      authorId: me,
+      communityId: parent.communityId,
+      type: 'Réponse',
+      title: null,
+      body,
+      parentId,
+      rootId,
+      source: 'platform',
+      createdAt: at,
+      updatedAt: at,
+    })
+    // The feeds of the community read it in direct (§12.2)
+    Entry.insert.POST_REPLIED({
+      userId: me,
+      communityId: maybe(parent.communityId),
+      postId: replyId,
+      source: 'platform',
+    })
+    // The author of the post replied to learns of it, never for their own
+    if (parent.authorId !== me) {
+      createNotification({
+        userId: parent.authorId,
+        type: 'reply',
+        category: 'communities',
+        actorId: me,
+        payload: {
+          postId: parent.postId,
+          onReply: parent.parentId ? 1 : 0,
+          excerpt: body.slice(0, 90),
+        },
+      })
+    }
+    return replyId
+  })()
+  return shown(me, [getOne(replyId)!])[0]
+}
+
+/**
+ * Accepts a reply as the answer: only the author of the question may, once,
+ * and the answer then counts as Community Help for its author (§8, §10.1)
+ */
+export const acceptAnswer = (
+  me: number,
+  questionId: number,
+  replyId: number,
+) => {
+  const question = getFull(questionId)
+  if (!question) throw badRequest('Unknown post')
+  if (question.authorId !== me) {
+    throw new respond.ForbiddenError({ message: 'Only the author accepts' })
+  }
+  if (question.type !== 'Question') throw badRequest('Not a question')
+  if (question.acceptedReplyId) throw badRequest('Already answered')
+  const reply = getFull(replyId)
+  const root = reply && (reply.rootId ?? reply.postId)
+  if (!reply || root !== questionId) throw badRequest('Not a reply of it')
+  if (reply.authorId === me) throw badRequest('Not your own answer')
+  db.transaction(() => {
+    const at = now()
+    setAccepted({ postId: questionId, replyId, at })
+    const decision = eligibilityOf(reply.authorId, me, at)
+    // A proof of Community Help, frozen so it never changes (§8.3)
+    Entry.insert.ANSWER_ACCEPTED({
+      userId: reply.authorId,
+      communityId: maybe(question.communityId),
+      postId: replyId,
+      askerId: me,
+      rulesVersion: RULES_VERSION,
+      source: 'platform',
+      ...decision,
+    })
+    // The proof counts at once: the badges of the answer's author (§8.2)
+    evaluateBadges(reply.authorId, at)
+    createNotification({
+      userId: reply.authorId,
+      type: 'answer_accepted',
+      category: 'communities',
+      actorId: me,
+      payload: {
+        postId: questionId,
+        eligible: decision.eligible,
+        excerpt: excerpt(question),
+      },
+    })
+  })()
+  return { accepted: true }
+}
+
+/** A post with its whole thread, for the shared link and a reload (§12.7) */
+export const readThread = (me: number, postId: number) => {
+  const post = getFull(postId)
+  if (!post) throw badRequest('Unknown post')
+  const rootId = post.rootId ?? post.postId
+  const rows = listThread({ root: rootId })
+  const parents = new Map(rows.map((row) => [row.postId, row.parentId]))
+  const roots = getFull(rootId)
+  return {
+    // Every post of the thread, shown with its reactions and bookmark
+    posts: shown(me, rows).map((p) => ({
+      ...p,
+      parentId: parents.get(p.id) ?? 0,
+    })),
+    rootId,
+    acceptedReplyId: roots?.acceptedReplyId ?? 0,
+  }
 }

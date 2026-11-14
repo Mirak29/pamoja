@@ -107,6 +107,24 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: t`${who} a fermé sa demande`,
         body: t`« ${n.title} » : ton aide n’a pas été jugée utile.`,
       }
+    case 'reply':
+      return {
+        kind: 'reply',
+        title: n.onReply
+          ? t`${who} a répondu à ton commentaire`
+          : t`${who} a répondu à ton post`,
+        body: n.excerpt,
+      }
+    case 'answer_accepted':
+      return {
+        kind: 'reply',
+        title: translate('Ta réponse a été acceptée'),
+        body: translate(
+          n.eligible
+            ? 'La preuve rejoint ton profil, en Entraide.'
+            : 'Elle ne compte pas dans ta réputation (§8.4).',
+        ),
+      }
     case 'help_message':
       return { kind: 'help', title: t`${who} t’a écrit`, body: n.excerpt }
     case 'help_expired':
@@ -163,6 +181,8 @@ const toPage = (n: Item): Notification => ({
     ? `@${me.login}`
     : n.type === 'application' && n.projectSlug
     ? `project/${n.projectSlug}/team`
+    : n.postId
+    ? `post/s${n.postId}`
     : 'notifications',
   at: n.createdAt * 1000,
   read: n.readAt > 0,

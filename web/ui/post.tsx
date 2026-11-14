@@ -20,16 +20,18 @@ import {
 import { communities } from '/web/fixtures/communities.ts'
 import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
 import {
-  acceptAnswer,
   childrenOf,
   descendantCount,
   type Post,
   posts,
   postsChanged,
-  replyTo,
   toggleRepost,
 } from '/web/fixtures/posts.ts'
 import { toggleBookmark, toggleLike } from '/web/lib/reactions.ts'
+import {
+  accept as acceptServer,
+  reply as replyServer,
+} from '/web/lib/replies.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
@@ -136,7 +138,7 @@ const ActionKey = (
 )
 
 const accept = (question: Post, answer: Post) => {
-  acceptAnswer(question, answer)
+  acceptServer(question, answer)
   notify({
     title: 'Réponse acceptée',
     body: `${people[answer.author].name} progresse en Entraide.`,
@@ -608,7 +610,7 @@ export const Thread = (
             onToggleReply={() => setReplying(toggle(replying, row.post.id))}
             onFold={() => setUnfolded(toggle(unfolded, row.post.id))}
             onReply={(text) => {
-              replyTo(row.post, me.login, text)
+              replyServer(row.post, text)
               setReplying(replying.filter((id) => id !== row.post.id))
               if (!unfolded.includes(row.post.id)) {
                 setUnfolded([...unfolded, row.post.id])
@@ -672,7 +674,7 @@ export const ParentChain = ({ post }: { post: Post }) => {
               )}
             onFold={() => {}}
             onReply={(text) => {
-              replyTo(parent, me.login, text)
+              replyServer(parent, text)
               setReplying(replying.filter((id) => id !== parent.id))
             }}
           />
@@ -838,7 +840,7 @@ export const PostCard = (
               <ReplyInput
                 size='feed'
                 placeholder='Répondre'
-                onSend={(text) => replyTo(post, me.login, text)}
+                onSend={(text) => replyServer(post, text)}
               />
             </div>
           )}

@@ -518,6 +518,60 @@ export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
   added && changed()
 }
 
+/**
+ * Brings a thread read from GET/api/post/thread into the pages: every post
+ * with its parent and its root, and the accepted answer on the root (§12.7)
+ */
+export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
+  for (const p of data.posts) {
+    const id = savedId(p.id)
+    if (posts.some((post) => post.id === id)) continue
+    hearOf(p.author, p.authorName, '')
+    posts.push({
+      id,
+      community: p.community,
+      author: p.author as Login,
+      type: p.type as PostType,
+      title: p.title,
+      body: p.body,
+      at: p.createdAt * 1000,
+      reactions: {
+        like: reactionList(p.reactions.like, p.mine.includes('like')),
+      },
+      bookmarks: p.bookmarked ? [me.login as Login] : [],
+      reposts: [],
+      parent: p.parentId ? savedId(p.parentId) : undefined,
+      root: p.id === data.rootId ? undefined : savedId(data.rootId),
+      media: p.media,
+      video: p.videoUrl || undefined,
+      demo: false,
+    })
+  }
+  const root = posts.find((post) => post.id === savedId(data.rootId))
+  if (root && data.acceptedReplyId) {
+    root.acceptedReply = savedId(data.acceptedReplyId)
+  }
+  changed()
+}
+
+/** The optimistic reply takes the id the server gave it, so it persists */
+export const adoptReply = (
+  local: Post,
+  saved: ApiOutput['POST/api/post/reply'],
+) => {
+  local.id = savedId(saved.id)
+  local.at = saved.createdAt * 1000
+  local.demo = false
+  changed()
+}
+
+/** Removes a post the server refused, to put the page back */
+export const dropPost = (post: Post) => {
+  const index = posts.indexOf(post)
+  if (index >= 0) posts.splice(index, 1)
+  changed()
+}
+
 /** Whether a post of the server is already in the pages */
 export const isKnownPost = (id: number) =>
   posts.some((post) => post.id === savedId(id))
