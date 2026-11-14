@@ -84,11 +84,23 @@ const skillRowsOf = (names: string[]) =>
 const repoFullNameOf = (project: ProjectFixture) =>
   `${project.repoOwner ?? project.owner}/${project.repo ?? project.slug}`
 
+// A skill proven by a confirmed help, as the confirmation writes it in
+// production (help-lifecycle.ts): the source the matching weighs the most
+// (§6.1, §7.3). The first proof dates it: the others are ignored.
+const addProvenSkill = sql<
+  undefined,
+  { userId: number; skillId: number; at: number }
+>`
+  INSERT OR IGNORE INTO userSkill (userId, skillId, source, createdAt)
+  VALUES (:userId, :skillId, 'platform_activity', :at)
+`.run
+
 // Moussa's confirmed reviews for the demo (§18.1): source = demo, across four
-// requesters and two projects, so Trusted Reviewer is Silver and ready for
-// Gold's diversity (3 requesters, 2 projects) once a real review makes it 15
-// (§8.2, §8.4). The dates are spread so no requester–helper pair breaks the
-// anti-abuse cap of two confirmations per 30 days (§8.4).
+// requesters and two projects, so Trusted Reviewer is Silver (10 to 19
+// reviews) and has Gold's diversity (3 requesters, 2 projects) already; the
+// real review of the demo makes it 15 / 20 toward Gold (§8.2, §8.4, §18.2).
+// The dates are spread so no requester–helper pair breaks the anti-abuse cap
+// of two confirmations per 30 days (§8.4).
 type SeedReview = {
   requester: string
   project: string
@@ -455,6 +467,20 @@ export const seed = (githubIds = new Map<string, number>()) => {
           at: createdAt,
         })
       })
+      // The skills these reviews proved, dated by the oldest of them, as the
+      // confirmations would have written them
+      const oldestFirst = [...MOUSSA_REVIEWS].sort((a, b) =>
+        b.daysAgo - a.daysAgo
+      )
+      for (const review of oldestFirst) {
+        for (const { skillId } of skillRowsOf(review.skills)) {
+          addProvenSkill({
+            userId: moussaId,
+            skillId,
+            at: at - review.daysAgo * 24 * 60 * 60,
+          })
+        }
+      }
       // Fill the badge progress from these proofs, without announcing an
       // unlock dated now (§8.2)
       evaluateBadges(moussaId, at, false)

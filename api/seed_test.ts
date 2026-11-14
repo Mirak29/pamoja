@@ -65,6 +65,23 @@ Deno.test('seed: Moussa has 14 confirmed reviews, Silver (PAM-901)', () => {
   assertEquals(badges.find((b) => b.badge === 'trusted_reviewer')?.level, 2)
   // The requesters spanned three countries: Cross-border Builder too (§8.2)
   assert((badges.find((b) => b.badge === 'cross_border')?.level ?? 0) >= 2)
+  // The skills these reviews proved, as a confirmation writes them: the
+  // source the matching weighs the most (§6.1, §7.3), dated by the first
+  const proven = db.prepare(
+    `SELECT skill.name, min(userSkill.createdAt) AS at FROM userSkill
+    JOIN skill ON skill.skillId = userSkill.skillId
+    WHERE userId = ? AND source = 'platform_activity' GROUP BY skill.name`,
+  ).all(moussa) as { name: string; at: number }[]
+  assertEquals(proven.map((s) => s.name).sort(), [
+    'Backend',
+    'Go',
+    'PostgreSQL',
+    'SQLite',
+    'TypeScript',
+  ])
+  const go = proven.find((s) => s.name === 'Go')!
+  const oldestReview = Math.min(...reviews.map((r) => r.at))
+  assertEquals(Math.round(go.at), Math.round(oldestReview))
 })
 
 Deno.test('seed: the story is in the past', () => {
