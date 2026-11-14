@@ -1446,8 +1446,17 @@ export const english: Record<string, string> = {
   'Retour au réseau': 'Back to the network',
   'Voir le projet': 'View the project',
   'Voir la communauté': 'View the community',
-  'Survole ou clique un projet ou une personne pour en voir le détail.':
-    'Hover or click a project or a person to see the detail.',
+  'Survole un projet ou une personne pour en voir le détail ; clique un projet pour amener ses personnes autour de lui.':
+    'Hover a project or a person to see the detail; click a project to bring its people around it.',
+  'Tout le réseau': 'Whole network',
+  'Par lieu': 'By place',
+  'Voir ses {0} personnes': 'See its {0} people',
+  'Voir {0} de plus': 'Show {0} more',
+  '{0} restantes': '{0} left',
+  'Dans': 'In',
+  'ce lieu': 'this place',
+  'lien': 'link',
+  'liens': 'links',
   'son projet': 'their project',
   'un projet': 'a project',
   'une personne': 'a person',
@@ -1483,8 +1492,18 @@ export const english: Record<string, string> = {
   'Recentrer': 'Recenter',
   'Globe des collaborations. Flèches pour le tourner, plus et moins pour zoomer.':
     'Collaboration globe. Arrow keys turn it, plus and minus zoom.',
-  'Glisse pour faire tourner le globe, pince ou Ctrl + molette pour zoomer. Un pays de la liste t’y emmène.':
-    'Drag to turn the globe, pinch or Ctrl + scroll to zoom. A country in the list takes you there.',
+  'Glisse pour faire tourner le globe, pince ou Ctrl + molette pour zoomer. Un pays montre ses personnes.':
+    'Drag to turn the globe, pinch or Ctrl + scroll to zoom. A country shows its people.',
+  'Un doigt fait tourner le globe, deux doigts zooment. « Terminé » rend la main à la page.':
+    'One finger turns the globe, two fingers zoom. “Done” gives the page back.',
+  'Touche le globe pour le prendre en main, ou un pays pour voir ses personnes.':
+    'Tap the globe to take hold of it, or a country to see its people.',
+  'Tous les pays': 'All countries',
+  'Voir les personnes de {0}': 'See the people of {0}',
+  '+{0} · voir qui': '+{0} · see who',
+  'Chercher une personne': 'Search for a person',
+  'Chercher parmi les personnes de {0}': 'Search the people of {0}',
+  'Personne de ce nom dans ce pays.': 'Nobody by that name in this country.',
   'Messages': 'Messages',
   'Écrire': 'Message',
   'Pas encore de conversation. Écris à un développeur depuis son profil, avec « Écrire ».':
@@ -1828,7 +1847,6 @@ export const englishTemplates: Record<string, string> = {
   '{0} caractères au plus.': '{0} characters at most.',
   'Audit sécurité de la PR #{0}': 'Security audit of PR #{0}',
   'Post de {0}': 'Post by {0}',
-  'Centrer le globe sur {0}': 'Center the globe on {0}',
   '{0} : {1}. Voir les preuves': '{0}: {1}. View the proofs',
   '{0} et {1}, liens de travail uniquement : reviews, aides, PRs.':
     '{0} and {1}, working links only: reviews, help, PRs.',

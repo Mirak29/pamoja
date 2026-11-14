@@ -143,7 +143,7 @@ Responsable : _à répartir_
 - [x] **PAM-306** · Pulse déterministe (§6.4) `[démo]` — @niangoos
 - [x] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]` — @Mirak29
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
-- [ ] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés) et Collaboration Graph en colonnes (§9.3, §12.7) `[démo]`
+- [x] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés, gestes au doigt séparés du défilement, les personnes de chaque pays) et Collaboration Graph (étoile qui tient des milliers de liens : lieu mis en avant, panneau par lieu et par pages) (§9.3, §12.7) `[démo]` — @Mirak29
 - [x] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11) — @Mirak29
 - [x] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11) — @Mirak29
 - [x] **PAM-540** · Coût de l'IA : plafond de tokens par appel, réflexion minimale, budget quotidien de Meta, consommation dans les logs (§11) — @Mirak29
@@ -379,3 +379,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Coût de l'IA (PAM-540) : `max_completion_tokens` par usage (700, 500, 600) ; `reasoning_effort` `minimal` pour Meta et Gemini, `low` pour Groq ; Meta arrêté pour la journée au-delà de 1 $ (`AI_DAILY_BUDGET`), compté au tarif de Muse Spark ; ligne `model-call` dans les logs · §11
 - 2026-11-14 · Page `/dev` hors production (PAM-113) : constante de build `DEV_PAGES`, `false` dans `task-prod.ts` ; esbuild retire la route et le code de la page · §17.4
 - 2026-11-14 · Copie hors de la VM (PAM-115) : pour le hackathon, sur le poste de l'équipe (`deploy/pull-backup.sh`, SSH, 7 copies gardées, une copie qui n'est pas une base SQLite rejetée) ; un stockage Systalink avant l'ouverture · §17.5
+- 2026-11-14 · Collaboration Map : au doigt, le globe au repos laisse défiler la page et se prend en main d'un toucher (« Terminé » le rend) ; un pays montre ses personnes, douze à la fois avec une recherche. Collaboration Graph : un clic sur un lieu amène ses personnes autour de lui, le panneau du réseau se limite à un lieu et va par pages de trente · §9.3
