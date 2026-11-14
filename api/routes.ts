@@ -1324,10 +1324,7 @@ const defs = {
       slug: STR('Slug of the community'),
       join: BOOL('True to join, false to leave: the state wanted'),
     }),
-    output: OBJ({
-      joined: BOOL('True when the developer is a member'),
-      members: NUM('How many members the community has after the change'),
-    }),
+    output: OBJ({ joined: BOOL('True when the developer is a member') }),
     description: 'Join or leave a community',
   }),
 

@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
+import { assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { communitiesOf, userIdOfLogin } from '/api/user.ts'
@@ -19,9 +19,7 @@ Deno.test('community: join and leave on the server, by the state asked (PAM-502)
 
   // abdou does not belong to React in the seed: a join, then a leave
   const before = memberRows(abdou)
-  const joined = setMembership(abdou, 'react', true)
-  assertEquals(joined.joined, true)
-  assert(joined.members >= 1)
+  assertEquals(setMembership(abdou, 'react', true).joined, true)
   assertEquals(memberRows(abdou), before + 1)
 
   // The same request twice, a retry or a second tab: still a member, never

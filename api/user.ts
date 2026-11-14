@@ -188,7 +188,6 @@ export const updateMatching = (userId: number, input: MatchingInput) =>
     at: now(),
   })
 
-/** The signed in developer and their profile, prefilled from GitHub */
 const listCommunities = sql<{ slug: string }, number>`
   SELECT community.slug FROM communityMember
   JOIN community ON community.communityId = communityMember.communityId
@@ -200,6 +199,7 @@ const listCommunities = sql<{ slug: string }, number>`
 export const communitiesOf = (userId: number) =>
   listCommunities(userId).map((row) => row.slug)
 
+/** The signed in developer and their profile, prefilled from GitHub */
 export const getCurrentUser = (userId: number) => {
   const user = getProfile(userId)
   if (!user) return

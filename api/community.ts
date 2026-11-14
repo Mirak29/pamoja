@@ -1,7 +1,7 @@
-import { db, sql } from '@01edu/db'
+import { sql } from '@01edu/db'
 import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
-import { CommunityMember } from '/api/schema.ts'
+import { communityIdOf } from '/api/posts.ts'
 import { refreshListeners } from '/api/events.ts'
 import { type Window, within } from '/api/lib/rate.ts'
 
@@ -13,25 +13,17 @@ export const MEMBERSHIP_RATE = { count: 60, per: 3600 }
 
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 
-const getCommunityId = sql<{ communityId: number }, string>`
-  SELECT communityId FROM community WHERE slug = ?
-`.get
+type Member = { me: number; communityId: number }
 
-const membership = sql<
-  { communityMemberId: number },
-  { me: number; communityId: number }
->`
-  SELECT communityMemberId FROM communityMember
-  WHERE userId = :me AND communityId = :communityId
-`.get
-
-const remove = sql<undefined, { communityMemberId: number }>`
-  DELETE FROM communityMember WHERE communityMemberId = :communityMemberId
+// The unique index community_member keeps one row per developer and
+// community: a membership already there is left as it is
+const add = sql<undefined, Member & { at: number }>`
+  INSERT OR IGNORE INTO communityMember (communityId, userId, role, joinedAt)
+  VALUES (:communityId, :me, 'member', :at)
 `.run
-
-const countMembers = sql<{ n: number }, number>`
-  SELECT count(*) AS n FROM communityMember WHERE communityId = ?
-`.get
+const remove = sql<undefined, Member>`
+  DELETE FROM communityMember WHERE userId = :me AND communityId = :communityId
+`.run
 
 const countJoins = sql<Window, { me: number; since: number }>`
   SELECT count(*) AS n, min(joinedAt) AS oldest FROM communityMember
@@ -41,32 +33,20 @@ const countJoins = sql<Window, { me: number; since: number }>`
 /**
  * Sets membership of a community to the state the developer asked for. The
  * same request sent twice, from a retry or a second tab, gives the same
- * result: a click to join never leaves. Returns the state and the members.
+ * result: a click to join never leaves.
  */
 export const setMembership = (me: number, slug: string, join: boolean) => {
-  const community = getCommunityId(slug)
-  if (!community) throw badRequest('Unknown community')
-  const communityId = community.communityId
+  const communityId = communityIdOf(slug)
+  if (!communityId) throw badRequest('Unknown community')
   within(
     countJoins,
     MEMBERSHIP_RATE,
     me,
     'Too many community changes this hour',
   )
-  db.transaction(() => {
-    const row = membership({ me, communityId })
-    if (row && !join) remove({ communityMemberId: row.communityMemberId })
-    if (!row && join) {
-      CommunityMember.insert({
-        communityId,
-        userId: me,
-        role: 'member',
-        joinedAt: now(),
-      })
-    }
-  })()
+  join ? add({ me, communityId, at: now() }) : remove({ me, communityId })
   // The member's open connections now receive the community's posts, or stop
   // receiving them (§13.2)
   refreshListeners(me)
-  return { joined: join, members: countMembers(communityId)?.n ?? 0 }
+  return { joined: join }
 }
