@@ -1221,6 +1221,15 @@ Vérifié : `deno task prod:build` ne produit plus de fichier `socle-*.js` ; un 
 - **Livrable** : `build-config.ts`, `task-prod.ts`, `web/app.tsx` ; §17.4
 - **Par** : @Mirak29
 
+### 2026-11-14 · PAM-115 · Copie quotidienne de la sauvegarde hors de la VM
+
+`deploy/pull-backup.sh` ramène sur le poste de l'équipe la sauvegarde horaire la plus récente du serveur. Il passe par SSH (alias `pamoja`) : `docker compose exec -T app` liste `/data/backups` puis lit le fichier, sans copie laissée sur la VM. La copie est écrite dans un fichier `.part`, gardée seulement si elle commence par l'en-tête SQLite, effacée si le transfert s'interrompt. Les 7 dernières copies restent dans `~/pamoja-backups`. Une tâche du Planificateur de Windows le lance une fois par jour (`docs/deploiement.md`). C'est la solution du hackathon ; un stockage Systalink reste prévu avant l'ouverture (§17.5).
+
+Vérifié en local avec un faux `ssh` : trois passages ne gardent que les deux dernières copies quand `PAMOJA_KEEP=2` ; un transfert qui échoue et une copie qui n'est pas une base sortent en erreur sans rien laisser. Essayé ensuite sur la VM : la sauvegarde de 12 h (770 Ko) est arrivée en 2,6 s, et `PRAGMA integrity_check` répond `ok`.
+
+- **Livrable** : `deploy/pull-backup.sh`, `docs/deploiement.md` ; §17.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -1099,7 +1099,7 @@ L'upload vidéo natif est hors périmètre CADEV : il exige la conversion des fo
 La réputation est la donnée la plus précieuse du produit.
 
 - Snapshot toutes les heures avec `VACUUM INTO` (copie cohérente de la base sans arrêt du service), conservé 7 jours. C'est le serveur qui le fait (`api/backups.ts`), comme ses autres tâches de fond : ni cron ni conteneur de plus. Une copie par heure, `pamoja-AAAA-MM-JJTHH.db`, dans `BACKUP_DIR` (`/data/backups`, dans le volume de la base), obligatoire en production.
-- Copie quotidienne hors de la VM, sur un autre stockage Systalink (les données restent au Sénégal), en complément des sauvegardes proposées par Systalink.
+- Copie quotidienne hors de la VM (PAM-115) : pour la période du hackathon, `deploy/pull-backup.sh` ramène par SSH la sauvegarde horaire la plus récente sur le poste de l'équipe, une tâche planifiée par jour, et y garde les 7 dernières copies ; une copie qui n'est pas une base SQLite entière est rejetée. Avant l'ouverture, un autre stockage Systalink (les données restent au Sénégal), en complément de ses sauvegardes.
 - Une restauration testée au moins une fois avant la démo.
 
 ### 17.6 Évolution
