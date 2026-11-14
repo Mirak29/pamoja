@@ -51,7 +51,7 @@ Après le bloc 1, les blocs 3 à 5 peuvent avancer en parallèle du bloc 2, selo
 - [ ] **PAM-002** · Répartir les blocs entre Abdou et niangoos, et noter le responsable sous chaque bloc
 - [x] **PAM-003** · Valider l'offre Systalink avant la fin de J2 : VM avec Docker, IP publique et ports 80/443 ouverts (certificat Caddy), sortie vers `api.github.com` et le fournisseur IA, entrée des webhooks GitHub, taille de disque, sauvegardes, domaine et DNS (§17.4, §20) — VM Developer (1 cœur, 4 Go, 40 Go), ports 80/443 et sorties GitHub, GHCR, Groq vérifiés, webhooks joignables — @Mirak29
 - [x] **PAM-004** · Vérifier la disponibilité du domaine, de l'org GitHub `pamoja` et du nom de la GitHub App — domaine `pamoja-tech.duckdns.org`, app « Pamoja Demo » (`pamoja-demo`) ; pas d'org GitHub, le repo reste sous Mirak29 — @Mirak29
-- [ ] **PAM-005** · Choisir le fournisseur IA, le modèle de génération, le modèle d'embeddings et le budget (§11) — fait : Groq (compatible OpenAI) pour l'Assistant ; reste : le modèle d'embeddings
+- [x] **PAM-005** · Choisir le fournisseur IA, le modèle de génération, le modèle d'embeddings et le budget (§11) — Meta (Muse Ember), Gemini puis Groq ; embeddings Gemini — @Mirak29
 - [x] **PAM-006** · Fixer la version de Meilisearch (§10.4) — `v1.56.0` — @Mirak29
 - [x] **PAM-007** · Identité visuelle validée : [design system Pamoja](https://claude.ai/artifact/Gj5ox6BNFzaDpuqaCFCWhb) et prototype Pamoja v2 (§12.7)
 - [x] **PAM-008** · Prototype complet avec Claude Design : Pamoja v2, copié dans `docs/prototype/` avec la liste de ce que le code ne reprend pas (§12.7)
@@ -371,3 +371,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-14 · Communautés rejointes sur le serveur (PAM-502) : `POST/api/community/join` reçoit l'état voulu (`join`), jamais une bascule, et les communautés rejointes viennent avec le développeur connecté (`GET/api/user/me`) ; la page part du serveur à chaque session · §10.2, §15
 - 2026-11-14 · Personnalisation du profil enregistrée (PAM-302) : thème, accent, ordre des sections et projets mis en avant sur le serveur ; un profil jamais ordonné garde toutes ses sections dans l'ordre par défaut · §9.2
 - 2026-11-14 · Candidatures (PAM-403) : façons d'aider et disponibilité tirées d'une seule liste (`api/vocabulary.ts`), vérifiées par le serveur, message limité à `LIMITS.note` ; chaque refus porte une raison que la page affiche, au lieu de « serveur injoignable » · §6.6, §16
+- 2026-11-14 · Fournisseurs IA (PAM-005) : `api/llm.ts` essaie Meta (`muse-ember-1.0`), puis Gemini (`gemini-3.5-flash`), puis Groq (`gpt-oss-120b`) ; un fournisseur qui échoue est laissé de côté 5 min ; embeddings Gemini en 256 dimensions ; `LLM_*` et l'API native d'Ollama retirés · §11

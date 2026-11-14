@@ -639,7 +639,7 @@ Règles :
 - **Sorties structurées** (JSON) pour tout ce qui va en base, validées avant l'écriture ; une sortie invalide est rejetée et le repli s'applique.
 - **Le contenu GitHub est une donnée, pas une instruction** : un README ou une issue peut contenir du texte conçu pour détourner le modèle. Le prompt l'encadre comme donnée, et la sortie est validée.
 - **Budget** : nombre d'appels par jour plafonné dans un fichier de constantes, et mise en cache par empreinte de l'entrée.
-- **Fournisseur et modèles** : à fixer par l'équipe (points ouverts). Le modèle de génération et le modèle d'embeddings peuvent être différents.
+- **Fournisseurs et modèles** (PAM-005, `api/llm.ts`) : trois API compatibles OpenAI, essayées dans l'ordre. **Meta** (`muse-ember-1.0` sur `api.meta.ai`, le moins cher des modèles Muse), puis **Gemini** (`gemini-3.5-flash`), puis **Groq** (`openai/gpt-oss-120b`). Un fournisseur qui échoue (erreur, quota, 20 s sans réponse) est essayé par le suivant et laissé de côté 5 minutes ; quand aucun ne répond, le repli sans IA s'applique. Seul ce qui suit la réflexion du modèle est gardé. Clés dans `META_API_KEY`, `GEMINI_API_KEY` et `GROQ_API_KEY` (`.env-local`, et `.env` sur la VM) ; un fournisseur sans clé est sauté. **Embeddings** : Gemini `gemini-embedding-001`, vecteurs de 256 dimensions normalisés ; sans Gemini, la proximité sémantique vaut 0.
 
 Pour la démo, les résumés et embeddings du seed sont pré-calculés.
 
@@ -666,7 +666,7 @@ Règles :
 - **Sans question, il est déjà utile** : à l'ouverture, un point calculé sans IA (le premier pas ou les meilleures correspondances, et ce qui attend le développeur), et des questions proposées selon la page.
 - **Budget** : 30 questions par développeur et par jour, 2 000 pour tout Pamoja ; une même question sur le même contexte est servie depuis un cache de 10 minutes.
 - **Repli** : sans clé, si le modèle ne répond pas en 20 s ou si sa réponse est invalide, l'Assistant montre le point calculé, sans phrase du modèle.
-- **Fournisseur** : n'importe quelle API compatible OpenAI, choisie par `LLM_BASE_URL` (une adresse en `/v1`, `/chat/completions`) ; une adresse sans `/v1` passe par l'API native d'Ollama (`/api/chat`). Clé dans `LLM_API_KEY`, modèle dans `LLM_MODEL_NAME`, dans `.env-local`, jamais dans le dépôt. Pour le développement et la démo : **Groq** gratuit (`https://api.groq.com/openai/v1`, `openai/gpt-oss-120b`), qui ne garde pas les données par défaut. Son quota gratuit (environ 8 000 tokens par minute, soit 2 à 3 questions) ne suffit pas pour de vrais utilisateurs : avant l'ouverture, un forfait payant. Les offres gratuites qui se servent des questions pour entraîner leurs modèles sont écartées : le contexte contient des données des développeurs.
+- **Fournisseur** : la chaîne Meta, Gemini, Groq des règles ci-dessus (`api/llm.ts`). Sans aucune clé, l'Assistant montre son point.
 
 ## 12. Architecture technique
 
@@ -1166,7 +1166,7 @@ La démo raconte une seule histoire continue, en conditions réelles : vrai logi
 Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
 
 - [ ] **Nom et identifiants** : nom retenu, Pamoja. Vérifier la disponibilité du domaine, de l'organisation GitHub et du nom de la GitHub App (unique sur tout GitHub).
-- [ ] **Fournisseur IA** : modèle de génération, modèle d'embeddings, budget.
+- [x] **Fournisseur IA** : Meta (Muse Ember), Gemini puis Groq ; embeddings Gemini (§11, PAM-005).
 - [ ] **Hébergement Systalink**, à valider avant la fin de J2 : VM avec Docker ; IP publique et ports 80/443 ouverts (certificat HTTPS automatique de Caddy) ; sortie autorisée vers `api.github.com` et le fournisseur IA ; entrée des webhooks GitHub ; taille de disque ; offre de sauvegarde ; nom de domaine et DNS.
 - [ ] **Reverse proxy** : Caddy retenu (HTTP/2 actif par défaut avec HTTPS, réponses SSE transmises sans tampon). À vérifier une fois en prod : protocole h2 dans l'onglet Réseau et arrivée instantanée des notifications.
 - [x] **Meilisearch** : version `v1.56.0`, conteneur `meilisearch` du compose sur la VM, sans port ouvert ; champs cherchables par ordre de pertinence dans `api/search.ts` (`SETTINGS`).

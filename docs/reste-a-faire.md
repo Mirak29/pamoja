@@ -48,7 +48,7 @@ Pour chaque fonction, le modèle à suivre est celui des posts (`api/posts.ts`, 
 
 ## 2. Pas commencé
 
-- **IA** (§11), sur le même fournisseur que l'Assistant (`LLM_*`, Groq, `api/assistant.ts`) :
+- **IA** (§11), par `api/llm.ts` (Meta, Gemini puis Groq, PAM-005) :
   - **PAM-307** : résumé du Pulse en tâche de fond, enregistré dans `ProjectSummary`, avec l'entry `PULSE_READY`. Aujourd'hui, rien n'écrit dans `ProjectSummary`.
   - **PAM-310** : extraction des skills et des besoins à l'import, et description de projet proposée (`api/import.ts` n'appelle aucune IA).
   - **PAM-311** : embeddings et critère de proximité sémantique du matching. La table `embedding` existe, `api/matching.ts` ne s'en sert pas. Il faut d'abord choisir le modèle d'embeddings (fin de PAM-005).

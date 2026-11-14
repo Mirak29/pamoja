@@ -1149,6 +1149,17 @@ Relecture `/simplify` : la requête qui enregistre une décision devient une con
 - **Livrable** : `api/join.ts`, `api/join_test.ts`, `api/notifications.ts`, `api/routes.ts`, `web/lib/applications.ts`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, `web/pages/project/join-dialog.tsx` ; §3, §6.6, §13.3
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-005 · Trois fournisseurs IA à la suite
+
+`api/llm.ts` est le seul chemin vers un modèle : l'Assistant et les futures tâches de fond (résumé du Pulse, extraction à l'import, embeddings) passent par lui. Il essaie **Meta** (`muse-ember-1.0` sur `api.meta.ai`, le moins cher des modèles Muse : rapide, assez pour des réponses courtes), puis **Gemini** (`gemini-3.5-flash`), puis **Groq** (`openai/gpt-oss-120b`), tous en API compatible OpenAI. Un fournisseur qui répond une erreur, rien, ou rien en 20 s passe la main au suivant et reste de côté 5 minutes : une panne ne coûte qu'un appel. Un fournisseur sans clé est sauté. `chatJson` demande du JSON et le lit ; `embed` donne des vecteurs Gemini (`gemini-embedding-001`, 256 dimensions, normalisés) et `cosine` les compare.
+
+Essayé avec les vraies clés le 14 novembre. Baseten, prévu d'abord avec les crédits du hackathon Meta, répond « Model version … is deactivated » : remplacé par l'API Muse de Meta. Un fournisseur en échec passe la main à Gemini en 1,5 s, et l'appel suivant ne repasse plus par lui. `gemini-2.5-flash` n'est plus ouvert aux nouvelles clés et `gemini-3.8-flash` était saturé sur l'offre gratuite : `gemini-3.5-flash` répond. Les embeddings rapprochent une demande Go d'un profil Go (0,82) plus que d'un profil de designer (0,62).
+
+`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_NAME` et le chemin vers l'API native d'Ollama sont retirés.
+
+- **Livrable** : `api/llm.ts`, `api/assistant.ts`, `api/assistant_test.ts`, `.env.production.example` ; §11, §20
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
