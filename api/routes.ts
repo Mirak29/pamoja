@@ -143,7 +143,11 @@ import {
   likeMessage,
   listChannelMessages,
 } from '/api/channels.ts'
-import { setDemoVideo, setGallery } from '/api/project-gallery.ts'
+import {
+  setDemoVideo,
+  setGallery,
+  updateProjectInfo,
+} from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
 
 const matchingMode = LIST(
@@ -1382,6 +1386,32 @@ const defs = {
     }),
     output: OBJ({ url: STR('The link kept, empty if none') }),
     description: 'Set the demo video of a project: owner and maintainers only',
+  }),
+
+  'POST/api/project/update': route({
+    authorize: withSession,
+    fn: (ctx, { project, name, description, vision, needs }) =>
+      updateProjectInfo(ctx.session.userId, project, {
+        name,
+        description,
+        vision,
+        needs,
+      }),
+    input: OBJ({
+      project: STR('Slug of the project'),
+      name: STR('Name of the project'),
+      description: STR('Description'),
+      vision: STR('Vision, empty if none'),
+      needs: ARR(STR('A need, a short title'), 'The open needs, in order'),
+    }),
+    output: OBJ({
+      name: STR(),
+      description: STR(),
+      vision: STR('Empty if none'),
+      needs: ARR(STR('An open need')),
+    }),
+    description:
+      'Set the information and the open needs of a project: owner and maintainers only (§6.3)',
   }),
 
   'POST/api/post/create': route({

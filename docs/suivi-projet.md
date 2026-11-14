@@ -1310,6 +1310,15 @@ Reste pour clore PAM-505 : le listing serveur des **projets** (l'onglet Projets 
 - **Livrable** : `api/projects.ts`, `api/projects_test.ts`, `api/routes.ts`, `web/fixtures/repos.ts`, `web/pages/project/project-page.tsx` ; §6
 - **Par** : @niangoos
 
+### 2026-11-14 · PAM-402 (needs) · Informations et besoins d'un projet enregistrés
+
+L'onglet Réglages modifiait le nom, la description, la vision et les besoins d'un projet **dans le navigateur seulement** : aucune route ne les enregistrait. Nouvelle route `POST/api/project/update` (propriétaire et mainteneurs, via `editable`) qui enregistre ces champs et remplace les besoins ouverts — un besoin gardé par son titre conserve ses compétences, un retiré est supprimé, un nouveau est ajouté (`projectNeed`). Elle diffuse l'entry `PROJECT_UPDATED`, qui prévient l'audience en direct et réindexe le projet dans la recherche. Côté interface, `web/lib/project-settings.ts` relie l'enregistrement à la route (optimiste, projet remis en l'état en cas d'échec).
+
+Exception assumée (§4) : le **calcul serveur des « personnes qui peuvent aider »** n'est pas fait. Il demande des compétences structurées par besoin, que seule l'extraction IA (PAM-310) posera ; en attendant, « Ils pourraient aider » reste calculé dans le navigateur à partir de la table `needSkills`. La boucle de démo (§18) passe par le matching des demandes d'aide, déjà côté serveur.
+
+- **Livrable** : `api/project-gallery.ts`, `api/project_settings_test.ts`, `api/routes.ts`, `web/lib/project-settings.ts`, `web/pages/project/settings-tab.tsx` ; §6.3, §13.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
