@@ -1,8 +1,10 @@
 import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
-import { userIdOfLogin } from '/api/user.ts'
-import { toggleMembership } from '/api/community.ts'
+import { communitiesOf, userIdOfLogin } from '/api/user.ts'
+import { setMembership } from '/api/community.ts'
+import { createSession } from '/api/session.ts'
+import { request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -10,20 +12,26 @@ const memberRows = (me: number) =>
   (db.prepare('SELECT count(*) n FROM communityMember WHERE userId = ?')
     .get(me) as { n: number }).n
 
-Deno.test('community: join and leave on the server (PAM-502)', () => {
+Deno.test('community: join and leave on the server, by the state asked (PAM-502)', () => {
   restore()
   seed()
   const abdou = userIdOfLogin('abdou')!
 
-  // abdou does not belong to React in the seed: a clean join, then leave
+  // abdou does not belong to React in the seed: a join, then a leave
   const before = memberRows(abdou)
-  const joined = toggleMembership(abdou, 'react')
+  const joined = setMembership(abdou, 'react', true)
   assertEquals(joined.joined, true)
   assert(joined.members >= 1)
   assertEquals(memberRows(abdou), before + 1)
 
-  const left = toggleMembership(abdou, 'react')
+  // The same request twice, a retry or a second tab: still a member, never
+  // a join undone by a click meant to join
+  assertEquals(setMembership(abdou, 'react', true).joined, true)
+  assertEquals(memberRows(abdou), before + 1)
+
+  const left = setMembership(abdou, 'react', false)
   assertEquals(left.joined, false)
+  assertEquals(setMembership(abdou, 'react', false).joined, false)
   assertEquals(memberRows(abdou), before)
 })
 
@@ -31,5 +39,23 @@ Deno.test('community: an unknown community is refused (PAM-502)', () => {
   restore()
   seed()
   const abdou = userIdOfLogin('abdou')!
-  assertThrows(() => toggleMembership(abdou, 'no-such-community'))
+  assertThrows(() => setMembership(abdou, 'no-such-community', true))
+})
+
+Deno.test('community: the page reads the communities joined at every session (PAM-502)', async () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const cookie = `session=${await createSession(abdou, 'demo')}`
+  const mine = async () =>
+    (await (await request('/api/user/me', { cookie })).json()).communities
+
+  assertEquals(await mine(), communitiesOf(abdou))
+  assertEquals((await mine()).includes('react'), false)
+  const res = await request('/api/community/join', {
+    body: { slug: 'react', join: true },
+    cookie,
+  })
+  assertEquals(res.status, 200)
+  assertEquals((await mine()).includes('react'), true)
 })

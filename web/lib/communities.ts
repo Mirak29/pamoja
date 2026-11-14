@@ -2,12 +2,19 @@ import { api } from '/web/lib/api.ts'
 import { CircleAlert } from '/web/assets/icons.tsx'
 import { notify } from '/web/ui/toast.tsx'
 import { me } from '/web/fixtures/people.ts'
-import { type Community, toggleMembership } from '/web/fixtures/communities.ts'
+import { type Community, setMembership } from '/web/fixtures/communities.ts'
 
-// Joining or leaving a community persisted on the server (PAM-502): the page
-// shows the change at once, then it is saved; a failure puts it back and says
-// so. Membership feeds the live feed, since a community's posts reach the
-// members the server reads from the database (§10.2, §13.2).
+// Joining or leaving a community persisted on the server (PAM-502). The
+// page asks for the state it shows the opposite of, never for a toggle: a
+// retry, or a second tab that saw an older state, cannot undo a join. It
+// shows the change at once, then takes the state the server confirms; a
+// failure puts it back. The communities joined come with the signed in
+// developer (GET/api/user/me), so every session starts from the server.
+// A community's posts then reach its members in real time (§10.2, §13.2).
+//
+// The count on the cards stays the page's own until the communities are
+// read from the server (GET/api/communities): the server's count of a
+// seeded community is not the one the demo shows.
 
 const failed = () =>
   notify({
@@ -17,12 +24,15 @@ const failed = () =>
     tone: 'danger',
   })
 
-/** Join or leave a community */
+/** Join a community, or leave it */
 export const joinOrLeave = (community: Community) => {
-  toggleMembership(community, me)
-  api['POST/api/community/join'].fetch({ slug: community.slug })
-    .catch(() => {
-      toggleMembership(community, me)
+  const join = !me.communities.includes(community.slug)
+  setMembership(community, me, join)
+  api['POST/api/community/join'].fetch({ slug: community.slug, join }).then(
+    (saved) => setMembership(community, me, saved.joined),
+    () => {
+      setMembership(community, me, !join)
       failed()
-    })
+    },
+  )
 }

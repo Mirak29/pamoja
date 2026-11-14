@@ -39,10 +39,11 @@ const countJoins = sql<Window, { me: number; since: number }>`
 `.get
 
 /**
- * Toggles membership of a community: joins when absent, leaves when present.
- * Returns the new state and how many members the community now has.
+ * Sets membership of a community to the state the developer asked for. The
+ * same request sent twice, from a retry or a second tab, gives the same
+ * result: a click to join never leaves. Returns the state and the members.
  */
-export const toggleMembership = (me: number, slug: string) => {
+export const setMembership = (me: number, slug: string, join: boolean) => {
   const community = getCommunityId(slug)
   if (!community) throw badRequest('Unknown community')
   const communityId = community.communityId
@@ -52,22 +53,20 @@ export const toggleMembership = (me: number, slug: string) => {
     me,
     'Too many community changes this hour',
   )
-  const joined = db.transaction(() => {
+  db.transaction(() => {
     const row = membership({ me, communityId })
-    if (row) {
-      remove({ communityMemberId: row.communityMemberId })
-      return false
+    if (row && !join) remove({ communityMemberId: row.communityMemberId })
+    if (!row && join) {
+      CommunityMember.insert({
+        communityId,
+        userId: me,
+        role: 'member',
+        joinedAt: now(),
+      })
     }
-    CommunityMember.insert({
-      communityId,
-      userId: me,
-      role: 'member',
-      joinedAt: now(),
-    })
-    return true
   })()
   // The member's open connections now receive the community's posts, or stop
   // receiving them (§13.2)
   refreshListeners(me)
-  return { joined, members: countMembers(communityId)?.n ?? 0 }
+  return { joined: join, members: countMembers(communityId)?.n ?? 0 }
 }

@@ -111,7 +111,7 @@ import {
 } from '/api/vocabulary.ts'
 import { serveMedia, setCover, upload } from '/api/media.ts'
 import { createPost, listPosts } from '/api/posts.ts'
-import { toggleMembership } from '/api/community.ts'
+import { setMembership } from '/api/community.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
 import { channelStatesOf, markRead, setNotify } from '/api/channel-state.ts'
@@ -204,6 +204,7 @@ const currentUser = {
   ),
   domains: ARR(STR('Domain of the vocabulary'), 'Domains'),
   intents: ARR(STR('Intent of the vocabulary'), 'Intents'),
+  communities: ARR(STR('Slug of a community'), 'Communities joined'),
 }
 
 const profileSaved = OBJ(currentUser, 'The profile saved')
@@ -1317,10 +1318,14 @@ const defs = {
 
   'POST/api/community/join': route({
     authorize: withSession,
-    fn: (ctx, input) => toggleMembership(ctx.session.userId, input.slug),
-    input: OBJ({ slug: STR('Slug of the community to join or leave') }),
+    fn: (ctx, input) =>
+      setMembership(ctx.session.userId, input.slug, input.join),
+    input: OBJ({
+      slug: STR('Slug of the community'),
+      join: BOOL('True to join, false to leave: the state wanted'),
+    }),
     output: OBJ({
-      joined: BOOL('True when the developer is now a member'),
+      joined: BOOL('True when the developer is a member'),
       members: NUM('How many members the community has after the change'),
     }),
     description: 'Join or leave a community',

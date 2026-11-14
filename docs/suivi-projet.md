@@ -1075,6 +1075,14 @@ Route `POST/api/community/join` qui ajoute ou retire une ligne `communityMember`
 
 Reste pour clore PAM-502 : créer une communauté (ligne `community` + créateur modérateur + réindexation recherche) demande d'abord un listing des communautés lu depuis la base, sinon une communauté créée disparaît du listing fixture au rechargement ; à suivre dans une PR dédiée.
 
+**Revue (relecture et CodeRabbit), corrigée.** La route basculait l'adhésion et la page ne relisait jamais les communautés rejointes (`GET/api/user/me` ne les donnait pas) : après un rechargement, un second onglet ou une nouvelle tentative, un clic pour rejoindre pouvait faire quitter. Maintenant :
+- `POST/api/community/join` reçoit l'état voulu (`join: true/false`) : la même requête donne le même résultat ;
+- les communautés rejointes viennent avec le développeur connecté (`communities` de `GET/api/user/me`, une seule requête partagée avec le profil public : `communitiesOf`) ;
+- la page applique l'état confirmé par le serveur, et revient en arrière si la requête échoue.
+Le nombre de membres affiché reste celui de la page tant que les communautés ne sont pas lues sur le serveur (`GET/api/communities`, PAM-502) : le compte du serveur d'une communauté seedée n'est pas celui que montre la démo.
+
+Vérifié dans le navigateur : rejoindre React, recharger, la page dit « Membre » ; quitter, la base suit.
+
 - **Livrable** : `api/community.ts`, `api/community_test.ts`, `api/routes.ts`, `web/lib/communities.ts`, `web/pages/communities/membership.tsx` ; §10.2, §13.2, §14.5
 - **Par** : @niangoos
 
