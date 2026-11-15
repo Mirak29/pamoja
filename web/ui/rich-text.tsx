@@ -37,6 +37,10 @@ const TRAILING = /[.,;:!?)\]}'"»]+$/
 
 const linkClass = 'underline decoration-1 underline-offset-2'
 
+// The @logins the server knows for the text being drawn (`mentions` of a
+// post or a message); none: every @login is a link. Set for one render only
+let known: Set<string> | null = null
+
 const codeClass =
   'rounded-sm bg-surface-200 px-[5px] py-px font-mono text-[0.87em] leading-5'
 
@@ -107,8 +111,11 @@ const inline = (text: string, depth = 0): ComponentChildren[] => {
           : shown,
       )
     } else if (g.login !== undefined) {
+      // Only a developer on Pamoja is a link, when the server said who is
       parts.push(
-        <A key={key} href={`@${g.login}`} class={linkClass}>@{g.login}</A>,
+        known && !known.has(g.login.toLowerCase())
+          ? match[0]
+          : <A key={key} href={`@${g.login}`} class={linkClass}>@{g.login}</A>,
       )
     } else {
       const tag = g.tag
@@ -205,6 +212,25 @@ const blocksOf = (text: string) => {
  * of a help request. `code` sizes the code blocks.
  */
 export const Markdown = (
+  props: {
+    text: string
+    class?: string
+    code?: string
+    /** Its @logins that are developers: the others stay text */
+    mentions?: string[]
+  },
+) => {
+  known = props.mentions
+    ? new Set(props.mentions.map((login) => login.toLowerCase()))
+    : null
+  try {
+    return markdown(props)
+  } finally {
+    known = null
+  }
+}
+
+const markdown = (
   { text, class: className = 'gap-2.5', code = 'px-3.5 py-3 text-[13px]' }: {
     text: string
     class?: string

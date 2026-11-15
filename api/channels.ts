@@ -7,6 +7,7 @@ import { LIMITS } from '/api/limits.ts'
 import { attach, mediaOf } from '/api/media.ts'
 import { entries } from '/api/entry-types.ts'
 import { ProjectMessage } from '/api/schema.ts'
+import { knownMentions, notifyMentions } from '/api/mentions.ts'
 
 // The messages of the project channels, saved with their image (PAM-428,
 // §6.8, §17.3). A video goes in the text by its link and is embedded by the
@@ -185,8 +186,10 @@ const shown = (me: number, rows: MessageRow[]) => {
     listLikes({ me, messages: JSON.stringify(ids) })
       .map((like) => [like.messageId, like]),
   )
+  const mentions = knownMentions(rows.map((row) => row.body))
   return rows.map((row) => ({
     id: row.messageId,
+    mentions: mentions(row.body),
     channel: row.channel,
     alert: row.parentEntryId ?? 0,
     parent: row.parentMessageId ?? 0,
@@ -286,6 +289,16 @@ export const createChannelMessage = (
       projectId,
       messageId,
       source: 'platform',
+    })
+    // Who it names by @login, if they can read the channel: a mention
+    // never shows a message to someone it is closed to
+    notifyMentions({
+      me,
+      text: body,
+      category: 'projects',
+      payload: { projectSlug: input.project, channel: input.channel },
+      reads: (userId) =>
+        rightsIn(userId, input.project).reads.includes(input.channel),
     })
     return messageId
   })()

@@ -34,6 +34,8 @@ export type Message = {
   author: Login | 'platform'
   kind?: AlertKind
   text: string
+  /** Its @logins that are developers on Pamoja, as the server read them */
+  mentions?: string[]
   /** One uploaded image (§17.3); a video goes in the text by its link */
   media?: Media[]
   pullRequest?: number
@@ -47,6 +49,7 @@ export type Message = {
     id: string
     author: Login
     text: string
+    mentions?: string[]
     at: number
     demo: boolean
   }[]
@@ -287,6 +290,7 @@ export const adoptChannelMessage = (project: ProjectSlug, saved: Saved) => {
       id,
       author: saved.author as Login,
       text: saved.body,
+      mentions: saved.mentions,
       at: saved.createdAt * 1000,
       demo: false,
     }]
@@ -299,6 +303,7 @@ export const adoptChannelMessage = (project: ProjectSlug, saved: Saved) => {
         id,
         author: saved.author as Login,
         text: saved.body,
+        mentions: saved.mentions,
         media: saved.media,
         at: saved.createdAt * 1000,
         likes,

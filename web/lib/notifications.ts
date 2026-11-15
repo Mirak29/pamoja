@@ -27,6 +27,14 @@ type Item = Batch['items'][number]
 // The badges of §8.2, by their key on the server
 const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
+// The names of the channels of a project (§6.8), as the page writes them
+const channelNames: Record<string, string> = {
+  general: 'général',
+  tracking: 'suivi',
+  help: 'aide',
+  announcements: 'annonces',
+}
+
 // Ids of the server, kept apart from the demo ones
 const idOf = (item: Item) => `s${item.id}`
 
@@ -152,6 +160,18 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: t`${who} te propose : ${translate(n.title)}`,
         body: n.excerpt,
       }
+    case 'mention':
+      return {
+        kind: 'mention',
+        title: n.channel
+          ? t`${who} t’a mentionné dans #${
+            channelNames[n.channel] ?? n.channel
+          }`
+          : n.onReply
+          ? t`${who} t’a mentionné dans une réponse`
+          : t`${who} t’a mentionné dans un post`,
+        body: n.excerpt,
+      }
     case 'repost':
       return {
         kind: 'repost',
@@ -226,6 +246,10 @@ const toPage = (n: Item): Notification => ({
     ? `project/${n.projectSlug}/team`
     : n.type === 'project_invite' && n.projectSlug
     ? `project/${n.projectSlug}`
+    : n.type === 'mention' && n.projectSlug
+    ? `project/${n.projectSlug}/channels/${
+      n.channel === 'tracking' ? 'updates' : n.channel
+    }`
     : n.postId
     ? `post/s${n.postId}`
     : 'notifications',

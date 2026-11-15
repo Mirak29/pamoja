@@ -168,6 +168,7 @@ import {
   setMembership,
 } from '/api/community.ts'
 import { applyToProject, decideJoinRequest } from '/api/join.ts'
+import { suggestMentions } from '/api/mentions.ts'
 import { REPORTABLE, reportContent } from '/api/reports.ts'
 import { pulseOf } from '/api/pulse.ts'
 import { listTracking } from '/api/tracking.ts'
@@ -257,6 +258,7 @@ const postFields = {
     'Who reposted it, oldest first',
   ),
   createdAt: NUM('Publication, in seconds'),
+  mentions: ARR(STR('Login'), 'Its @logins that are developers on Pamoja'),
 }
 
 const savedPost = OBJ(postFields, 'A post')
@@ -280,6 +282,7 @@ const channelMessage = OBJ({
   likes: NUM('Its +1'),
   liked: BOOL('A +1 of the developer'),
   createdAt: NUM('Sent, in seconds'),
+  mentions: ARR(STR('Login'), 'Its @logins that are developers on Pamoja'),
 }, 'A message of a project channel')
 
 // What anyone sees of a developer, and the developer of themselves
@@ -1253,6 +1256,7 @@ const defs = {
           level: NUM('Level of that badge, 0 if none'),
           joinRequestId: NUM('Candidature it is about, 0 if none (§6.6)'),
           projectSlug: STR('Slug of its project, empty if none'),
+          channel: STR('Channel of a mention in a project, empty if none'),
           accepted: NUM('-1 pending for a manager, 0 refused, 1 accepted'),
           postId: NUM('Post it links to, 0 if none (§10.1)'),
           onReply: NUM('1 when the reply answers a reply, else 0'),
@@ -2047,6 +2051,18 @@ const defs = {
   /*
    * Search (§10.4)
    */
+  'GET/api/mentions': route({
+    authorize: withSession,
+    fn: (ctx, { q }) => suggestMentions(ctx.session.userId, q),
+    input: OBJ({ q: STR('What is typed after the @') }),
+    output: ARR(OBJ({
+      login: STR('GitHub login, what the @ names'),
+      name: STR('Display name'),
+      avatarUrl: STR('Avatar, empty without one'),
+    })),
+    description:
+      'Developers to name after an @, those followed first, 8 at most (§10.1)',
+  }),
   'GET/api/search': route({
     authorize: withSession,
     // A query string carries text: the number is read from it, 50 at most

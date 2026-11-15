@@ -96,7 +96,7 @@ const Article = ({ post }: { post: Post }) => {
           </span>
         </span>
       </A>
-      <PostBody body={post.body} size='large' />
+      <PostBody body={post.body} size='large' mentions={post.mentions} />
       <MediaGrid
         id={`images-${post.id}`}
         items={post.media ?? []}
@@ -200,6 +200,7 @@ const Replies = ({ post }: { post: Post }) => {
           value={draft}
           limit={LIMITS.reply}
           aria-label='Réponse'
+          mentions
           placeholder='Écrire une réponse (Markdown, `code`)'
           onInput={(event) => setDraft(event.currentTarget.value)}
           onKeyDown={(event) =>

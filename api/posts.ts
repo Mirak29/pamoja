@@ -8,6 +8,7 @@ import { attach, mediaOf } from '/api/media.ts'
 import { Post } from '/api/schema.ts'
 import { videoOf } from '/api/video-links.ts'
 import { createNotification } from '/api/notifications.ts'
+import { knownMentions, notifyMentions } from '/api/mentions.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { evaluateBadges } from '/api/badges.ts'
 import { hiddenReasonOf } from '/api/moderation.ts'
@@ -216,11 +217,15 @@ const shown = (me: number, rows: PostRow[]) => {
       reposts.set(r.postId, list)
     }
   }
+  const mentions = knownMentions(
+    rows.map((row) => `${row.title ?? ''} ${row.body}`),
+  )
   return rows.map((row) => {
     const r = reactions.get(row.postId)
     return {
       id: row.postId,
       author: row.author,
+      mentions: mentions(`${row.title ?? ''} ${row.body}`),
       authorName: row.authorName,
       community: row.community ?? '',
       type: row.type,
@@ -462,6 +467,16 @@ export const createPost = (me: number, input: PostInput) => {
       postId,
       source: 'platform',
     })
+    // Who it names by @login learns of it (§10.1)
+    notifyMentions({
+      me,
+      text: title
+        ? `${title}
+${body}`
+        : body,
+      category: 'communities',
+      payload: { postId },
+    })
     return postId
   })()
   return shown(me, [getOne(postId)!])[0]
@@ -562,6 +577,14 @@ export const createReply = (me: number, parentId: number, text: string) => {
         },
       })
     }
+    // Who it names by @login, the author replied to aside: told already
+    notifyMentions({
+      me,
+      text: body,
+      category: 'communities',
+      payload: { postId: rootId, onReply: 1 },
+      skip: [parent.authorId],
+    })
     return replyId
   })()
   return shown(me, [getOne(replyId)!])[0]

@@ -118,8 +118,11 @@ export const savePost = async (draft: PostDraft) => {
     media: draft.media?.map((media) => media.id) ?? [],
     videoUrl: draft.video ?? '',
   })
-  return publishPost({ ...draft, media: saved.media }, me, {
+  const post = publishPost({ ...draft, media: saved.media }, me, {
     id: savedId(saved.id),
     at: saved.createdAt * 1000,
   })
+  // Its @logins that are developers, as the server read them
+  post.mentions = saved.mentions
+  return post
 }

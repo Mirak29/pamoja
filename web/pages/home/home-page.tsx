@@ -1,3 +1,4 @@
+import { Mentions } from '/web/ui/mentions.tsx'
 import { toTop } from '/web/lib/refresh.ts'
 import { useDraft } from '/web/lib/draft.ts'
 import { counted } from '/web/lib/plural.ts'
@@ -459,30 +460,32 @@ const Composer = () => {
     <section class='slab mr-2 flex gap-3.5 px-[18px] py-4'>
       <Avatar name={me.name} src={me.avatarUrl} size={42} />
       <div class='flex min-w-0 flex-1 flex-col gap-3'>
-        <textarea
-          ref={field}
-          rows={opened ? 3 : 1}
-          value={text}
-          onFocus={() => setTouched(true)}
-          aria-label='Écrire un post'
-          placeholder={opened
-            ? 'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
-            : 'Sur quoi tu travailles ?'}
-          onInput={(event) => setText(event.currentTarget.value)}
-          onPaste={picker.onPaste}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            const dropped = [...event.dataTransfer?.files ?? []]
-            if (!dropped.length) return
-            event.preventDefault()
-            picker.add(dropped)
-          }}
-          onKeyDown={(event) =>
-            event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
-            publish()}
-          maxLength={LIMITS.post}
-          class='well w-full resize-y px-3 py-2.5 text-[16px] leading-[23px] text-ink'
-        />
+        <Mentions>
+          <textarea
+            ref={field}
+            rows={opened ? 3 : 1}
+            value={text}
+            onFocus={() => setTouched(true)}
+            aria-label='Écrire un post'
+            placeholder={opened
+              ? 'Sur quoi tu travailles ? Une question, une astuce, du code, un lien vidéo…'
+              : 'Sur quoi tu travailles ?'}
+            onInput={(event) => setText(event.currentTarget.value)}
+            onPaste={picker.onPaste}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              const dropped = [...event.dataTransfer?.files ?? []]
+              if (!dropped.length) return
+              event.preventDefault()
+              picker.add(dropped)
+            }}
+            onKeyDown={(event) =>
+              event.key === 'Enter' && (event.metaKey || event.ctrlKey) &&
+              publish()}
+            maxLength={LIMITS.post}
+            class='well w-full resize-y px-3 py-2.5 text-[16px] leading-[23px] text-ink'
+          />
+        </Mentions>
         <Counter value={text} limit={LIMITS.post} />
         <MediaThumbs picker={picker} />
         {video && <VideoEmbed url={video} />}

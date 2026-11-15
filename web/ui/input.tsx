@@ -1,3 +1,4 @@
+import { Mentions } from '/web/ui/mentions.tsx'
 import type { ComponentChildren, JSX } from 'preact'
 import { useState } from 'preact/hooks'
 import { CircleAlert } from '/web/assets/icons.tsx'
@@ -77,12 +78,16 @@ export const Input = (
 )
 
 export const Textarea = (
-  { compact, class: className, limit, wrap, ...props }:
-    & { compact?: boolean }
+  { compact, mentions, class: className, limit, wrap, ...props }:
+    & {
+      compact?: boolean
+      /** Suggests developers after an @ (web/ui/mentions.tsx) */
+      mentions?: boolean
+    }
     & Limit
     & JSX.IntrinsicElements['textarea'],
-) => (
-  <Limited limit={limit} wrap={wrap} value={props.value}>
+) => {
+  const area = (
     <textarea
       {...props}
       maxLength={limit ?? props.maxLength}
@@ -90,8 +95,13 @@ export const Textarea = (
         compact ? 'text-[14px]' : 'text-[15px]'
       } leading-[22px] resize-y ${className ?? ''}`}
     />
-  </Limited>
-)
+  )
+  return (
+    <Limited limit={limit} wrap={wrap} value={props.value}>
+      {mentions ? <Mentions>{area}</Mentions> : area}
+    </Limited>
+  )
+}
 
 export const Select = (
   { compact, class: className, ...props }:

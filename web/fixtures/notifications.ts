@@ -21,6 +21,7 @@ export type NotificationKind =
   | 'collaboration'
   | 'reply'
   | 'repost'
+  | 'mention'
 
 export type Notification = {
   id: string

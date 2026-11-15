@@ -56,6 +56,8 @@ export type Post = {
   hidden?: boolean
   /** Reason given by the moderator, shown to the author */
   hiddenReason?: string
+  /** Its @logins that are developers on Pamoja, as the server read them */
+  mentions?: string[]
   demo: boolean
 }
 
@@ -545,6 +547,7 @@ const postFromServer = (
     // Only its author reads it hidden, with why (§10.5)
     hidden: saved.hidden || undefined,
     hiddenReason: saved.hiddenReason || undefined,
+    mentions: saved.mentions,
     demo: false,
   }
 }
@@ -681,6 +684,8 @@ export const adoptReply = (
     if (post.root === old) post.root = local.id
   }
   local.at = saved.createdAt * 1000
+  // Its @logins that are developers: the others stay text
+  local.mentions = saved.mentions
   local.demo = false
   changed()
 }

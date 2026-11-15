@@ -1819,3 +1819,10 @@ Pamoja s'installe comme une application, sur téléphone comme sur ordinateur. U
 - **Vérifié** dans Chrome sur le build de production : inscription, contrôle de la page, ouverture hors ligne, nouvelle version prise en compte, ancien cache supprimé, rechargement une fois la page cachée.
 - **Livrable** : `web/assets/pwa/`, `web/lib/pwa.ts`, `web/ui/install-dialog.tsx`, `task-generate-pwa-icons.ts`, `build-config.ts`, `task-prod.ts`, `task-dev.ts`, `web/index.html`, `web/app.tsx`, `web/ui/layout.tsx`, `web/ui/header.tsx`, `web/ui/public-header.tsx`
 - **Par** : @Mirak29
+
+### 2026-11-15 · Mentions @login : notification, suggestions, liens vérifiés
+
+Écrire `@moussa` dans un post, une réponse ou un message de canal prévient maintenant Moussa, en direct, d'une notification « Abdou t'a mentionné » qui mène au post ou au canal. Seuls les vrais développeurs le sont, 10 au plus par texte, jamais l'auteur, jamais à travers un blocage, et dans un canal seulement ceux qui peuvent le lire : une mention ne montre jamais un message à quelqu'un qui n'y a pas accès. L'auteur d'un post à qui l'on répond n'est pas prévenu deux fois. En tapant `@`, une liste propose les développeurs (ceux qu'on suit d'abord), au clavier comme au doigt ; Entrée choisit sans envoyer le message. Le serveur dit, avec chaque post et chaque message, quels `@login` existent : les autres restent du texte au lieu de mener à une page introuvable.
+
+- **Livrable** : `api/mentions.ts`, `api/mentions_test.ts`, `api/posts.ts`, `api/channels.ts`, `api/notifications.ts`, `api/routes.ts` (`GET/api/mentions`), `web/ui/mentions.tsx`, `web/ui/input.tsx`, `web/ui/rich-text.tsx`, `web/ui/post.tsx`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, et les champs du nouveau post, de l'accueil, des réponses et des canaux ; §10.1
+- **Par** : @Mirak29

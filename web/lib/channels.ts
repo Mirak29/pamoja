@@ -171,6 +171,7 @@ export const answerAlert = async (
       id,
       author: saved.author as Login,
       text: saved.body,
+      mentions: saved.mentions,
       at: saved.createdAt * 1000,
       demo: false,
     }]

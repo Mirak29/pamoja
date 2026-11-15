@@ -2,6 +2,7 @@ import type { JSX } from 'preact'
 import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import {
+  AtSign,
   Check,
   CheckCheck,
   GitPullRequest,
@@ -73,6 +74,7 @@ const icons: Record<NotificationKind, IconComponent> = {
   collaboration: Handshake,
   reply: MessageSquare,
   repost: Repeat2,
+  mention: AtSign,
 }
 
 const open = (notification: Notification) => {

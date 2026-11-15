@@ -73,7 +73,12 @@ const FOLD_LINES = 8
 
 /** The Markdown of a post or a reply, folded in the lists when long */
 export const PostBody = (
-  { body, size = 'default' }: { body: string; size?: keyof typeof bodySizes },
+  { body, size = 'default', mentions }: {
+    body: string
+    size?: keyof typeof bodySizes
+    /** Its @logins that are developers: the others stay text */
+    mentions?: string[]
+  },
 ) => {
   const [text, code] = bodySizes[size]
   const [unfolded, setUnfolded] = useState(false)
@@ -88,7 +93,7 @@ export const PostBody = (
             : ''
         }`}
       >
-        <Markdown text={body} class={text} code={code} />
+        <Markdown text={body} class={text} code={code} mentions={mentions} />
       </div>
       {folded && (
         <button
@@ -503,7 +508,7 @@ const ReplyRow = (
               Réponse masquée par la modération.
             </span>
           )
-          : <PostBody body={post.body} size='small' />}
+          : <PostBody body={post.body} size='small' mentions={post.mentions} />}
         <Actions
           post={post}
           size='reply'
@@ -789,7 +794,7 @@ export const PostCard = (
               <span translate={false} class='wrap-anywhere'>{post.title}</span>
             </A>
           )}
-          <PostBody body={post.body} />
+          <PostBody body={post.body} mentions={post.mentions} />
           <MediaGrid
             id={`images-${post.id}`}
             items={post.media ?? []}

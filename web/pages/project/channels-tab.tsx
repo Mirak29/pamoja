@@ -214,7 +214,7 @@ const MessageRow = (
           {message.demo && <DemoBadge />}
         </div>
         <div class='text-[15px] leading-6 text-pretty'>
-          <Markdown text={text} class='gap-1.5' />
+          <Markdown text={text} class='gap-1.5' mentions={message.mentions} />
         </div>
         {(message.media?.length || video) && (
           <div class='flex max-w-[480px] flex-col gap-2 py-1'>
@@ -351,6 +351,7 @@ const Composer = (
           value={draft}
           limit={LIMITS.channelMessage}
           wrap='min-w-0 flex-1'
+          mentions
           onInput={(event) => setDraft(event.currentTarget.value)}
           onPaste={images ? picker.onPaste : undefined}
           onKeyDown={(event) => {
@@ -419,7 +420,11 @@ const Thread = (
         </span>
       </span>
       <div class='text-[14px] leading-[22px]'>
-        <Markdown text={textOf(message)} class='gap-1.5' />
+        <Markdown
+          text={textOf(message)}
+          class='gap-1.5'
+          mentions={message.mentions}
+        />
       </div>
     </div>
     <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
@@ -438,7 +443,11 @@ const Thread = (
               </span>
             </span>
             <div class='text-[14px] leading-[22px]'>
-              <Markdown text={reply.text} class='gap-1.5' />
+              <Markdown
+                text={reply.text}
+                class='gap-1.5'
+                mentions={reply.mentions}
+              />
             </div>
             {reply.demo && <DemoBadge />}
           </div>

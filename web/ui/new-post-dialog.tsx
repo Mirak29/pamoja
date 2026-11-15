@@ -175,6 +175,7 @@ const NewPost = (
                 }}
                 onPaste={picker.onPaste}
                 compact
+                mentions
               />
             </Field>
             <div class='flex flex-col gap-2'>
