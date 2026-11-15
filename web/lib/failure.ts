@@ -25,7 +25,9 @@ export const notifyFailure = (
     body: wait
       ? t`Trop de demandes d’un coup. Réessaie ${waitLabel(wait)}.`
       : reason
-      ? refusals[reason] ?? 'Le serveur a refusé la demande.'
+      ? refusals[reason] ?? (reason === 'suspended'
+        ? 'Ton compte est suspendu par la modération : tu peux lire, pas écrire.'
+        : 'Le serveur a refusé la demande.')
       : 'Pamoja n’a pas pu joindre le serveur. Réessaie dans un instant.',
     icon: CircleAlert,
     tone: 'danger',

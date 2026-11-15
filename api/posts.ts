@@ -10,6 +10,7 @@ import { videoOf } from '/api/video-links.ts'
 import { createNotification } from '/api/notifications.ts'
 import { eligibilityOf, RULES_VERSION } from '/api/reputation.ts'
 import { evaluateBadges } from '/api/badges.ts'
+import { hiddenReasonOf } from '/api/moderation.ts'
 
 /** The reactions a post can get (§10.1): one since PAM-539, « J'aime » */
 export const REACTION_KINDS = ['like']
@@ -82,12 +83,14 @@ type PostRow = {
   body: string
   videoUrl: string | null
   createdAt: number
+  hiddenAt?: number | null
 }
 
 const postSelect = `
   SELECT post.postId, user.githubUsername AS author,
     profile.displayName AS authorName, community.slug AS community,
-    post.type, post.title, post.body, post.videoUrl, post.createdAt
+    post.type, post.title, post.body, post.videoUrl, post.createdAt,
+    post.hiddenAt
   FROM post
   JOIN user ON user.userId = post.authorId
   JOIN profile ON profile.userId = post.authorId
@@ -139,9 +142,14 @@ const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
 `.all
 
 // The posts of one developer, for the activity of their profile
-const listByAuthor =
-  sql<PostRow, { author: string; limit: number }>`${postSelect}
-  WHERE ${original} AND user.githubUsername = :author COLLATE NOCASE
+// Its author sees a hidden post too, with why (§10.5)
+const listByAuthor = sql<
+  PostRow,
+  { author: string; limit: number; me: number }
+>`${postSelect}
+  WHERE post.parentId IS NULL AND post.repostOfId IS NULL
+    AND (post.hiddenAt IS NULL OR post.authorId = :me)
+    AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
 `.all
@@ -149,16 +157,18 @@ const listByAuthor =
 // The replies of one developer, for the activity of their profile
 const listRepliesByAuthor = sql<
   PostRow & { parentId: number; rootId: number },
-  { author: string; limit: number }
+  { author: string; limit: number; me: number }
 >`
   SELECT post.postId, post.parentId, post.rootId, user.githubUsername AS author,
     profile.displayName AS authorName, community.slug AS community,
-    post.type, post.title, post.body, post.videoUrl, post.createdAt
+    post.type, post.title, post.body, post.videoUrl, post.createdAt,
+    post.hiddenAt
   FROM post
   JOIN user ON user.userId = post.authorId
   JOIN profile ON profile.userId = post.authorId
   LEFT JOIN community ON community.communityId = post.communityId
-  WHERE post.parentId IS NOT NULL AND post.hiddenAt IS NULL
+  WHERE post.parentId IS NOT NULL
+    AND (post.hiddenAt IS NULL OR post.authorId = :me)
     AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
@@ -250,6 +260,9 @@ const shown = (me: number, rows: PostRow[]) => {
       replies: replies.get(row.postId) ?? 0,
       reposts: reposts.get(row.postId) ?? [],
       createdAt: row.createdAt,
+      // Only its author reads it hidden, with the reason (§10.5)
+      hidden: !!row.hiddenAt,
+      hiddenReason: row.hiddenAt ? hiddenReasonOf(row.postId) : '',
     }
   })
 }
@@ -269,7 +282,7 @@ export const listPosts = (
   shown(
     me,
     author
-      ? listByAuthor({ author, limit: FEED_PAGE })
+      ? listByAuthor({ author, limit: FEED_PAGE, me })
       : after
       ? listSince({ after, limit: FEED_PAGE })
       : before
@@ -282,7 +295,7 @@ export const FEED_PAGE = 50
 
 /** The replies of one developer, with where they go, for their profile */
 export const listRepliesOf = (me: number, author: string) => {
-  const rows = listRepliesByAuthor({ author, limit: 50 })
+  const rows = listRepliesByAuthor({ author, limit: 50, me })
   const place = new Map(rows.map((row) => [row.postId, row]))
   return shown(me, rows).map((p) => ({
     ...p,

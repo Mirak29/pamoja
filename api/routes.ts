@@ -1,4 +1,5 @@
 import { makeRouter, route } from '@01edu/api/router'
+import { decide, MODERATION_ACTIONS, moderationQueue } from '/api/moderation.ts'
 import { memoryLimit } from '/api/lib/rate.ts'
 import { respond } from '@01edu/api/response'
 import { ARR, BOOL, LIST, NUM, OBJ, optional, STR } from '@01edu/api/validator'
@@ -21,6 +22,7 @@ import { suggestImport } from '/api/import-suggest.ts'
 import { embedOne, requestText } from '/api/embeddings.ts'
 import {
   getProject,
+  listExploreProjects,
   listMyProjects,
   listProjectIssues,
   listProjectPulls,
@@ -221,6 +223,8 @@ const postFields = {
   reactions: OBJ({ like: NUM('Likes') }, 'How many of each reaction'),
   mine: ARR(STR('like'), 'The reactions of the developer'),
   bookmarked: BOOL('True when the developer saved the post'),
+  hidden: BOOL('Hidden by moderation: only its author reads it'),
+  hiddenReason: STR('Why, for its author; empty when shown'),
   replies: NUM('Direct replies shown'),
   reposts: ARR(
     OBJ({
@@ -277,6 +281,7 @@ const identity = {
 
 const currentUser = {
   userId: NUM('Id of the developer'),
+  moderator: BOOL('Moderates a community or the platform (§10.5)'),
   ...identity,
   matchingMode,
   minScore: NUM('Score under which a help request does not reach them'),
@@ -1040,6 +1045,13 @@ const defs = {
     }),
     description: 'What the developer can work on, computed without AI (§10.3)',
   }),
+  'GET/api/explore/projects': route({
+    authorize: withSession,
+    fn: (ctx) => listExploreProjects(ctx.session.userId),
+    output: ARR(projectShape, 'Public projects, and those of the developer'),
+    description: 'Every project Explore lists and filters, newest first',
+  }),
+
   'GET/api/explore/developers': route({
     authorize: withSession,
     fn: () => listDevelopers(),
@@ -1706,6 +1718,63 @@ const defs = {
     }),
     output: OBJ({ status: STR('accepted or refused') }),
     description: 'Accept or refuse a candidature (§6.6)',
+  }),
+
+  'GET/api/moderation/queue': route({
+    authorize: withSession,
+    fn: (ctx) => moderationQueue(ctx.session.userId),
+    output: OBJ({
+      moderator: BOOL('False: the developer moderates nothing'),
+      queue: ARR(
+        OBJ({
+          targetType: STR('post, comment, help_request or profile'),
+          targetId: NUM('Id of the content'),
+          title: STR('What it is'),
+          excerpt: STR('Its start'),
+          href: STR('Its page'),
+          author: STR('Login of its author'),
+          hidden: BOOL('Hidden by its reports, until a decision'),
+          reports: ARR(
+            OBJ({
+              reason: STR('Key of reportReasons'),
+              comment: STR('Comment of the reporter, empty if none'),
+              by: STR('Login of the reporter, never shown to the author'),
+              at: NUM('When, in seconds'),
+            }),
+            'Every open report of it, oldest first',
+          ),
+        }),
+        'The reported content, oldest report first',
+      ),
+      history: ARR(
+        OBJ({
+          id: NUM('Id of the action'),
+          moderator: STR('Login of the moderator'),
+          action: STR('dismiss, hide, warn or suspend'),
+          reason: STR('The reason sent to the author'),
+          until: NUM('End of a suspension, in seconds, else 0'),
+          at: NUM('When, in seconds'),
+          title: STR('The content'),
+          href: STR('Its page'),
+        }),
+        'The latest decisions, newest first',
+      ),
+    }),
+    description: 'The moderation queue of the developer and its history',
+  }),
+
+  'POST/api/moderation/decide': route({
+    authorize: editing,
+    fn: (ctx, input) => decide(ctx.session.userId, input),
+    input: OBJ({
+      targetType: STR('post, comment, help_request or profile'),
+      targetId: NUM('Id of the content'),
+      action: LIST(MODERATION_ACTIONS, 'dismiss, hide, warn or suspend'),
+      reason: STR('Why: sent to the author, required'),
+      days: NUM('Days of a suspension: 1, 7 or 30; 0 otherwise'),
+    }),
+    output: OBJ({ decided: BOOL('True') }),
+    description: 'Decide on a reported content (§10.5)',
   }),
 
   'POST/api/report/create': route({

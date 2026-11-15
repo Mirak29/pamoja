@@ -532,6 +532,9 @@ const postFromServer = (
     ...place,
     media: saved.media,
     video: saved.videoUrl || undefined,
+    // Only its author reads it hidden, with why (§10.5)
+    hidden: saved.hidden || undefined,
+    hiddenReason: saved.hiddenReason || undefined,
     demo: false,
   }
 }

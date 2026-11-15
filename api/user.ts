@@ -1,4 +1,5 @@
 import { stringsOf } from '/api/lib/json.ts'
+import { isModerator } from '/api/moderation.ts'
 import { db, sql } from '@01edu/db'
 import { DEFAULT_MIN_SCORE } from '/api/help-rules.ts'
 import { now } from '@01edu/time'
@@ -211,6 +212,8 @@ export const getCurrentUser = (userId: number) => {
   if (!user) return
   return {
     userId,
+    // Has a moderation queue (§10.5)
+    moderator: isModerator(userId),
     login: user.githubUsername,
     // The account on GitHub: a demo account keeps its demo login (§14)
     githubLogin: user.githubLogin ?? user.githubUsername,

@@ -115,6 +115,24 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
           : t`${who} a répondu à ton post`,
         body: n.excerpt,
       }
+    case 'moderation_hidden':
+      return {
+        kind: 'moderation',
+        title: translate('Ton contenu a été masqué'),
+        body: t`« ${n.title} » · Motif : ${n.excerpt}`,
+      }
+    case 'moderation_warning':
+      return {
+        kind: 'moderation',
+        title: translate('Avertissement de la modération'),
+        body: t`« ${n.title} » · Motif : ${n.excerpt}`,
+      }
+    case 'moderation_suspended':
+      return {
+        kind: 'moderation',
+        title: translate('Ton compte est suspendu'),
+        body: t`Tu peux lire, pas écrire. Motif : ${n.excerpt}`,
+      }
     case 'repost':
       return {
         kind: 'repost',

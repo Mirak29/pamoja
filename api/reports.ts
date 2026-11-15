@@ -22,8 +22,11 @@ const conflict = (m: string) => new respond.ConflictError({ message: m })
 export const REPORTABLE = ['post', 'comment', 'help_request', 'profile']
 const HIDEABLE = ['post', 'comment']
 
-const getPost = sql<{ authorId: number; hiddenAt: number | null }, number>`
-  SELECT authorId, hiddenAt FROM post WHERE postId = ?
+const getPost = sql<
+  { authorId: number; hiddenAt: number | null; communityId: number | null },
+  number
+>`
+  SELECT authorId, hiddenAt, communityId FROM post WHERE postId = ?
 `.get
 
 // The other targets: a help request, a developer's profile
@@ -98,7 +101,8 @@ export const reportContent = (
     })
     Entry.insert.CONTENT_REPORTED({
       userId: me,
-      communityId: maybe(null),
+      // Its moderators learn of it at once (§10.5)
+      communityId: maybe(post?.communityId ?? null),
       postId: HIDEABLE.includes(targetType) ? targetId : maybe(null),
       data: { targetType, targetId },
       source: 'platform',
