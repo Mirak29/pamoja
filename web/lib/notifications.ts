@@ -115,6 +115,12 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
           : t`${who} a répondu à ton post`,
         body: n.excerpt,
       }
+    case 'repost':
+      return {
+        kind: 'repost',
+        title: t`${who} a republié ton post`,
+        body: n.excerpt,
+      }
     case 'answer_accepted':
       return {
         kind: 'reply',

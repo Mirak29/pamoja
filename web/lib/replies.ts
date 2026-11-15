@@ -15,22 +15,30 @@ import {
 // shown at once, then saved. A post of the demo, whose id is a fixture
 // string, stays handled in the page.
 
+// Replies on their way to the server: a reply to one of them waits for its
+// id, so it is saved too
+const pending = new Map<Post, Promise<unknown>>()
+
 /**
  * Replies to a post: shown at once; on a server post it is saved and takes
  * the id the server gave it, so a sub-reply or an accept works right away
  */
 export const reply = (parent: Post, text: string): Post => {
   const local = replyLocal(parent, me.login, text)
-  const postId = serverIdOf(parent.id)
-  if (postId) {
-    api['POST/api/post/reply'].fetch({ postId, body: text }).then(
-      (saved) => adoptReply(local, saved),
-      (error) => {
-        dropPost(local)
-        notifyFailure('Réponse non enregistrée', error)
-      },
-    )
-  }
+  const before = pending.get(parent)
+  if (!before && !serverIdOf(parent.id)) return local
+  const saving = (before ?? Promise.resolve()).then(() => {
+    const postId = serverIdOf(parent.id)
+    if (!postId) throw new Error('Parent not saved')
+    return api['POST/api/post/reply'].fetch({ postId, body: text })
+  }).then(
+    (saved) => adoptReply(local, saved),
+    (error) => {
+      dropPost(local)
+      notifyFailure('Réponse non enregistrée', error)
+    },
+  ).finally(() => pending.delete(local))
+  pending.set(local, saving)
   return local
 }
 

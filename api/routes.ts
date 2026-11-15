@@ -120,11 +120,13 @@ import {
   createPost,
   createReply,
   listPosts,
+  listRepliesOf,
   listSaved,
   REACTION_KINDS,
   readThread,
   setBookmark,
   setReaction,
+  setRepost,
 } from '/api/posts.ts'
 import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
 import {
@@ -173,7 +175,8 @@ const media = OBJ({
   name: STR('Name of a file, empty for an image'),
 }, 'An image or a file')
 
-// A post saved on the server (PAM-427): replies and reactions with PAM-501
+// A post saved on the server (PAM-427), with its likes, bookmark, replies
+// and reposts (PAM-501)
 const postFields = {
   id: NUM('Id of the post'),
   author: STR('Login of the author'),
@@ -187,6 +190,15 @@ const postFields = {
   reactions: OBJ({ like: NUM('Likes') }, 'How many of each reaction'),
   mine: ARR(STR('like'), 'The reactions of the developer'),
   bookmarked: BOOL('True when the developer saved the post'),
+  replies: NUM('Direct replies shown'),
+  reposts: ARR(
+    OBJ({
+      by: STR('Login of the developer who reposted'),
+      name: STR('Their name'),
+      at: NUM('Repost, in seconds'),
+    }),
+    'Who reposted it, oldest first',
+  ),
   createdAt: NUM('Publication, in seconds'),
 }
 
@@ -1452,6 +1464,20 @@ const defs = {
     description: 'The latest posts, newest first, or those of one developer',
   }),
 
+  'GET/api/replies': route({
+    authorize: withSession,
+    fn: (ctx, { author }) => listRepliesOf(ctx.session.userId, author),
+    input: OBJ({ author: STR('GitHub login of the developer') }),
+    output: ARR(
+      OBJ({
+        ...postFields,
+        parentId: NUM('Id of the post it replies to'),
+        rootId: NUM('Id of the first post of its thread'),
+      }, 'A reply'),
+    ),
+    description: 'The latest replies of a developer, for their profile',
+  }),
+
   'GET/api/saved': route({
     authorize: withSession,
     fn: (ctx) => listSaved(ctx.session.userId),
@@ -1506,6 +1532,17 @@ const defs = {
     }),
     output: OBJ({ reacted: BOOL('True when the reaction is now on') }),
     description: 'React to a post, or take the reaction back (§10.1)',
+  }),
+
+  'POST/api/post/repost': route({
+    authorize: withSession,
+    fn: (ctx, input) => setRepost(ctx.session.userId, input.postId, input.on),
+    input: OBJ({
+      postId: NUM('Id of the post'),
+      on: BOOL('Reposts it, or takes the repost back: the state wanted'),
+    }),
+    output: OBJ({ reposted: BOOL('True when the post is now reposted') }),
+    description: 'Repost a post to the followers, or take it back (§10.1)',
   }),
 
   'POST/api/bookmark': route({
@@ -1931,10 +1968,12 @@ const defs = {
 
   'POST/api/conversation/message/react': route({
     authorize: withSession,
-    fn: (ctx, { id, emoji }) => reactToMessage(ctx.session.userId, id, emoji),
+    fn: (ctx, { id, emoji, on }) =>
+      reactToMessage(ctx.session.userId, id, emoji, on),
     input: OBJ({
       id: NUM('Id of the message'),
       emoji: LIST([...REACTIONS], 'One of the reactions offered'),
+      on: BOOL('Puts the reaction, or takes it back: the state wanted'),
     }),
     description: 'Add a reaction to a message, or take it back',
   }),

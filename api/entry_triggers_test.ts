@@ -77,8 +77,9 @@ const audience: Record<EntryTypeName, Role[]> = {
   HELP_REQUEST_CLOSED: help,
   // Communities
   POST_CREATED: ['actor', 'communityMember', 'fan'],
-  POST_REPLIED: ['communityMember'],
-  POST_REPOSTED: ['communityMember', 'fan'],
+  // The feeds that show the post count its replies and reposts (PAM-501)
+  POST_REPLIED: ['actor', 'communityMember', 'fan'],
+  POST_REPOSTED: ['actor', 'communityMember', 'fan'],
   CONTENT_REPORTED: ['moderator'],
   MODERATION_ACTION: ['actor', 'moderator'],
   // Direct messages: the two of the conversation only (§10.6)

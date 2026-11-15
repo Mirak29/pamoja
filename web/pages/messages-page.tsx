@@ -855,6 +855,7 @@ const Bubble = (
                   conversationId,
                   message.id,
                   r.emoji as typeof reactions[number],
+                  !r.mine,
                 )}
               class={`flex h-7 cursor-pointer items-center gap-1 rounded-md border px-2 text-[13px] ${
                 r.mine
@@ -877,7 +878,12 @@ const Bubble = (
               aria-label={t`Réagir ${emoji}`}
               onClick={() => {
                 setPicking(false)
-                react(conversationId, message.id, emoji)
+                react(
+                  conversationId,
+                  message.id,
+                  emoji,
+                  !message.reactions.some((r) => r.emoji === emoji && r.mine),
+                )
               }}
               class='flex size-8 cursor-pointer items-center justify-center rounded-md text-[17px] hover:bg-surface-200'
             >

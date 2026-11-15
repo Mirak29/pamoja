@@ -1,16 +1,24 @@
 import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
-import { makeRestorePoint } from '@01edu/db'
+import { makeRestorePoint, sql } from '@01edu/db'
 import { seed } from '/api/seed.ts'
+import { Post } from '/api/schema.ts'
 import { userIdOfLogin } from '/api/user.ts'
 import {
   createPost,
+  createReply,
   listPosts,
+  listRepliesOf,
   listSaved,
   setBookmark,
   setReaction,
+  setRepost,
 } from '/api/posts.ts'
 
 const restore = makeRestorePoint()
+
+const backdate = sql<undefined, { postId: number; at: number }>`
+  UPDATE post SET createdAt = :at WHERE postId = :postId
+`.run
 
 const newPost = (me: number, body: string) =>
   createPost(me, { community: '', type: 'Discussion', title: '', body }).id
@@ -85,4 +93,76 @@ Deno.test('reactions: the state wanted, so a replay or a late tab keeps it', () 
   setBookmark(abdou, post, false)
   setBookmark(abdou, post, false)
   assertEquals(listSaved(abdou).length, 0)
+})
+
+Deno.test('reposts: the state wanted, shown on the post, never as a post', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const old = newPost(abdou, 'Un vieux post')
+  // Two days old, then fifty newer posts push it out of the latest ones,
+  // written straight in the table more than an hour ago: the rate of their
+  // author is not the point
+  const hours = (n: number) => Date.now() / 1000 - n * 3600
+  backdate({ postId: old, at: hours(48) })
+  for (let i = 0; i < 50; i++) {
+    const at = hours(2) + i
+    Post.insert({
+      authorId: moussa,
+      type: 'Discussion',
+      body: `Post ${i}`,
+      source: 'platform',
+      createdAt: at,
+      updatedAt: at,
+    })
+  }
+  assert(!listPosts(abdou).some((p) => p.id === old))
+
+  // Reposted twice, from two tabs: one repost, which brings it back
+  assertEquals(setRepost(moussa, old, true).reposted, true)
+  assertEquals(setRepost(moussa, old, true).reposted, true)
+  const shown = listPosts(abdou).find((p) => p.id === old)!
+  assertEquals(shown.reposts.map((r) => r.by), ['moussa'])
+  // The repost itself never shows as a post of the feed or of the profile
+  assert(listPosts(abdou).every((p) => p.body !== ''))
+  assert(listPosts(abdou, 0, 'moussa').every((p) => p.body !== ''))
+  // Read by a feed open since before it
+  assert(listPosts(abdou, shown.createdAt).some((p) => p.id === old))
+
+  // Taken back twice: none
+  setRepost(moussa, old, false)
+  setRepost(moussa, old, false)
+  assertEquals(
+    listPosts(abdou, 0, 'abdou').find((p) => p.id === old)!.reposts,
+    [],
+  )
+  // Reposted again: back, its author told only the first time
+  setRepost(moussa, old, true)
+  assertEquals(
+    listPosts(abdou).find((p) => p.id === old)!.reposts.map((r) => r.by),
+    ['moussa'],
+  )
+  // A reply is not reposted
+  const reply = createReply(moussa, old, 'Une réponse').id
+  assertThrows(() => setRepost(abdou, reply, true))
+})
+
+Deno.test('replies: counted with the post, listed for the profile', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const post = newPost(abdou, 'Un post commenté')
+  const first = createReply(moussa, post, 'Première réponse').id
+  createReply(abdou, first, 'Réponse à la réponse')
+  createReply(moussa, post, 'Deuxième réponse')
+  // Direct replies: the page shows them before reading the thread
+  assertEquals(listPosts(abdou).find((p) => p.id === post)!.replies, 2)
+
+  const replies = listRepliesOf(abdou, 'moussa')
+  assertEquals(replies.length, 2)
+  assert(replies.every((r) => r.parentId === post && r.rootId === post))
+  const nested = listRepliesOf(moussa, 'abdou')[0]
+  assertEquals([nested.parentId, nested.rootId], [first, post])
 })

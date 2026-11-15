@@ -1378,6 +1378,20 @@ Un J'aime pouvait s'effacer, y compris sur ses propres posts. `POST/api/reaction
 - **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/reactions_test.ts`, `web/fixtures/posts.ts`, `web/lib/reactions.ts`, `docs/cahier-des-charges.md` ; §10.1, §15
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-501 (suite) · Reposts, réponses et fil qui tiennent
+
+Revue de toutes les interactions qui pouvaient disparaître.
+
+- **Reposts** : ils n'existaient que dans la page et s'effaçaient au rechargement. `POST/api/post/repost` les enregistre, avec l'état voulu. Un repost est un post qui pointe sur son original (`repostOfId`) ; il n'apparaît jamais comme un post du fil ou du profil. Un repost retiré reste masqué dans la table, où ses entries pointent, et revient s'il est refait. L'auteur du post est notifié la première fois.
+- **Fil** : `GET/api/posts` renvoie qui a republié chaque post, et un repost récent ramène un post plus ancien dans les derniers.
+- **Réponses** : le fil, la communauté et le profil ne comptaient que les réponses déjà lues, donc 0 après un rechargement. `GET/api/posts` donne maintenant le nombre de réponses directes, et ouvrir les commentaires d'une carte lit son fil. `GET/api/replies` donne l'onglet Réponses du profil. Une réponse écrite à une réponse pas encore enregistrée attend son id au lieu de rester dans la page, et une sous-réponse suit l'id que sa réponse reçoit.
+- **Réactions des messages privés** : `POST/api/conversation/message/react` reçoit aussi l'état voulu (`on`).
+- **Fil en direct** : un post, un repost ou une réponse (`POST_CREATED`, `POST_REPOSTED`, `POST_REPLIED`, aussi vers les autres onglets de l'auteur) fait relire le fil. Un post déjà affiché reprend ses J'aime, reposts et réponses ; un post pas encore affiché attend derrière « nouveaux posts ». Le retour sur l'onglet ou sur l'app du téléphone fait de même.
+- **Page communauté** : elle compte les J'aime des autres.
+
+- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/entries.ts`, `api/messages.ts`, `api/schema.ts` (commentaire), `api/reactions_test.ts`, `api/messages_test.ts`, `api/entry_triggers_test.ts`, `web/fixtures/posts.ts`, `web/lib/posts.ts`, `web/lib/reactions.ts`, `web/lib/replies.ts`, `web/lib/live-data.ts`, `web/lib/messages.ts`, `web/lib/notifications.ts`, `web/ui/post.tsx`, `web/pages/messages-page.tsx`, `web/pages/communities/community-page.tsx` ; §10.1, §10.6, §12.2, §15
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

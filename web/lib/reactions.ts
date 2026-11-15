@@ -7,10 +7,11 @@ import {
   serverIdOf,
   toggleBookmark as bookmarkLocal,
   toggleLike as likeLocal,
+  toggleRepost as repostLocal,
   whileSaving,
 } from '/web/fixtures/posts.ts'
 
-// Reactions and bookmarks persisted on the server (PAM-501): shown at once,
+// Likes, reposts and bookmarks persisted on the server (PAM-501): shown at once,
 // then saved; a failure puts it back. A post of the demo, whose id is a
 // fixture string, stays handled in the page (§10.1).
 
@@ -40,6 +41,20 @@ export const toggleBookmark = (post: Post) => {
       notifyFailure('Action non enregistrée', error)
     },
   )
+}
+
+/** Reposts a post to the followers, or takes the repost back */
+export const toggleRepost = (post: Post) => {
+  const on = repostLocal(post, me.login)
+  const postId = serverIdOf(post.id)
+  if (postId) {
+    whileSaving(post, api['POST/api/post/repost'].fetch({ postId, on }))
+      .catch((error) => {
+        repostLocal(post, me.login)
+        notifyFailure('Action non enregistrée', error)
+      })
+  }
+  return on
 }
 
 /** The posts the developer saved, for the « Enregistrés » page */

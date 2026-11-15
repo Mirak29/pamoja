@@ -41,6 +41,8 @@ export type Post = {
   /** Likes counted by the server beyond those logins (PAM-501) */
   otherLikes?: number
   reposts: { by: Login; at: number }[]
+  /** Direct replies counted by the server, before its thread is read */
+  replyCount?: number
   parent?: string
   root?: string
   acceptedReply?: string
@@ -350,7 +352,8 @@ export const toggleRepost = (post: Post, login: Login) => {
   post.reposts = on
     ? [...post.reposts, { by: login, at: Date.now() }]
     : post.reposts.filter((r) => r.by !== login)
-  if (on && post.author !== login) {
+  // A post of the server: its author is told by the server
+  if (on && post.author !== login && post.demo) {
     pushNotification({
       to: post.author,
       category: 'social',
@@ -393,7 +396,8 @@ export const replyTo = (parent: Post, login: Login, body: string) => {
     demo: false,
   }
   posts.push(reply)
-  if (parent.author !== login) {
+  // A post of the server: its author is told by the server
+  if (parent.author !== login && parent.demo) {
     pushNotification({
       to: parent.author,
       category: 'communities',
@@ -482,6 +486,17 @@ export const serverIdOf = (id: string) => {
   return Number.isInteger(n) && n > 0 ? n : undefined
 }
 
+/**
+ * Direct replies of a post: those the page holds, or the server's count
+ * when its thread is not read yet (PAM-501)
+ */
+export const replyCountOf = (post: Post) =>
+  Math.max(childrenOf(post.id).length, post.replyCount ?? 0)
+
+/** Whether the page lacks replies the server counted: its thread to read */
+export const lacksReplies = (post: Post) =>
+  childrenOf(post.id).length < (post.replyCount ?? 0)
+
 /** How many like a post: the logins known, and the others counted */
 export const likeCountOf = (post: Post) =>
   (post.reactions.like?.length ?? 0) + (post.otherLikes ?? 0)
@@ -496,6 +511,7 @@ const postFromServer = (
   place: Pick<Post, 'parent' | 'root'> = {},
 ): Post => {
   hearOf(saved.author, saved.authorName, '')
+  for (const repost of saved.reposts) hearOf(repost.by, repost.name, '')
   return {
     id: savedId(saved.id),
     community: saved.community,
@@ -508,7 +524,11 @@ const postFromServer = (
     otherLikes: saved.reactions.like -
       (saved.mine.includes('like') ? 1 : 0),
     bookmarks: saved.bookmarked ? [me.login as Login] : [],
-    reposts: [],
+    reposts: saved.reposts.map((repost) => ({
+      by: repost.by as Login,
+      at: repost.at * 1000,
+    })),
+    replyCount: saved.replies,
     ...place,
     media: saved.media,
     video: saved.videoUrl || undefined,
@@ -532,20 +552,27 @@ export const whileSaving = <T>(post: Post, request: Promise<T>) => {
 }
 
 /**
- * A post already shown takes the reactions and the bookmark the server
- * read: a like given in another tab or on the phone shows here too
+ * A post already shown takes what the server counted: likes, bookmark,
+ * reposts and replies. What was done in another tab, on the phone or by
+ * the others shows here too
  */
 const refresh = (post: Post, saved: ApiOutput['GET/api/posts'][number]) => {
   if (saving.has(post)) return false
   const fresh = postFromServer(saved)
-  const likes = fresh.reactions.like ?? []
-  const same = likeCountOf(post) === likeCountOf(fresh) &&
-    (post.reactions.like ?? []).join() === likes.join() &&
-    (post.bookmarks ?? []).join() === (fresh.bookmarks ?? []).join()
-  if (same) return false
-  post.reactions.like = likes
+  const key = (p: Post) =>
+    JSON.stringify([
+      p.reactions.like ?? [],
+      p.otherLikes ?? 0,
+      p.bookmarks ?? [],
+      p.reposts,
+      p.replyCount ?? 0,
+    ])
+  if (key(post) === key(fresh)) return false
+  post.reactions.like = fresh.reactions.like
   post.otherLikes = fresh.otherLikes
   post.bookmarks = fresh.bookmarks
+  post.reposts = fresh.reposts
+  post.replyCount = fresh.replyCount
   return true
 }
 
@@ -590,12 +617,38 @@ export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
   changed()
 }
 
-/** The optimistic reply takes the id the server gave it, so it persists */
+/**
+ * Brings the replies of a developer read from GET/api/replies, each under
+ * its parent and in its thread; a reply already shown takes what was read
+ */
+export const adoptReplies = (list: ApiOutput['GET/api/replies']) => {
+  for (const saved of list) {
+    const known = posts.find((post) => post.id === savedId(saved.id))
+    if (known) refresh(known, saved)
+    else {
+      posts.push(postFromServer(saved, {
+        parent: savedId(saved.parentId),
+        root: savedId(saved.rootId),
+      }))
+    }
+  }
+  changed()
+}
+
+/**
+ * The optimistic reply takes the id the server gave it, so it persists; a
+ * reply written to it meanwhile follows it
+ */
 export const adoptReply = (
   local: Post,
   saved: ApiOutput['POST/api/post/reply'],
 ) => {
+  const old = local.id
   local.id = savedId(saved.id)
+  for (const post of posts) {
+    if (post.parent === old) post.parent = local.id
+    if (post.root === old) post.root = local.id
+  }
   local.at = saved.createdAt * 1000
   local.demo = false
   changed()
@@ -611,13 +664,3 @@ export const dropPost = (post: Post) => {
 /** Whether a post of the server is already in the pages */
 export const isKnownPost = (id: number) =>
   posts.some((post) => post.id === savedId(id))
-
-/** The time of the newest post of the server in the pages, in seconds */
-export const newestSavedAt = () =>
-  posts.reduce(
-    (newest, post) =>
-      post.id.startsWith('s') && !post.parent
-        ? Math.max(newest, post.at / 1000)
-        : newest,
-    0,
-  )

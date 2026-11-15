@@ -479,8 +479,9 @@ export const react = async (
   conversationId: string,
   id: number,
   emoji: (typeof reactions)[number],
+  on: boolean,
 ) => {
-  await api['POST/api/conversation/message/react'].fetch({ id, emoji })
+  await api['POST/api/conversation/message/react'].fetch({ id, emoji, on })
     .catch((err) => tellLimit(err) || failed())
   await openConversation(conversationId)
 }
