@@ -1,0 +1,38 @@
+flowchart LR
+  WEB["Navigateur<br/>SPA Preact"]
+  GHIN["GitHub<br/>webhooks"]
+
+  subgraph VM["VM Systalink (Docker), binaire Deno compilé"]
+    CADDY["Caddy<br/>HTTPS, HTTP/2 et 3,<br/>SSE sans tampon"]
+    API["API @01edu/api<br/>routes GET / POST"]
+    SSE["Route SSE<br/>GET /api/events"]
+    HOOK["Route webhook<br/>POST /api/github/webhook"]
+    WQ["Worker webhooks<br/>file WebhookDelivery"]
+    JOBS["Tâches planifiées<br/>resynchro, vagues de matching,<br/>expirations, sauvegardes"]
+    DB[("SQLite<br/>tables + entries<br/>volume persistant")]
+    IDX["Worker d'index"]
+    MEILI[("Meilisearch<br/>non exposé")]
+    BAK[("Copies horaires<br/>/data/backups, 7 jours")]
+  end
+
+  GHOUT["API GitHub<br/>lecture seule"]
+  IA["Modèles d'IA<br/>Meta, puis Gemini, puis Groq"]
+  TEAM[("Poste de l'équipe<br/>pull-backup.sh")]
+
+  WEB -->|"HTTPS"| CADDY
+  GHIN -->|"signés HMAC"| CADDY
+  CADDY --> API & SSE & HOOK
+  HOOK -->|"insère la livraison, 202"| DB
+  API --> DB
+  HOOK ~~~ WQ
+  API ~~~ JOBS
+  WQ -->|"tables + entries,<br/>une transaction"| DB
+  JOBS --> DB
+  DB --> IDX --> MEILI
+  API -->|"login, import,<br/>3 contrôles"| GHOUT
+  JOBS -->|"requêtes ETag"| GHOUT
+  API -->|"Assistant, résumés,<br/>embeddings"| IA
+  DB -.->|"VACUUM INTO horaire"| BAK
+  BAK -.->|"SSH, chaque jour"| TEAM
+  DB -.->|"trigger des entries"| SSE
+  SSE -.->|"signal : quelque chose a changé"| WEB

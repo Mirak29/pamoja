@@ -1,0 +1,21 @@
+stateDiagram-v2
+  [*] --> open : demande publiée, vague 1 notifiée
+  open --> accepted : un aidant accepte (atomique)
+  open --> cancelled : le demandeur annule
+  open --> expired : 7 jours sans acceptation
+  accepted --> review_submitted : review GitHub validée (5 conditions)
+  accepted --> delivered : l'aidant déclare « terminé » (sans PR)
+  accepted --> open : l'aidant se désiste
+  accepted --> open : libérée après 72 h sans activité
+  accepted --> cancelled : le demandeur annule
+  review_submitted --> completed : « Utile ? » oui
+  delivered --> completed : « Utile ? » oui
+  review_submitted --> closed_unhelpful : « Utile ? » non
+  delivered --> closed_unhelpful : « Utile ? » non
+  review_submitted --> closed_unconfirmed : 7 jours sans réponse
+  delivered --> closed_unconfirmed : 7 jours sans réponse
+  expired --> open : le demandeur rouvre
+  closed_unhelpful --> open : le demandeur rouvre
+  closed_unconfirmed --> open : le demandeur rouvre
+  completed --> [*]
+  cancelled --> [*]

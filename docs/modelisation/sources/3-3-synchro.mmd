@@ -1,0 +1,7 @@
+stateDiagram-v2
+  [*] --> none : projet créé sans repo
+  [*] --> poll : import niveau 1
+  [*] --> live : import d'un repo déjà couvert par une installation (propriétaire du repo personnel)
+  none --> poll : repo lié
+  poll --> live : installation de l'app, 3 contrôles réussis
+  live --> poll : app désinstallée ou repo retiré de l'installation

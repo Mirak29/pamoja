@@ -1,0 +1,119 @@
+erDiagram
+  User ||--o{ Project : "possède"
+  Project ||--o{ ProjectMember : "a pour membres"
+  User ||--o{ ProjectMember : "est membre"
+  Project ||--o{ JoinRequest : "reçoit"
+  User ||--o{ JoinRequest : "candidate"
+  Project ||--o{ ProjectNeed : "exprime"
+  Project ||--o{ Milestone : "planifie"
+  Project ||--o{ Task : "organise"
+  Milestone |o--o{ Task : "regroupe"
+  User |o--o{ Task : "est assigné"
+  Project ||--o{ ProjectMessage : "héberge"
+  ProjectMessage |o--o{ ProjectMessage : "fil de réponses"
+  ProjectMessage ||--o{ MessageReaction : "reçoit"
+  User ||--o{ ChannelState : "lit"
+  Project ||--o{ ChannelState : "a"
+  Project ||--o{ ProjectSummary : "est résumé"
+
+  Project {
+    int projectId PK
+    int ownerId FK
+    text name
+    text slug UK
+    text description
+    text vision "facultatif"
+    json skills "facultatif"
+    text demoVideoUrl "facultatif"
+    text visibility "public ou unlisted"
+    text status
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  ProjectMember {
+    int projectMemberId PK
+    int projectId FK
+    int userId FK
+    text role "owner, maintainer, contributor, reviewer, observer"
+    real joinedAt
+  }
+  JoinRequest {
+    int joinRequestId PK
+    int projectId FK
+    int userId FK
+    json areas
+    text availability
+    text message
+    text status
+    real createdAt
+  }
+  ProjectNeed {
+    int projectNeedId PK
+    int projectId FK
+    text type
+    text title
+    text description "facultatif"
+    json skills
+    text status
+    real createdAt
+    real updatedAt
+  }
+  Milestone {
+    int milestoneId PK
+    int projectId FK
+    text title
+    text description "facultatif"
+    text status "planned, active, done"
+    int position
+    real createdAt
+  }
+  Task {
+    int taskId PK
+    int projectId FK
+    int milestoneId FK "facultatif"
+    text boardColumn "backlog, ready, in_progress, review, done"
+    text title
+    text description "facultatif"
+    text priority "facultatif"
+    int assigneeId FK "facultatif"
+    int issueId FK "facultatif"
+    int pullRequestId FK "facultatif"
+    text rank "rang fractionnaire"
+    real createdAt
+    real updatedAt
+  }
+  ProjectMessage {
+    int messageId PK
+    int projectId FK
+    text channel "general, help, announcements"
+    int authorId FK
+    text body
+    int parentMessageId FK "facultatif, même table, sans contrainte"
+    int parentEntryId "facultatif, alerte de suivi"
+    real hiddenAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+  }
+  ChannelState {
+    int channelStateId PK
+    int userId FK
+    int projectId FK
+    text channel "general, tracking, help, announcements"
+    real lastReadAt "facultatif"
+    text notify "all, mentions, mine, none"
+  }
+  MessageReaction {
+    int messageReactionId PK
+    int messageId FK
+    int userId FK
+    text emoji
+  }
+  ProjectSummary {
+    int projectSummaryId PK
+    int projectId FK
+    text period
+    text content
+    text inputHash
+    real createdAt
+  }

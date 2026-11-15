@@ -1,0 +1,88 @@
+classDiagram
+  direction LR
+  class Developer {
+    githubId
+    skills
+    intents
+    matchingMode
+    proposerSonAide()
+    suivre()
+  }
+  class Project {
+    slug
+    syncMode
+    needs
+    importer()
+    activerSynchroLive()
+  }
+  class HelpRequest {
+    category
+    skills
+    status
+    publier()
+    accepter()
+    seDesister()
+    confirmer()
+    rouvrir()
+  }
+  class Match {
+    score
+    raisons
+    vague
+    nouveauProfilPrometteur
+  }
+  class HelpThread {
+    messages
+    ecrire()
+  }
+  class Review {
+    githubReviewId
+    state
+    validerPourUneDemande()
+  }
+  class Proof {
+    dimension
+    source
+    fieldsFiges
+    rulesVersion
+  }
+  class Badge {
+    niveau
+    progression
+    evaluer()
+  }
+  class Community {
+    type
+    rejoindre()
+    publier()
+  }
+  class Conversation {
+    publicId
+    status
+    ecrire()
+    accepter()
+    bloquer()
+  }
+  class Post {
+    type
+    repondre()
+    republier()
+    accepterLaReponse()
+  }
+
+  Developer "1" --> "*" Project : possède / est membre
+  Developer "1" --> "*" HelpRequest : demande
+  HelpRequest "1" --> "*" Match : vagues
+  Match "*" --> "1" Developer : notifie
+  HelpRequest "0..1" --> "1" Developer : acceptée par
+  HelpRequest "1" --> "0..1" HelpThread : fil
+  HelpRequest "*" --> "0..1" Project : concerne
+  Review "0..1" --> "1" HelpRequest : valide
+  HelpRequest "1" --> "0..1" Proof : confirmée, produit
+  Proof "*" --> "1" Developer : appartient à
+  Badge "*" --> "1" Developer : progression de
+  Badge ..> Proof : calculé depuis
+  Developer "*" --> "*" Community : membre
+  Post "*" --> "0..1" Community : publié dans
+  Post "0..1" --> "*" Post : réponses
+  Developer "2" --> "*" Conversation : messages directs

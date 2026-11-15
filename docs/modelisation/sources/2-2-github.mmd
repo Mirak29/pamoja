@@ -1,0 +1,111 @@
+erDiagram
+  User ||--o{ GithubInstallation : "installe"
+  GithubInstallation ||--o{ Repository : "couvre"
+  Project ||--o| Repository : "est lié à"
+  Repository ||--o{ PullRequest : "contient"
+  Repository ||--o{ Issue : "contient"
+  Repository ||--o{ CiRun : "exécute"
+  PullRequest ||--o{ CiRun : "déclenche"
+  PullRequest ||--o{ Review : "reçoit"
+  User |o--o{ Review : "est le reviewer"
+  HelpRequest |o--o{ Review : "est validée par"
+  Repository |o--o{ WebhookDelivery : "reçoit"
+
+  GithubInstallation {
+    int installationId PK
+    int githubInstallationId UK
+    text accountLogin
+    text accountType "User ou Organization"
+    int installedByUserId FK "facultatif"
+    real createdAt
+    real updatedAt
+  }
+  Repository {
+    int repositoryId PK
+    int projectId FK
+    int githubId UK
+    int installationId FK "facultatif"
+    text owner
+    text name
+    text fullName
+    text defaultBranch
+    text syncMode "poll ou live"
+    json etag "facultatif"
+    text readme "facultatif"
+    json stats "facultatif, langages et compteurs"
+    real lastSyncedAt "facultatif"
+    text source "demo, github, platform"
+  }
+  PullRequest {
+    int pullRequestId PK
+    int repositoryId FK
+    int githubId
+    int number "UNIQUE avec repositoryId"
+    text title
+    text state
+    int authorGithubId
+    text authorLogin "facultatif"
+    text branch "facultatif"
+    text headSha "facultatif"
+    json skills "facultatif, déduits des fichiers"
+    text skillsSha "facultatif"
+    int additions
+    int deletions
+    real mergedAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  Issue {
+    int issueId PK
+    int repositoryId FK
+    int githubId
+    int number "UNIQUE avec repositoryId"
+    text title
+    text state
+    json labels
+    int authorGithubId
+    text authorLogin "facultatif"
+    int comments
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  Review {
+    int reviewId PK
+    int pullRequestId FK
+    int githubReviewId UK
+    int reviewerGithubId
+    int reviewerUserId FK "facultatif"
+    text state
+    int commentCount
+    real submittedAt
+    int helpRequestId FK "facultatif"
+    text source "demo, github, platform"
+  }
+  CiRun {
+    int ciRunId PK
+    int repositoryId FK
+    int githubId
+    text source "actions, checks, status"
+    text name
+    text headSha
+    text branch
+    int pullRequestId FK "facultatif"
+    text conclusion "facultatif"
+    text url
+    real completedAt "facultatif"
+  }
+  WebhookDelivery {
+    int deliveryId PK
+    text githubDeliveryId UK
+    text event
+    int repositoryId FK "facultatif"
+    json payload
+    text status "received, processing, done, failed"
+    int attempts
+    text lastError "facultatif"
+    real receivedAt
+    real processingStartedAt "facultatif"
+    real processedAt "facultatif"
+  }

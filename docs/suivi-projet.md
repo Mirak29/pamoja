@@ -1790,3 +1790,10 @@ Le dépôt a un README professionnel, en français par défaut et en anglais. Il
 - **Nettoyage** : `docs/reste-a-faire.md` (point d'étape du 13 novembre) retiré.
 - **Livrable** : `README.md`, `README.en.md`, `docs/vitrine/`, `task-db-seed.ts`, `.gitignore`
 - **Par** : @Mirak29
+
+### 2026-11-15 · PAM-123 · Modélisation du backend en images
+
+Les diagrammes de la modélisation sont des images, rendues depuis leurs sources Mermaid par `docs/modelisation/render.ts`, et vérifiés sur le schéma réel d'une base neuve. Ajouts depuis la première version : un sixième domaine (messages directs, Assistant, blocages), les colonnes ajoutées depuis (vidéos, rappels et vagues des demandes d'aide, compétences des PRs, reposts retirés…), le mode de matching sans digest, l'architecture redessinée (modèles d'IA, sauvegardes horaires et copie hors de la VM).
+
+- **Livrable** : `docs/modelisation/README.md`, `docs/modelisation/sources/`, `docs/modelisation/images/`, `docs/modelisation/render.ts`
+- **Par** : @Mirak29

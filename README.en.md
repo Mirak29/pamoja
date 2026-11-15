@@ -172,6 +172,7 @@ qa/load/      the HTTP load test
 | [Specification](docs/cahier-des-charges.md) | the reference of the product and technical choices (§1 to §20) |
 | [`TODO.md`](TODO.md) | `PAM-xxx` tasks, schedule, decision log |
 | [Project log](docs/suivi-projet.md) | what was delivered, task by task |
+| [Modelling](docs/modelisation/) | architecture, data model, states and sequences, as images |
 | [Deployment](docs/deploiement.md) | the VM, the image, secrets, backups, updates |
 | [State of Dev Sénégal 2026](docs/etudes/state-of-dev-senegal-2026.md) | the survey figures and what Pamoja takes from them |
 | [Identity](docs/identite/) | the logo and design tokens |

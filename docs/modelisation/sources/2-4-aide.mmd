@@ -1,0 +1,84 @@
+erDiagram
+  User ||--o{ HelpRequest : "demande"
+  User |o--o{ HelpRequest : "accepte"
+  Project |o--o{ HelpRequest : "concerne"
+  PullRequest |o--o{ HelpRequest : "porte sur"
+  HelpRequest ||--o{ HelpMatch : "est proposée"
+  User ||--o{ HelpMatch : "est matché"
+  HelpRequest ||--o{ HelpMessage : "fil de la demande"
+  User ||--o{ HelpMessage : "écrit"
+  User ||--o{ Notification : "reçoit"
+  User ||--o{ BadgeProgress : "progresse"
+
+  HelpRequest {
+    int helpRequestId PK
+    int authorId FK
+    int targetUserId FK "facultatif, collaboration request"
+    int projectId FK "facultatif"
+    int pullRequestId FK "facultatif"
+    text category
+    text title
+    text description
+    text videoUrl "facultatif"
+    json skills
+    text expectedLevel "facultatif"
+    int estimatedMinutes "facultatif"
+    text status "voir le diagramme d'état"
+    int acceptedBy FK "facultatif"
+    real acceptedAt "facultatif"
+    real deliveredAt "facultatif"
+    real confirmedAt "facultatif"
+    real expiresAt
+    real lastWaveAt "facultatif"
+    real helperRemindedAt "facultatif"
+    real confirmRemindedAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  HelpMatch {
+    int helpMatchId PK
+    int helpRequestId FK
+    int userId FK
+    int score
+    json reasons
+    int wave
+    bool newcomerSlot
+    real notifiedAt "facultatif"
+    text status "notified, accepted, declined, withdrawn, released"
+  }
+  HelpMessage {
+    int helpMessageId PK
+    int helpRequestId FK
+    int authorId FK
+    text body
+    real createdAt
+  }
+  Notification {
+    int notificationId PK
+    int userId FK
+    text type
+    text category "for-you, projects, communities, social, system"
+    int entryId "facultatif"
+    int actorId FK "facultatif"
+    json payload
+    real readAt "facultatif"
+    real createdAt
+  }
+  BadgeProgress {
+    int badgeProgressId PK
+    int userId FK
+    text badge
+    int level
+    int count
+    real updatedAt
+  }
+  Embedding {
+    int embeddingId PK
+    text targetType "user ou help_request"
+    int targetId
+    text model
+    blob vector
+    text inputHash
+    real createdAt
+  }

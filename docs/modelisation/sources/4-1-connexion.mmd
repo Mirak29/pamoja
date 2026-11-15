@@ -1,0 +1,22 @@
+sequenceDiagram
+  autonumber
+  actor Dev as Développeur
+  participant Web as SPA
+  participant API as API Deno
+  participant GH as GitHub
+  participant DB as SQLite
+
+  Dev->>Web: « Continuer avec GitHub »
+  Web->>API: GET /api/auth/github
+  API-->>Web: URL d'autorisation + state
+  Web->>GH: redirection vers l'autorisation
+  GH-->>Web: callback avec code et state
+  Web->>API: POST /api/auth/github/callback (code, state)
+  API->>API: vérifie le state
+  API->>GH: échange le code contre un token
+  API->>GH: GET /user
+  GH-->>API: githubId, login, avatar
+  API->>DB: crée ou retrouve User par githubId, entry USER_LOGIN
+  API->>API: jette le token GitHub
+  API-->>Web: cookie session (httpOnly, secure, SameSite=Lax)
+  Web-->>Dev: onboarding (nouveau) ou page d'origine

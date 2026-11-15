@@ -173,6 +173,7 @@ qa/load/      le test de charge HTTP
 | [Cahier des charges](docs/cahier-des-charges.md) | la référence du produit et des choix techniques (§1 à §20) |
 | [`TODO.md`](TODO.md) | les tâches `PAM-xxx`, le planning, le journal des décisions |
 | [Suivi de projet](docs/suivi-projet.md) | ce qui a été livré, tâche par tâche |
+| [Modélisation](docs/modelisation/) | l'architecture, le modèle de données, les états, les séquences, en images |
 | [Déploiement](docs/deploiement.md) | la VM, l'image, les secrets, les sauvegardes, la mise à jour |
 | [State of Dev Sénégal 2026](docs/etudes/state-of-dev-senegal-2026.md) | les chiffres de l'étude et ce que Pamoja en retient |
 | [Identité](docs/identite/) | le logo et les tokens de design |
