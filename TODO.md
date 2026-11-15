@@ -197,10 +197,10 @@ Responsable : _à répartir_
 
 **Critères d'acceptation (§4)**
 
-- [ ] Deux utilisateurs déplacent des cartes en même temps sans perte
+- [x] Deux utilisateurs déplacent des cartes en même temps sans perte
 - [x] Une PR mergée déplace sa carte en Done
-- [ ] Une candidature s'accepte depuis la notification
-- [ ] Une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic
+- [x] Une candidature s'accepte depuis la notification
+- [x] Une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic
 
 ## Bloc 5 — Social et découverte (J9 · 15 oct.)
 
@@ -221,7 +221,7 @@ Responsable : _à répartir_
 - [x] **PAM-535** · Passe de fluidité sur toute l'interface : défilement qui suit la navigation, contenu centré sur grand écran, place pour l'Assistant, onglets et barre du bas sur mobile, filtres et rédaction repliés, écrans vides avec une action (§12.7) — @Mirak29
 - [x] **PAM-534** · Assistant repensé : panneau disponible sur toutes les pages, conversation gardée, contexte élargi (ce qui t'attend, la page ouverte, mode d'emploi), cartes et actions, point d'ouverture sans IA (§11, §14.4) — @Mirak29
 - [x] **PAM-507** · Meilisearch : index, worker de synchro depuis les entries, réindexation nocturne, repli `LIKE` (§10.4) — @Mirak29
-- [ ] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements ; un contenu masqué reste visible pour son auteur, avec un bandeau (§10.5)
+- [x] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements ; un contenu masqué reste visible pour son auteur, avec un bandeau (§10.5)
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
 - [x] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
@@ -396,3 +396,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · Share Card et aperçus de partage (PAM-104, PAM-305) : `GET/api/user/card` et `GET/api/project/card` dessinent un PNG 1200 × 630 (satori puis resvg-wasm, polices dans `api/assets`), gardé sur disque sous l'empreinte de ses données ; `/@login` et `/project/slug` reçoivent title, description, og:* et twitter:* échappés ; `sitemap.xml` ; la fenêtre « Carte de partage » montre et télécharge la vraie image · §17.1, §17.2
 - 2026-11-15 · Point du TODO vérifié dans le code : PAM-501, 504, 505 et 512 cochées (fil paginé, reposts et réponses sur le serveur, colonne de droite et Explore sur les vrais membres et projets) ; critères `PRAGMA`, seed en une commande et routes en vrais chemins avec balises OG cochés. Restent ouverts : PAM-508 (retrait d'une preuve) et « une PR mergée déplace sa carte en Done », car aucune carte n'est encore liée à une PR
 - 2026-11-15 · Cartes du Board liées à GitHub (PAM-404) : une carte peut pointer sur une issue ou une PR du projet (`POST/api/task/create`, `POST/api/task/link`, une carte par lien) ; une PR ouverte reçoit sa carte en Review, mergée elle passe en Done (webhook, et la synchro pour un projet sans webhook) ; « Nouvelle carte » et « Ajouter au board » enregistrent sur le serveur · §6.7
+- 2026-11-15 · Critères du bloc 4 vérifiés : douze déplacements simultanés par deux membres sans perte (test HTTP) ; une candidature acceptée d'un toucher depuis la notification (navigateur) ; une CI en échec sur une vraie PR propose « Demander de l'aide », prérempli avec le job et le lien réels (la page fixait `ci: 'ok'` et un job d'exemple) · §6.7, §6.8
+- 2026-11-15 · Retrait d'une preuve (PAM-508) : action `revoke_evidence` de la file de modération, sur une preuve choisie de l'auteur ; l'entry reste figée, une ligne `moderationAction` la retire de la liste des preuves, des badges et du matching ; l'auteur est notifié · §8.3, §10.5

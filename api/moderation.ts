@@ -1,4 +1,6 @@
 import { db, sql } from '@01edu/db'
+import { evaluateBadges } from '/api/badges.ts'
+import { proofsOf } from '/api/proofs.ts'
 import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
 import { ModerationAction } from '/api/schema.ts'
@@ -13,7 +15,13 @@ import { LIMITS } from '/api/limits.ts'
 // open reports of its target, is kept in `moderationAction` with its reason,
 // is an entry, and its author is told why.
 
-export const MODERATION_ACTIONS = ['dismiss', 'hide', 'warn', 'suspend']
+export const MODERATION_ACTIONS = [
+  'dismiss',
+  'hide',
+  'warn',
+  'suspend',
+  'revoke_evidence',
+]
 // Days a suspension may last
 export const SUSPEND_DAYS = [1, 7, 30]
 
@@ -270,12 +278,14 @@ const notices: Record<string, string> = {
   hide: 'moderation_hidden',
   warn: 'moderation_warning',
   suspend: 'moderation_suspended',
+  revoke_evidence: 'moderation_proof_revoked',
 }
 
 /**
  * Decides on a reported content (§10.5): ignore (a content hidden by its
- * reports comes back), hide it, warn its author, or suspend them for some
- * days. A reason is required and sent to the author
+ * reports comes back), hide it, warn its author, suspend them for some days,
+ * or withdraw one of their proofs for proven fraud. A reason is required and
+ * sent to the author
  */
 export const decide = (
   me: number,
@@ -285,6 +295,8 @@ export const decide = (
     action: string
     reason: string
     days: number
+    /** The entry of the proof to withdraw, for revoke_evidence */
+    proofId?: number | null
   },
 ) => {
   if (!MODERATION_ACTIONS.includes(input.action)) {
@@ -300,6 +312,13 @@ export const decide = (
   if (!target) throw badRequest('Unknown content')
   if (!inScope(scopeOf(me), target)) throw forbidden('Not your queue')
   if (target.authorId === me) throw forbidden('Not on your own content')
+  // A proof of the author, that still counts (§8.3, §10.5)
+  const proof = input.action === 'revoke_evidence'
+    ? proofsOf(target.authorId).find((p) => p.id === input.proofId)
+    : undefined
+  if (input.action === 'revoke_evidence' && !proof) {
+    throw badRequest('Unknown proof')
+  }
   const at = now()
   const until = input.action === 'suspend' ? at + input.days * 86400 : null
   const isPost = input.targetType === 'post' ||
@@ -328,6 +347,17 @@ export const decide = (
       until,
       createdAt: at,
     })
+    if (proof) {
+      // Its entry stays as frozen; this action withdraws it from every count
+      ModerationAction.insert({
+        moderatorId: me,
+        targetType: 'proof',
+        targetId: proof.id,
+        action: 'revoke_evidence',
+        reason,
+        createdAt: at,
+      })
+    }
     Entry.insert.MODERATION_ACTION({
       userId: target.authorId,
       communityId: maybe(target.communityId),
@@ -343,13 +373,15 @@ export const decide = (
         category: 'system',
         payload: {
           excerpt: reason,
-          title: target.title,
+          title: proof ? proofTitle(proof) : target.title,
           postId: isPost ? input.targetId : 0,
           until: until ?? 0,
         },
       })
     }
   })()
+  // The badges count without it: a level may go down
+  if (proof) evaluateBadges(target.authorId, at, false)
   return { decided: true }
 }
 
@@ -371,3 +403,21 @@ const getSuspension = sql<{ until: number | null }, number>`
 /** Whether the account is suspended now: it may read, not write (§10.5) */
 export const isSuspended = (userId: number) =>
   (getSuspension(userId)?.until ?? 0) > now()
+
+const kinds: Record<string, string> = {
+  review: 'Review',
+  help: 'Aide',
+  merged: 'PR mergée',
+  release: 'Release',
+  created: 'Projet',
+  answer: 'Réponse acceptée',
+}
+
+/** What a proof is, in a few words, for the moderator and the author */
+export const proofTitle = (proof: ReturnType<typeof proofsOf>[number]) =>
+  [
+    kinds[proof.kind] ?? proof.kind,
+    proof.title ||
+    (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
+    proof.projectName,
+  ].filter(Boolean).join(' · ')

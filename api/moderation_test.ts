@@ -6,6 +6,8 @@ import { createPost, listPosts } from '/api/posts.ts'
 import { reportContent } from '/api/reports.ts'
 import { decide, isSuspended, moderationQueue } from '/api/moderation.ts'
 import { createSession } from '/api/session.ts'
+import { proofsOf } from '/api/proofs.ts'
+import { badgesOf } from '/api/badges.ts'
 import { request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
@@ -118,4 +120,55 @@ Deno.test('moderation: the server refuses the writes of a suspended account', as
   })
   assertEquals(res.status, 403)
   await res.body?.cancel()
+})
+
+Deno.test('moderation: a proof withdrawn for fraud no longer counts', () => {
+  restore()
+  seed()
+  const [moussa, abdou, zeinab] = ['moussa', 'abdou', 'zeinab'].map((login) =>
+    userIdOfLogin(login)!
+  )
+  // Abdou reports Moussa's profile for cheating with his reputation
+  reportContent(
+    abdou,
+    'profile',
+    moussa,
+    'reputation_fraud',
+    'Reviews en boucle',
+  )
+  const before = proofsOf(moussa)
+  const reviews = () =>
+    badgesOf(moussa).find((b) => b.badge === 'trusted_reviewer')!.count
+  const counted = reviews()
+  const proof = before[0]
+
+  // Only a proof of the one reported
+  assertThrows(() =>
+    decide(zeinab, {
+      targetType: 'profile',
+      targetId: moussa,
+      action: 'revoke_evidence',
+      reason: 'Fraude avérée',
+      days: 0,
+      proofId: 999999,
+    })
+  )
+  decide(zeinab, {
+    targetType: 'profile',
+    targetId: moussa,
+    action: 'revoke_evidence',
+    reason: 'Fraude avérée',
+    days: 0,
+    proofId: proof.id,
+  })
+  // Gone from his proofs and from his badge, never from the journal
+  assertEquals(proofsOf(moussa).length, before.length - 1)
+  assert(!proofsOf(moussa).some((p) => p.id === proof.id))
+  assertEquals(reviews(), counted - 1)
+  assert(db.prepare('SELECT 1 FROM entry WHERE id = ?').get(proof.id))
+  // He is told why
+  const told = db.prepare(
+    "SELECT count(*) AS n FROM notification WHERE userId = ? AND type = 'moderation_proof_revoked'",
+  ).get(moussa) as { n: number }
+  assertEquals(told.n, 1)
 })

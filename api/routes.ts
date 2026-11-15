@@ -1825,9 +1825,13 @@ const defs = {
     input: OBJ({
       targetType: STR('post, comment, help_request or profile'),
       targetId: NUM('Id of the content'),
-      action: LIST(MODERATION_ACTIONS, 'dismiss, hide, warn or suspend'),
+      action: LIST(
+        MODERATION_ACTIONS,
+        'dismiss, hide, warn, suspend or revoke_evidence',
+      ),
       reason: STR('Why: sent to the author, required'),
       days: NUM('Days of a suspension: 1, 7 or 30; 0 otherwise'),
+      proofId: optional(NUM('The proof to withdraw, for revoke_evidence')),
     }),
     output: OBJ({ decided: BOOL('True') }),
     description: 'Decide on a reported content (§10.5)',

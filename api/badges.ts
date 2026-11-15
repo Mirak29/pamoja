@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { notRevoked } from '/api/revoked.ts'
 import { now } from '@01edu/time'
 // The entry tables exist before the queries below are prepared
 import { Entry } from '/api/entries.ts'
@@ -54,8 +55,10 @@ type Measure = { count: number; gold: number; platinum: number }
 const confirmed = `${entries.REVIEW_HELP_CONFIRMED}, ${entries.HELP_CONFIRMED}`
 
 // Eligible proofs only: the anti-abuse rules decided it at the time (§8.3)
+// and never a proof a moderator withdrew (§10.5)
 const eligible = `EXISTS (SELECT 1 FROM entryEligible
-  WHERE entryEligible.entryId = entry.id AND eligible = 1)`
+  WHERE entryEligible.entryId = entry.id AND eligible = 1)
+  AND ${notRevoked()}`
 
 const getHelps = sql<
   { count: number; requesters: number; projects: number },

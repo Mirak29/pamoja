@@ -1,4 +1,5 @@
 import { db, sql } from '@01edu/db'
+import { notRevoked } from '/api/revoked.ts'
 import { now } from '@01edu/time'
 import { Entry } from '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
@@ -119,6 +120,7 @@ const listConfirmed = sql<
       SELECT 1 FROM entryEligible
       WHERE entryEligible.entryId = entry.id AND eligible = 1
     )
+    AND ${notRevoked()}
   GROUP BY entry.userId
 `.all
 
