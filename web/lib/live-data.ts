@@ -64,13 +64,16 @@ onEvent([
   'HELP_REQUEST_CLOSED',
 ], reloadHelp)
 
-// A card moved or attached by someone else, a milestone planned: the boards
-// and the roadmaps open on the page follow (§6.7)
+// A card moved or attached by someone else: the boards open follow, and the
+// roadmaps whose progress counts the cards (§6.7). A milestone planned: the
+// roadmaps only
 const reloadPlanning = debounced(() => {
   reloadOpenedBoards()
   reloadOpenedRoadmaps()
 })
-onEvent(['TASK_UPDATED', 'PROJECT_UPDATED'], reloadPlanning)
+onEvent('TASK_UPDATED', reloadPlanning)
+const reloadRoadmaps = debounced(reloadOpenedRoadmaps)
+onEvent('MILESTONE_UPDATED', reloadRoadmaps)
 
 // A new AI summary of a Pulse already read (PAM-307)
 const readPulses = debounced(reloadPulses)

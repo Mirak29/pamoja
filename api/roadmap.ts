@@ -11,7 +11,7 @@ import { memoryLimit } from '/api/lib/rate.ts'
 // The roadmap of a project (§6.7): milestones with a title, a description
 // and a status, to which board cards are attached. Its progress is the done
 // cards over the cards of the milestone. Owners and maintainers manage it;
-// a change is a PROJECT_UPDATED entry, so the open pages read it again.
+// a change is a MILESTONE_UPDATED entry, so the open roadmaps read it again.
 
 export const MILESTONE_STATES = ['planned', 'active', 'done']
 
@@ -102,7 +102,7 @@ const checked = (input: MilestoneInput) => {
 }
 
 const changed = (me: number, projectId: number) =>
-  Entry.insert.PROJECT_UPDATED({ userId: me, projectId, source: 'platform' })
+  Entry.insert.MILESTONE_UPDATED({ userId: me, projectId, source: 'platform' })
 
 /** The milestones of a project, in order, with their progress (§6.7) */
 export const listRoadmap = (me: number, slug: string) => {

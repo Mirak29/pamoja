@@ -56,6 +56,7 @@ type Target = {
   targetType: string
   targetId: number
   authorId: number
+  author: string
   communityId: number | null
   title: string
   excerpt: string
@@ -63,85 +64,117 @@ type Target = {
   hidden: boolean
 }
 
-const getPost = sql<
+// The reported contents, read by kind in one query each, never one by one
+const postsOf = sql<
   {
-    postId: number
+    id: number
     authorId: number
+    author: string
     communityId: number | null
     title: string | null
     body: string
     rootId: number | null
     hiddenAt: number | null
   },
-  number
+  string
 >`
-  SELECT postId, authorId, communityId, title, body, rootId, hiddenAt
-  FROM post WHERE postId = ?
-`.get
+  SELECT post.postId AS id, post.authorId, user.githubUsername AS author,
+    post.communityId, post.title, post.body, post.rootId, post.hiddenAt
+  FROM post JOIN user ON user.userId = post.authorId
+  WHERE post.postId IN (SELECT value FROM json_each(?))
+`.all
 
-const getHelp = sql<
-  { authorId: number; title: string; description: string | null },
-  number
+const helpsOf = sql<
+  {
+    id: number
+    authorId: number
+    author: string
+    title: string
+    description: string | null
+  },
+  string
 >`
-  SELECT authorId, title, description FROM helpRequest
-  WHERE helpRequestId = ?
-`.get
+  SELECT helpRequest.helpRequestId AS id, helpRequest.authorId,
+    user.githubUsername AS author, helpRequest.title, helpRequest.description
+  FROM helpRequest JOIN user ON user.userId = helpRequest.authorId
+  WHERE helpRequest.helpRequestId IN (SELECT value FROM json_each(?))
+`.all
 
-const getProfile = sql<
-  { login: string; name: string; headline: string | null },
-  number
+const profilesOf = sql<
+  { id: number; login: string; name: string; headline: string | null },
+  string
 >`
-  SELECT user.githubUsername AS login, profile.displayName AS name,
-    profile.headline
+  SELECT user.userId AS id, user.githubUsername AS login,
+    profile.displayName AS name, profile.headline
   FROM user JOIN profile ON profile.userId = user.userId
-  WHERE user.userId = ?
-`.get
+  WHERE user.userId IN (SELECT value FROM json_each(?))
+`.all
 
-/** The content a report points at, as the queue shows it */
-const targetOf = (targetType: string, targetId: number): Target | undefined => {
-  if (targetType === 'post' || targetType === 'comment') {
-    const post = getPost(targetId)
-    if (!post) return
-    return {
-      targetType,
-      targetId,
-      authorId: post.authorId,
-      communityId: post.communityId,
-      title: post.title || post.body.slice(0, 80),
-      excerpt: post.title ? post.body.slice(0, 160) : post.body.slice(80, 240),
-      href: `post/s${post.rootId ?? post.postId}`,
-      hidden: post.hiddenAt !== null,
+const keyOf = (targetType: string, targetId: number) =>
+  `${targetType}:${targetId}`
+
+/** The contents reports point at, as the queue shows them, by their key */
+const targetsOf = (keys: { targetType: string; targetId: number }[]) => {
+  const ids = (types: string[]) =>
+    JSON.stringify([
+      ...new Set(
+        keys.filter((k) => types.includes(k.targetType)).map((k) => k.targetId),
+      ),
+    ])
+  const targets = new Map<string, Target>()
+  const posts = new Map(postsOf(ids(['post', 'comment'])).map((p) => [p.id, p]))
+  const helps = helpsOf(ids(['help_request']))
+  const profiles = profilesOf(ids(['profile']))
+  for (const { targetType, targetId } of keys) {
+    const post = posts.get(targetId)
+    if (post && (targetType === 'post' || targetType === 'comment')) {
+      targets.set(keyOf(targetType, targetId), {
+        targetType,
+        targetId,
+        authorId: post.authorId,
+        author: post.author,
+        communityId: post.communityId,
+        title: post.title || post.body.slice(0, 80),
+        excerpt: post.title
+          ? post.body.slice(0, 160)
+          : post.body.slice(80, 240),
+        href: `post/s${post.rootId ?? post.id}`,
+        hidden: post.hiddenAt !== null,
+      })
     }
   }
-  if (targetType === 'help_request') {
-    const help = getHelp(targetId)
-    if (!help) return
-    return {
-      targetType,
-      targetId,
+  for (const help of helps) {
+    targets.set(keyOf('help_request', help.id), {
+      targetType: 'help_request',
+      targetId: help.id,
       authorId: help.authorId,
+      author: help.author,
       communityId: null,
       title: help.title,
       excerpt: (help.description ?? '').slice(0, 160),
-      href: `help/${targetId}`,
+      href: `help/${help.id}`,
       hidden: false,
-    }
+    })
   }
-  if (targetType === 'profile') {
-    const profile = getProfile(targetId)
-    if (!profile) return
-    return {
-      targetType,
-      targetId,
-      authorId: targetId,
+  for (const profile of profiles) {
+    targets.set(keyOf('profile', profile.id), {
+      targetType: 'profile',
+      targetId: profile.id,
+      authorId: profile.id,
+      author: profile.login,
       communityId: null,
       title: profile.name,
       excerpt: profile.headline ?? '',
       href: `@${profile.login}`,
       hidden: false,
-    }
+    })
   }
+  return targets
 }
+
+/** The content a report points at, as the queue shows it */
+const targetOf = (targetType: string, targetId: number) =>
+  targetsOf([{ targetType, targetId }]).get(keyOf(targetType, targetId))
 
 // An admin moderates everything; a community moderator, its community
 const inScope = (scope: ReturnType<typeof scopeOf>, target: Target) =>
@@ -188,14 +221,16 @@ const recentActions = sql<
   LIMIT 200
 `.all
 
-const authorLogin = (target: Target) => loginOf(target.authorId)?.login ?? ''
-
 /**
  * The queue of a moderator: the open reports of what they moderate, one
  * entry by content with every report, oldest first; then their history
  */
 export const moderationQueue = (me: number) => {
   const scope = scopeOf(me)
+  const reports = openReports()
+  const actions = recentActions()
+  // Every content of the reports and of the history, read at once
+  const targets = targetsOf([...reports, ...actions])
   const items = new Map<string, {
     target: Target
     reports: {
@@ -205,15 +240,12 @@ export const moderationQueue = (me: number) => {
       at: number
     }[]
   }>()
-  for (const row of openReports()) {
-    const key = `${row.targetType}:${row.targetId}`
-    let item = items.get(key)
-    if (!item) {
-      const target = targetOf(row.targetType, row.targetId)
-      if (!target || !inScope(scope, target)) continue
-      item = { target, reports: [] }
-      items.set(key, item)
-    }
+  for (const row of reports) {
+    const key = keyOf(row.targetType, row.targetId)
+    const target = targets.get(key)
+    if (!target || !inScope(scope, target)) continue
+    const item = items.get(key) ?? { target, reports: [] }
+    items.set(key, item)
     item.reports.push({
       reason: row.reason,
       comment: row.comment ?? '',
@@ -222,8 +254,8 @@ export const moderationQueue = (me: number) => {
     })
   }
   const history = []
-  for (const row of recentActions()) {
-    const target = targetOf(row.targetType, row.targetId)
+  for (const row of actions) {
+    const target = targets.get(keyOf(row.targetType, row.targetId))
     if (!target || !inScope(scope, target)) continue
     history.push({
       id: row.moderationActionId,
@@ -247,7 +279,7 @@ export const moderationQueue = (me: number) => {
       title: target.title,
       excerpt: target.excerpt,
       href: target.href,
-      author: authorLogin(target),
+      author: target.author,
       hidden: target.hidden,
       reports,
     })),

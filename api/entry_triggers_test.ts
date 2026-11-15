@@ -45,6 +45,7 @@ const audience: Record<EntryTypeName, Role[]> = {
   HELP_REQUEST_MATCHED: ['actor'],
   // A project: its members and followers
   PROJECT_UPDATED: project,
+  MILESTONE_UPDATED: project,
   PULSE_READY: project,
   PR_OPENED: project,
   PR_UPDATED: project,

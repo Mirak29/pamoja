@@ -52,6 +52,7 @@ export const entries = {
   DIRECT_MESSAGE_CREATED: 43,
   CONVERSATION_UPDATED: 44,
   DIRECT_MESSAGE_UPDATED: 45,
+  MILESTONE_UPDATED: 46,
 } as const
 
 export type Entries = typeof entries

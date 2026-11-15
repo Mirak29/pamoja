@@ -54,11 +54,30 @@ type Preview = {
 const short = (text: string) => cut(text, 200)
 
 /** The preview of a path, from what the database holds */
+// What a page shows of a profile or a project, kept a minute: a shared link
+// opened by many, or a crawler, reads the database once (§17.1)
+const KEPT_FOR = 60_000
+const kept = new Map<string, { at: number; value: unknown }>()
+const remembered = <T>(key: string, read: () => T): T => {
+  const hit = kept.get(key)
+  if (hit && Date.now() - hit.at < KEPT_FOR) return hit.value as T
+  const value = read()
+  if (kept.size > 1000) kept.clear()
+  kept.set(key, { at: Date.now(), value })
+  return value
+}
+
+/** Forgets the previews kept: a test that changes a profile reads it again */
+export const forgetPreviews = () => kept.clear()
+
 export const previewOf = (pathname: string, origin: string): Preview => {
   const url = `${origin}${pathname}`
   const profile = pathname.match(/^\/@([A-Za-z0-9-]{1,39})\/?$/)
   if (profile) {
-    const card = profileCardData(profile[1])
+    const card = remembered(
+      `@${profile[1].toLowerCase()}`,
+      () => profileCardData(profile[1]),
+    )
     if (card) {
       const proofs = card.proofs
         ? ` · ${card.proofs} preuve${card.proofs > 1 ? 's' : ''} sur Pamoja`
@@ -77,7 +96,10 @@ export const previewOf = (pathname: string, origin: string): Preview => {
   }
   const project = pathname.match(/^\/project\/([a-z0-9-]{1,80})\/?$/)
   if (project) {
-    const card = projectCardData(project[1])
+    const card = remembered(
+      `project/${project[1]}`,
+      () => projectCardData(project[1]),
+    )
     if (card) {
       return {
         title: `${card.name} · Pamoja`,

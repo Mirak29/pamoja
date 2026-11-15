@@ -204,6 +204,13 @@ export const Entry = initEntries(entries, relations, {
     fields: { source },
     trigger: projectAudience,
   },
+  // A milestone planned or changed (§6.7): the roadmaps open follow it
+  MILESTONE_UPDATED: {
+    userId: 'user who planned it',
+    projectId: 'project of the roadmap',
+    fields: { source },
+    trigger: projectAudience,
+  },
   PROJECT_MEMBER_JOINED: {
     userId: 'new member',
     projectId: 'project joined',

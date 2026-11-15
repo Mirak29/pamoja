@@ -5,7 +5,13 @@ import {
 } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
-import { escapeHtml, pageWithPreview, previewOf, sitemap } from '/api/og.ts'
+import {
+  escapeHtml,
+  forgetPreviews,
+  pageWithPreview,
+  previewOf,
+  sitemap,
+} from '/api/og.ts'
 import { request } from '/api/testing.ts'
 import server from '/api/server.ts'
 
@@ -39,6 +45,7 @@ Deno.test('og: what a member wrote is escaped in the page', () => {
   db.prepare(
     "UPDATE profile SET displayName = ? WHERE userId = (SELECT userId FROM user WHERE githubUsername = 'moussa')",
   ).run('<script>alert(1)</script> "Moussa"')
+  forgetPreviews()
   const html = pageWithPreview(page, new Request(`${origin}/@moussa`))
   assert(!html.includes('<script>'))
   assertStringIncludes(html, '&lt;script&gt;alert(1)&lt;/script&gt;')

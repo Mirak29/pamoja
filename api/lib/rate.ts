@@ -2,7 +2,11 @@ import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 
 // Limits of the routes that write (§16): how many actions in a window, and
-// when the oldest of them leaves it
+// when the oldest of them leaves it. Two places, one rule:
+// - in the domain (`within` counted in the database, or `memoryLimit`) when
+//   only some calls count: a like, a repost, a follow taken back never does;
+// - on the route (`limitedSession` of api/routes.ts) for plain edits, where
+//   every call counts.
 
 /** How many actions in the window, and when the oldest happened */
 export type Window = { n: number; oldest: number | null }
