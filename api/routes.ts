@@ -1452,11 +1452,19 @@ const defs = {
   'GET/api/posts': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
-    fn: (ctx, { after, author }) =>
-      listPosts(ctx.session.userId, Number(after) || 0, author ?? ''),
+    fn: (ctx, { after, author, before }) =>
+      listPosts(
+        ctx.session.userId,
+        Number(after) || 0,
+        author ?? '',
+        Number(before) || 0,
+      ),
     input: OBJ({
       after: optional(
         STR('Only the posts published after this time, in seconds'),
+      ),
+      before: optional(
+        STR('The page before this time, in seconds: the feed read further'),
       ),
       author: optional(STR('Only the posts of this GitHub login')),
     }),

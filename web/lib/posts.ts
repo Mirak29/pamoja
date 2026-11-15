@@ -3,6 +3,7 @@ import {
   adoptPosts,
   adoptReplies,
   isKnownPost,
+  oldestSeenAt,
   type PostDraft,
   publishPost,
   savedId,
@@ -15,16 +16,35 @@ import { signal } from '@preact/signals'
 
 /** The latest posts, into the feed */
 export const loadPosts = () =>
-  api['GET/api/posts'].fetch({ after: '', author: '' }).then((list) => {
+  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then((list) => {
     adoptPosts(list)
+    feedStart.value = list.length < FEED_PAGE
     // Read with the others: none waits any more
     newPosts.value = []
   }, () => {})
 
+// As many as the server reads at once (FEED_PAGE of api/posts.ts)
+const FEED_PAGE = 50
+
+/** Whether the feed holds the oldest post: nothing more to read below */
+export const feedStart = signal(false)
+
+/** The page of the feed below what it holds (cursor, §12.7) */
+export const loadOlderPosts = async () => {
+  const before = oldestSeenAt()
+  if (!before) return
+  const list = await api['GET/api/posts']
+    .fetch({ after: '', author: '', before: String(before) })
+    .catch(() => undefined)
+  if (!list) return
+  adoptPosts(list)
+  if (list.length < FEED_PAGE) feedStart.value = true
+}
+
 /** The posts and the replies of one developer, for their profile */
 export const loadPostsOf = (login: string) =>
   Promise.all([
-    api['GET/api/posts'].fetch({ after: '', author: login }).then(adoptPosts),
+    api['GET/api/posts'].fetch({ after: '', author: login, before: '' }).then(adoptPosts),
     api['GET/api/replies'].fetch({ author: login }).then(adoptReplies),
   ]).catch(() => {})
 
@@ -43,7 +63,7 @@ export const newPosts = signal<Saved>([])
  * brought back by a repost) is held behind « nouveaux posts »
  */
 export const loadNewPosts = () =>
-  api['GET/api/posts'].fetch({ after: '', author: '' }).then(
+  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then(
     (list) => {
       adoptPosts(list.filter((post) => isKnownPost(post.id)))
       const held = new Set(newPosts.peek().map((post) => post.id))

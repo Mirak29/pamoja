@@ -1388,8 +1388,9 @@ Revue de toutes les interactions qui pouvaient disparaître.
 - **Réactions des messages privés** : `POST/api/conversation/message/react` reçoit aussi l'état voulu (`on`).
 - **Fil en direct** : un post, un repost ou une réponse (`POST_CREATED`, `POST_REPOSTED`, `POST_REPLIED`, aussi vers les autres onglets de l'auteur) fait relire le fil. Un post déjà affiché reprend ses J'aime, reposts et réponses ; un post pas encore affiché attend derrière « nouveaux posts ». Le retour sur l'onglet ou sur l'app du téléphone fait de même.
 - **Page communauté** : elle compte les J'aime des autres.
+- **Pagination du fil** : il ne lisait que les 50 derniers posts, et rien de plus ancien n'était accessible. `GET/api/posts` prend un curseur (`before`, moment où le post est arrivé dans les fils, publication ou dernier repost). Arrivée au bout de ce qu'elle tient, la liste lit la page suivante, jusqu'au plus ancien post (« Tu as tout vu »).
 
-- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/entries.ts`, `api/messages.ts`, `api/schema.ts` (commentaire), `api/reactions_test.ts`, `api/messages_test.ts`, `api/entry_triggers_test.ts`, `web/fixtures/posts.ts`, `web/lib/posts.ts`, `web/lib/reactions.ts`, `web/lib/replies.ts`, `web/lib/live-data.ts`, `web/lib/messages.ts`, `web/lib/notifications.ts`, `web/ui/post.tsx`, `web/pages/messages-page.tsx`, `web/pages/communities/community-page.tsx` ; §10.1, §10.6, §12.2, §15
+- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/entries.ts`, `api/messages.ts`, `api/schema.ts` (commentaire), `api/reactions_test.ts`, `api/messages_test.ts`, `api/entry_triggers_test.ts`, `web/fixtures/posts.ts`, `web/lib/posts.ts`, `web/lib/reactions.ts`, `web/lib/replies.ts`, `web/lib/live-data.ts`, `web/lib/messages.ts`, `web/lib/notifications.ts`, `web/ui/post.tsx`, `web/pages/messages-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/home/home-page.tsx` ; §10.1, §10.6, §12.2, §12.7, §15
 - **Par** : @Mirak29
 
 ## Audits QA

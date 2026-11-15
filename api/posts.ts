@@ -100,6 +100,17 @@ const listRecent = sql<PostRow, number>`${postSelect}
   ORDER BY post.createdAt DESC
 `.all
 
+// The page before a time: posts that last came into the feeds earlier, for
+// a feed read further down (cursor, §12.7)
+const listBefore = sql<PostRow, { before: number; limit: number }>`${postSelect}
+  WHERE ${original} AND post.postId IN (
+    SELECT postId FROM (${lastSeen})
+    GROUP BY postId HAVING max(at) < :before
+    ORDER BY max(at) DESC LIMIT :limit
+  )
+  ORDER BY post.createdAt DESC
+`.all
+
 // Those published or reposted since a time: what a feed open on the page
 // lacks (§12.2)
 const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
@@ -228,18 +239,29 @@ const shown = (me: number, rows: PostRow[]) => {
 
 /**
  * The latest posts, newest first; with `after` (seconds), only those
- * published since: a feed open on the page reads just what is new. With
- * `author`, those of one developer, for their profile.
+ * published or reposted since: a feed open on the page reads just what is
+ * new. With `before`, the page before that time, for a feed read further
+ * down. With `author`, those of one developer, for their profile.
  */
-export const listPosts = (me: number, after = 0, author = '') =>
+export const listPosts = (
+  me: number,
+  after = 0,
+  author = '',
+  before = 0,
+) =>
   shown(
     me,
     author
-      ? listByAuthor({ author, limit: 50 })
+      ? listByAuthor({ author, limit: FEED_PAGE })
       : after
-      ? listSince({ after, limit: 50 })
-      : listRecent(50),
+      ? listSince({ after, limit: FEED_PAGE })
+      : before
+      ? listBefore({ before, limit: FEED_PAGE })
+      : listRecent(FEED_PAGE),
   )
+
+/** Posts read at once by the feed: fewer means it reached its start */
+export const FEED_PAGE = 50
 
 /** The replies of one developer, with where they go, for their profile */
 export const listRepliesOf = (me: number, author: string) => {

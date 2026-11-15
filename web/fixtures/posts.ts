@@ -664,3 +664,15 @@ export const dropPost = (post: Post) => {
 /** Whether a post of the server is already in the pages */
 export const isKnownPost = (id: number) =>
   posts.some((post) => post.id === savedId(id))
+
+/**
+ * When the oldest post of the server the feed holds last came into the
+ * feeds (published, or reposted since), in seconds: where the next page
+ * starts. 0 while it holds none
+ */
+export const oldestSeenAt = () =>
+  posts.reduce((oldest, post) => {
+    if (!post.id.startsWith('s') || post.parent) return oldest
+    const seen = Math.max(post.at, ...post.reposts.map((r) => r.at)) / 1000
+    return oldest ? Math.min(oldest, seen) : seen
+  }, 0)

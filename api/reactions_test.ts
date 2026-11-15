@@ -166,3 +166,36 @@ Deno.test('replies: counted with the post, listed for the profile', () => {
   const nested = listRepliesOf(moussa, 'abdou')[0]
   assertEquals([nested.parentId, nested.rootId], [first, post])
 })
+
+Deno.test('feed: read page by page, each post once, to the oldest', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const start = Date.now() / 1000 - 10 * 3600
+  for (let i = 0; i < 120; i++) {
+    const at = start + i
+    Post.insert({
+      authorId: moussa,
+      type: 'Discussion',
+      body: `Page ${i}`,
+      source: 'platform',
+      createdAt: at,
+      updatedAt: at,
+    })
+  }
+  const read = new Set<number>()
+  let page = listPosts(abdou)
+  let pages = 0
+  while (page.length) {
+    pages++
+    for (const post of page) {
+      assert(!read.has(post.id), 'read twice')
+      read.add(post.id)
+    }
+    const oldest = Math.min(...page.map((p) => p.createdAt))
+    page = listPosts(abdou, 0, '', oldest)
+  }
+  assert(pages >= 3)
+  assert(read.size >= 120)
+})
