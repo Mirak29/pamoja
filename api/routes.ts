@@ -461,6 +461,10 @@ const projectShape = OBJ({
     name: STR(),
     syncMode: STR('poll or live'),
     about: STR('First paragraphs of the README, 600 characters at most'),
+    readme: STR(
+      'The README, Markdown, 20 000 characters at most; empty in a list',
+    ),
+    branch: STR('Default branch: where relative links of the README lead'),
     stars: NUM(),
     topics: ARR(STR()),
     languages: ARR(OBJ({ name: STR(), share: NUM() })),

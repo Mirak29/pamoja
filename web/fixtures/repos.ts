@@ -382,6 +382,8 @@ export const adoptProjects = (list: ApiProject[], light = false) => {
       description: project.description,
       vision: project.vision || undefined,
       about: repo?.about || undefined,
+      readme: repo?.readme || undefined,
+      branch: repo?.branch || undefined,
       contributors: repo?.contributors ?? project.members.length,
       // Counted by the server: only the first batch travels with the project
       openIssues: repo?.openIssues ?? 0,

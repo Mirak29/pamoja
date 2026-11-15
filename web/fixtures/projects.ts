@@ -41,6 +41,10 @@ export type Project = {
   stage: 'Idée' | 'Prototype' | 'Bêta' | 'Production'
   activity: 'Très actif' | 'Actif' | 'Calme'
   about?: string
+  /** The whole README of the repository, Markdown (§6.3) */
+  readme?: string
+  /** Its default branch: where its relative links and images lead */
+  branch?: string
   vision?: string
   releasedAt: number
   milestones: Milestone[]

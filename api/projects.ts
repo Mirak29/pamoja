@@ -28,6 +28,7 @@ type ProjectRow = {
   repoName: string | null
   syncMode: string | null
   readme: string | null
+  branch: string | null
   stats: string | null
   lastSyncedAt: number | null
 }
@@ -36,7 +37,7 @@ const listMine = sql<ProjectRow, number>`
   SELECT project.projectId, slug, project.name, description, vision, status,
     project.skills, project.demoVideoUrl, project.createdAt, owner.githubUsername AS ownerLogin,
     repository.repositoryId, repository.owner AS repoOwner,
-    repository.name AS repoName, syncMode,
+    repository.name AS repoName, syncMode, repository.defaultBranch AS branch,
     substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
   FROM projectMember
   JOIN project ON project.projectId = projectMember.projectId
@@ -310,6 +311,9 @@ const shownProject = (
         name: row.repoName!,
         syncMode: row.syncMode!,
         about: row.readme ? readmeSummary(row.readme) : '',
+        // The whole README for the page of the project, never in a list
+        readme: light ? '' : row.readme ?? '',
+        branch: row.branch ?? '',
         stars: stats.stars ?? 0,
         topics: stats.topics ?? [],
         languages: (stats.languages ?? [])
@@ -339,7 +343,7 @@ const listVisible = sql<ProjectRow, { userId: number; limit: number }>`
     project.skills, project.demoVideoUrl, project.createdAt,
     owner.githubUsername AS ownerLogin,
     repository.repositoryId, repository.owner AS repoOwner,
-    repository.name AS repoName, syncMode,
+    repository.name AS repoName, syncMode, repository.defaultBranch AS branch,
     substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
   FROM project
   JOIN user owner ON owner.userId = project.ownerId
@@ -368,8 +372,8 @@ const getBySlug = sql<ProjectRow, { slug: string; userId: number }>`
     project.skills, project.demoVideoUrl, project.createdAt,
     owner.githubUsername AS ownerLogin,
     repository.repositoryId, repository.owner AS repoOwner,
-    repository.name AS repoName, syncMode,
-    substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
+    repository.name AS repoName, syncMode, repository.defaultBranch AS branch,
+    substr(readme, 1, 20000) AS readme, stats, lastSyncedAt
   FROM project
   JOIN user owner ON owner.userId = project.ownerId
   LEFT JOIN repository ON repository.projectId = project.projectId

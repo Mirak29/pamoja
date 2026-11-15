@@ -23,6 +23,7 @@ import { t } from '/web/lib/language.ts'
 import { VideoEmbed } from '/web/ui/video.tsx'
 import { Markdown } from '/web/ui/rich-text.tsx'
 import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
+import { Readme } from '/web/ui/readme.tsx'
 
 const Card = (
   { class: className, children }: {
@@ -35,9 +36,20 @@ const About = ({ project }: { project: Project }) => (
   <Card class='gap-3 p-[22px]'>
     <Eyebrow>À propos</Eyebrow>
     {
-      // A README read from GitHub is Markdown; the texts of the demo
-      // projects are translated sentences
-      project.about && !project.demo
+      // A README read from GitHub is Markdown, shown whole; the texts of
+      // the demo projects are translated sentences
+      project.readme && !project.demo
+        ? (
+          <Readme
+            text={project.readme}
+            repo={{
+              owner: project.repoOwner ?? '',
+              name: project.repo ?? '',
+              branch: project.branch ?? '',
+            }}
+          />
+        )
+        : project.about && !project.demo
         ? (
           <Markdown
             text={project.about}

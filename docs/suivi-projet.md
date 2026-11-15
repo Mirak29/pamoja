@@ -1804,3 +1804,10 @@ L'aperçu vidéo passe de 6 à 19 écrans, en trois actes : gérer un projet (im
 
 - **Livrable** : `api/seed.ts`, `docs/vitrine/`, `README.md`, `README.en.md`
 - **Par** : @Mirak29
+
+### 2026-11-15 · À propos : le README entier, rendu comme sur GitHub
+
+La section « À propos » d'un projet ne montrait que 600 caractères du README, lus par le rendu des messages des membres : les tableaux, les images et les titres restaient en Markdown brut, et une table des matières (`#features`) lançait une recherche de hashtag. Le projet envoie maintenant son README entier (20 000 caractères au plus, jamais dans une liste) et sa branche par défaut ; la page le dessine en éléments, sans HTML, dans un cadre qui défile. Les ancres font défiler le README jusqu'au titre (ids de GitHub), les liens relatifs mènent au fichier sur GitHub, et les images ne sont lues que depuis GitHub, pour qu'aucun autre site n'apprenne qui lit la page.
+
+- **Livrable** : `web/lib/readme.ts`, `web/lib/readme_test.ts`, `web/ui/readme.tsx`, `web/pages/project/overview-tab.tsx`, `api/projects.ts`, `api/routes.ts`, `web/fixtures/projects.ts`, `web/fixtures/repos.ts` ; §6.3
+- **Par** : @Mirak29
