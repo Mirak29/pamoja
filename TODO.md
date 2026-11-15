@@ -142,7 +142,7 @@ Responsable : _à répartir_
 - [x] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
 - [x] **PAM-306** · Pulse déterministe (§6.4) `[démo]` — @niangoos
 - [x] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]` — @Mirak29
-- [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
+- [x] **PAM-308** · Project DNA, Health, Story (§6.5)
 - [x] **PAM-309** · Collaboration Map (globe aux couleurs de Pamoja, arcs vers les pays reliés, pays du profil exclu des pays reliés, gestes au doigt séparés du défilement, les personnes de chaque pays) et Collaboration Graph (étoile qui tient des milliers de liens : lieu mis en avant, panneau par lieu et par pages) (§9.3, §12.7) `[démo]` — @Mirak29
 - [x] **PAM-310** · Extraction IA des skills et besoins à l'import, et description de projet proposée (§11) — @Mirak29
 - [x] **PAM-311** · Embeddings et critère de proximité sémantique du matching (§7.3, §11) — @Mirak29
@@ -164,7 +164,7 @@ Responsable : _à répartir_
 Responsable : _à répartir_
 
 - [x] **PAM-401** · Page projet complète : en-tête, onglets, galerie, vidéo de démo (§6.3) `[démo]` — `GET/api/project` lit un projet public (ou privé pour un membre) par son slug, et la page d'un projet importé par quelqu'un d'autre le charge depuis l'API ; onglets board, roadmap et needs couverts par PAM-404, 405, 402 — @niangoos
-- [ ] **PAM-402** · Needs et « People who could help » (§6.6) — informations et besoins d'un projet enregistrés par `POST/api/project/update` (propriétaire, mainteneurs) ; reste le calcul serveur des « personnes qui peuvent aider », qui attend les compétences par besoin de l'extraction IA (PAM-310) — @niangoos
+- [x] **PAM-402** · Needs et « People who could help » (§6.6) — informations et besoins d'un projet enregistrés par `POST/api/project/update` (propriétaire, mainteneurs) ; reste le calcul serveur des « personnes qui peuvent aider », qui attend les compétences par besoin de l'extraction IA (PAM-310) — @niangoos
 - [x] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6) — @niangoos ; reste : changer le rôle d'un membre (`POST/api/project/member/role`, §3)
 - [x] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7) — @niangoos
 - [x] **PAM-405** · Roadmap et milestones (§6.7)
@@ -398,3 +398,6 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · Cartes du Board liées à GitHub (PAM-404) : une carte peut pointer sur une issue ou une PR du projet (`POST/api/task/create`, `POST/api/task/link`, une carte par lien) ; une PR ouverte reçoit sa carte en Review, mergée elle passe en Done (webhook, et la synchro pour un projet sans webhook) ; « Nouvelle carte » et « Ajouter au board » enregistrent sur le serveur · §6.7
 - 2026-11-15 · Critères du bloc 4 vérifiés : douze déplacements simultanés par deux membres sans perte (test HTTP) ; une candidature acceptée d'un toucher depuis la notification (navigateur) ; une CI en échec sur une vraie PR propose « Demander de l'aide », prérempli avec le job et le lien réels (la page fixait `ci: 'ok'` et un job d'exemple) · §6.7, §6.8
 - 2026-11-15 · Retrait d'une preuve (PAM-508) : action `revoke_evidence` de la file de modération, sur une preuve choisie de l'auteur ; l'entry reste figée, une ligne `moderationAction` la retire de la liste des preuves, des badges et du matching ; l'auteur est notifié · §8.3, §10.5
+- 2026-11-15 · Digest quotidien masqué (PAM-509 reste ouverte) : il n'existe pas encore, et un développeur qui le choisissait ne recevait rien ; les comptes en digest repassent en instantané (migration 016) et le matching notifie tout de suite · §7.4
+- 2026-11-15 · « Ils pourraient aider » sur le serveur (PAM-402) : `GET/api/project/helpers` donne, pour chaque besoin ouvert, les trois meilleurs du matching (§7.3), membres écartés et préférences de chacun respectées ; `POST/api/project/invite` envoie l'invitation d'un manager, une fois par mois et par projet · §6.6
+- 2026-11-15 · DNA, Health et Story sur le serveur (PAM-308) : `GET/api/project/dna` mesure huit indicateurs sur le dépôt, chacun avec sa règle (activité 14 j, délai médian avant merge, PRs en attente, bloqueurs, contributeurs 30 j, CI 7 j, README, good first issues), déduit les domaines des langages et des labels, et tire la Story du journal ; les projets de démo gardent leurs données · §6.5

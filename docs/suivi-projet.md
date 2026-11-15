@@ -1499,6 +1499,43 @@ La dernière action de modération du §10.5 : retirer une preuve pour fraude av
 - **Livrable** : `api/revoked.ts`, `api/moderation.ts`, `api/moderation_test.ts`, `api/proofs.ts`, `api/badges.ts`, `api/matching.ts`, `api/routes.ts`, `web/lib/moderation.ts`, `web/pages/moderation-page.tsx`, `web/lib/notifications.ts` ; §8.3, §10.5
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-509 · Digest quotidien masqué en attendant
+
+Le digest quotidien n'existe pas encore, et l'envoi par email est écarté pour l'instant. Or un développeur qui choisissait « Résumé quotidien » ne recevait rien du tout : le matching gardait ses correspondances pour un digest jamais envoyé. Le choix est retiré des réglages et de l'onboarding. Les comptes en digest repassent en instantané (migration 016), et le matching notifie tout de suite tout mode autre que Désactivé.
+
+- **Livrable** : `api/matching.ts`, `api/matching_test.ts`, `migrations/016-digest-to-instant.js`, `web/fixtures/settings.ts`, `web/lib/session.ts`, `web/pages/public/onboarding-page.tsx` ; §7.4
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-402 · « Ils pourraient aider » calculé par le serveur
+
+La liste était calculée dans la page, parmi les seuls profils chargés, et « Inviter » n'envoyait rien.
+
+- **Liste** : `GET/api/project/helpers` donne, pour chaque besoin ouvert, les trois meilleurs du matching (`rank`, §7.3), sur les skills du besoin ou à défaut ceux du projet. Les membres sont écartés, et ce que chacun a choisi est respecté : Désactivé, filtres, score minimum. L'onglet Équipe affiche, pour chaque personne, ses skills, ses aides confirmées et sa ville.
+- **Invitation** : `POST/api/project/invite`, réservé aux propriétaires et mainteneurs, envoie une notification (`project_invite`) qui mène au projet. L'invitation est envoyée une fois par mois et par projet, et jamais à un membre.
+
+- **Livrable** : `api/project-helpers.ts`, `api/project-helpers_test.ts`, `api/routes.ts`, `web/lib/project-helpers.ts`, `web/pages/project/team-tab.tsx`, `web/lib/notifications.ts` ; §6.6
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-308 · DNA, Health et Story mesurés
+
+Pour un vrai projet, trois indicateurs de Health restaient « Pas encore mesuré », et Domaines et Story n'existaient que pour la démo. `GET/api/project/dna` calcule tout sur le dépôt et le journal :
+
+- **Health** : huit indicateurs, chacun avec sa règle au survol et sans score global.
+  - Activité sur 14 jours (PRs ouvertes et pushes).
+  - Délai médian avant merge, sur 90 jours.
+  - PRs en attente de review.
+  - Bloqueurs ouverts.
+  - Contributeurs sur 30 jours, comparés aux 30 jours d'avant.
+  - CI sur 7 jours.
+  - Documentation (taille du README).
+  - Good first issues.
+- **Domaines** : Backend, Frontend, Testing, DevOps, Documentation, déduits des langages (plus de 5 %) et des labels des issues.
+- **Story** : la création du projet, le premier contributeur, la première collaboration entre pays, les releases et les paliers de membres.
+- **Projets de démo** : ils gardent leurs données d'exemple.
+
+- **Livrable** : `api/project-dna.ts`, `api/project-dna_test.ts`, `api/routes.ts`, `web/lib/pulse.ts`, `web/fixtures/pulse.ts`, `web/pages/project/pulse-tab.tsx` ; §6.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

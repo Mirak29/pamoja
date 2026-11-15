@@ -147,6 +147,7 @@ import {
   moveTask,
 } from '/api/board.ts'
 import { inviteHelper, listProjectHelpers } from '/api/project-helpers.ts'
+import { projectDna } from '/api/project-dna.ts'
 import {
   attachTask,
   createMilestone,
@@ -2163,6 +2164,34 @@ const defs = {
       replies: ARR(channelMessage, 'The thread under the alert'),
     })),
     description: 'The alerts of #suivi and their threads (§6.8)',
+  }),
+
+  'GET/api/project/dna': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => projectDna(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: OBJ({
+      hasRepository: BOOL('False: nothing of GitHub is measured yet'),
+      health: ARR(
+        OBJ({
+          label: STR('What is measured'),
+          value: STR('Its value, — when unknown'),
+          state: STR('What it means'),
+          rule: STR('The rule applied, shown on hover'),
+          tone: STR('ok, warning, danger or unknown'),
+        }),
+        'The indicators of Health (§6.5)',
+      ),
+      domains: ARR(STR('Backend, Frontend, Testing, DevOps, Documentation')),
+      story: ARR(
+        OBJ({
+          when: STR('Month and year'),
+          text: STR('The moment'),
+        }),
+        'The marking moments, oldest first',
+      ),
+    }),
+    description: 'DNA, Health and Story of a project (§6.5)',
   }),
 
   'GET/api/project/pulse': route({

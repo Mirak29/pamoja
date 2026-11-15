@@ -7,7 +7,7 @@ import {
   TriangleAlert,
 } from '/web/assets/icons.tsx'
 import { type HealthIndicator, projectPulse } from '/web/fixtures/pulse.ts'
-import { livePulses, loadPulse } from '/web/lib/pulse.ts'
+import { liveDnas, livePulses, loadDna, loadPulse } from '/web/lib/pulse.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
 import { SkillChip } from '/web/ui/badge.tsx'
@@ -264,9 +264,12 @@ const Story = ({ story }: { story: [string, string][] }) => (
 export const PulseTab = ({ project }: { project: Project }) => {
   // Counted again by the server each time the tab opens
   useEffect(() => {
-    project.demo || loadPulse(project.slug)
+    if (project.demo) return
+    loadPulse(project.slug)
+    loadDna(project.slug)
   }, [project.slug])
   livePulses.value
+  liveDnas.value
   const pulse = projectPulse(project)
   const highest = Math.max(1, ...pulse.metrics.map((m) => m.value))
   return (
