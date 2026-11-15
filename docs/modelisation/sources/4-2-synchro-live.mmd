@@ -1,0 +1,27 @@
+sequenceDiagram
+  autonumber
+  actor Owner as Propriétaire
+  participant Web as SPA
+  participant API as API Deno
+  participant GH as GitHub
+  participant DB as SQLite
+
+  Owner->>Web: « Activer la synchro live »
+  Web->>GH: page d'installation de l'app
+  Owner->>GH: coche le repo, installe
+  GH-->>Web: Setup URL avec installation_id, setup_action, code
+  Web->>API: POST /api/github/installation/confirm
+  API->>GH: échange le code contre un token temporaire
+  API->>GH: 1. Identité : GET /user
+  GH-->>API: githubId du compte connecté ?
+  API->>GH: 2. Couverture : GET /user/installations/{id}/repositories
+  GH-->>API: le repo y figure ?
+  API->>GH: 3. Droit : GET /repos/{owner}/{repo}
+  GH-->>API: permissions.admin ou maintain ?
+  API->>API: jette le token
+  alt les trois contrôles passent
+    API->>DB: Repository.syncMode = live, GithubInstallation enregistrée
+    API-->>Web: synchro live active
+  else un contrôle échoue
+    API-->>Web: refus, avec le contrôle en échec
+  end

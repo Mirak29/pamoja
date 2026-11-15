@@ -1,0 +1,103 @@
+erDiagram
+  Community ||--o{ CommunityMember : "réunit"
+  User ||--o{ CommunityMember : "rejoint"
+  User ||--o{ Post : "publie"
+  Community |o--o{ Post : "accueille"
+  Post |o--o{ Post : "réponse (parentId)"
+  Post |o--o{ Post : "republication (repostOfId)"
+  User ||--o{ Bookmark : "enregistre"
+  Post ||--o{ Bookmark : "est enregistré"
+  User ||--o{ Reaction : "réagit"
+  User ||--o{ Report : "signale"
+  Report |o--o{ ModerationAction : "est traité par"
+  User ||--o{ ModerationAction : "modère"
+  User ||--o{ Media : "téléverse"
+
+  Community {
+    int communityId PK
+    text slug UK
+    text name
+    text type "technology, country, domain"
+    text description
+    text countryCode "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+  }
+  CommunityMember {
+    int communityMemberId PK
+    int communityId FK
+    int userId FK
+    text role "member ou moderator"
+    real joinedAt
+  }
+  Post {
+    int postId PK
+    int authorId FK
+    int communityId FK "facultatif"
+    int projectId FK "facultatif"
+    text type
+    text title "facultatif"
+    text body
+    json attachments "facultatif"
+    text videoUrl "facultatif"
+    int parentId FK "facultatif, même table, sans contrainte"
+    int rootId FK "facultatif, même table, sans contrainte"
+    int repostOfId FK "facultatif, même table, sans contrainte"
+    int acceptedReplyId FK "facultatif, même table, sans contrainte"
+    real hiddenAt "facultatif, modération"
+    real withdrawnAt "facultatif, repost retiré"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  Reaction {
+    int reactionId PK
+    int userId FK
+    text targetType
+    int targetId
+    text kind "like ou useful"
+  }
+  Bookmark {
+    int bookmarkId PK
+    int userId FK
+    int postId FK
+    real createdAt
+  }
+  Report {
+    int reportId PK
+    int reporterId FK
+    text targetType
+    int targetId
+    text reason
+    text comment "facultatif"
+    text status "open, resolved, dismissed"
+    real createdAt
+    real resolvedAt "facultatif"
+  }
+  ModerationAction {
+    int moderationActionId PK
+    int moderatorId FK
+    int reportId FK "exigé par le code"
+    text targetType
+    int targetId
+    text action "dismiss, hide, warn, suspend, revoke_evidence"
+    text reason
+    real until "facultatif"
+    real createdAt
+  }
+  Media {
+    int mediaId PK
+    int ownerId FK
+    text storageKey
+    text fileName "facultatif"
+    text mime
+    int width
+    int height
+    int bytes
+    text targetType "facultatif, profile_cover, project_gallery, post, help_request, message"
+    int targetId "facultatif"
+    int position
+    real hiddenAt "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+  }

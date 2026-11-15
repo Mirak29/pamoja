@@ -1,0 +1,23 @@
+flowchart TD
+  A["Demande publiée ou vague suivante"] --> B["Candidats : tous les développeurs"]
+  B --> C["Exclure : le demandeur, matching sur Off,<br/>aidants sortis de cette demande,<br/>10 notifications déjà reçues aujourd'hui"]
+  C --> D["Score sur 100 par candidat"]
+  D --> D1["Skills requis possédés : 45"]
+  D --> D2["Type d'aide accepté : 15"]
+  D --> D3["Aides confirmées sur ces skills : 15"]
+  D --> D4["Proximité sémantique (embeddings) : 10<br/>0 si l'IA est indisponible"]
+  D --> D5["Disponibilité : 10"]
+  D --> D6["Affinité (communautés, projet suivi) : 5"]
+  D1 --> E["Garder ceux au-dessus de leur score minimum"]
+  D2 --> E
+  D3 --> E
+  D4 --> E
+  D5 --> E
+  D6 --> E
+  E --> F["Trier par score"]
+  F --> G["Vague : 4 meilleurs + 1 place<br/>« nouveau profil prometteur » (moins de 3 aides)"]
+  G --> H["HelpMatch (score, raisons, vague)<br/>Notification + entry HELP_REQUEST_MATCHED"]
+  H --> I{"Acceptée en 2 h ?"}
+  I -->|oui| J["Fin du matching"]
+  I -->|non| K["Vague suivante : 5 suivants"]
+  K --> C

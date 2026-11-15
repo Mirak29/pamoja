@@ -1,0 +1,60 @@
+erDiagram
+  User ||--o{ Conversation : "démarre"
+  Conversation ||--|{ ConversationMember : "réunit"
+  User ||--o{ ConversationMember : "participe"
+  Conversation ||--o{ DirectMessage : "contient"
+  User ||--o{ DirectMessage : "écrit"
+  DirectMessage |o--o{ DirectMessage : "réponse (replyToId)"
+  DirectMessage ||--o{ DirectMessageReaction : "reçoit"
+  User ||--o{ DirectMessageReaction : "réagit"
+  User ||--o{ UserBlock : "bloque"
+  User ||--o{ AssistantMessage : "échange avec l'Assistant"
+
+  Conversation {
+    int conversationId PK
+    text publicId UK "12 caractères aléatoires, l'adresse"
+    int startedBy FK
+    text status "pending, accepted, declined"
+    real createdAt
+    real updatedAt "dernier message"
+  }
+  ConversationMember {
+    int conversationMemberId PK
+    int conversationId FK "UNIQUE avec userId"
+    int userId FK
+    real lastReadAt "facultatif"
+    real mutedAt "facultatif"
+    real archivedAt "facultatif"
+  }
+  DirectMessage {
+    int directMessageId PK
+    int conversationId FK
+    int authorId FK
+    text body
+    int replyToId FK "facultatif, même table, sans contrainte"
+    json linkPreview "facultatif"
+    real editedAt "facultatif"
+    real deletedAt "facultatif, garde sa place"
+    real createdAt
+  }
+  DirectMessageReaction {
+    int directMessageReactionId PK
+    int directMessageId FK "UNIQUE avec userId et emoji"
+    int userId FK
+    text emoji
+    real createdAt
+  }
+  UserBlock {
+    int userBlockId PK
+    int blockerId FK "UNIQUE avec blockedId"
+    int blockedId FK
+    real createdAt
+  }
+  AssistantMessage {
+    int assistantMessageId PK
+    int userId FK
+    text role "user ou assistant"
+    text content
+    json extras "facultatif, cartes et actions"
+    real createdAt
+  }

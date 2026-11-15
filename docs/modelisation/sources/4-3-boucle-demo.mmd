@@ -1,0 +1,34 @@
+sequenceDiagram
+  autonumber
+  actor Abdou
+  actor Moussa
+  participant API as API Deno
+  participant DB as SQLite + entries
+  participant SSE as Route SSE
+  participant W as Worker webhooks
+  participant GH as GitHub
+
+  Abdou->>API: POST /api/help/create (PR 81, Go, SQLite, Backend)
+  API->>DB: HelpRequest open, score des candidats
+  API->>DB: HelpMatch vague 1, Notification, entry HELP_REQUEST_MATCHED
+  DB-->>SSE: trigger : Moussa est matché
+  SSE-->>Moussa: signal, toast « Ce projet a besoin de toi »
+  Moussa->>API: POST /api/help/accept
+  API->>DB: UPDATE ... WHERE status = 'open' (une seule ligne)
+  API->>DB: entry HELP_REQUEST_ACCEPTED
+  DB-->>SSE: trigger : demandeur et membres du projet
+  SSE-->>Abdou: signal, la page relit la demande
+  Moussa->>GH: review de la PR 81 sur GitHub
+  GH->>API: webhook pull_request_review (HMAC)
+  API->>DB: WebhookDelivery received
+  API-->>GH: 202
+  W->>DB: prend la livraison (processing)
+  W->>W: valide les 5 conditions (§7.5)
+  W->>DB: Review, PR en review reçue, HelpRequest review_submitted, entries REVIEW_SUBMITTED et PR_REVIEWED, livraison done
+  DB-->>SSE: trigger : demandeur, membres et abonnés
+  SSE-->>Abdou: signal, « Review soumise », alerte dans suivi
+  Abdou->>API: POST /api/help/confirm (oui)
+  API->>DB: HelpRequest completed, entry REVIEW_HELP_CONFIRMED (fields figés)
+  API->>DB: évaluateur de badges, BadgeProgress, BADGE_UNLOCKED si niveau franchi
+  DB-->>SSE: trigger : l'aidant et les membres
+  SSE-->>Moussa: signal, profil et badge à jour

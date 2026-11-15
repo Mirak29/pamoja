@@ -1,0 +1,9 @@
+stateDiagram-v2
+  [*] --> received : signature HMAC valide, insérée, réponse 202
+  received --> processing : le worker la prend
+  processing --> done : tables + entries en une transaction
+  processing --> received : erreur, nouvel essai (attempts + 1, délai croissant)
+  processing --> failed : 5e échec, alerte dans les logs
+  processing --> received : bloquée plus de 2 min (reprise au démarrage)
+  done --> [*]
+  failed --> [*]

@@ -1,0 +1,70 @@
+erDiagram
+  User ||--|| Profile : "a"
+  User ||--o{ UserSkill : "possède"
+  Skill ||--o{ UserSkill : "est possédé"
+  Skill ||--o{ SkillAlias : "a pour alias"
+  User ||--o{ UserIntent : "déclare"
+  User ||--o{ Follow : "suit"
+
+  User {
+    int userId PK
+    int githubId UK
+    text githubUsername "login Pamoja"
+    text githubLogin "facultatif, login GitHub"
+    text avatarUrl
+    text email "facultatif"
+    real suspendedUntil "facultatif"
+    text source "demo, github, platform"
+    real createdAt
+    real updatedAt
+  }
+  Profile {
+    int profileId PK
+    int userId FK, UK
+    text displayName
+    text headline "facultatif"
+    text bio "facultatif"
+    text country "facultatif"
+    text city "facultatif"
+    text website "facultatif"
+    text coverUrl "facultatif"
+    text theme
+    text accent
+    text availability
+    json sectionOrder "facultatif"
+    json featured "facultatif"
+    text matchingMode "instant ou off"
+    json matchingFilters "facultatif"
+    real createdAt
+    real updatedAt
+  }
+  Skill {
+    int skillId PK
+    text slug UK
+    text name
+    text category
+  }
+  SkillAlias {
+    int skillAliasId PK
+    text alias UK
+    int skillId FK
+  }
+  UserSkill {
+    int userSkillId PK
+    int userId FK
+    int skillId FK
+    text source "declared, github, platform_activity"
+    real createdAt
+  }
+  UserIntent {
+    int userIntentId PK
+    int userId FK
+    text intent
+  }
+  Follow {
+    int followId PK
+    int followerId FK
+    text targetType "user, project, community"
+    int targetId
+    real createdAt
+  }

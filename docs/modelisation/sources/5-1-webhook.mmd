@@ -1,0 +1,28 @@
+flowchart TD
+  A["POST /api/github/webhook"] --> B{"Signature HMAC<br/>valide ?"}
+  B -->|non| B1["401, rien n'est écrit"]
+  B -->|oui| C{"githubDeliveryId<br/>déjà connu ?"}
+  C -->|oui| C1["202, ignoré"]
+  C -->|non| D["INSERT WebhookDelivery<br/>status = received"]
+  D --> E["202 en moins de 10 s"]
+  D -.-> F["Worker : prend la livraison<br/>status = processing"]
+  F --> G{"Type d'événement"}
+  G -->|"pull_request"| H1["PullRequest, entries PR_OPENED / PR_MERGED / PR_CLOSED<br/>une PR mergée passe sa carte en Done"]
+  G -->|"pull_request_review"| H2["Review, entry PR_REVIEWED<br/>vérifie les 5 conditions d'une demande d'aide"]
+  G -->|"workflow_run, check_run, status"| H3["CiRun, entry CI_FAILED ou CI_FIXED"]
+  G -->|"issues, issue_comment"| H4["Issue, entry ISSUE_UPDATED"]
+  G -->|"release"| H5["entry RELEASE_PUBLISHED"]
+  G -->|"installation*"| H6["GithubInstallation, couverture des repos"]
+  H2 --> R{"Demande accepted sur cette PR<br/>et review de l'aidant ?"}
+  R -->|oui| R1["HelpRequest review_submitted<br/>entry REVIEW_SUBMITTED"]
+  R -->|non| T
+  R1 --> T
+  H1 --> T["Une transaction : tables + entries<br/>status = done"]
+  H3 --> T
+  H4 --> T
+  H5 --> T
+  H6 --> T
+  T --> U["Les triggers diffusent en SSE"]
+  F -->|erreur| X{"moins de 5 essais ?"}
+  X -->|oui| X1["attempts + 1, lastError<br/>nouvel essai avec délai croissant"]
+  X -->|non| X2["status = failed<br/>alerte dans les logs"]
