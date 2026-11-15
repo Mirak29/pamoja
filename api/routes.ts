@@ -1581,10 +1581,12 @@ const defs = {
   }),
 
   'GET/api/posts': route({
-    authorize: withSession,
+    // Open to visitors without an account: the feed read only (§10.1); a
+    // visitor is no one, so sees no reaction of their own nor a hidden post
+    authorize: withOptionalSession,
     // A query string carries text: the time is read as a number
     fn: (ctx, { author, before }) =>
-      listPosts(ctx.session.userId, author ?? '', Number(before) || 0),
+      listPosts(ctx.session?.userId ?? 0, author ?? '', Number(before) || 0),
     input: OBJ({
       before: optional(
         STR('The page before this time, in seconds: the feed read further'),
@@ -1641,8 +1643,10 @@ const defs = {
   }),
 
   'GET/api/post/thread': route({
-    authorize: withSession,
-    fn: (ctx, { postId }) => readThread(ctx.session.userId, Number(postId)),
+    // Open to visitors without an account, read only, as the feed
+    authorize: withOptionalSession,
+    fn: (ctx, { postId }) =>
+      readThread(ctx.session?.userId ?? 0, Number(postId)),
     input: OBJ({ postId: STR('Id of a post of the thread') }),
     output: OBJ({
       posts: ARR(threadPost, 'Every post of the thread, oldest first'),

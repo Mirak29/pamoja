@@ -1847,3 +1847,10 @@ Le thème et l'accent de son profil (Terminal, Cyber, Sombre… ; Vert, Ambre, C
 
 - **Livrable** : `web/lib/app-theme.ts`, `web/pages/settings-page.tsx`, `web/app.tsx`, `web/assets/styles/theme.css`, `task-generate-theme.ts` ; §9.2
 - **Par** : @Mirak29
+
+### 2026-11-15 · Lire le fil sans compte
+
+Un visiteur sans compte lit le fil (`/feed`) et ses discussions (`/post/…`), en lecture seule, depuis un lien « Le fil » dans l'en-tête public et « Lire le fil sans compte » sur la landing. `GET/api/posts` et `GET/api/post/thread` acceptent l'absence de session : un visiteur n'est personne, ne voit ni réaction à lui ni post masqué ; aimer, répondre et publier demandent toujours une session (401), et la page les fait passer par la connexion. Les pages du visiteur sont à part, sans le fil du membre connecté, qui suppose un compte. Les autres pages de l'app mènent toujours à la connexion.
+
+- **Livrable** : `api/routes.ts`, `api/guest_feed_test.ts`, `web/lib/guest-feed.ts`, `web/pages/public/guest-feed.tsx`, `web/app.tsx`, `web/ui/public-header.tsx`, `web/pages/public/landing-page.tsx` ; §10.1
+- **Par** : @Mirak29

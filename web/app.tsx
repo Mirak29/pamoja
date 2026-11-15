@@ -101,6 +101,13 @@ const InstallationReturn = lazyPage(() =>
 const LandingPage = lazyPage(() =>
   import('/web/pages/public/landing-page.tsx').then((page) => page.LandingPage)
 )
+// The feed and a discussion read without an account (§10.1)
+const GuestFeedPage = lazyPage(() =>
+  import('/web/pages/public/guest-feed.tsx').then((page) => page.GuestFeedPage)
+)
+const GuestPostPage = lazyPage(() =>
+  import('/web/pages/public/guest-feed.tsx').then((page) => page.GuestPostPage)
+)
 const OnboardingPage = lazyPage(() =>
   import('/web/pages/public/onboarding-page.tsx').then((page) =>
     page.OnboardingPage
@@ -120,6 +127,8 @@ declare const DEV_PAGES: boolean
 
 const routes: Record<string, ReturnType<typeof lazyPage>> = {
   '': HomePage,
+  // The public feed's address: signed in, the feed of the home page
+  feed: HomePage,
   '@': ProfilePage,
   help: HelpPage,
   community: CommunityPage,
@@ -164,6 +173,9 @@ const Pages = () => {
     // any page of the app
     if (section === '') return <LandingPage />
     if (section === '@') return <PassportPage />
+    // Read only, without an account: the feed and its discussions
+    if (section === 'feed') return <GuestFeedPage />
+    if (section === 'post') return <GuestPostPage />
     return Route ? <ConnexionPage /> : <NotFoundPage />
   }
   // The passport is the profile seen without a session: no app shell

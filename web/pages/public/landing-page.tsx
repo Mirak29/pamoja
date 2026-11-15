@@ -206,6 +206,9 @@ const Hero = () => (
         <Button size={48} variant='secondary' {...passportLink(sample)}>
           Voir un profil
         </Button>
+        <Button size={48} variant='secondary' href='feed'>
+          Lire le fil sans compte
+        </Button>
       </div>
       <span class='text-[13px] text-ink-muted'>
         « Pamoja » signifie « ensemble » en swahili.

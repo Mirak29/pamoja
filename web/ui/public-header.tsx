@@ -34,6 +34,9 @@ export const PublicHeader = () => (
     </A>
     {/* One group: on a phone it goes under the logo as a whole */}
     <div class='ml-auto flex items-center gap-2.5'>
+      <A href='feed' class='text-[14px] font-semibold'>
+        Le fil
+      </A>
       <A
         {...passportLink('moussa')}
         class='mr-1.5 text-[14px] font-semibold'
