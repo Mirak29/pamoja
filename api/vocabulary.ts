@@ -283,3 +283,47 @@ export const parseLocation = (location: string | null | undefined) => {
   if (parts.length === 1) return { city: parts[0], country: null }
   return { city: parts[0], country: parts.at(-1)! }
 }
+
+// Moderation (§10.5): the decisions, the label each shows. Suspending and
+// withdrawing a proof act on the whole platform: platform admins only
+export const moderationActions = {
+  dismiss: 'Ignorer',
+  hide: 'Masquer',
+  warn: 'Avertir',
+  suspend: 'Suspendre',
+  revoke_evidence: 'Retirer une preuve',
+} as const
+export type ModerationDecision = keyof typeof moderationActions
+export const ADMIN_ACTIONS: ModerationDecision[] = [
+  'suspend',
+  'revoke_evidence',
+]
+// What only a post or a comment can be: hidden
+export const HIDEABLE_TARGETS = ['post', 'comment']
+/** Days a suspension may last */
+export const SUSPEND_DAYS = [1, 7, 30]
+
+// The kinds of a proof (§8.1), as a moderator and its author read them
+export const proofKinds: Record<string, string> = {
+  review: 'Review',
+  help: 'Aide',
+  merged: 'PR mergée',
+  release: 'Release',
+  created: 'Projet',
+  answer: 'Réponse acceptée',
+}
+
+/** A proof in a few words: its kind, then what it is about */
+export const proofTitleOf = (proof: {
+  kind: string
+  title: string
+  repository: string
+  prNumber: number
+  projectName: string
+}) =>
+  [
+    proofKinds[proof.kind] ?? proof.kind,
+    proof.title ||
+    (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
+    proof.projectName,
+  ].filter(Boolean).join(' · ')

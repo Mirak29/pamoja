@@ -7,31 +7,30 @@ import { ModerationAction } from '/api/schema.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { createNotification } from '/api/notifications.ts'
 import { LIMITS } from '/api/limits.ts'
+import { moderatedCommunities } from '/api/events.ts'
+import {
+  ADMIN_ACTIONS,
+  HIDEABLE_TARGETS,
+  moderationActions,
+  type ModerationDecision,
+  proofTitleOf,
+  SUSPEND_DAYS,
+} from '/api/vocabulary.ts'
 
 // The moderation queue and its decisions (§10.5). Content of a community is
 // handled by its moderators; the rest (a post outside any community, a help
-// request, a profile) by the platform admins, the logins of PAMOJA_ADMINS,
-// and by every community moderator while none is set. A decision closes the
-// open reports of its target, is kept in `moderationAction` with its reason,
-// is an entry, and its author is told why.
+// request, a profile) by the platform admins, the logins of PAMOJA_ADMINS
+// only: none set, none at all. A decision answers open reports; it closes
+// them, is kept in `moderationAction` with its reason, is an entry, and its
+// author is told why. Suspending and withdrawing a proof act on the whole
+// platform: admins only. Nobody decides on a moderator or an admin.
 
-export const MODERATION_ACTIONS = [
-  'dismiss',
-  'hide',
-  'warn',
-  'suspend',
-  'revoke_evidence',
-]
-// Days a suspension may last
-export const SUSPEND_DAYS = [1, 7, 30]
+export const MODERATION_ACTIONS = Object.keys(
+  moderationActions,
+) as ModerationDecision[]
 
 const badRequest = (m: string) => new respond.BadRequestError({ message: m })
 const forbidden = (m: string) => new respond.ForbiddenError({ message: m })
-
-const moderated = sql<{ communityId: number }, number>`
-  SELECT communityId FROM communityMember
-  WHERE userId = ? AND role = 'moderator'
-`.all
 
 const loginOf = sql<{ login: string }, number>`
   SELECT githubUsername AS login FROM user WHERE userId = ?
@@ -41,20 +40,17 @@ const admins = () =>
   (Deno.env.get('PAMOJA_ADMINS') ?? '').split(',').map((l) => l.trim())
     .filter(Boolean).map((l) => l.toLowerCase())
 
-/** What a developer may moderate: some communities, and the rest or not */
-const scopeOf = (me: number) => {
-  const communities = new Set(moderated(me).map((m) => m.communityId))
-  const login = loginOf(me)?.login.toLowerCase() ?? ''
-  const listed = admins()
-  const admin = listed.length ? listed.includes(login) : communities.size > 0
-  return { communities, admin }
-}
+/** What a developer may moderate: some communities, and the rest if admin */
+const scopeOf = (me: number) => ({
+  communities: new Set(moderatedCommunities(me).map((m) => m.id)),
+  admin: admins().includes(loginOf(me)?.login.toLowerCase() ?? ''),
+})
+
+const hasQueue = (scope: ReturnType<typeof scopeOf>) =>
+  scope.admin || scope.communities.size > 0
 
 /** Whether the developer has a queue: they moderate something (§10.5) */
-export const isModerator = (me: number) => {
-  const scope = scopeOf(me)
-  return scope.admin || scope.communities.size > 0
-}
+export const isModerator = (me: number) => hasQueue(scopeOf(me))
 
 type Target = {
   targetType: string
@@ -147,10 +143,10 @@ const targetOf = (targetType: string, targetId: number): Target | undefined => {
   }
 }
 
+// An admin moderates everything; a community moderator, its community
 const inScope = (scope: ReturnType<typeof scopeOf>, target: Target) =>
-  target.communityId === null
-    ? scope.admin
-    : scope.communities.has(target.communityId)
+  scope.admin ||
+  (target.communityId !== null && scope.communities.has(target.communityId))
 
 const openReports = sql<
   {
@@ -242,7 +238,9 @@ export const moderationQueue = (me: number) => {
     if (history.length === 50) break
   }
   return {
-    moderator: scope.admin || scope.communities.size > 0,
+    moderator: hasQueue(scope),
+    // Suspending and withdrawing a proof are theirs only
+    admin: scope.admin,
     queue: [...items.values()].map(({ target, reports }) => ({
       targetType: target.targetType,
       targetId: target.targetId,
@@ -256,6 +254,18 @@ export const moderationQueue = (me: number) => {
     history,
   }
 }
+
+const openReport = sql<
+  { reportId: number },
+  { targetType: string; targetId: number }
+>`
+  SELECT reportId FROM report
+  WHERE targetType = :targetType AND targetId = :targetId AND status = 'open'
+  LIMIT 1
+`.get
+
+const hasOpenReport = (target: { targetType: string; targetId: number }) =>
+  !!openReport({ targetType: target.targetType, targetId: target.targetId })
 
 const closeReports = sql<
   undefined,
@@ -299,7 +309,7 @@ export const decide = (
     proofId?: number | null
   },
 ) => {
-  if (!MODERATION_ACTIONS.includes(input.action)) {
+  if (!MODERATION_ACTIONS.includes(input.action as ModerationDecision)) {
     throw badRequest('Unknown action')
   }
   const reason = input.reason.trim()
@@ -310,8 +320,23 @@ export const decide = (
   }
   const target = targetOf(input.targetType, input.targetId)
   if (!target) throw badRequest('Unknown content')
-  if (!inScope(scopeOf(me), target)) throw forbidden('Not your queue')
+  const scope = scopeOf(me)
+  if (!inScope(scope, target)) throw forbidden('Not your queue')
+  // A decision answers reports: nobody acts on a content nobody reported
+  if (!hasOpenReport(input)) throw badRequest('No open report')
   if (target.authorId === me) throw forbidden('Not on your own content')
+  // On the whole platform: its admins only
+  if (
+    ADMIN_ACTIONS.includes(input.action as ModerationDecision) && !scope.admin
+  ) {
+    throw forbidden('Platform admins only')
+  }
+  // Only a post or a comment can be hidden
+  if (input.action === 'hide' && !HIDEABLE_TARGETS.includes(input.targetType)) {
+    throw badRequest('Only a post or a comment is hidden')
+  }
+  // A moderator or an admin is never the target of another one
+  if (isModerator(target.authorId)) throw forbidden('Not on a moderator')
   // A proof of the author, that still counts (§8.3, §10.5)
   const proof = input.action === 'revoke_evidence'
     ? proofsOf(target.authorId).find((p) => p.id === input.proofId)
@@ -373,7 +398,7 @@ export const decide = (
         category: 'system',
         payload: {
           excerpt: reason,
-          title: proof ? proofTitle(proof) : target.title,
+          title: proof ? proofTitleOf(proof) : target.title,
           postId: isPost ? input.targetId : 0,
           until: until ?? 0,
         },
@@ -403,21 +428,3 @@ const getSuspension = sql<{ until: number | null }, number>`
 /** Whether the account is suspended now: it may read, not write (§10.5) */
 export const isSuspended = (userId: number) =>
   (getSuspension(userId)?.until ?? 0) > now()
-
-const kinds: Record<string, string> = {
-  review: 'Review',
-  help: 'Aide',
-  merged: 'PR mergée',
-  release: 'Release',
-  created: 'Projet',
-  answer: 'Réponse acceptée',
-}
-
-/** What a proof is, in a few words, for the moderator and the author */
-export const proofTitle = (proof: ReturnType<typeof proofsOf>[number]) =>
-  [
-    kinds[proof.kind] ?? proof.kind,
-    proof.title ||
-    (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
-    proof.projectName,
-  ].filter(Boolean).join(' · ')

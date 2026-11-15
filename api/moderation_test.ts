@@ -8,9 +8,20 @@ import { decide, isSuspended, moderationQueue } from '/api/moderation.ts'
 import { createSession } from '/api/session.ts'
 import { proofsOf } from '/api/proofs.ts'
 import { badgesOf } from '/api/badges.ts'
+import { createCommunity } from '/api/community.ts'
 import { request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
+
+// Kofi is a platform admin for the time of `fn`: PAMOJA_ADMINS
+const asAdmin = <T>(fn: () => T) => {
+  Deno.env.set('PAMOJA_ADMINS', 'kofi')
+  try {
+    return fn()
+  } finally {
+    Deno.env.delete('PAMOJA_ADMINS')
+  }
+}
 
 const hiddenAt = (postId: number) =>
   (db.prepare('SELECT hiddenAt FROM post WHERE postId = ?')
@@ -101,15 +112,21 @@ Deno.test('moderation: a hidden post stays for its author, with why', () => {
 
 Deno.test('moderation: a suspended account reads, never writes', () => {
   const { abdou, zeinab, post } = reported()
-  assertThrows(() => decide(zeinab, decision(post, 'suspend', 3)))
-  decide(zeinab, decision(post, 'suspend', 7))
+  const kofi = userIdOfLogin('kofi')!
+  // A community moderator never suspends: it acts on the whole platform
+  assertThrows(() => decide(zeinab, decision(post, 'suspend', 7)))
+  asAdmin(() => {
+    assertThrows(() => decide(kofi, decision(post, 'suspend', 3)))
+    decide(kofi, decision(post, 'suspend', 7))
+  })
   assert(isSuspended(abdou))
   assert(!isSuspended(zeinab))
 })
 
 Deno.test('moderation: the server refuses the writes of a suspended account', async () => {
-  const { abdou, zeinab, post } = reported()
-  decide(zeinab, decision(post, 'suspend', 1))
+  const { abdou, post } = reported()
+  const kofi = userIdOfLogin('kofi')!
+  asAdmin(() => decide(kofi, decision(post, 'suspend', 1)))
   const cookie = `session=${await createSession(abdou, 'demo')}`
   // Reading still works
   assertEquals((await request('/api/follows', { cookie })).status, 200)
@@ -125,9 +142,8 @@ Deno.test('moderation: the server refuses the writes of a suspended account', as
 Deno.test('moderation: a proof withdrawn for fraud no longer counts', () => {
   restore()
   seed()
-  const [moussa, abdou, zeinab] = ['moussa', 'abdou', 'zeinab'].map((login) =>
-    userIdOfLogin(login)!
-  )
+  const [moussa, abdou, zeinab, kofi] = ['moussa', 'abdou', 'zeinab', 'kofi']
+    .map((login) => userIdOfLogin(login)!)
   // Abdou reports Moussa's profile for cheating with his reputation
   reportContent(
     abdou,
@@ -142,25 +158,30 @@ Deno.test('moderation: a proof withdrawn for fraud no longer counts', () => {
   const counted = reviews()
   const proof = before[0]
 
-  // Only a proof of the one reported
-  assertThrows(() =>
-    decide(zeinab, {
-      targetType: 'profile',
-      targetId: moussa,
-      action: 'revoke_evidence',
-      reason: 'Fraude avérée',
-      days: 0,
-      proofId: 999999,
-    })
-  )
-  decide(zeinab, {
+  const revoke = {
     targetType: 'profile',
     targetId: moussa,
     action: 'revoke_evidence',
     reason: 'Fraude avérée',
     days: 0,
     proofId: proof.id,
-  })
+  }
+  // A community moderator never withdraws a proof
+  assertThrows(() => decide(zeinab, revoke))
+  // Only a proof of the one reported
+  assertThrows(() =>
+    asAdmin(() =>
+      decide(kofi, {
+        targetType: 'profile',
+        targetId: moussa,
+        action: 'revoke_evidence',
+        reason: 'Fraude avérée',
+        days: 0,
+        proofId: 999999,
+      })
+    )
+  )
+  asAdmin(() => decide(kofi, revoke))
   // Gone from his proofs and from his badge, never from the journal
   assertEquals(proofsOf(moussa).length, before.length - 1)
   assert(!proofsOf(moussa).some((p) => p.id === proof.id))
@@ -171,4 +192,71 @@ Deno.test('moderation: a proof withdrawn for fraud no longer counts', () => {
     "SELECT count(*) AS n FROM notification WHERE userId = ? AND type = 'moderation_proof_revoked'",
   ).get(moussa) as { n: number }
   assertEquals(told.n, 1)
+})
+
+Deno.test('moderation: creating a community gives no power beyond it', () => {
+  const { abdou, zeinab, post } = reported()
+  const moussa = userIdOfLogin('moussa')!
+  const awa = userIdOfLogin('awa')!
+  // Moussa creates a community: he moderates it, and nothing else
+  createCommunity(moussa, {
+    name: 'Les amis de Moussa',
+    type: 'domain',
+    description: 'Une communauté',
+  })
+  assert(getCurrentUser(moussa)!.moderator)
+  reportContent(abdou, 'profile', awa, 'spam', '')
+  const onAwa = {
+    targetType: 'profile',
+    targetId: awa,
+    action: 'warn',
+    reason: 'x',
+    days: 0,
+  }
+  // No platform admin while PAMOJA_ADMINS is empty: the profile is nobody's
+  assertThrows(() => decide(moussa, onAwa))
+  assertThrows(() => decide(zeinab, onAwa))
+  assert(!moderationQueue(moussa).queue.some((q) => q.targetType === 'profile'))
+  // Nor the Go post he does not moderate
+  assertThrows(() => decide(moussa, decision(post, 'hide')))
+})
+
+Deno.test('moderation: a decision answers a report, never a moderator', () => {
+  restore()
+  seed()
+  const [abdou, zeinab, kofi, awa] = ['abdou', 'zeinab', 'kofi', 'awa'].map(
+    (login) => userIdOfLogin(login)!,
+  )
+  // A post of the Go community nobody reported: nothing to decide
+  const quiet = createPost(abdou, {
+    community: 'go',
+    type: 'Discussion',
+    title: '',
+    body: 'Un post sans signalement',
+  }).id
+  assertThrows(() => decide(zeinab, decision(quiet, 'hide')))
+  asAdmin(() => {
+    // A moderator is never the target, even of an admin
+    reportContent(awa, 'profile', zeinab, 'spam', '')
+    assertThrows(() =>
+      decide(kofi, {
+        targetType: 'profile',
+        targetId: zeinab,
+        action: 'suspend',
+        reason: 'x',
+        days: 7,
+      })
+    )
+    // Only a post or a comment is hidden
+    reportContent(awa, 'profile', abdou, 'spam', '')
+    assertThrows(() =>
+      decide(kofi, {
+        targetType: 'profile',
+        targetId: abdou,
+        action: 'hide',
+        reason: 'x',
+        days: 0,
+      })
+    )
+  })
 })

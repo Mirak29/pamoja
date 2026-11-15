@@ -17,7 +17,7 @@ const followed = sql<{ id: number }, { userId: number; targetType: string }>`
 const memberCommunities = sql<{ id: number }, number>`
   SELECT communityId AS id FROM communityMember WHERE userId = ?
 `.all
-const moderatedCommunities = sql<{ id: number }, number>`
+export const moderatedCommunities = sql<{ id: number }, number>`
   SELECT communityId AS id FROM communityMember
   WHERE userId = ? AND role = 'moderator'
 `.all

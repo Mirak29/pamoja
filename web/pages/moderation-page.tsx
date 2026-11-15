@@ -2,12 +2,20 @@ import { useEffect, useState } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
 import { Lock, ShieldCheck } from '/web/assets/icons.tsx'
 import { personOf } from '/web/fixtures/people.ts'
-import { reportReasons } from '/api/vocabulary.ts'
+import {
+  ADMIN_ACTIONS,
+  HIDEABLE_TARGETS,
+  moderationActions,
+  proofTitleOf,
+  reportReasons,
+  SUSPEND_DAYS,
+} from '/api/vocabulary.ts'
+import { counted } from '/web/lib/plural.ts'
 import {
   decideOn,
   type Decision,
-  loadQueue,
   moderation,
+  openQueue,
   proofsOfAuthor,
   type QueueItem,
 } from '/web/lib/moderation.ts'
@@ -22,37 +30,17 @@ import { t, translate } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 
 // What a moderator may decide (§10.5), each with a reason sent to the author
-const decisions: [Decision, string][] = [
-  ['dismiss', 'Ignorer'],
-  ['hide', 'Masquer'],
-  ['warn', 'Avertir'],
-  ['suspend', 'Suspendre'],
-  ['revoke_evidence', 'Retirer une preuve'],
-]
-const durations: [number, string][] = [
-  [1, '1 jour'],
-  [7, '7 jours'],
-  [30, '30 jours'],
-]
+const decisions = Object.entries(moderationActions) as [Decision, string][]
+const durations = SUSPEND_DAYS.map((days) =>
+  [days, counted(days, 'jour')] as [number, string]
+)
 
-const proofKinds: Record<string, string> = {
-  review: 'Review',
-  help: 'Aide',
-  merged: 'PR mergée',
-  release: 'Release',
-  created: 'Projet',
-  answer: 'Réponse acceptée',
-}
-
-// A proof in a few words: its kind, what it is about, when
+// A proof in a few words: its kind, what it is about, for whom, when
 const proofLabel = (
   proof: Awaited<ReturnType<typeof proofsOfAuthor>>[number],
 ) =>
   [
-    proofKinds[proof.kind] ?? proof.kind,
-    proof.title ||
-    (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
-    proof.projectName,
+    proofTitleOf(proof),
     proof.by && t`pour ${proof.by}`,
     new Date(proof.at * 1000).toLocaleDateString('fr-FR'),
   ].filter(Boolean).join(' · ')
@@ -70,7 +58,9 @@ const kinds: Record<string, string> = {
   profile: 'Profil',
 }
 
-const OpenItem = ({ item }: { item: QueueItem }) => {
+const OpenItem = (
+  { item, admin }: { item: QueueItem; admin: boolean },
+) => {
   const [action, setAction] = useState<Decision>()
   const [days, setDays] = useState(7)
   const [reason, setReason] = useState('')
@@ -148,7 +138,10 @@ const OpenItem = ({ item }: { item: QueueItem }) => {
       <div class='flex flex-col gap-2 text-[13px] font-semibold'>
         <span>Action</span>
         <div class='flex flex-wrap gap-2 pb-1'>
-          {decisions.map(([key, label]) => (
+          {decisions.filter(([key]) =>
+            (admin || !ADMIN_ACTIONS.includes(key)) &&
+            (key !== 'hide' || HIDEABLE_TARGETS.includes(item.targetType))
+          ).map(([key, label]) => (
             <OptionButton
               key={key}
               pressed={action === key}
@@ -233,9 +226,7 @@ const OpenItem = ({ item }: { item: QueueItem }) => {
 
 /** Reports waiting for a decision, then the history (§10.5) */
 export const ModerationPage = () => {
-  useEffect(() => {
-    loadQueue()
-  }, [])
+  useEffect(openQueue, [])
   const data = moderation.value
   if (data && !data.moderator) {
     return (
@@ -259,11 +250,14 @@ export const ModerationPage = () => {
   return (
     <Page title='Modération' class='flex max-w-[900px] flex-col gap-7 pt-5'>
       <Eyebrow accent>
-        {queue.length}{' '}
-        {queue.length > 1 ? 'contenus signalés' : 'contenu signalé'}
+        {counted(queue.length, 'contenu signalé', 'contenus signalés')}
       </Eyebrow>
       {queue.map((item) => (
-        <OpenItem key={`${item.targetType}:${item.targetId}`} item={item} />
+        <OpenItem
+          key={`${item.targetType}:${item.targetId}`}
+          item={item}
+          admin={!!data?.admin}
+        />
       ))}
       {data && !queue.length && (
         <GhostSlab class='px-6 py-7'>

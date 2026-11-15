@@ -2,6 +2,7 @@ import { signal } from '@preact/signals'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { notifyFailure } from '/web/lib/failure.ts'
 import { debounced, onEvent } from '/web/lib/realtime.ts'
+import type { ModerationDecision } from '/api/vocabulary.ts'
 
 // The moderation queue of the server (PAM-508, §10.5): the reported content
 // of what the developer moderates, every report of each, and the decisions
@@ -20,12 +21,7 @@ export const loadQueue = () =>
     () => {},
   )
 
-export type Decision =
-  | 'dismiss'
-  | 'hide'
-  | 'warn'
-  | 'suspend'
-  | 'revoke_evidence'
+export type Decision = ModerationDecision
 
 /** Decides on a content; true once saved, the queue read again */
 export const decideOn = (
@@ -47,8 +43,17 @@ export const decideOn = (
     (error) => (notifyFailure('Décision non enregistrée', error), false),
   )
 
-// A report or a decision of another moderator: the queue follows
-const reload = debounced(() => moderation.peek() && loadQueue())
+// A report or a decision of another moderator: the queue follows, while
+// the page is open
+let open = false
+export const openQueue = () => {
+  open = true
+  loadQueue()
+  return () => {
+    open = false
+  }
+}
+const reload = debounced(() => open && loadQueue())
 onEvent(['CONTENT_REPORTED', 'MODERATION_ACTION'], reload)
 
 /** The proofs of the author of a content, to withdraw one (§10.5) */

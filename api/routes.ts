@@ -1783,6 +1783,7 @@ const defs = {
     fn: (ctx) => moderationQueue(ctx.session.userId),
     output: OBJ({
       moderator: BOOL('False: the developer moderates nothing'),
+      admin: BOOL('A platform admin: may suspend and withdraw a proof'),
       queue: ARR(
         OBJ({
           targetType: STR('post, comment, help_request or profile'),
