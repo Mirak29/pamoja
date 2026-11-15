@@ -151,18 +151,23 @@ const initialForm = (): Form => {
     })
   }
   if (pr && url.params.ci) {
+    // The job GitHub reported failing; a demo PR keeps its example
+    const job = pr.ciJob ?? {
+      name: 'test (go 1.22)',
+      url: `github.com/${
+        projects[pr.project].owner
+      }/${pr.project}/actions/runs/9124`,
+    }
     Object.assign(form, {
       type: 'Debug',
       title: t`CI en échec sur la PR #${pr.number} : ${pr.title}`,
       description:
-        t`Le job test (go 1.22) échoue sur la branche ${pr.branch} alors que les tests passent en local. Lien du job : github.com/${
-          projects[pr.project].owner
-        }/${pr.project}/actions/runs/9124`,
+        t`Le job ${job.name} échoue sur la branche ${pr.branch}. Lien du job : ${job.url}`,
       project: pr.project,
       pullRequest: pr.number,
-      skills: ['Go', 'CI'],
+      skills: pr.demo ? ['Go', 'CI'] : (pr.skills ?? []).slice(0, 3),
       branch: pr.branch,
-      job: 'actions/runs/9124',
+      job: job.url,
       origin: 'Pré-rempli depuis l’alerte CI de #suivi',
     })
   }

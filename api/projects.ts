@@ -101,6 +101,7 @@ const listIssues = openIssues('')
 const listBeginnerIssues = openIssues(`AND ${isBeginner}`)
 
 type PullRow = {
+  pullRequestId: number
   number: number
   title: string
   state: string
@@ -115,7 +116,8 @@ type PullRow = {
 // The open PRs first, then the others, newest first: the order of the tab,
 // read from the index on (repositoryId, state = 'open', number)
 const listPulls = sql<PullRow, Window>`
-  SELECT number, title, state, authorLogin, branch, createdAt, skills,
+  SELECT pullRequestId, number, title, state, authorLogin, branch, createdAt,
+    skills,
     EXISTS (
       SELECT 1 FROM review
       WHERE review.pullRequestId = pullRequest.pullRequestId
@@ -183,13 +185,64 @@ const shownIssue = (issue: IssueRow) => ({
   comments: issue.comments ?? 0,
 })
 
-const shownPull = ({ open: _open, ...pull }: PullRow) => ({
-  ...pull,
-  authorLogin: pull.authorLogin ?? '',
-  branch: pull.branch ?? '',
-  skills: skillNamesOf(parse<number[]>(pull.skills, [])),
-  reviewed: pull.reviewed === 1,
-})
+// The runs of the CI of a batch of PRs, oldest first: the last one of each
+// job tells its state (§6.8)
+const ciRuns = sql<
+  {
+    pullRequestId: number
+    source: string
+    name: string
+    conclusion: string
+    url: string
+  },
+  string
+>`
+  SELECT pullRequestId, source, name, conclusion, url FROM ciRun
+  WHERE pullRequestId IN (SELECT value FROM json_each(?))
+    AND conclusion IS NOT NULL
+  ORDER BY completedAt ASC, ciRunId ASC
+`.all
+
+const CI_FAILURES = ['failure', 'timed_out', 'error', 'startup_failure']
+
+/**
+ * The CI of each PR: failed when the last run of one of its jobs failed,
+ * with that job, so a help request names it; ok when its jobs passed
+ */
+const ciOf = (pullRequestIds: number[]) => {
+  const last = new Map<
+    number,
+    Map<string, { conclusion: string; name: string; url: string }>
+  >()
+  if (pullRequestIds.length) {
+    for (const run of ciRuns(JSON.stringify(pullRequestIds))) {
+      const jobs = last.get(run.pullRequestId) ?? new Map()
+      jobs.set(`${run.source}:${run.name}`, run)
+      last.set(run.pullRequestId, jobs)
+    }
+  }
+  return (pullRequestId: number) => {
+    const jobs = [...(last.get(pullRequestId)?.values() ?? [])]
+    const failed = jobs.find((job) => CI_FAILURES.includes(job.conclusion))
+    return {
+      ci: failed ? 'failed' : jobs.length ? 'ok' : 'none',
+      ciJob: failed?.name ?? '',
+      ciUrl: failed?.url ?? '',
+    }
+  }
+}
+
+const shownPulls = (rows: PullRow[]) => {
+  const ci = ciOf(rows.map((row) => row.pullRequestId))
+  return rows.map(({ open: _open, pullRequestId, ...pull }) => ({
+    ...pull,
+    authorLogin: pull.authorLogin ?? '',
+    branch: pull.branch ?? '',
+    skills: skillNamesOf(parse<number[]>(pull.skills, [])),
+    reviewed: pull.reviewed === 1,
+    ...ci(pullRequestId),
+  }))
+}
 
 const issuesOf = (repositoryId: number, before = '', beginners = false) => {
   const page = readBatch(
@@ -211,7 +264,7 @@ const pullsOf = (repositoryId: number, before = '') => {
     (slice) => listPulls({ ...slice, repositoryId }),
     (row) => ({ value: row.open, id: row.number }),
   )
-  return { items: page.items.map(shownPull), next: page.next }
+  return { items: shownPulls(page.items), next: page.next }
 }
 
 type Stats = {

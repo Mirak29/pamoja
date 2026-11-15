@@ -5,6 +5,7 @@ import { entries, type EntryTypeName } from '/api/entries.ts'
 import { Project, ProjectMember, Repository, User } from '/api/schema.ts'
 import server from '/api/server.ts'
 import { processDeliveries } from '/api/webhooks.ts'
+import { listProjectPulls } from '/api/projects.ts'
 
 // Real deliveries, signed with the secret of .env-test (§5.5), on a project
 // owned by Abdou; Moussa is on Pamoja too
@@ -404,4 +405,38 @@ Deno.test('events: a repo not on Pamoja is ignored', async () => {
   })
   assertEquals(db.prepare('SELECT count(*) n FROM pullRequest').get(), { n: 0 })
   assertEquals(failedDeliveries(), { n: 0 })
+})
+
+Deno.test('events: a PR whose CI fails says which job, for a help request', async () => {
+  setup()
+  await deliver('pull_request', { action: 'opened', pull_request: pull(81) })
+  let run = 0
+  const workflow = (conclusion: string) => ({
+    action: 'completed',
+    workflow_run: {
+      id: ++run,
+      name: 'test (go 1.22)',
+      head_sha: `sha${run}`,
+      head_branch: 'feat/81',
+      conclusion,
+      html_url: `https://github.com/abdou/openpay-africa/actions/runs/${run}`,
+      updated_at: `2026-10-16T10:0${run}:00Z`,
+      pull_requests: [{ number: 81 }],
+    },
+  })
+  const ci = () => {
+    const pr = listProjectPulls(ids.abdou, 'openpay-africa').items
+      .find((p) => p.number === 81)!
+    return [pr.ci, pr.ciJob, pr.ciUrl]
+  }
+  assertEquals(ci(), ['none', '', ''])
+  await deliver('workflow_run', workflow('failure'))
+  assertEquals(ci(), [
+    'failed',
+    'test (go 1.22)',
+    'https://github.com/abdou/openpay-africa/actions/runs/1',
+  ])
+  // Fixed: the last run of the job tells
+  await deliver('workflow_run', workflow('success'))
+  assertEquals(ci(), ['ok', '', ''])
 })

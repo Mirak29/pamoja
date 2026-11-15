@@ -12,6 +12,8 @@ import {
 } from '/api/board.ts'
 import { Issue, PullRequest, Repository } from '/api/schema.ts'
 import { rankBetween } from '/api/lib/rank.ts'
+import { createSession } from '/api/session.ts'
+import { request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -172,4 +174,45 @@ Deno.test('board: a PR opened gets its card, merged it goes to Done (PAM-404)', 
     .run()
   markMergedPullDone(repositoryId, 81)
   assertEquals(cards()[0].column, 'done')
+})
+
+Deno.test('board: two members move cards at the same time, nothing lost (PAM-404)', async () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const projectId = (db.prepare(
+    "SELECT projectId FROM project WHERE slug = 'openpay-africa'",
+  ).get() as { projectId: number }).projectId
+  db.prepare(
+    "INSERT OR IGNORE INTO projectMember (projectId, userId, role, joinedAt) VALUES (?, ?, 'maintainer', ?)",
+  ).run(projectId, moussa, Date.now() / 1000)
+  const cards = Array.from(
+    { length: 12 },
+    (_, i) => createTask(abdou, 'openpay-africa', `Carte ${i}`).id,
+  )
+  const as = async (userId: number) =>
+    `session=${await createSession(userId, 'demo')}`
+  const [a, m] = [await as(abdou), await as(moussa)]
+  // Each moves six cards to Review at the same moment
+  const moves = await Promise.all(
+    cards.map((taskId, i) =>
+      request('/api/task/move', {
+        body: { taskId, column: 'review' },
+        cookie: i % 2 ? m : a,
+      })
+    ),
+  )
+  for (const res of moves) {
+    assertEquals(res.status, 200)
+    await res.body?.cancel()
+  }
+  const review = listBoard(abdou, 'openpay-africa')
+    .filter((c) => cards.includes(c.id))
+  // Every card is in Review, each with its own rank, strictly ordered
+  assertEquals(review.length, 12)
+  assert(review.every((c) => c.column === 'review'))
+  const ranks = review.map((c) => c.rank)
+  assertEquals(new Set(ranks).size, 12)
+  assertEquals([...ranks].sort(), ranks)
 })
