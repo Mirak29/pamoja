@@ -10,3 +10,18 @@ export const loadDevelopers = () =>
 /** Every public project, so one imported by someone else is findable */
 export const loadExploreProjects = () =>
   api['GET/api/explore/projects'].fetch().then(adoptProjects, () => {})
+
+// When the people and the projects were last read for the Home rail
+let readAt = 0
+
+/**
+ * The developers and the projects of the server for the rail of the Home
+ * (§6.2): « avec qui construire » and the projects looking for help list
+ * real members, not only the demo ones. Read again after five minutes
+ */
+export const loadForRail = () => {
+  if (Date.now() - readAt < 5 * 60_000) return
+  readAt = Date.now()
+  loadDevelopers()
+  loadExploreProjects()
+}

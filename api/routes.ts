@@ -66,11 +66,13 @@ import { ask, clearAssistant, getAssistant } from '/api/assistant.ts'
 import { skillIdsOf } from '/api/skills.ts'
 import {
   assertCanCreate,
+  COLLABORATION_KINDS,
   createHelpRequest,
   getHelpRequest,
   HELP_TABS,
   listHelpRequests,
   projectIdOf,
+  requestCollaboration,
 } from '/api/help.ts'
 import {
   acceptHelp,
@@ -999,6 +1001,22 @@ const defs = {
     }),
     output: helpRequest,
     description: 'Publish a help request, from the form or from a PR',
+  }),
+
+  'POST/api/collaboration/request': route({
+    authorize: withSession,
+    fn: (ctx, input) =>
+      getHelpRequest(requestCollaboration(ctx.session.userId, input))!,
+    input: OBJ({
+      target: STR('Login of the developer it is addressed to'),
+      category: LIST(COLLABORATION_KINDS, 'What is proposed'),
+      project: STR('Slug of a project of the developer, empty if none'),
+      pullRequest: NUM('Open PR of that project to review, 0 if none'),
+      message: STR('A few words: the context, what is expected'),
+    }),
+    output: helpRequest,
+    description:
+      'Propose a collaboration to one developer: a help request to them alone (§7.6)',
   }),
 
   /*
