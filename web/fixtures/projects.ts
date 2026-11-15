@@ -63,6 +63,8 @@ export type Project = {
 }
 
 export type Milestone = {
+  /** Its id on the server, once the roadmap is read (PAM-405) */
+  id?: number
   title: string
   description: string
   done: number

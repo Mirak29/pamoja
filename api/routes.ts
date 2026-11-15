@@ -1,4 +1,5 @@
 import { makeRouter, route } from '@01edu/api/router'
+import { memoryLimit } from '/api/lib/rate.ts'
 import { respond } from '@01edu/api/response'
 import { ARR, BOOL, LIST, NUM, OBJ, optional, STR } from '@01edu/api/validator'
 import {
@@ -130,6 +131,13 @@ import {
 } from '/api/posts.ts'
 import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
 import {
+  attachTask,
+  createMilestone,
+  listRoadmap,
+  MILESTONE_STATES,
+  updateMilestone,
+} from '/api/roadmap.ts'
+import {
   FOLLOW_TARGETS,
   followsOf,
   type FollowTarget,
@@ -157,6 +165,29 @@ import {
   updateProjectInfo,
 } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
+
+/*
+ * Limits of the writes that have none of their own (§16, PAM-510): counted
+ * in memory by developer, generous, to stop a script and never a member
+ */
+const limitedSession = (
+  limit: { count: number; per: number },
+  message: string,
+) => {
+  const check = memoryLimit(limit, message)
+  return async (ctx: Parameters<typeof withSession>[0]) => {
+    const session = await withSession(ctx)
+    check(session.userId)
+    return session
+  }
+}
+
+// Editing a profile, a project, the settings of a conversation, a card
+export const EDIT_RATE = { count: 300, per: 3600 }
+// Moving cards on a board, as fast as one sorts them
+export const CARD_MOVE_RATE = { count: 1000, per: 3600 }
+const editing = limitedSession(EDIT_RATE, 'Too many changes this hour')
+const movingCards = limitedSession(CARD_MOVE_RATE, 'Too many moves this hour')
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
@@ -1381,7 +1412,7 @@ const defs = {
   }),
 
   'POST/api/project/gallery': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { project, media }) =>
       setGallery(ctx.session.userId, project, media),
     input: OBJ({
@@ -1397,7 +1428,7 @@ const defs = {
   }),
 
   'POST/api/project/video': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { project, url }) =>
       setDemoVideo(ctx.session.userId, project, url),
     input: OBJ({
@@ -1409,7 +1440,7 @@ const defs = {
   }),
 
   'POST/api/project/update': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { project, name, description, vision, needs }) =>
       updateProjectInfo(ctx.session.userId, project, {
         name,
@@ -1666,7 +1697,7 @@ const defs = {
   }),
 
   'POST/api/project/join-request/decide': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, input) =>
       decideJoinRequest(ctx.session.userId, input.joinRequestId, input.accept),
     input: OBJ({
@@ -1709,12 +1740,77 @@ const defs = {
       column: STR('backlog, ready, in_progress, review or done'),
       title: STR('Title of the card'),
       rank: STR('Fractional rank in its column'),
+      milestone: NUM('Id of its milestone, 0 for none'),
     })),
     description: 'The cards of a project board (§6.7)',
   }),
 
-  'POST/api/task/create': route({
+  'POST/api/task/update': route({
     authorize: withSession,
+    fn: (ctx, input) =>
+      attachTask(ctx.session.userId, input.taskId, input.milestoneId),
+    input: OBJ({
+      taskId: NUM('Id of the card'),
+      milestoneId: NUM('The milestone it belongs to, 0 for none'),
+    }),
+    output: OBJ({
+      id: NUM('Id of the card'),
+      milestone: NUM('Its milestone, 0 for none'),
+    }),
+    description: 'Attach a card to a milestone of the roadmap (§6.7)',
+  }),
+
+  'GET/api/project/roadmap': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => listRoadmap(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: OBJ({
+      canManage: BOOL('True for an owner or a maintainer'),
+      milestones: ARR(
+        OBJ({
+          id: NUM('Id of the milestone'),
+          title: STR('Title'),
+          description: STR('Description, empty if none'),
+          status: STR('planned, active or done'),
+          done: NUM('Cards of the milestone in Done'),
+          total: NUM('Cards of the milestone'),
+        }),
+        'In the order of the roadmap',
+      ),
+    }),
+    description: 'The milestones of a project with their progress (§6.7)',
+  }),
+
+  'POST/api/milestone/create': route({
+    authorize: withSession,
+    fn: (ctx, { slug, ...input }) =>
+      createMilestone(ctx.session.userId, slug, input),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      title: STR('Title'),
+      description: STR('Description, empty for none'),
+      status: LIST(MILESTONE_STATES, 'planned, active or done'),
+    }),
+    output: OBJ({ id: NUM('Id of the new milestone') }),
+    description: 'Add a milestone at the end of the roadmap (§6.7)',
+  }),
+
+  'POST/api/milestone/update': route({
+    authorize: withSession,
+    fn: (ctx, { milestoneId, ...input }) =>
+      updateMilestone(ctx.session.userId, milestoneId, input),
+    input: OBJ({
+      milestoneId: NUM('Id of the milestone'),
+      title: STR('Title'),
+      description: STR('Description, empty for none'),
+      status: LIST(MILESTONE_STATES, 'planned, active or done'),
+    }),
+    output: OBJ({ id: NUM('Id of the milestone') }),
+    description: 'Change a milestone of the roadmap (§6.7)',
+  }),
+
+  'POST/api/task/create': route({
+    authorize: editing,
     fn: (ctx, input) => createTask(ctx.session.userId, input.slug, input.title),
     input: OBJ({
       slug: STR('Slug of the project'),
@@ -1730,7 +1826,7 @@ const defs = {
   }),
 
   'POST/api/task/move': route({
-    authorize: withSession,
+    authorize: movingCards,
     fn: (ctx, input) =>
       moveTask(ctx.session.userId, input.taskId, input.column),
     input: OBJ({
@@ -1832,7 +1928,7 @@ const defs = {
   }),
 
   'POST/api/project/channel/notify': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { project, channel, notify }) => {
       setNotify(ctx.session.userId, project, channel, notify)
     },
@@ -1958,7 +2054,7 @@ const defs = {
   }),
 
   'POST/api/conversation/message/edit': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { id, body }) => editMessage(ctx.session.userId, id, body),
     input: OBJ({
       id: NUM('Id of the message'),
@@ -1968,7 +2064,7 @@ const defs = {
   }),
 
   'POST/api/conversation/message/delete': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { id }) => deleteMessage(ctx.session.userId, id),
     input: OBJ({ id: NUM('Id of the message') }),
     description: 'Delete a message of the developer; its place stays',
@@ -2005,7 +2101,7 @@ const defs = {
   }),
 
   'POST/api/conversation/mute': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { id, muted }) =>
       muteConversation(ctx.session.userId, conversationIdOf(id), muted),
     input: OBJ({ id: conversationKey, muted: BOOL('Muted') }),
@@ -2013,7 +2109,7 @@ const defs = {
   }),
 
   'POST/api/conversation/archive': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { id, archived }) =>
       archiveConversation(ctx.session.userId, conversationIdOf(id), archived),
     input: OBJ({
@@ -2068,7 +2164,7 @@ const defs = {
   }),
 
   'POST/api/user/block': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { username, blocked }) =>
       setBlocked(ctx.session.userId, username, blocked),
     input: OBJ({
@@ -2098,7 +2194,7 @@ const defs = {
    * Profile (§6.1, §9)
    */
   'POST/api/user/profile/update': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, fields) => {
       // The text fields have a length limit; the personalization is checked
       // by updateProfile (§9.2), its projects as slugs
@@ -2130,7 +2226,7 @@ const defs = {
   }),
 
   'POST/api/user/cover': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, { media }) => setCover(ctx.session.userId, media),
     input: OBJ({ media: NUM('Id of an upload, 0 removes the photo') }),
     output: ARR(media),
@@ -2138,7 +2234,7 @@ const defs = {
   }),
 
   'POST/api/user/skills/update': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, names) => {
       assertKnown(names.skills, skills, 'skills')
       assertKnown(names.domains, domains, 'domains')
@@ -2154,7 +2250,7 @@ const defs = {
   }),
 
   'POST/api/user/intents/update': route({
-    authorize: withSession,
+    authorize: editing,
     fn: (ctx, input) => {
       assertKnown(input.intents, intents, 'intents')
       updateIntents(ctx.session.userId, input.intents)

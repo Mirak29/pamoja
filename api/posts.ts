@@ -1,7 +1,7 @@
 import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
-import { type Window, within } from '/api/lib/rate.ts'
+import { memoryLimit, type Window, within } from '/api/lib/rate.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
@@ -43,10 +43,27 @@ export type PostInput = {
 
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 
+// Posts written by the developer: replies and reposts have their own limit
 const countPosts = sql<Window, { me: number; since: number }>`
   SELECT count(*) AS n, min(createdAt) AS oldest FROM post
   WHERE authorId = :me AND createdAt > :since
+    AND parentId IS NULL AND repostOfId IS NULL
 `.get
+
+const countReplies = sql<Window, { me: number; since: number }>`
+  SELECT count(*) AS n, min(createdAt) AS oldest FROM post
+  WHERE authorId = :me AND createdAt > :since AND parentId IS NOT NULL
+`.get
+
+// A social network: limits that stop a script, never a lively discussion
+// (§16). A like, a repost or a bookmark taken back is never counted.
+export const REPLY_RATE = { count: 300, per: 3600 }
+export const LIKE_RATE = { count: 1000, per: 3600 }
+export const REPOST_RATE = { count: 200, per: 3600 }
+export const BOOKMARK_RATE = { count: 500, per: 3600 }
+const liked = memoryLimit(LIKE_RATE, 'Too many likes this hour')
+const reposted = memoryLimit(REPOST_RATE, 'Too many reposts this hour')
+const bookmarked = memoryLimit(BOOKMARK_RATE, 'Too many bookmarks this hour')
 
 const getCommunity = sql<{ communityId: number }, string>`
   SELECT communityId FROM community WHERE slug = ?
@@ -338,7 +355,10 @@ export const setReaction = (
   if (!REACTION_KINDS.includes(kind)) throw badRequest('Unknown reaction')
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getReaction({ me, postId, kind })
-  if (on && !row) addReaction({ me, postId, kind })
+  if (on && !row) {
+    liked(me)
+    addReaction({ me, postId, kind })
+  }
   if (!on && row) deleteReaction(row.reactionId)
   return { reacted: on }
 }
@@ -347,7 +367,10 @@ export const setReaction = (
 export const setBookmark = (me: number, postId: number, on: boolean) => {
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getBookmark({ me, postId })
-  if (on && !row) addBookmark({ me, postId, at: now() })
+  if (on && !row) {
+    bookmarked(me)
+    addBookmark({ me, postId, at: now() })
+  }
   if (!on && row) deleteBookmark(row.bookmarkId)
   return { bookmarked: on }
 }
@@ -385,7 +408,7 @@ export const setRepost = (me: number, postId: number, on: boolean) => {
     return { reposted: false }
   }
   if (row && row.hiddenAt === null) return { reposted: true }
-  within(countPosts, POST_RATE, me, 'Too many posts this hour')
+  reposted(me)
   db.transaction(() => {
     const at = now()
     const repostId = row?.postId ?? Post.insert({
@@ -524,7 +547,7 @@ export const createReply = (me: number, parentId: number, text: string) => {
   if (body.length > LIMITS.reply) throw badRequest('Text too long')
   const parent = getFull(parentId)
   if (!parent) throw badRequest('Unknown post')
-  within(countPosts, POST_RATE, me, 'Too many posts this hour')
+  within(countReplies, REPLY_RATE, me, 'Too many replies this hour')
   const rootId = parent.rootId ?? parent.postId
   const replyId = db.transaction(() => {
     const at = now()

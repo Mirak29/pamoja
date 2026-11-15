@@ -4,6 +4,8 @@ import { loadProjects, signedIn } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
 import { loadNewPosts } from '/web/lib/posts.ts'
 import { reloadPulses } from '/web/lib/pulse.ts'
+import { reloadOpenedRoadmaps } from '/web/lib/roadmap.ts'
+import { reloadOpenedBoards } from '/web/lib/board.ts'
 
 // The data of the developer follows its entries without a refresh (§13): an
 // entry makes the page read it again. A burst of entries, like a merge with
@@ -62,12 +64,21 @@ onEvent([
   'HELP_REQUEST_CLOSED',
 ], reloadHelp)
 
+// A card moved or attached by someone else, a milestone planned: the boards
+// and the roadmaps open on the page follow (§6.7)
+const reloadPlanning = debounced(() => {
+  reloadOpenedBoards()
+  reloadOpenedRoadmaps()
+})
+onEvent(['TASK_UPDATED', 'PROJECT_UPDATED'], reloadPlanning)
+
 // A new AI summary of a Pulse already read (PAM-307)
 const readPulses = debounced(reloadPulses)
 onEvent('PULSE_READY', readPulses)
 
 // Entries sent while the connection was lost were missed: read them all
 onReconnect(() => {
+  reloadPlanning()
   reloadProjects()
   reloadHelp()
   reloadChannels()

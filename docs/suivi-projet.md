@@ -1393,6 +1393,26 @@ Revue de toutes les interactions qui pouvaient disparaître.
 - **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/entries.ts`, `api/messages.ts`, `api/schema.ts` (commentaire), `api/reactions_test.ts`, `api/messages_test.ts`, `api/entry_triggers_test.ts`, `web/fixtures/posts.ts`, `web/lib/posts.ts`, `web/lib/reactions.ts`, `web/lib/replies.ts`, `web/lib/live-data.ts`, `web/lib/messages.ts`, `web/lib/notifications.ts`, `web/ui/post.tsx`, `web/pages/messages-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/home/home-page.tsx` ; §10.1, §10.6, §12.2, §12.7, §15
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-405 · Roadmap enregistrée sur le serveur
+
+La Roadmap n'affichait que les milestones de démo et ne se modifiait pas. `GET/api/project/roadmap` donne les milestones dans l'ordre, avec leur progression comptée sur le Board (cartes terminées / cartes rattachées), et dit si le développeur peut la gérer. Les propriétaires et mainteneurs créent et modifient un milestone (titre, description, statut) avec `POST/api/milestone/create` et `POST/api/milestone/update`. Un membre rattache une carte avec `POST/api/task/update`, ou la détache. L'onglet Roadmap et la carte « Milestone en cours » de l'Aperçu lisent le serveur. Le Board et la Roadmap ouverts suivent en direct les changements des autres (`TASK_UPDATED`, `PROJECT_UPDATED`) : avant, le Board d'un autre membre ne bougeait pas. Le seed rattache les cartes au milestone en cours, et la migration 015 fait de même pour les bases déjà seedées (seuls les projets du seed avaient des milestones).
+
+- **Livrable** : `api/roadmap.ts`, `api/roadmap_test.ts`, `api/board.ts`, `api/routes.ts`, `api/seed.ts`, `api/limits.ts`, `migrations/015-milestone-cards.js`, `web/lib/roadmap.ts`, `web/lib/board.ts`, `web/lib/live-data.ts`, `web/pages/project/roadmap-tab.tsx`, `web/pages/project/overview-tab.tsx`, `web/fixtures/board.ts`, `web/fixtures/projects.ts` ; §6.7
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-510 · Limites de débit sur les routes d'écriture
+
+Chaque route d'écriture a maintenant sa limite. Elles sont larges, car Pamoja est un réseau social : elles arrêtent un script, jamais un membre actif.
+
+- **Réponses** : elles ne consomment plus la limite des posts (20 par heure) et ont la leur, 300 par heure. Un fil animé n'est plus coupé.
+- **J'aime, reposts et favoris** : 1 000, 200 et 500 par heure, comptés en mémoire (`memoryLimit` de `api/lib/rate.ts`). Retirer une action n'est jamais compté.
+- **Follows** : de 60 à 300 par heure, pour suivre une liste entière à l'inscription. **Communautés rejointes** : de 60 à 120 par heure.
+- **Modifications** d'un profil, d'un projet, des réglages d'une conversation, d'un message privé, d'une candidature et d'une carte : 300 par heure, posées sur `authorize` (`limitedSession` de `api/routes.ts`). Déplacements de cartes : 1 000 par heure. Roadmap : 120 par heure.
+- Au-delà, la réponse est un 429 avec `Retry-After`, et la page dit quand réessayer (`notifyFailure`).
+
+- **Livrable** : `api/lib/rate.ts`, `api/lib/rate_test.ts`, `api/posts.ts`, `api/routes.ts`, `api/follow.ts`, `api/community.ts`, `api/roadmap.ts`, tests de follow, de communautés et de réactions, `docs/cahier-des-charges.md` (§16) ; §16
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

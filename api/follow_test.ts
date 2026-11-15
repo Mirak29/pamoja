@@ -2,7 +2,7 @@ import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
-import { followsOf, setFollow } from '/api/follow.ts'
+import { FOLLOW_RATE, followsOf, setFollow } from '/api/follow.ts'
 import { createSession } from '/api/session.ts'
 import { request } from '/api/testing.ts'
 
@@ -63,7 +63,9 @@ Deno.test('follow: a project gone unlisted can still be unfollowed, and stopping
     `INSERT INTO follow (followerId, targetType, targetId, createdAt)
      VALUES (?, 'community', ?, ?)`,
   )
-  for (let i = 0; i < 60; i++) insert.run(abdou, 100_000 + i, at)
+  for (let i = 0; i < FOLLOW_RATE.count; i++) {
+    insert.run(abdou, 100_000 + i, at)
+  }
   assertThrows(() => setFollow(abdou, 'user', 'kofi', true))
   assertEquals(setFollow(abdou, 'user', 'moussa', false).following, false)
 })

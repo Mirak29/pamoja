@@ -30,6 +30,9 @@ export const LIMITS = {
   projectNeed: 80,
   communityName: 60,
   communityDescription: 500,
+  // Roadmap (§6.7)
+  milestoneTitle: 80,
+  milestoneDescription: 300,
   // A report, a collaboration proposal, a request to join, a moderation note
   note: 1000,
 } as const

@@ -19,6 +19,8 @@ export type Card = {
   column: BoardColumn
   issue?: number
   pullRequest?: number
+  /** The milestone of the roadmap it counts in (§6.7) */
+  milestone?: number
 }
 
 export const boards: Partial<Record<ProjectSlug, Card[]>> = {

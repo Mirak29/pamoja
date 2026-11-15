@@ -13,16 +13,25 @@ import type { ProjectSlug } from '/web/fixtures/projects.ts'
 // page's, and a move is shown at once then saved; a failure puts it back. A
 // merged pull request moves its card to Done through the webhook (§6.7).
 
-/** Read a project's board from the server and show its cards */
-export const loadBoard = (slug: string) =>
-  api['GET/api/project/board'].fetch({ slug }).then((cards) => {
+/**
+ * Read a project's board from the server and show its cards; the board of
+ * the others follows a move in real time (TASK_UPDATED, live-data.ts)
+ */
+export const loadBoard = (slug: string) => {
+  opened.add(slug)
+  return api['GET/api/project/board'].fetch({ slug }).then((cards) => {
     boards[slug as ProjectSlug] = cards.map((c) => ({
       id: String(c.id),
       title: c.title,
       column: c.column as BoardColumn,
+      milestone: c.milestone || undefined,
     }))
     boardChanged.value++
   }, () => {})
+}
+
+// The boards read on this page, followed in real time
+const opened = new Set<string>()
 
 /** Move a card to a column, saved on the server */
 export const moveTask = (slug: string, card: Card, column: BoardColumn) => {
@@ -34,4 +43,9 @@ export const moveTask = (slug: string, card: Card, column: BoardColumn) => {
     moveCard(slug as ProjectSlug, card, from)
     notifyFailure('Carte non déplacée', error)
   })
+}
+
+/** Reads the boards open on the page again */
+export const reloadOpenedBoards = () => {
+  for (const slug of opened) loadBoard(slug)
 }
