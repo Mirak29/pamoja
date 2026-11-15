@@ -630,6 +630,8 @@ effect(() => {
   const user = currentUser.value
   if (!user) {
     loadedFor = undefined
+    online.value = new Set()
+    typingIn.value = new Map()
     lists.reset()
     unreadMessages.value = 0
     conversations.value = []

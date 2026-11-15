@@ -1175,3 +1175,7 @@ Ce qui reste à décider ou à vérifier avant ou pendant le bloc 1.
 - [x] **daisyUI** : écarté le 8 octobre, Tailwind v4 seul (§12.3).
 - [ ] **Seuils** de badges et poids du matching : ajuster après le seed.
 - [ ] **Mentions légales** : conditions d'utilisation et politique de confidentialité (données GitHub, emails).
+
+### Cohérence du mode visiteur et des états personnels
+
+Le fil public présente les publications du serveur et les publications de démonstration, identifiées comme telles, avec leurs discussions. Les notifications personnelles démarrent vides et sont chargées pour le compte connecté. Les canaux affichent les membres du projet. Les statuts en ligne et de saisie des messages directs proviennent des événements de présence réels et sont effacés à la déconnexion.

@@ -1768,6 +1768,12 @@ Préparation de sessions distinctes pour 1 000 comptes synthétiques, scénario 
 - **Livrable** : `api/lib/log.ts`, `qa/load/pamoja.js`, `qa/load/README.md`, `task-db-load-sessions.ts`, tâches de sessions dans `deno.json` et exclusion des cookies dans `.gitignore`
 - **Par** : @Mirak29
 
+### 2026-11-15 · Fil visiteur, notifications et présence
+
+Le fil public rassemble les publications du serveur et celles de démonstration avec un badge de provenance. Leurs discussions sont accessibles sans compte. Les notifications fictives préchargées ont été retirées ; les compteurs et la boîte personnelle sont réinitialisés à chaque changement de session, et les réponses de notifications d'un ancien compte sont ignorées. Les états de présence et de saisie des messages directs sont vidés à la déconnexion. Dans les canaux, le bloc de trois présences figées est remplacé par les membres du projet et leurs rôles.
+
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

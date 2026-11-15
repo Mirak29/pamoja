@@ -36,7 +36,7 @@ import {
   unreadIn,
 } from '/web/fixtures/channels.ts'
 import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
-import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
+import { isMe, me, personOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { ago } from '/web/lib/time.ts'
@@ -539,33 +539,25 @@ const Thread = (
   </section>
 )
 
-const Presence = ({ channelName }: { channelName: string }) => {
-  // Presence lives in memory on the server (§13.6), here a fixed snapshot
-  const present: [name: string, what: string, photo?: string][] = [
-    [me.name, t`regarde #${translate(channelName)}`, me.avatarUrl],
-    [people.fatou.name, 'travaille sur la PR #84'],
-    [people.moussa.name, 'regarde la PR #81'],
-  ]
-  return (
-    <div class='slab flex flex-col gap-3 p-3.5'>
-      <span class='flex items-center gap-2 text-[13px] font-semibold'>
-        <span aria-hidden='true' class='diamond size-2 bg-verified' />
-        3 développeurs actifs
-      </span>
-      {present.map(([name, what, photo]) => (
-        <div key={name} class='flex items-center gap-2.5'>
-          <Avatar name={name} src={photo} size={26} />
+const Members = ({ project }: { project: Project }) => (
+  <div class='slab flex flex-col gap-3 p-3.5'>
+    <span class='text-[13px] font-semibold'>Membres</span>
+    {project.members.map(({ login, role }) => {
+      const person = personOf(login)
+      return (
+        <A key={login} href={`@${login}`} class='flex items-center gap-2.5'>
+          <Avatar name={person.name} src={person.avatarUrl} size={26} />
           <span class='flex min-w-0 flex-col'>
-            <span class='text-[13px] leading-[18px] font-semibold'>
-              {name.split(' ')[0]}
+            <span translate={false} class='text-[13px] font-semibold'>
+              {person.name}
             </span>
-            <span class='text-[12px] leading-4 text-ink-muted'>{what}</span>
+            <span class='text-[12px] text-ink-muted'>{role}</span>
           </span>
-        </div>
-      ))}
-    </div>
-  )
-}
+        </A>
+      )
+    })}
+  </div>
+)
 
 // What reaches me from a channel: it counts the unread too. #suivi defaults
 // to « only my PRs » (§6.8); saved for a project the server knows (PAM-412)
@@ -677,7 +669,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
             )
           })}
         </nav>
-        <Presence channelName={name} />
+        <Members project={project} />
       </aside>
       <section class='slab flex min-w-0 flex-col overflow-hidden'>
         <div class='flex flex-wrap items-center gap-3 border-b border-line px-[18px] py-3.5'>

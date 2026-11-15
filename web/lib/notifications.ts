@@ -299,8 +299,11 @@ const keep = (batch: Batch) => {
  */
 export const notificationLists = batchedLists<NotificationTab>(
   async (category, before) => {
+    const userId = currentUser.peek()?.userId
+    if (!userId) return { next: '', orders: [] }
     const batch = await api['GET/api/notifications']
       .fetch({ before, category })
+    if (currentUser.peek()?.userId !== userId) return { next: '', orders: [] }
     const fresh = keep(batch)
     assign(notifications, upsert(notifications, fresh, (n) => n.id))
     fresh.forEach((n) => seen.add(n.id))
@@ -310,9 +313,12 @@ export const notificationLists = batchedLists<NotificationTab>(
 )
 
 /** The newest batch of the server: the first read is quiet, later ones pop up */
-export const loadNotifications = () =>
-  api['GET/api/notifications'].fetch({ before: '', category: '' }).then(
+export const loadNotifications = () => {
+  const userId = currentUser.peek()?.userId
+  if (!userId) return Promise.resolve()
+  return api['GET/api/notifications'].fetch({ before: '', category: '' }).then(
     (batch) => {
+      if (currentUser.peek()?.userId !== userId) return
       const fresh = keep(batch)
       // One no longer among the newest is gone on the server
       assign(
@@ -336,6 +342,7 @@ export const loadNotifications = () =>
     },
     () => {},
   )
+}
 
 /**
  * The next batch of a tab, its first one if none was read; nothing when one
@@ -363,6 +370,7 @@ const total = (counts: Record<string, number>) =>
  * counted here, and those of the server, counted by the server
  */
 export const unreadCount = (category?: string) => {
+  if (!currentUser.value) return 0
   const demo = demoUnread.value
   const server = serverUnread.value
   return category
@@ -398,11 +406,15 @@ export const readAll = () => {
 // Read once the developer is known, again for each new one: a notification
 // for me reaches my open pages as an entry (§13.3)
 effect(() => {
-  if (!currentUser.value) return
+  const user = currentUser.value
+  serverUnread.value = {}
+  incoming.value = null
+  assign(notifications, [])
+  notificationsChanged.value = notificationsChanged.peek() + 1
   loaded = false
   notificationLists.reset()
   seen.clear()
-  loadNotifications()
+  if (user) loadNotifications()
 })
 // Hidden, the tab reads once when it shows again (§12.7)
 // A burst of them is read once

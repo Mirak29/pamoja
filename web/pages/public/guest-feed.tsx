@@ -3,10 +3,11 @@ import { url } from '@01edu/signal-router'
 import { Heart, MessageSquare } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
 import {
+  demoThread,
+  fromServer,
+  type GuestCard,
+  guestCards,
   guestFeedState,
-  type GuestPost,
-  guestPosts,
-  type GuestThread,
   loadGuestFeed,
   readGuestThread,
 } from '/web/lib/guest-feed.ts'
@@ -17,7 +18,7 @@ import { Page } from '/web/ui/layout.tsx'
 import { A } from '/web/ui/link.tsx'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
-import { PostTypeBadge } from '/web/ui/badge.tsx'
+import { DemoBadge, PostTypeBadge } from '/web/ui/badge.tsx'
 import { MediaGrid, MediaViewer } from '/web/ui/media.tsx'
 import { PostBody } from '/web/ui/post.tsx'
 import { PublicHeader } from '/web/ui/public-header.tsx'
@@ -41,7 +42,7 @@ const communityName = (slug: string) =>
 
 /** A post, read only: its counts, and the way into its discussion */
 const GuestPostCard = (
-  { post, inThread = false }: { post: GuestPost; inThread?: boolean },
+  { post, inThread = false }: { post: GuestCard; inThread?: boolean },
 ) => (
   <article class='slab flex flex-col gap-2.5 px-[18px] pt-4 pb-3'>
     <div class='flex gap-3.5'>
@@ -50,7 +51,7 @@ const GuestPostCard = (
         aria-label={post.authorName}
         class='flex h-[42px] flex-none'
       >
-        <Avatar name={post.authorName} size={42} />
+        <Avatar name={post.authorName} src={post.avatarUrl} size={42} />
       </A>
       <div class='flex min-w-0 flex-1 flex-col gap-2'>
         <div class='flex flex-wrap items-baseline gap-1.5 leading-5'>
@@ -65,8 +66,9 @@ const GuestPostCard = (
           </span>
           <span class='text-ink-muted'>·</span>
           <span class='text-[13px] text-ink-muted'>
-            {ago(post.createdAt * 1000)}
+            {ago(post.at)}
           </span>
+          {post.demo && <DemoBadge />}
           {post.community && (
             <>
               <span class='text-ink-muted'>·</span>
@@ -92,12 +94,12 @@ const GuestPostCard = (
           mentions={post.mentions}
         />
         <MediaGrid
-          id={`images-${post.id}`}
+          id={`images-${post.key}`}
           items={post.media}
           label={t`Images du post`}
         />
         <MediaViewer
-          id={`images-${post.id}`}
+          id={`images-${post.key}`}
           items={post.media}
           label={t`Images du post`}
         />
@@ -109,11 +111,11 @@ const GuestPostCard = (
             aria-label={t`Se connecter pour aimer ce post`}
           >
             <Heart class='size-4' />
-            {post.reactions.like}
+            {post.likes}
           </A>
           {!inThread && (
             <A
-              href={`post/s${post.id}`}
+              href={post.href}
               class='flex items-center gap-1.5 font-semibold'
             >
               <MessageSquare class='size-4' />
@@ -140,8 +142,8 @@ export const GuestFeedPage = () => {
       <main class='mx-auto flex w-full max-w-[720px] flex-col gap-5 px-4 pt-2 pb-[120px]'>
         <h1 class='font-display text-[28px] leading-9 font-bold'>Le fil</h1>
         <Invite />
-        {guestPosts.value.map((post) => (
-          <GuestPostCard key={post.id} post={post} />
+        {guestCards.value.map((post) => (
+          <GuestPostCard key={post.key} post={post} />
         ))}
         {state === 'loading' && (
           <span class='text-[14px] text-ink-muted'>Chargement du fil…</span>
@@ -167,18 +169,36 @@ export const GuestFeedPage = () => {
 
 /** /post/:id: a post and its discussion, read without an account */
 export const GuestPostPage = () => {
-  const id = Number(url.relativePath.split('/')[2]?.replace(/^s/, '')) || 0
-  const [thread, setThread] = useState<GuestThread | null>(null)
+  // post/s12: a post of the server; post/po1: one of the demo
+  const segment = url.relativePath.split('/')[2] ?? ''
+  const serverId = /^s\d+$/.test(segment) ? Number(segment.slice(1)) : 0
+  const demo = serverId ? null : demoThread(segment)
+  const [thread, setThread] = useState<
+    { root: GuestCard; replies: GuestCard[] } | null
+  >(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     setThread(null)
     setFailed(false)
-    if (!id) return setFailed(true)
-    readGuestThread(id).then(setThread, () => setFailed(true))
-  }, [id])
-  const root = thread?.posts.find((post) => post.id === thread.rootId)
-  const replies = thread?.posts.filter((post) => post.id !== thread.rootId) ??
-    []
+    if (!serverId) return
+    let active = true
+    readGuestThread(serverId).then(({ rootId, posts }) => {
+      if (!active) return
+      const root = posts.find((post) => post.id === rootId)
+      if (!root) return setFailed(true)
+      setThread({
+        root: fromServer(root),
+        replies: posts.filter((post) => post.id !== rootId).map(fromServer),
+      })
+    }, () => active && setFailed(true))
+    return () => {
+      active = false
+    }
+  }, [serverId])
+  const shown = demo ?? thread
+  const missing = serverId ? failed : !demo
+  const root = shown?.root
+  const replies = shown?.replies ?? []
   return (
     <Page title={root?.title || 'Discussion'} heading={false}>
       <PublicHeader />
@@ -187,19 +207,19 @@ export const GuestPostPage = () => {
           ← Le fil
         </A>
         <Invite />
-        {failed && (
+        {missing && (
           <span class='text-[14px] text-ink-muted'>
             Cette discussion n’existe pas ou n’est plus visible.
           </span>
         )}
-        {!thread && !failed && (
+        {!shown && !missing && (
           <span class='text-[14px] text-ink-muted'>Chargement…</span>
         )}
         {root && <GuestPostCard post={root} inThread />}
         {replies.length > 0 && (
           <div class='ml-6 flex flex-col gap-3 border-l-2 border-line pl-4'>
             {replies.map((post) => (
-              <GuestPostCard key={post.id} post={post} inThread />
+              <GuestPostCard key={post.key} post={post} inThread />
             ))}
           </div>
         )}
