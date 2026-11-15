@@ -11,6 +11,7 @@ import '/web/lib/notifications.ts'
 // Direct messages, their counter and their toast (§10.6)
 import '/web/lib/messages.ts'
 import { effect } from '@preact/signals'
+import { startPwa } from '/web/lib/pwa.ts'
 import { navigate, url } from '@01edu/signal-router'
 import { englishAddress } from '/web/lib/addresses.ts'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
@@ -188,6 +189,9 @@ const section = url.relativePath.slice(1)
 routeOf(section.startsWith('@') ? '@' : section.split('/')[0])?.preload()
 section === '' && LandingPage.preload()
 section.startsWith('login') && ConnexionPage.preload()
+
+// The installed app: its install offer comes early, its updates anytime
+startPwa()
 
 const root = document.getElementById('app')
 if (!root) throw Error('unable to find root element #app')

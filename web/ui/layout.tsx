@@ -14,6 +14,7 @@ import { unreadMessages } from '/web/lib/messages.ts'
 import { refreshing } from '/web/lib/refresh.ts'
 import { badgeCount } from '/web/lib/plural.ts'
 import { ReportDialog } from '/web/ui/report-dialog.tsx'
+import { InstallDialog, UpdateNotice } from '/web/ui/install-dialog.tsx'
 import { notify, Toasts } from '/web/ui/toast.tsx'
 import { translate } from '/web/lib/language.ts'
 
@@ -141,6 +142,8 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <CommandPalette />
     <AssistantPanel />
     <ReportDialog />
+    <InstallDialog />
+    <UpdateNotice />
     <Toasts />
     <LiveNotifications />
     <ConnectionBanner />

@@ -6,6 +6,7 @@ import {
   Bell,
   Bookmark,
   CircleUser,
+  Download,
   LogOut,
   MessageSquare,
   Moon,
@@ -29,6 +30,7 @@ import { unreadMessages } from '/web/lib/messages.ts'
 import { themeSignal, ThemeToggle, toggleTheme } from '/web/ui/theme-toggle.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
 import { language, setLanguagePreference } from '/web/lib/language.ts'
+import { installed } from '/web/lib/pwa.ts'
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
@@ -89,6 +91,15 @@ const AccountMenu = () => (
         {language.value === 'fr' ? 'English' : 'Français'}
       </span>
     </button>
+    {
+      // The installed app (PWA), until it is
+      !installed.value && (
+        <A role='menuitem' params={{ dialog: 'install' }} class={itemClass}>
+          <Download />
+          Installer l’app
+        </A>
+      )
+    }
     {accountItems().map(({ label, icon: Icon, href, onClick }) => (
       <A
         key={label}

@@ -23,6 +23,25 @@ export const config: BuildOptions = {
   define: { DEV_PAGES: 'true' },
 } as const
 
+/**
+ * The installed app (PWA): its manifest, icons and service worker, served
+ * at the root. The service worker carries the version of the build: a new
+ * build is a new file, which the browsers install and switch to by
+ * themselves (web/lib/pwa.ts)
+ */
+export const copyPwa = (version: string) => {
+  Deno.mkdirSync('dist', { recursive: true })
+  for (const { name } of Deno.readDirSync('web/assets/pwa')) {
+    const from = `web/assets/pwa/${name}`
+    if (name === 'sw.js') {
+      Deno.writeTextFileSync(
+        'dist/sw.js',
+        Deno.readTextFileSync(from).replace('__VERSION__', version),
+      )
+    } else Deno.copyFileSync(from, `dist/${name}`)
+  }
+}
+
 /** The demo images of the fixtures, served next to the bundle */
 export const copyMocks = () => {
   Deno.mkdirSync('dist/mocks', { recursive: true })

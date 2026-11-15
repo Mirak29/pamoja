@@ -1,4 +1,4 @@
-import { config, copyMocks } from './build-config.ts'
+import { config, copyMocks, copyPwa } from './build-config.ts'
 import { build } from 'npm:esbuild@0.25.5'
 
 // From an empty folder: what the dev build left there (source maps, its
@@ -16,6 +16,8 @@ await build({
   define: { ...config.define, DEV_PAGES: 'false' },
 })
 copyMocks()
+// A version per build: the installed apps update themselves to it
+copyPwa(new Date().toISOString())
 
 const tailwind = await new Deno.Command('deno', {
   args: [

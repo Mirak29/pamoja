@@ -1811,3 +1811,11 @@ La section « À propos » d'un projet ne montrait que 600 caractères du README
 
 - **Livrable** : `web/lib/readme.ts`, `web/lib/readme_test.ts`, `web/ui/readme.tsx`, `web/pages/project/overview-tab.tsx`, `api/projects.ts`, `api/routes.ts`, `web/fixtures/projects.ts`, `web/fixtures/repos.ts` ; §6.3
 - **Par** : @Mirak29
+
+### 2026-11-15 · Application installable (PWA), mise à jour automatique
+
+Pamoja s'installe comme une application, sur téléphone comme sur ordinateur. Un manifeste, des icônes générées depuis le logo (dont une icône « maskable » pour Android et une icône Apple) et un service worker, actif en production seulement. Chaque build donne une nouvelle version au service worker : les navigateurs la trouvent au retour sur l'app (et toutes les 30 minutes), elle prend la main d'elle-même, l'ancien cache est supprimé, et la page se recharge dès qu'elle est cachée, pour ne jamais couper une saisie ; un toast et un bouton « Recharger » l'appliquent tout de suite. Le service worker ne touche jamais `/api` : les données restent celles du serveur ; hors ligne, l'app s'ouvre sur son interface. « Installer l'app » (menu du compte, en-tête public) déclenche l'installation du navigateur quand il en propose une (Chrome, Edge, Samsung Internet), sinon donne les étapes de l'appareil : iPhone et iPad (Partager, Sur l'écran d'accueil), Android, Safari sur Mac (Ajouter au Dock), Firefox.
+
+- **Vérifié** dans Chrome sur le build de production : inscription, contrôle de la page, ouverture hors ligne, nouvelle version prise en compte, ancien cache supprimé, rechargement une fois la page cachée.
+- **Livrable** : `web/assets/pwa/`, `web/lib/pwa.ts`, `web/ui/install-dialog.tsx`, `task-generate-pwa-icons.ts`, `build-config.ts`, `task-prod.ts`, `task-dev.ts`, `web/index.html`, `web/app.tsx`, `web/ui/layout.tsx`, `web/ui/header.tsx`, `web/ui/public-header.tsx`
+- **Par** : @Mirak29

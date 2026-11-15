@@ -4,6 +4,9 @@ import { Button } from '/web/ui/button.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 import { LanguageToggle } from '/web/ui/language-toggle.tsx'
 import { ThemeToggle } from '/web/ui/theme-toggle.tsx'
+import { Download } from '/web/assets/icons.tsx'
+import { installed } from '/web/lib/pwa.ts'
+import { InstallDialog } from '/web/ui/install-dialog.tsx'
 
 /**
  * Link to the passport of a developer: /@login for a visitor; signed in,
@@ -39,7 +42,19 @@ export const PublicHeader = () => (
       </A>
       <ThemeToggle />
       <LanguageToggle />
+      {!installed.value && (
+        <Button
+          variant='secondary'
+          square
+          params={{ dialog: 'install' }}
+          aria-label='Installer l’app'
+          title='Installer l’app'
+        >
+          <Download class='size-[18px]' />
+        </Button>
+      )}
       <Button variant='secondary' href='login'>Se connecter</Button>
     </div>
+    <InstallDialog />
   </header>
 )
