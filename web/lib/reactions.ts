@@ -7,6 +7,7 @@ import {
   serverIdOf,
   toggleBookmark as bookmarkLocal,
   toggleLike as likeLocal,
+  whileSaving,
 } from '/web/fixtures/posts.ts'
 
 // Reactions and bookmarks persisted on the server (PAM-501): shown at once,
@@ -15,26 +16,30 @@ import {
 
 /** « J'aime » on a post, or taken back: the only reaction (PAM-539) */
 export const toggleLike = (post: Post) => {
-  likeLocal(post, me.login)
+  const on = likeLocal(post, me.login)
   const postId = serverIdOf(post.id)
   if (!postId) return
-  api['POST/api/reaction/toggle'].fetch({ postId, kind: 'like' }).catch(
-    (error) => {
-      likeLocal(post, me.login)
-      notifyFailure('Action non enregistrée', error)
-    },
-  )
+  // The state wanted, not a toggle: a tab that missed a change keeps it
+  whileSaving(
+    post,
+    api['POST/api/reaction'].fetch({ postId, kind: 'like', on }),
+  ).catch((error) => {
+    likeLocal(post, me.login)
+    notifyFailure('Action non enregistrée', error)
+  })
 }
 
 /** Save a post, or remove it from the saved ones */
 export const toggleBookmark = (post: Post) => {
-  bookmarkLocal(post, me.login)
+  const on = bookmarkLocal(post, me.login)
   const postId = serverIdOf(post.id)
   if (!postId) return
-  api['POST/api/bookmark/toggle'].fetch({ postId }).catch((error) => {
-    bookmarkLocal(post, me.login)
-    notifyFailure('Action non enregistrée', error)
-  })
+  whileSaving(post, api['POST/api/bookmark'].fetch({ postId, on })).catch(
+    (error) => {
+      bookmarkLocal(post, me.login)
+      notifyFailure('Action non enregistrée', error)
+    },
+  )
 }
 
 /** The posts the developer saved, for the « Enregistrés » page */

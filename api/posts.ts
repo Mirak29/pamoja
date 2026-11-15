@@ -199,7 +199,7 @@ const getReaction = sql<
 const deleteReaction = sql<undefined, number>`
   DELETE FROM reaction WHERE reactionId = ?
 `.run
-// A second toggle at the same time finds the row written: it stays
+// Two requests at the same time: the second finds the row written
 const addReaction = sql<
   undefined,
   { me: number; postId: number; kind: string }
@@ -223,23 +223,32 @@ const addBookmark = sql<undefined, { me: number; postId: number; at: number }>`
   ON CONFLICT DO NOTHING
 `.run
 
-/** React to a post with a kind, or take the reaction back (§10.1) */
-export const toggleReaction = (me: number, postId: number, kind: string) => {
+/**
+ * Puts a reaction on a post, or takes it back (§10.1). The request says the
+ * state wanted, never a toggle: replayed, or sent from a tab that missed a
+ * change, it gives the same result (§15)
+ */
+export const setReaction = (
+  me: number,
+  postId: number,
+  kind: string,
+  on: boolean,
+) => {
   if (!REACTION_KINDS.includes(kind)) throw badRequest('Unknown reaction')
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getReaction({ me, postId, kind })
-  if (row) deleteReaction(row.reactionId)
-  else addReaction({ me, postId, kind })
-  return { reacted: !row }
+  if (on && !row) addReaction({ me, postId, kind })
+  if (!on && row) deleteReaction(row.reactionId)
+  return { reacted: on }
 }
 
-/** Save a post or remove it from the saved ones (§10.1) */
-export const toggleBookmark = (me: number, postId: number) => {
+/** Saves a post or removes it from the saved ones, as wanted (§10.1, §15) */
+export const setBookmark = (me: number, postId: number, on: boolean) => {
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getBookmark({ me, postId })
-  if (row) deleteBookmark(row.bookmarkId)
-  else addBookmark({ me, postId, at: now() })
-  return { bookmarked: !row }
+  if (on && !row) addBookmark({ me, postId, at: now() })
+  if (!on && row) deleteBookmark(row.bookmarkId)
+  return { bookmarked: on }
 }
 
 /** Publishes a post with its images and its video, checked first */

@@ -335,13 +335,13 @@ export const childrenOf = (id: string) => {
 export const descendantCount = (id: string): number =>
   childrenOf(id).reduce((sum, child) => sum + 1 + descendantCount(child.id), 0)
 
-/** POST/api/reaction/toggle: J'aime, the one reaction of a post */
+/** POST/api/reaction: J'aime, the one reaction of a post; true when on */
 export const toggleLike = (post: Post, login: Login) => {
   const list = post.reactions.like ?? []
-  post.reactions.like = list.includes(login)
-    ? list.filter((l) => l !== login)
-    : [...list, login]
+  const on = !list.includes(login)
+  post.reactions.like = on ? [...list, login] : list.filter((l) => l !== login)
   changed()
+  return on
 }
 
 /** POST/api/post/repost: the post shows in the feed of followers */
@@ -364,13 +364,13 @@ export const toggleRepost = (post: Post, login: Login) => {
   return on
 }
 
-/** POST/api/bookmark/toggle */
+/** POST/api/bookmark: saved, or not any more; true when saved */
 export const toggleBookmark = (post: Post, login: Login) => {
   const list = post.bookmarks ?? []
-  post.bookmarks = list.includes(login)
-    ? list.filter((l) => l !== login)
-    : [...list, login]
+  const on = !list.includes(login)
+  post.bookmarks = on ? [...list, login] : list.filter((l) => l !== login)
   changed()
+  return on
 }
 
 let created = 0
@@ -516,17 +516,55 @@ const postFromServer = (
   }
 }
 
+// Posts with a reaction or a bookmark on its way to the server: what the
+// developer just did is shown, not an answer read before it
+const saving = new Map<Post, number>()
+
+/** Keeps the state shown of a post while `request` saves it */
+export const whileSaving = <T>(post: Post, request: Promise<T>) => {
+  saving.set(post, (saving.get(post) ?? 0) + 1)
+  const done = () => {
+    const left = (saving.get(post) ?? 1) - 1
+    left ? saving.set(post, left) : saving.delete(post)
+  }
+  request.then(done, done)
+  return request
+}
+
+/**
+ * A post already shown takes the reactions and the bookmark the server
+ * read: a like given in another tab or on the phone shows here too
+ */
+const refresh = (post: Post, saved: ApiOutput['GET/api/posts'][number]) => {
+  if (saving.has(post)) return false
+  const fresh = postFromServer(saved)
+  const likes = fresh.reactions.like ?? []
+  const same = likeCountOf(post) === likeCountOf(fresh) &&
+    (post.reactions.like ?? []).join() === likes.join() &&
+    (post.bookmarks ?? []).join() === (fresh.bookmarks ?? []).join()
+  if (same) return false
+  post.reactions.like = likes
+  post.otherLikes = fresh.otherLikes
+  post.bookmarks = fresh.bookmarks
+  return true
+}
+
 /**
  * Brings the posts read from GET/api/posts into the feed, newest first; a
- * post already shown stays as it is
+ * post already shown keeps its place and takes the reactions read
  */
 export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
-  const known = new Set(posts.map((post) => post.id))
+  const known = new Map(posts.map((post) => [post.id, post]))
+  let refreshed = false
+  for (const saved of list) {
+    const post = known.get(savedId(saved.id))
+    if (post && refresh(post, saved)) refreshed = true
+  }
   const added = [...list].reverse().filter((saved) =>
     !known.has(savedId(saved.id))
   )
   for (const saved of added) posts.unshift(postFromServer(saved))
-  added.length && changed()
+  if (added.length || refreshed) changed()
 }
 
 /**
@@ -535,7 +573,11 @@ export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
  */
 export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
   for (const p of data.posts) {
-    if (posts.some((post) => post.id === savedId(p.id))) continue
+    const known = posts.find((post) => post.id === savedId(p.id))
+    if (known) {
+      refresh(known, p)
+      continue
+    }
     posts.push(postFromServer(p, {
       parent: p.parentId ? savedId(p.parentId) : undefined,
       root: p.id === data.rootId ? undefined : savedId(data.rootId),

@@ -123,8 +123,8 @@ import {
   listSaved,
   REACTION_KINDS,
   readThread,
-  toggleBookmark,
-  toggleReaction,
+  setBookmark,
+  setReaction,
 } from '/api/posts.ts'
 import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
 import {
@@ -1495,22 +1495,26 @@ const defs = {
     description: 'A post with its whole thread, for a shared link (§12.7)',
   }),
 
-  'POST/api/reaction/toggle': route({
+  'POST/api/reaction': route({
     authorize: withSession,
     fn: (ctx, input) =>
-      toggleReaction(ctx.session.userId, input.postId, input.kind),
+      setReaction(ctx.session.userId, input.postId, input.kind, input.on),
     input: OBJ({
       postId: NUM('Id of the post'),
       kind: LIST(REACTION_KINDS, 'like: the only reaction (§10.1)'),
+      on: BOOL('Puts the reaction, or takes it back: the state wanted'),
     }),
     output: OBJ({ reacted: BOOL('True when the reaction is now on') }),
     description: 'React to a post, or take the reaction back (§10.1)',
   }),
 
-  'POST/api/bookmark/toggle': route({
+  'POST/api/bookmark': route({
     authorize: withSession,
-    fn: (ctx, input) => toggleBookmark(ctx.session.userId, input.postId),
-    input: OBJ({ postId: NUM('Id of the post') }),
+    fn: (ctx, input) => setBookmark(ctx.session.userId, input.postId, input.on),
+    input: OBJ({
+      postId: NUM('Id of the post'),
+      on: BOOL('Saves the post, or removes it: the state wanted'),
+    }),
     output: OBJ({ bookmarked: BOOL('True when the post is now saved') }),
     description: 'Save a post or remove it from the saved ones (§10.1)',
   }),

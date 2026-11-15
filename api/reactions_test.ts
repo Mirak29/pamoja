@@ -6,8 +6,8 @@ import {
   createPost,
   listPosts,
   listSaved,
-  toggleBookmark,
-  toggleReaction,
+  setBookmark,
+  setReaction,
 } from '/api/posts.ts'
 
 const restore = makeRestorePoint()
@@ -22,8 +22,8 @@ Deno.test('reactions: a post counts reactions and keeps mine apart (PAM-501)', (
   const moussa = userIdOfLogin('moussa')!
   const post = newPost(abdou, 'Un post à réactions')
 
-  assertEquals(toggleReaction(moussa, post, 'like').reacted, true)
-  assertEquals(toggleReaction(abdou, post, 'like').reacted, true)
+  assertEquals(setReaction(moussa, post, 'like', true).reacted, true)
+  assertEquals(setReaction(abdou, post, 'like', true).reacted, true)
   const forMoussa = listPosts(moussa).find((p) => p.id === post)!
   assertEquals(forMoussa.reactions.like, 2)
   assertEquals(forMoussa.mine, ['like']) // Moussa's own reaction
@@ -32,13 +32,13 @@ Deno.test('reactions: a post counts reactions and keeps mine apart (PAM-501)', (
   assertEquals(listPosts(fatou).find((p) => p.id === post)!.mine, [])
 
   // Taken back
-  assertEquals(toggleReaction(moussa, post, 'like').reacted, false)
+  assertEquals(setReaction(moussa, post, 'like', false).reacted, false)
   assertEquals(listPosts(moussa).find((p) => p.id === post)!.reactions.like, 1)
 
   // One reaction since PAM-539: any other kind, or an unknown post, is
   // refused
-  assertThrows(() => toggleReaction(moussa, post, 'useful'))
-  assertThrows(() => toggleReaction(moussa, 999999, 'like'))
+  assertThrows(() => setReaction(moussa, post, 'useful', true))
+  assertThrows(() => setReaction(moussa, 999999, 'like', true))
 })
 
 Deno.test('bookmarks: saved posts come back for their owner (PAM-501)', () => {
@@ -49,12 +49,40 @@ Deno.test('bookmarks: saved posts come back for their owner (PAM-501)', () => {
   const post = newPost(moussa, 'Un post à garder')
 
   assertEquals(listSaved(abdou).length, 0)
-  assertEquals(toggleBookmark(abdou, post).bookmarked, true)
+  assertEquals(setBookmark(abdou, post, true).bookmarked, true)
   const saved = listSaved(abdou)
   assertEquals(saved.length, 1)
   assertEquals(saved[0].id, post)
   assert(saved[0].bookmarked)
 
-  assertEquals(toggleBookmark(abdou, post).bookmarked, false)
+  assertEquals(setBookmark(abdou, post, false).bookmarked, false)
+  assertEquals(listSaved(abdou).length, 0)
+})
+
+Deno.test('reactions: the state wanted, so a replay or a late tab keeps it', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const post = newPost(abdou, 'Mon propre post')
+  const liked = () => listPosts(abdou).find((p) => p.id === post)!
+
+  // Liked twice, from two tabs: one like, still mine
+  setReaction(abdou, post, 'like', true)
+  setReaction(abdou, post, 'like', true)
+  assertEquals(liked().reactions.like, 1)
+  assertEquals(liked().mine, ['like'])
+
+  // Taken back twice: none, never liked again by a toggle
+  setReaction(abdou, post, 'like', false)
+  setReaction(abdou, post, 'like', false)
+  assertEquals(liked().reactions.like, 0)
+  assertEquals(liked().mine, [])
+
+  // The same for a bookmark
+  setBookmark(abdou, post, true)
+  setBookmark(abdou, post, true)
+  assertEquals(listSaved(abdou).length, 1)
+  setBookmark(abdou, post, false)
+  setBookmark(abdou, post, false)
   assertEquals(listSaved(abdou).length, 0)
 })

@@ -1371,6 +1371,13 @@ Le seed crée le projet `openpay-africa` d'Abdou, sans repo, qui porte les 14 re
 - **Livrable** : `api/import.ts`, `api/import_test.ts`, `web/fixtures/repos.ts` ; §5.4, §6.3, §18.2
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-501 (suite) · Un J'aime ne disparaît plus
+
+Un J'aime pouvait s'effacer, y compris sur ses propres posts. `POST/api/reaction/toggle` et `POST/api/bookmark/toggle` inversaient l'état du serveur, et un post déjà affiché ne reprenait jamais l'état lu. Un onglet resté ouvert, ou le téléphone, qui avait manqué un changement affichait donc l'inverse de ce qu'il enregistrait : un clic pour aimer retirait le J'aime, qui revenait ou disparaissait au rechargement suivant. Les routes deviennent `POST/api/reaction` et `POST/api/bookmark`, qui reçoivent l'état voulu (`on`), comme le follow (PAM-503) et l'adhésion à une communauté (PAM-502). Une requête rejouée donne le même résultat. `adoptPosts` et `adoptThread` reprennent les J'aime et le favori lus pour les posts déjà affichés, sauf pendant qu'une action de la page s'enregistre (`whileSaving`). Toucher Accueil remet donc la page à l'état du serveur.
+
+- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/reactions_test.ts`, `web/fixtures/posts.ts`, `web/lib/reactions.ts`, `docs/cahier-des-charges.md` ; §10.1, §15
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
