@@ -1,6 +1,7 @@
 import { deleteCookie, setCookie } from 'jsr:@std/http@^1.0.20/cookie'
 import { respond } from '@01edu/api/response'
 import type { RequestContext } from '@01edu/api/context'
+import { isSuspended } from '/api/moderation.ts'
 import { now } from '@01edu/time'
 import { entries, Entry } from '/api/entries.ts'
 import { b64url } from '/api/lib/encoding.ts'
@@ -64,6 +65,13 @@ export const withSession = async (ctx: RequestContext) => {
   const session = await decodeSession(ctx.cookies.session)
   if (!session) {
     throw new respond.UnauthorizedError({ message: 'Missing user session' })
+  }
+  // A suspended account still reads, but writes nothing (§10.5)
+  if (ctx.req.method !== 'GET' && isSuspended(session.userId)) {
+    throw new respond.ForbiddenError({
+      message: 'Account suspended',
+      reason: 'suspended',
+    })
   }
   return session
 }

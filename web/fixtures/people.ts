@@ -289,6 +289,8 @@ const adoptPerson = (user: ApiPerson) => {
 /** Makes the signed-in developer `me`, from GET/api/user/me */
 export const adoptUser = (user: ApiOutput['GET/api/user/me']) => {
   me = adoptPerson(user) as Person & { login: Login }
+  // The queue of moderation opens to whom the server says (§10.5)
+  me.moderator = user.moderator
   peopleChanged.value++
 }
 

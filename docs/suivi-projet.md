@@ -1413,6 +1413,27 @@ Chaque route d'écriture a maintenant sa limite. Elles sont larges, car Pamoja e
 - **Livrable** : `api/lib/rate.ts`, `api/lib/rate_test.ts`, `api/posts.ts`, `api/routes.ts`, `api/follow.ts`, `api/community.ts`, `api/roadmap.ts`, tests de follow, de communautés et de réactions, `docs/cahier-des-charges.md` (§16) ; §16
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-505 (projets) · Explorer les vrais projets
+
+L'onglet Projets d'Explore ne filtrait que les projets de démo et ceux du développeur : un projet importé par quelqu'un d'autre était introuvable. `GET/api/explore/projects` renvoie tous les projets publics, ainsi que les projets privés dont le développeur est membre, sous la même forme que la page d'un projet. La page les adopte à l'ouverture, et ses filtres s'appliquent à cet ensemble complet.
+
+- **Livrable** : `api/projects.ts`, `api/routes.ts`, `api/explore_test.ts`, `web/lib/explore.ts`, `web/pages/explore/explore-page.tsx` ; §10.3
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-508 (suite) · File de modération, décisions et suspension
+
+La page Modération lisait les fixtures. Un post masqué par trois signalements ne pouvait donc être rétabli par personne, et l'entrée « Modération » n'apparaissait pour aucun vrai compte.
+
+- **File** (`GET/api/moderation/queue`) : un élément par contenu signalé, avec tous ses signalements et leur commentaire, et un historique des 50 dernières décisions. Les modérateurs d'une communauté traitent son contenu. Le reste est traité par les admins de la plateforme (`PAMOJA_ADMINS`), et tant qu'aucun n'est nommé, par les modérateurs des communautés. `GET/api/user/me` dit si le développeur modère (`moderator`), ce qui ouvre l'entrée du menu.
+- **Décision** (`POST/api/moderation/decide`) : ignorer (un post masqué par ses signalements revient), masquer, avertir, ou suspendre 1, 7 ou 30 jours. Le motif est obligatoire. Chaque décision clôt les signalements ouverts du contenu, écrit une ligne `moderationAction` et l'entry `MODERATION_ACTION`, et notifie l'auteur avec le motif. Personne ne décide sur son propre contenu.
+- **Compte suspendu** : il lit encore, mais toute écriture est refusée (403 dès `withSession`), et la page explique pourquoi.
+- **Auteur d'un contenu masqué** : il le voit encore sur son profil, avec le bandeau et le motif.
+- **Signalement d'un post de communauté** : il prévient maintenant ses modérateurs en direct (`CONTENT_REPORTED` porte la communauté).
+- **Reste** : le retrait d'une preuve de réputation.
+
+- **Livrable** : `api/moderation.ts`, `api/moderation_test.ts`, `api/reports.ts`, `api/session.ts`, `api/user.ts`, `api/posts.ts`, `api/routes.ts`, `web/lib/moderation.ts`, `web/pages/moderation-page.tsx`, `web/fixtures/reports.ts`, `web/fixtures/people.ts`, `web/fixtures/posts.ts`, `web/lib/notifications.ts`, `web/lib/failure.ts`, `.env.production.example` ; §10.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
