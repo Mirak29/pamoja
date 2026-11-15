@@ -1,4 +1,6 @@
 import { sql } from '@01edu/db'
+import { notSuspended } from '/api/revoked.ts'
+import { numbersOf } from '/api/lib/json.ts'
 import satori from 'satori'
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
 import { MEDIA_DIR } from '/api/media.ts'
@@ -85,7 +87,7 @@ const render = async (tree: Node) => {
     .render().asPng()
 }
 
-const cut = (text: string, max: number) =>
+export const cut = (text: string, max: number) =>
   text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text
 
 const initials = (name: string) =>
@@ -127,7 +129,7 @@ const brand = (host: string) =>
         'Pamoja',
       ),
     ),
-    el('div', { fontSize: 22, color: color.muted }, host),
+    host && el('div', { fontSize: 22, color: color.muted }, host),
   )
 
 const chip = (text: string) =>
@@ -213,7 +215,7 @@ const getProfile = sql<
     profile.country
   FROM user JOIN profile ON profile.userId = user.userId
   WHERE user.githubUsername = ? COLLATE NOCASE
-    AND (user.suspendedUntil IS NULL OR user.suspendedUntil < unixepoch())
+    AND ${notSuspended()}
 `.get
 
 /** What the card of a profile shows, or undefined for an unknown one */
@@ -283,12 +285,7 @@ export const projectCardData = (slug: string) => {
   } catch {
     // No statistics read from GitHub yet
   }
-  let skills: string[] = []
-  try {
-    skills = skillNamesOf(JSON.parse(row.skills ?? '[]') as number[])
-  } catch {
-    // No skills yet
-  }
+  const skills = skillNamesOf(numbersOf(row.skills))
   return {
     kind: 'project' as const,
     slug: row.slug,
@@ -451,7 +448,15 @@ const projectTree = (card: ProjectCard, host: string) =>
 
 const CARD_DIR = `${MEDIA_DIR}/cards`
 // Changed with the drawing: the cards already kept are drawn again
-const CARD_LAYOUT = 3
+const CARD_LAYOUT = 4
+// A card nobody asked for in a week leaves the disk
+const KEEP_FOR = 7 * 24 * 3600 * 1000
+
+/**
+ * The address the card shows: the domain of the deployment (PUBLIC_HOST),
+ * never the Host of a request, which anyone writes
+ */
+export const publicHost = () => Deno.env.get('PUBLIC_HOST')?.trim() ?? ''
 
 const hashOf = async (value: unknown) =>
   new Uint8Array(
@@ -461,43 +466,73 @@ const hashOf = async (value: unknown) =>
     ),
   ).toHex().slice(0, 32)
 
+// Cards being drawn: two requests for the same one draw it once
+const drawing = new Map<string, Promise<Uint8Array>>()
+let sweptAt = 0
+
+// The cards older than a week leave the disk, at most once an hour
+const sweep = async () => {
+  if (Date.now() - sweptAt < 3600 * 1000) return
+  sweptAt = Date.now()
+  try {
+    for await (const file of Deno.readDir(CARD_DIR)) {
+      const path = `${CARD_DIR}/${file.name}`
+      const info = await Deno.stat(path)
+      const used = info.atime ?? info.mtime
+      if (used && Date.now() - used.getTime() > KEEP_FOR) {
+        await Deno.remove(path)
+      }
+    }
+  } catch {
+    // Nothing kept yet
+  }
+}
+
+/** The key of a card: its data, its drawing and the address it shows */
+const keyOf = (card: ProfileCard | ProjectCard) =>
+  hashOf([CARD_LAYOUT, card, publicHost()])
+
 /**
  * The PNG of a card, from the disk when the same data was already drawn,
- * else drawn and kept. Its hash goes in the ETag
+ * else drawn once and kept
  */
-export const cardPng = async (
-  card: ProfileCard | ProjectCard,
-  host: string,
-) => {
-  const key = await hashOf([CARD_LAYOUT, card, host])
+const cardPng = async (card: ProfileCard | ProjectCard, key: string) => {
   const path = `${CARD_DIR}/${key}.png`
   try {
-    return { key, png: await Deno.readFile(path) }
+    return await Deno.readFile(path)
   } catch {
     // Not drawn yet
   }
-  const png = await render(
+  const pending = drawing.get(key)
+  if (pending) return pending
+  const host = publicHost()
+  const draw = render(
     card.kind === 'profile' ? profileTree(card, host) : projectTree(card, host),
-  )
-  await Deno.mkdir(CARD_DIR, { recursive: true })
-  await Deno.writeFile(path, png)
-  return { key, png }
+  ).then(async (png) => {
+    await Deno.mkdir(CARD_DIR, { recursive: true })
+    await Deno.writeFile(path, png)
+    sweep()
+    return png
+  }).finally(() => drawing.delete(key))
+  drawing.set(key, draw)
+  return draw
 }
 
 /** The card as an HTTP answer: cached by the crawlers, revalidated by ETag */
 export const cardResponse = async (
   card: ProfileCard | ProjectCard | undefined,
-  host: string,
   ifNoneMatch: string | null,
 ) => {
   if (!card) return new Response('Not found', { status: 404 })
-  const { key, png } = await cardPng(card, host)
+  const key = await keyOf(card)
   const etag = `"${key}"`
   const headers = {
     'Content-Type': 'image/png',
     'Cache-Control': 'public, max-age=3600',
     ETag: etag,
   }
+  // Unchanged: nothing is read from the disk
   if (ifNoneMatch === etag) return new Response(null, { status: 304, headers })
+  const png = await cardPng(card, key)
   return new Response(png as Uint8Array<ArrayBuffer>, { headers })
 }

@@ -4,7 +4,6 @@ import {
   profileCardData,
   projectCardData,
 } from '/api/share-card.ts'
-import { originOf } from '/api/og.ts'
 import { decide, MODERATION_ACTIONS, moderationQueue } from '/api/moderation.ts'
 import { memoryLimit } from '/api/lib/rate.ts'
 import { respond } from '@01edu/api/response'
@@ -210,6 +209,12 @@ const movingCards = limitedSession(CARD_MOVE_RATE, 'Too many moves this hour')
 
 const matchingMode = LIST(
   ['instant', 'digest', 'off'],
+  'How help requests reach the developer (§7.4)',
+)
+// What a developer may choose: the daily digest is not offered until it
+// exists (PAM-509), so it is never stored
+const chosenMatchingMode = LIST(
+  ['instant', 'off'],
   'How help requests reach the developer (§7.4)',
 )
 
@@ -671,7 +676,6 @@ const defs = {
     fn: (ctx, { login }) =>
       cardResponse(
         profileCardData(login),
-        new URL(originOf(ctx.req)).host,
         ctx.req.headers.get('if-none-match'),
       ),
     input: OBJ({ login: STR('Login of the developer') }),
@@ -682,7 +686,6 @@ const defs = {
     fn: (ctx, { slug }) =>
       cardResponse(
         projectCardData(slug),
-        new URL(originOf(ctx.req)).host,
         ctx.req.headers.get('if-none-match'),
       ),
     input: OBJ({ slug: STR('Slug of a public project') }),
@@ -1288,7 +1291,7 @@ const defs = {
       return getCurrentUser(ctx.session.userId)!
     },
     input: OBJ({
-      matchingMode,
+      matchingMode: chosenMatchingMode,
       minScore: NUM('0 to 100'),
       helpTypes: ARR(STR('Key of helpCategories'), 'Types of help accepted'),
       onlySkills: optional(
@@ -2435,7 +2438,7 @@ const defs = {
       country: STR('ISO code of an African country, or as written'),
       city: STR('City'),
       website: STR('Website'),
-      matchingMode,
+      matchingMode: chosenMatchingMode,
       theme: optional(STR('Profile theme id (§9.2); unknown ids are ignored')),
       accent: optional(STR('Accent colour id (§9.2); unknown ids are ignored')),
       sectionOrder: optional(

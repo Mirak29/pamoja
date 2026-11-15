@@ -153,10 +153,19 @@ export const keyOf = <K extends string>(
   label: string,
 ) => (Object.keys(labels) as K[]).find((key) => labels[key] === label)
 
+/** The modes a developer may choose: no digest until it exists (PAM-509) */
+export type ChosenMatchingMode = Exclude<MatchingMode, 'digest'>
+
+/** A stored mode as one the developer may choose: the digest is instant */
+export const chosenMode = (mode: MatchingMode): ChosenMatchingMode =>
+  mode === 'off' ? 'off' : 'instant'
+
 /** The stored mode of a label shown in the app */
 export const matchingModeOf = (label: string) =>
-  (Object.keys(matchingModes) as MatchingMode[])
-    .find((key) => matchingModes[key] === label) ?? 'instant'
+  chosenMode(
+    (Object.keys(matchingModes) as MatchingMode[])
+      .find((key) => matchingModes[key] === label) ?? 'instant',
+  )
 
 export const slugOf = (name: string) =>
   name.toLowerCase().replace('++', 'pp').replace('#', 'sharp')

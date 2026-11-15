@@ -8,3 +8,10 @@ export const notRevoked = (column = 'entry.id') =>
     WHERE moderationAction.targetType = 'proof'
       AND moderationAction.targetId = ${column}
       AND moderationAction.action = 'revoke_evidence')`
+
+/**
+ * SQL: the account of `table` is not suspended now (§10.5). Suspended, it
+ * leaves Explore, the search, the previews and the sitemap
+ */
+export const notSuspended = (table = 'user') =>
+  `(${table}.suspendedUntil IS NULL OR ${table}.suspendedUntil < unixepoch())`

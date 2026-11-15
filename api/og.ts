@@ -1,6 +1,14 @@
 import { sql } from '@01edu/db'
+import { notSuspended } from '/api/revoked.ts'
 import { APP_ENV } from '/api/lib/env.ts'
-import { profileCardData, projectCardData } from '/api/share-card.ts'
+import {
+  CARD_HEIGHT,
+  CARD_WIDTH,
+  cut,
+  profileCardData,
+  projectCardData,
+  publicHost,
+} from '/api/share-card.ts'
 
 // Previews of a shared link and the sitemap (§17.1). A crawler (LinkedIn,
 // X, WhatsApp, Discord, Slack) reads no JavaScript: the server writes in the
@@ -25,14 +33,15 @@ export const escapeHtml = (text: string) =>
   )
 
 /**
- * The origin of the links the page gives: behind Caddy the request says
- * http, the address is https
+ * The origin of the links the page gives: the domain of the deployment
+ * (PUBLIC_HOST), in https, never a Host or a protocol a request wrote; in
+ * dev without it, the address the page was opened at
  */
 export const originOf = (req: Request) => {
+  const host = publicHost()
+  if (host) return `https://${host}`
   const url = new URL(req.url)
-  const proto = req.headers.get('x-forwarded-proto') ??
-    (APP_ENV === 'prod' ? 'https' : url.protocol.slice(0, -1))
-  return `${proto}://${req.headers.get('host') ?? url.host}`
+  return APP_ENV === 'prod' ? `https://${url.host}` : url.origin
 }
 
 type Preview = {
@@ -42,8 +51,7 @@ type Preview = {
   url: string
 }
 
-const short = (text: string, max = 200) =>
-  text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text
+const short = (text: string) => cut(text, 200)
 
 /** The preview of a path, from what the database holds */
 export const previewOf = (pathname: string, origin: string): Preview => {
@@ -101,8 +109,8 @@ export const tagsOf = (preview: Preview) => {
     ...(preview.image
       ? [
         tag('property', 'og:image', preview.image),
-        tag('property', 'og:image:width', '1200'),
-        tag('property', 'og:image:height', '630'),
+        tag('property', 'og:image:width', String(CARD_WIDTH)),
+        tag('property', 'og:image:height', String(CARD_HEIGHT)),
         tag('name', 'twitter:card', 'summary_large_image'),
         tag('name', 'twitter:image', preview.image),
       ]
@@ -124,7 +132,7 @@ export const pageWithPreview = (html: string, req: Request) => {
 const publicProfiles = sql<{ login: string; at: number }, undefined>`
   SELECT user.githubUsername AS login, profile.updatedAt AS at
   FROM user JOIN profile ON profile.userId = user.userId
-  WHERE user.suspendedUntil IS NULL OR user.suspendedUntil < unixepoch()
+  WHERE ${notSuspended()}
   ORDER BY user.userId
   LIMIT 50000
 `.all

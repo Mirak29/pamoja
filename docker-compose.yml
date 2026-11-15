@@ -14,6 +14,9 @@ services:
       # The search (§10.4): its container, by its name on this network
       MEILI_URL: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?a key of the search, in .env}
+      # The domain the shared links, the previews and the Share Card give
+      # (§17.1): never the Host of a request
+      PUBLIC_HOST: ${PUBLIC_HOST:-}
     # Local only: Caddy, a tunnel or the host's own proxy reaches it there
     ports:
       - '${APP_BIND:-127.0.0.1:8000}:8000'

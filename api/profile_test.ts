@@ -32,7 +32,7 @@ const profile = {
   country: 'SN',
   city: 'Dakar',
   website: 'abdousow.dev',
-  matchingMode: 'digest',
+  matchingMode: 'off',
 }
 
 Deno.test('profile: a GitHub location gives the city and the country', () => {
@@ -76,7 +76,7 @@ Deno.test('profile: saved fields, emptied ones included', async () => {
   assertEquals(status, 200)
   assertEquals(json.headline, profile.headline)
   assertEquals(json.bio, '')
-  assertEquals(json.matchingMode, 'digest')
+  assertEquals(json.matchingMode, 'off')
 })
 
 Deno.test('profile: skills come from the vocabulary only', async () => {
@@ -168,4 +168,13 @@ Deno.test('profile: each field has a size, the server refuses more (§16)', asyn
   const { json } = await call('/api/user/me', { cookie })
   assertEquals(json.headline.length, 220)
   assertEquals(json.bio, '')
+})
+
+Deno.test('profile: the daily digest is never stored until it exists (PAM-509)', async () => {
+  restore()
+  const { status } = await call('/api/user/profile/update', {
+    body: { ...profile, matchingMode: 'digest' },
+    cookie: await login(),
+  })
+  assertEquals(status, 400)
 })

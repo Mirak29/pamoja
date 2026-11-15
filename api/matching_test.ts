@@ -342,7 +342,7 @@ Deno.test('matching: only the skills, projects and communities kept (§7.4)', as
 Deno.test('matching: the filters are read back and checked', async () => {
   restore()
   const cookie = await createSession(dev('moussa', ['Go']), 'demo')
-  const base = { matchingMode: 'digest', minScore: 60, helpTypes: [] }
+  const base = { matchingMode: 'off', minScore: 60, helpTypes: [] }
   const saved = await call('/api/notification/preferences', cookie, {
     ...base,
     onlySkills: ['Go', 'Go'],

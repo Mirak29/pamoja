@@ -6,9 +6,10 @@ import { adoptSettings } from '/web/fixtures/profile-settings.ts'
 import { adoptProjects } from '/web/fixtures/repos.ts'
 import { settings } from '/web/fixtures/settings.ts'
 import {
+  type ChosenMatchingMode,
+  chosenMode,
   helpCategories,
   type HelpCategory,
-  type MatchingMode,
   matchingModes,
 } from '/api/vocabulary.ts'
 import { notify } from '/web/ui/toast.tsx'
@@ -37,9 +38,7 @@ const setUser = (user: User) => {
     featured: user.featured,
   })
   // The digest is hidden until it exists (PAM-509): it reads as instant
-  settings.matching = user.matchingMode === 'off'
-    ? matchingModes.off
-    : matchingModes.instant
+  settings.matching = matchingModes[chosenMode(user.matchingMode)]
   // The matching preferences saved on the server (§7.4)
   settings.minScore = user.minScore
   settings.onlySkills = user.onlySkills
@@ -147,7 +146,7 @@ const save = async (changes: {
       country: user.country,
       city: user.city,
       website: user.website,
-      matchingMode: user.matchingMode,
+      matchingMode: chosenMode(user.matchingMode),
       // Personalization kept as it is unless the change updates it (§9.2)
       theme: user.theme,
       accent: user.accent,
@@ -172,7 +171,7 @@ const save = async (changes: {
  * shows the change at once.
  */
 export const saveMatching = (change: {
-  matchingMode?: MatchingMode
+  matchingMode?: ChosenMatchingMode
   minScore?: number
   helpTypes?: string[]
   onlySkills?: string[]
@@ -182,7 +181,7 @@ export const saveMatching = (change: {
   const user = currentUser.peek()
   if (!user) return
   return api['POST/api/notification/preferences'].fetch({
-    matchingMode: change.matchingMode ?? user.matchingMode,
+    matchingMode: change.matchingMode ?? chosenMode(user.matchingMode),
     minScore: change.minScore ?? user.minScore,
     helpTypes: change.helpTypes ?? user.helpTypes,
     onlySkills: change.onlySkills ?? user.onlySkills,

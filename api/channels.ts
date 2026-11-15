@@ -59,6 +59,12 @@ export const getRole = sql<
   WHERE projectId = :projectId AND userId = :userId
 `.get
 
+/** Whether the developer manages the project: its owner or a maintainer */
+export const leads = (projectId: number, userId: number) => {
+  const role = getRole({ projectId, userId })?.role
+  return role === 'owner' || role === 'maintainer'
+}
+
 const getFollow = sql<{ yes: number }, { projectId: number; userId: number }>`
   SELECT 1 AS yes FROM follow
   WHERE followerId = :userId AND targetType = 'project'

@@ -3,7 +3,7 @@ import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
 import { Milestone } from '/api/schema.ts'
 import { Entry } from '/api/entries.ts'
-import { getRole } from '/api/channels.ts'
+import { leads } from '/api/channels.ts'
 import { getProjectId, isMember } from '/api/board.ts'
 import { LIMITS } from '/api/limits.ts'
 import { memoryLimit } from '/api/lib/rate.ts'
@@ -21,11 +21,6 @@ const edited = memoryLimit(MILESTONE_RATE, 'Too many roadmap changes')
 
 const badRequest = (m: string) => new respond.BadRequestError({ message: m })
 const forbidden = (m: string) => new respond.ForbiddenError({ message: m })
-
-const leads = (projectId: number, userId: number) => {
-  const role = getRole({ projectId, userId })?.role
-  return role === 'owner' || role === 'maintainer'
-}
 
 type MilestoneRow = {
   milestoneId: number

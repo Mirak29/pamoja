@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { stringsOf } from '/api/lib/json.ts'
 import { notRevoked } from '/api/revoked.ts'
 import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
@@ -13,7 +14,7 @@ import { getProjectId } from '/api/board.ts'
 
 const DAY = 24 * 3600
 
-export type Tone = 'ok' | 'warning' | 'danger' | 'unknown'
+type Tone = 'ok' | 'warning' | 'danger' | 'unknown'
 
 type Indicator = {
   label: string
@@ -277,13 +278,7 @@ const domainsOf = (repositoryId: number, languages: [string, number][]) => {
     }
   }
   for (const { labels } of labelsOf(repositoryId)) {
-    let list: string[] = []
-    try {
-      list = JSON.parse(labels)
-    } catch {
-      continue
-    }
-    for (const label of list) {
+    for (const label of stringsOf(labels)) {
       for (const [domain, pattern] of Object.entries(DOMAIN_LABELS)) {
         if (pattern.test(label)) found.add(domain)
       }
