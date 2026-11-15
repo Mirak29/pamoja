@@ -113,6 +113,7 @@ dev) vont dans un fichier `.env-local`, ignoré par Git, avec les noms de
 | Commande | Ce qu'elle fait |
 | --- | --- |
 | `deno task seed` | remet la base de démo à zéro ([`api/seed.ts`](api/seed.ts)) |
+| `deno task prod:reset` | remet la prod sur une démo fraîche, après une sauvegarde sur le poste ([`task-prod-reset.ts`](task-prod-reset.ts)) |
 | `deno task test` | les tests de l'API et du web, SQLite en mémoire, sans réseau |
 | `deno task check` · `lint` · `fmt` | typage, lint, formatage (ce que vérifie la [CI](.github/workflows/ci.yml)) |
 | `deno task tunnel` | une adresse HTTPS publique pour recevoir les webhooks GitHub en dev ([`task-tunnel.ts`](task-tunnel.ts)) |

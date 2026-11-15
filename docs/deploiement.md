@@ -64,7 +64,22 @@ docker compose run --rm --no-deps app seed --prod
 docker compose start app
 ```
 
-Le même enchaînement remet la démo à zéro avant une répétition (PAM-909).
+Pour remettre la prod sur une base propre avant une répétition (PAM-909), depuis le poste de l'équipe, avec la clé chargée dans l'agent SSH :
+
+```bash
+deno task prod:reset
+```
+
+La tâche ([`task-prod-reset.ts`](../task-prod-reset.ts)) demande de taper `pamoja` pour confirmer, puis :
+
+1. elle arrête l'app, pour que la base soit entière sur le disque ;
+2. elle ramène la base et les médias dans `~/pamoja-backups/pamoja-avant-reset-….tar` et vérifie que l'archive contient une base SQLite entière (sinon rien n'est effacé) ;
+3. elle efface la base et les médias, puis recharge la démo ;
+4. elle redémarre l'app, même après un échec, et attend qu'elle réponde.
+
+`--vide` repart sur une base vide, sans démo ; `--yes` ne pose pas de question. `PAMOJA_HOST`, `PAMOJA_DIR`, `PAMOJA_BACKUPS` et `SSH` changent l'hôte, le dossier sur la VM, le dossier des archives et le programme ssh (sous Windows, celui du système par défaut). Les comptes et les sessions partent avec la base : chacun se reconnecte avec GitHub.
+
+Pour restaurer une archive : `tar xf pamoja-avant-reset-….tar` donne `pamoja.db`, son `pamoja.db-wal` et `media/`, à remettre ensemble dans `/data` comme une copie ci-dessous (le `-wal` de l'archive est copié avec la base, pas effacé).
 
 Vérifier depuis l'extérieur : la landing s'ouvre, la connexion GitHub aboutit, une notification arrive sans recharger la page (PAM-906).
 

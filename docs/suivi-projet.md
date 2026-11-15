@@ -1861,3 +1861,10 @@ Les messages d'un canal (#général, #suivi, #aide, #annonces) défilent dans le
 
 - **Livrable** : `web/pages/project/channels-tab.tsx`, `web/lib/links.ts` ; §6.8
 - **Par** : @Mirak29
+
+### 2026-11-15 · Remettre la prod sur une base propre en une commande
+
+`deno task prod:reset` fait depuis le poste ce qui se faisait à la main sur la VM : l'app s'arrête, la base et les médias reviennent dans une archive sur le poste, vérifiée (une base SQLite entière, sinon rien n'est effacé), puis la base et les médias sont effacés, la démo rechargée, et l'app redémarre (même après un échec) jusqu'à répondre. Une confirmation est demandée ; `--vide` repart sans démo. Écrite en Deno pour tourner pareil sous Windows, où le `bash` du PATH est celui de WSL. Prod remise sur une démo fraîche ce jour, l'ancienne base sauvegardée.
+
+- **Livrable** : `task-prod-reset.ts`, `deno.json`, `docs/deploiement.md`, `README.md`, `README.en.md` ; §18.1, PAM-909
+- **Par** : @Mirak29

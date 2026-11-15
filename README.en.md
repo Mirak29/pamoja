@@ -112,6 +112,7 @@ file, ignored by Git, with the names of
 | Command | What it does |
 | --- | --- |
 | `deno task seed` | resets the demo database ([`api/seed.ts`](api/seed.ts)) |
+| `deno task prod:reset` | puts production back on a fresh demo, after a backup to this machine ([`task-prod-reset.ts`](task-prod-reset.ts)) |
 | `deno task test` | API and web tests, in-memory SQLite, no network |
 | `deno task check` · `lint` · `fmt` | types, lint, formatting (what [CI](.github/workflows/ci.yml) checks) |
 | `deno task tunnel` | a public HTTPS address to receive GitHub webhooks in dev ([`task-tunnel.ts`](task-tunnel.ts)) |
