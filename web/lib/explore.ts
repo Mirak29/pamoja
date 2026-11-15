@@ -9,7 +9,10 @@ export const loadDevelopers = () =>
 
 /** Every public project, so one imported by someone else is findable */
 export const loadExploreProjects = () =>
-  api['GET/api/explore/projects'].fetch().then(adoptProjects, () => {})
+  api['GET/api/explore/projects'].fetch().then(
+    (list) => adoptProjects(list, true),
+    () => {},
+  )
 
 // When the people and the projects were last read for the Home rail
 let readAt = 0

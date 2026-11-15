@@ -1,17 +1,13 @@
 import { useState } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
 import { Copy, Download } from '/web/assets/icons.tsx'
-import { isMe, type Login, me, people, placeOf } from '/web/fixtures/people.ts'
-import { badgesOf, profileStats } from '/web/fixtures/reputation.ts'
+import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
 import { language, t } from '/web/lib/language.ts'
-import { plural } from '/web/lib/plural.ts'
-import { Avatar, Portrait } from '/web/ui/avatar.tsx'
+import { Avatar } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { LogoMark } from '/web/ui/logo.tsx'
 import { notify } from '/web/ui/toast.tsx'
-import { levelName } from '/web/pages/profile/reputation.tsx'
 
 /** Address of a profile, the only one it has (§9) */
 export const profileUrl = (login: Login) => `${location.origin}/@${login}`
@@ -38,16 +34,21 @@ const shareLinks = (login: Login) => {
 }
 
 /**
- * The share card as the networks show it: the PNG the server draws (§17.2).
- * Drawn here while it loads, or when the server has no card for it
+ * The share card as the networks show it: the PNG the server draws (§17.2),
+ * and nothing else, so the preview is never a card the networks will not
+ * show. A neutral block while it loads
  */
 const Card = ({ login }: { login: Login }) => {
   const [state, setState] = useState<'loading' | 'shown' | 'failed'>(
     'loading',
   )
   return (
-    <div class='relative aspect-[1200/630] w-full overflow-hidden rounded-lg border border-figure-edge shadow-slab'>
-      {state !== 'shown' && <DrawnCard login={login} />}
+    <div class='relative aspect-[1200/630] w-full overflow-hidden rounded-lg border border-figure-edge bg-surface-200 shadow-slab'>
+      {state === 'failed' && (
+        <span class='absolute inset-0 flex items-center justify-center text-[14px] text-ink-muted'>
+          Carte indisponible pour l’instant.
+        </span>
+      )}
       {state !== 'failed' && (
         <img
           src={cardUrl(login)}
@@ -61,82 +62,6 @@ const Card = ({ login }: { login: Login }) => {
           }`}
         />
       )}
-    </div>
-  )
-}
-
-/** The card drawn in the page, from what the page knows */
-const DrawnCard = ({ login }: { login: Login }) => {
-  const person = people[login]
-  const figures = profileStats(login)
-  const top = badgesOf(login)
-    .filter((badge) => badge.level >= 0)
-    .sort((a, b) => b.level - a.level)[0]
-  // What someone did, never a zero
-  const stats = ([
-    [figures.reviews, plural(figures.reviews, 'review', 'reviews')],
-    [
-      figures.verified,
-      plural(figures.verified, 'preuve vérifiée', 'preuves vérifiées'),
-    ],
-    [
-      figures.helped,
-      plural(figures.helped, 'développeur aidé', 'développeurs aidés'),
-    ],
-    [figures.collaborations, plural(figures.collaborations, 'collaboration')],
-  ] as const).filter(([count]) => count > 0).slice(0, 3)
-  return (
-    <div class='@container grid size-full grid-cols-[1.5fr_1fr] bg-surface-100'>
-      <div class='flex flex-col justify-center gap-[1.6cqw] px-[4cqw] py-[5cqw]'>
-        <div class='flex items-center gap-[2cqw]'>
-          <Portrait
-            name={person.name}
-            src={person.avatarUrl}
-            px={108}
-            class='flex size-[9cqw] flex-none items-center justify-center rounded-full border border-figure-edge bg-surface-200 font-display text-[3.2cqw] leading-none font-bold shadow-tile'
-          />
-          <span class='flex flex-col'>
-            <span class='font-display text-[4cqw] leading-[1.1] font-bold'>
-              {person.name}
-            </span>
-            <span class='text-[1.9cqw] text-ink-muted'>
-              {placeOf(person)}
-            </span>
-          </span>
-        </div>
-        <span
-          translate={false}
-          class='wrap-anywhere text-[2.3cqw] leading-[1.4] text-pretty'
-        >
-          {person.headline}
-        </span>
-        <div class='flex gap-[2.4cqw]'>
-          {stats.map(([count, label]) => (
-            <span key={label} class='flex flex-col'>
-              <span class='font-mono text-[3.4cqw] leading-none font-medium'>
-                {count}
-              </span>
-              <span class='text-[1.6cqw] text-ink-muted'>
-                {label}
-              </span>
-            </span>
-          ))}
-        </div>
-        <span class='self-start rounded-sm border border-verified bg-verified-soft px-[1.2cqw] py-[.6cqw] font-mono text-[1.5cqw] leading-none font-medium tracking-[.06em] text-verified uppercase'>
-          {top ? `${top.name} · ${levelName(top)}` : 'Profil Pamoja'}
-        </span>
-      </div>
-      <div class='flex flex-col items-center justify-center gap-[1.4cqw] border-l border-figure-edge bg-surface-000 p-[2cqw]'>
-        <span class='flex items-center gap-[1cqw]'>
-          <LogoMark size={22} />
-          <span class='font-display text-[2.4cqw] leading-none font-bold'>
-            Pamoja
-          </span>
-        </span>
-        <span class='font-mono text-[1.5cqw] leading-none text-ink-muted'>
-          {location.host}/@{login}
-        </span>
-      </div>
     </div>
   )
 }

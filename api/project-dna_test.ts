@@ -1,9 +1,11 @@
 import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
-import { db, makeRestorePoint } from '@01edu/db'
+import { makeRestorePoint } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
-import { CiRun, Issue, PullRequest, Repository } from '/api/schema.ts'
+import { CiRun, Issue, PullRequest } from '/api/schema.ts'
 import { projectDna } from '/api/project-dna.ts'
+
+import { insertRepo } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 const DAY = 24 * 3600
@@ -12,19 +14,8 @@ const DAY = 24 * 3600
 // without review, a blocked issue, a good first issue, 4 CI runs of which 1
 // failed, a long README, Go and TypeScript
 const withRepo = () => {
-  const projectId = (db.prepare(
-    "SELECT projectId FROM project WHERE slug = 'openpay-africa'",
-  ).get() as { projectId: number }).projectId
   const at = Date.now() / 1000
-  const repositoryId = Repository.insert({
-    projectId,
-    githubId: 777,
-    owner: 'abdou',
-    name: 'openpay-africa',
-    fullName: 'abdou/openpay-africa',
-    defaultBranch: 'main',
-    syncMode: 'live',
-    source: 'github',
+  const repositoryId = insertRepo('openpay-africa', {
     readme: 'x'.repeat(2000),
     stats: JSON.stringify({ languages: [['Go', 70], ['TypeScript', 28]] }),
   })

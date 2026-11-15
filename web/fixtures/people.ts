@@ -26,10 +26,6 @@ export type Person = {
   openTo?: string
   promising?: boolean
   moderator?: boolean
-  /** Suspended 7 days by a moderator */
-  suspended?: boolean
-  /** Hidden from search by a moderator */
-  hiddenFromSearch?: boolean
   communities: string[]
   /** Domains and intents of the onboarding, from the vocabularies (§6.1) */
   domains?: string[]

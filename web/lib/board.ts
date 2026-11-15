@@ -20,7 +20,6 @@ import type { ProjectSlug } from '/web/fixtures/projects.ts'
  * the others follows a move in real time (TASK_UPDATED, live-data.ts)
  */
 export const loadBoard = (slug: string) => {
-  opened.add(slug)
   return api['GET/api/project/board'].fetch({ slug }).then((cards) => {
     boards[slug as ProjectSlug] = cards.map((c) => ({
       id: String(c.id),
@@ -34,8 +33,18 @@ export const loadBoard = (slug: string) => {
   }, () => {})
 }
 
-// The boards read on this page, followed in real time
-const opened = new Set<string>()
+// The boards shown now, followed in real time; one left is forgotten
+const opened = new Map<string, number>()
+
+/** Reads a board and follows it while it is shown: the cleanup of a page */
+export const followBoard = (slug: string) => {
+  opened.set(slug, (opened.get(slug) ?? 0) + 1)
+  loadBoard(slug)
+  return () => {
+    const left = (opened.get(slug) ?? 1) - 1
+    left ? opened.set(slug, left) : opened.delete(slug)
+  }
+}
 
 /** What a card points at on GitHub */
 export type CardLink = { issue?: number; pullRequest?: number }
@@ -137,5 +146,5 @@ export const moveTask = (slug: string, card: Card, column: BoardColumn) => {
 
 /** Reads the boards open on the page again */
 export const reloadOpenedBoards = () => {
-  for (const slug of opened) loadBoard(slug)
+  for (const slug of opened.keys()) loadBoard(slug)
 }

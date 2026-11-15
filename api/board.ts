@@ -164,7 +164,12 @@ const linkOf = (projectId: number, link: CardLink, taskId = 0) => {
     if (other && other.taskId !== taskId) {
       throw conflict('This issue already has its card')
     }
-    return { issueId: issue.issueId, pullRequestId: null, title: issue.title }
+    return {
+      issueId: issue.issueId,
+      pullRequestId: null,
+      title: issue.title,
+      merged: false,
+    }
   }
   if (link.pullRequest) {
     const pull = pullOf({ projectId, number: link.pullRequest })
@@ -180,7 +185,7 @@ const linkOf = (projectId: number, link: CardLink, taskId = 0) => {
       merged: pull.state === 'merged',
     }
   }
-  return { issueId: null, pullRequestId: null, title: '' }
+  return { issueId: null, pullRequestId: null, title: '', merged: false }
 }
 
 const insertCard = (
@@ -236,7 +241,7 @@ export const createTask = (
     const linked = linkOf(project.projectId, link)
     const card = {
       title: name || linked.title,
-      column: 'merged' in linked && linked.merged ? 'done' : column,
+      column: linked.merged ? 'done' : column,
       issueId: linked.issueId,
       pullRequestId: linked.pullRequestId,
     }
@@ -271,7 +276,7 @@ export const linkTask = (me: number, taskId: number, link: CardLink) => {
       pullRequestId: linked.pullRequestId,
       at,
     })
-    if ('merged' in linked && linked.merged && column !== 'done') {
+    if (linked.merged && column !== 'done') {
       column = 'done'
       setColumn({
         taskId,

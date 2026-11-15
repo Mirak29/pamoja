@@ -10,10 +10,10 @@ import {
   markMergedPullDone,
   moveTask,
 } from '/api/board.ts'
-import { Issue, PullRequest, Repository } from '/api/schema.ts'
+import { Issue, PullRequest } from '/api/schema.ts'
 import { rankBetween } from '/api/lib/rank.ts'
 import { createSession } from '/api/session.ts'
-import { request } from '/api/testing.ts'
+import { insertRepo, request } from '/api/testing.ts'
 
 const restore = makeRestorePoint()
 
@@ -72,20 +72,8 @@ Deno.test('board: a private project shows its board to its members only', () => 
 
 // The repo of OpenPay Africa with PR #81 open, PR #80 merged and issue #12
 const withRepo = () => {
-  const projectId = (db.prepare(
-    "SELECT projectId FROM project WHERE slug = 'openpay-africa'",
-  ).get() as { projectId: number }).projectId
   const at = Date.now() / 1000
-  const repositoryId = Repository.insert({
-    projectId,
-    githubId: 777,
-    owner: 'abdou',
-    name: 'openpay-africa',
-    fullName: 'abdou/openpay-africa',
-    defaultBranch: 'main',
-    syncMode: 'live',
-    source: 'github',
-  })
+  const repositoryId = insertRepo()
   const pulls: Record<number, number> = {}
   for (const [number, state] of [[81, 'open'], [80, 'merged']] as const) {
     pulls[number] = PullRequest.insert({

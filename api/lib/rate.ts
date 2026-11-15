@@ -36,15 +36,32 @@ export const within = (
  * starts again from nothing. `me` 0 counts for everyone.
  */
 export const memoryWindow = () => {
+  // Oldest first: the ones out of the window are dropped from the front
   const times = new Map<number, number[]>()
+  let longest = 0
+  let added = 0
+  // Developers who stopped acting leave memory, every 1 000 actions
+  const sweep = (since: number) => {
+    for (const [me, list] of times) {
+      if ((list.at(-1) ?? 0) <= since) times.delete(me)
+    }
+  }
   return {
     count: ({ me, since }: { me: number; since: number }): Window => {
-      const kept = (times.get(me) ?? []).filter((at) => at > since)
-      kept.length ? times.set(me, kept) : times.delete(me)
-      return { n: kept.length, oldest: kept[0] ?? null }
+      longest = Math.max(longest, now() - since)
+      const list = times.get(me)
+      if (!list) return { n: 0, oldest: null }
+      let out = 0
+      while (out < list.length && list[out] <= since) out++
+      if (out) list.splice(0, out)
+      if (!list.length) times.delete(me)
+      return { n: list.length, oldest: list[0] ?? null }
     },
-    add: (me: number, at = now()) =>
-      times.set(me, [...times.get(me) ?? [], at]),
+    add: (me: number, at = now()) => {
+      const list = times.get(me)
+      list ? list.push(at) : times.set(me, [at])
+      if (++added % 1000 === 0) sweep(at - longest)
+    },
     clear: () => times.clear(),
   }
 }

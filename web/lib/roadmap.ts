@@ -99,7 +99,20 @@ export const attachCard = (slug: string, card: Card, milestoneId: number) => {
 export const cardsOf = (slug: string, milestoneId: number) =>
   (boards[slug as ProjectSlug] ?? []).filter((c) => c.milestone === milestoneId)
 
-/** Reads the roadmaps open on the page again */
+// The roadmaps shown now, followed in real time; one left is forgotten
+const followed = new Map<string, number>()
+
+/** Reads a roadmap and follows it while it is shown: the cleanup of a page */
+export const followRoadmap = (slug: string) => {
+  followed.set(slug, (followed.get(slug) ?? 0) + 1)
+  loadRoadmap(slug)
+  return () => {
+    const left = (followed.get(slug) ?? 1) - 1
+    left ? followed.set(slug, left) : followed.delete(slug)
+  }
+}
+
+/** Reads the roadmaps shown again */
 export const reloadOpenedRoadmaps = () => {
-  for (const slug of Object.keys(roadmaps.peek())) loadRoadmap(slug)
+  for (const slug of followed.keys()) loadRoadmap(slug)
 }

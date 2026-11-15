@@ -776,3 +776,23 @@ index('media_target', 'media', 'targetType, targetId')
 index('media_owner', 'media', 'ownerId, createdAt')
 // Each file served is found by its key
 index('media_storage_key', 'media', 'storageKey')
+
+// Read by the changes of PAM-501 to PAM-509: each lookup by an index, not a
+// scan of the whole table
+// A PR's CI state, from the last run of each job (§6.8)
+index('ci_run_pull', 'ciRun', 'pullRequestId, completedAt')
+// The card of a PR or of an issue (§6.7)
+index('task_pull', 'task', 'pullRequestId')
+index('task_issue', 'task', 'issueId')
+// The reposts of a post, the posts and replies of an author (rate, profile)
+index('post_repost', 'post', 'repostOfId, createdAt')
+index('post_author', 'post', 'authorId, createdAt')
+index('post_created', 'post', 'createdAt')
+// A proof withdrawn, a post hidden by a moderator (§10.5)
+index(
+  'moderation_action_target',
+  'moderationAction',
+  'targetType, targetId, action',
+)
+// The invitations of a project (§6.6)
+index('notification_type', 'notification', 'type, createdAt')

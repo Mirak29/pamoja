@@ -279,7 +279,15 @@ type Stats = {
 
 // One project as the web shows it, from its row and the open issue / PR
 // counts of every repository in the batch
-const shownProject = (row: ProjectRow, counts: Map<number, Counts>) => {
+// A list read in a glance (Explore, the Home rail): its counts, not the
+// first batch of issues and PRs of each project
+const NO_BATCH = { items: [], next: '' }
+
+const shownProject = (
+  row: ProjectRow,
+  counts: Map<number, Counts>,
+  light = false,
+) => {
   const stats = parse<Stats>(row.stats, {})
   const repositoryId = row.repositoryId
   return {
@@ -311,8 +319,8 @@ const shownProject = (row: ProjectRow, counts: Map<number, Counts>) => {
         releasedAt: stats.release?.at ?? 0,
         lastSyncedAt: row.lastSyncedAt ?? 0,
         ...counts.get(repositoryId)!,
-        issues: issuesOf(repositoryId),
-        pullRequests: pullsOf(repositoryId),
+        issues: light ? NO_BATCH : issuesOf(repositoryId),
+        pullRequests: light ? NO_BATCH : pullsOf(repositoryId),
       }
       : undefined,
   }
@@ -351,7 +359,7 @@ const listVisible = sql<ProjectRow, { userId: number; limit: number }>`
 export const listExploreProjects = (userId: number) => {
   const rows = listVisible({ userId, limit: 200 })
   const counts = countsOf(rows.flatMap((row) => row.repositoryId ?? []))
-  return rows.map((row) => shownProject(row, counts))
+  return rows.map((row) => shownProject(row, counts, true))
 }
 
 // A public project, or one the developer is a member of, by its slug

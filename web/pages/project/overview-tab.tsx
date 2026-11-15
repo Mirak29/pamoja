@@ -6,7 +6,7 @@ import { ImagePlus, Play } from '/web/assets/icons.tsx'
 import { isMe, personOf } from '/web/fixtures/people.ts'
 import { type Project, projectsChanged } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
-import { loadRoadmap, milestonesOf } from '/web/lib/roadmap.ts'
+import { followRoadmap, milestonesOf } from '/web/lib/roadmap.ts'
 import { ago } from '/web/lib/time.ts'
 import { EventList } from '/web/pages/project/event-list.tsx'
 import {
@@ -102,9 +102,7 @@ const Gallery = ({ project }: { project: Project }) => {
 
 const CurrentMilestone = ({ project }: { project: Project }) => {
   // The roadmap of the server, its progress counted on the board (§6.7)
-  useEffect(() => {
-    loadRoadmap(project.slug)
-  }, [project.slug])
+  useEffect(() => followRoadmap(project.slug), [project.slug])
   const milestone = milestonesOf(project).find((m) => m.state === 'active')
   return (
     <Card class='gap-3 p-5'>

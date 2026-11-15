@@ -1,4 +1,6 @@
 import server from '/api/server.ts'
+import { db } from '@01edu/db'
+import { Repository } from '/api/schema.ts'
 
 // What the API tests share: requests to the real server, and the login of
 // the test env, simulated without a GitHub App (§5.3)
@@ -41,3 +43,28 @@ export const loginFlow = async () => {
 
 /** The value of the session cookie of a new login */
 export const login = async () => (await loginFlow()).session
+
+/**
+ * The GitHub repo of a seeded project, for the tests of its board, its PRs
+ * and its Pulse: OpenPay Africa by default. `extra` sets its readme, its
+ * statistics…
+ */
+export const insertRepo = (
+  slug = 'openpay-africa',
+  extra: { readme?: string; stats?: string } = {},
+) => {
+  const { projectId } = db.prepare(
+    'SELECT projectId FROM project WHERE slug = ?',
+  ).get(slug) as { projectId: number }
+  return Repository.insert({
+    projectId,
+    githubId: 777,
+    owner: 'abdou',
+    name: slug,
+    fullName: `abdou/${slug}`,
+    defaultBranch: 'main',
+    syncMode: 'live',
+    source: 'github',
+    ...extra,
+  })
+}

@@ -152,22 +152,26 @@ const initialForm = (): Form => {
   }
   if (pr && url.params.ci) {
     // The job GitHub reported failing; a demo PR keeps its example
-    const job = pr.ciJob ?? {
-      name: 'test (go 1.22)',
-      url: `github.com/${
-        projects[pr.project].owner
-      }/${pr.project}/actions/runs/9124`,
-    }
+    // The job GitHub reported failing; only a demo PR has an example one
+    const job = pr.ciJob ?? (pr.demo
+      ? {
+        name: 'test (go 1.22)',
+        url: `github.com/${
+          projects[pr.project].owner
+        }/${pr.project}/actions/runs/9124`,
+      }
+      : undefined)
     Object.assign(form, {
       type: 'Debug',
       title: t`CI en échec sur la PR #${pr.number} : ${pr.title}`,
-      description:
-        t`Le job ${job.name} échoue sur la branche ${pr.branch}. Lien du job : ${job.url}`,
+      description: job
+        ? t`Le job ${job.name} échoue sur la branche ${pr.branch}. Lien du job : ${job.url}`
+        : t`La CI échoue sur la branche ${pr.branch}.`,
       project: pr.project,
       pullRequest: pr.number,
       skills: pr.demo ? ['Go', 'CI'] : (pr.skills ?? []).slice(0, 3),
       branch: pr.branch,
-      job: job.url,
+      job: job?.url ?? '',
       origin: 'Pré-rempli depuis l’alerte CI de #suivi',
     })
   }

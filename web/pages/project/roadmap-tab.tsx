@@ -4,14 +4,14 @@ import { boardChanged, boards } from '/web/fixtures/board.ts'
 import { isMe } from '/web/fixtures/people.ts'
 import type { Milestone, Project, ProjectSlug } from '/web/fixtures/projects.ts'
 import { LIMITS } from '/api/limits.ts'
-import { loadBoard } from '/web/lib/board.ts'
+import { followBoard } from '/web/lib/board.ts'
 import { counted } from '/web/lib/plural.ts'
 import {
   addMilestone,
   attachCard,
   canPlan,
   cardsOf,
-  loadRoadmap,
+  followRoadmap,
   type MilestoneDraft,
   milestonesOf,
   saveMilestone,
@@ -226,8 +226,12 @@ export const RoadmapTab = ({ project }: { project: Project }) => {
   boardChanged.value
   // The roadmap and the board of the server: the progress counts its cards
   useEffect(() => {
-    loadRoadmap(project.slug)
-    loadBoard(project.slug)
+    const roadmap = followRoadmap(project.slug)
+    const board = followBoard(project.slug)
+    return () => {
+      roadmap()
+      board()
+    }
   }, [project.slug])
   const milestones = milestonesOf(project)
   const canManage = canPlan(project)

@@ -354,7 +354,12 @@ const stageNames: Record<string, Project['stage']> = {
  * keeps its richer story until a real repository is connected to it: from
  * then on it is the live one, its PRs and its Pulse read from GitHub (§18.2).
  */
-export const adoptProjects = (list: ApiProject[]) => {
+/**
+ * Brings projects read from the API into the pages. `light`: a list read in
+ * a glance (Explore), without the first batches of issues and PRs, which
+ * then stay as the pages hold them
+ */
+export const adoptProjects = (list: ApiProject[], light = false) => {
   const all = projects as Record<string, Project>
   for (const project of list) {
     if (all[project.slug]?.demo && !project.repository) {
@@ -404,22 +409,24 @@ export const adoptProjects = (list: ApiProject[]) => {
     boards[key] ??= []
     // The first batch of the GitHub issues and PRs replaces the one shown;
     // the older batches the tabs read stay, with their cursor
-    replaceFirst(
-      issues,
-      key,
-      'issues',
-      (repo?.issues.items ?? []).map((i) => toIssue(key, i)),
-      issueOrder,
-      repo?.issues.next ?? '',
-    )
-    replaceFirst(
-      pullRequests,
-      key,
-      'pulls',
-      (repo?.pullRequests.items ?? []).map((p) => toPull(key, p)),
-      pullOrder,
-      repo?.pullRequests.next ?? '',
-    )
+    if (!light) {
+      replaceFirst(
+        issues,
+        key,
+        'issues',
+        (repo?.issues.items ?? []).map((i) => toIssue(key, i)),
+        issueOrder,
+        repo?.issues.next ?? '',
+      )
+      replaceFirst(
+        pullRequests,
+        key,
+        'pulls',
+        (repo?.pullRequests.items ?? []).map((p) => toPull(key, p)),
+        pullOrder,
+        repo?.pullRequests.next ?? '',
+      )
+    }
   }
   projectsChanged.value++
 }

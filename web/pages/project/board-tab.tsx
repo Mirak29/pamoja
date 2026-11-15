@@ -15,7 +15,7 @@ import {
   boards,
   type Card,
 } from '/web/fixtures/board.ts'
-import { createCard, linkCard, loadBoard, moveTask } from '/web/lib/board.ts'
+import { createCard, followBoard, linkCard, moveTask } from '/web/lib/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { me } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
@@ -241,9 +241,7 @@ export const BoardTab = ({ project }: { project: Project }) => {
   const [announce, setAnnounce] = useState('')
   // The board follows the server, demo projects included: the seed mirrors
   // their cards, so a move persists (§6.7)
-  useEffect(() => {
-    loadBoard(project.slug)
-  }, [project.slug])
+  useEffect(() => followBoard(project.slug), [project.slug])
   const cards = boards[project.slug as ProjectSlug] ?? []
   const move = (card: Card, column: BoardColumn) => {
     const from = boardColumns.findIndex(([key]) => key === card.column)

@@ -92,7 +92,9 @@ onEvent(['POST_CREATED', 'POST_REPOSTED', 'POST_REPLIED'], readNewPosts)
 onReconnect(readNewPosts)
 
 // Back on the tab, or on the app of the phone: likes and replies given
-// meanwhile elsewhere show without a reload
+// meanwhile elsewhere show without a reload, after half a minute away
+let hiddenAt = 0
 addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && signedIn.peek()) readNewPosts()
+  if (document.visibilityState === 'hidden') hiddenAt = Date.now()
+  else if (signedIn.peek() && Date.now() - hiddenAt > 30_000) readNewPosts()
 })
