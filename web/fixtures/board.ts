@@ -104,16 +104,3 @@ export const moveCard = (
   )
   boardChanged.value++
 }
-
-/** POST/api/task/create: a new card goes to the backlog */
-export const addCard = (
-  project: ProjectSlug,
-  title: string,
-  issue?: number,
-) => {
-  const cards = boards[project] ??= []
-  const id = `c${Object.values(boards).flat().length + 1}`
-  cards.push({ id, title, column: 'backlog', issue })
-  logActivity(project, `Carte « ${title} » ajoutée au board`)
-  boardChanged.value++
-}

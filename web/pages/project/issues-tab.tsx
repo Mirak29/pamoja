@@ -1,11 +1,7 @@
 import { navigate, url } from '@01edu/signal-router'
 import { CircleAlert, CircleDot, Columns3 } from '/web/assets/icons.tsx'
-import {
-  addCard,
-  boardChanged,
-  boardColumns,
-  boards,
-} from '/web/fixtures/board.ts'
+import { boardChanged, boardColumns, boards } from '/web/fixtures/board.ts'
+import { createCard } from '/web/lib/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { me, nameOf } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
@@ -163,11 +159,8 @@ export const IssuesTab = ({ project }: { project: Project }) => {
                       size={32}
                       aria-label={t`Ajouter l’issue #${issue.number} au board`}
                       onClick={() => {
-                        addCard(
-                          project.slug as ProjectSlug,
-                          issue.title,
-                          issue.number,
-                        )
+                        // Saved on the server, linked to the issue (§6.7)
+                        createCard(project.slug, '', { issue: issue.number })
                         notify({
                           title: 'Ajoutée au board',
                           body:

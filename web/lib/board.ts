@@ -10,8 +10,10 @@ import {
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 
 // The board read from the server (PAM-404): its cards take the place of the
-// page's, and a move is shown at once then saved; a failure puts it back. A
-// merged pull request moves its card to Done through the webhook (§6.7).
+// page's. A card is internal, or linked to an issue or a PR of the project;
+// a PR opened gets its card in Review and a merged one goes to Done through
+// the webhook (§6.7). What the developer does is shown at once then saved;
+// a failure puts it back.
 
 /**
  * Read a project's board from the server and show its cards; the board of
@@ -25,6 +27,8 @@ export const loadBoard = (slug: string) => {
       title: c.title,
       column: c.column as BoardColumn,
       milestone: c.milestone || undefined,
+      issue: c.issue || undefined,
+      pullRequest: c.pullRequest || undefined,
     }))
     boardChanged.value++
   }, () => {})
@@ -32,6 +36,92 @@ export const loadBoard = (slug: string) => {
 
 // The boards read on this page, followed in real time
 const opened = new Set<string>()
+
+/** What a card points at on GitHub */
+export type CardLink = { issue?: number; pullRequest?: number }
+
+let pending = 0
+
+/**
+ * Adds a card, saved on the server: internal with a title, or from an issue
+ * or a PR, titled after it. Shown at once, it takes the id and the column
+ * the server gave it
+ */
+export const createCard = (
+  slug: string,
+  title: string,
+  link: CardLink = {},
+) => {
+  const cards = boards[slug as ProjectSlug] ??= []
+  const local: Card = {
+    id: `new-${++pending}`,
+    title: title ||
+      (link.pullRequest
+        ? `PR #${link.pullRequest}`
+        : link.issue
+        ? `Issue #${link.issue}`
+        : ''),
+    column: link.pullRequest ? 'review' : 'backlog',
+    issue: link.issue,
+    pullRequest: link.pullRequest,
+  }
+  cards.push(local)
+  boardChanged.value++
+  return api['POST/api/task/create'].fetch({
+    slug,
+    title,
+    issue: link.issue ?? 0,
+    pullRequest: link.pullRequest ?? 0,
+  }).then(
+    (saved) => {
+      Object.assign(local, {
+        id: String(saved.id),
+        title: saved.title,
+        column: saved.column as BoardColumn,
+      })
+      boardChanged.value++
+      return true
+    },
+    (error) => {
+      const index = cards.indexOf(local)
+      index >= 0 && cards.splice(index, 1)
+      boardChanged.value++
+      notifyFailure('Carte non ajoutée', error, {
+        linked: 'Cette issue ou cette PR a déjà sa carte.',
+      })
+      return false
+    },
+  )
+}
+
+/** Links a card to an issue or a PR of its project, or makes it internal */
+export const linkCard = (slug: string, card: Card, link: CardLink) => {
+  const taskId = Number(card.id)
+  if (!Number.isInteger(taskId) || taskId <= 0) return
+  const before = { issue: card.issue, pullRequest: card.pullRequest }
+  card.issue = link.issue
+  card.pullRequest = link.pullRequest
+  boardChanged.value++
+  api['POST/api/task/link'].fetch({
+    taskId,
+    issue: link.issue ?? 0,
+    pullRequest: link.pullRequest ?? 0,
+  }).then(
+    (saved) => {
+      // A PR already merged moves the card to Done
+      if (saved.column !== card.column) {
+        moveCard(slug as ProjectSlug, card, saved.column as BoardColumn)
+      }
+    },
+    (error) => {
+      Object.assign(card, before)
+      boardChanged.value++
+      notifyFailure('Lien non enregistré', error, {
+        linked: 'Cette issue ou cette PR a déjà sa carte.',
+      })
+    },
+  )
+}
 
 /** Move a card to a column, saved on the server */
 export const moveTask = (slug: string, card: Card, column: BoardColumn) => {

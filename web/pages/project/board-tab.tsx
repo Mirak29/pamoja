@@ -9,14 +9,13 @@ import {
   StickyNote,
 } from '/web/assets/icons.tsx'
 import {
-  addCard,
   boardChanged,
   type BoardColumn,
   boardColumns,
   boards,
   type Card,
 } from '/web/fixtures/board.ts'
-import { loadBoard, moveTask } from '/web/lib/board.ts'
+import { createCard, linkCard, loadBoard, moveTask } from '/web/lib/board.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import { me } from '/web/fixtures/people.ts'
 import type { Project, ProjectSlug } from '/web/fixtures/projects.ts'
@@ -48,6 +47,65 @@ type CardProps = {
   moved: boolean
   onDrag: (id: string | null) => void
   onMove: (card: Card, column: BoardColumn) => void
+}
+
+/**
+ * What a card points at, chosen among the open PRs and issues of the
+ * project that have no card yet (§6.7)
+ */
+const LinkSelect = ({ project, card }: { project: Project; card: Card }) => {
+  const taken = new Set(
+    (boards[project.slug as ProjectSlug] ?? []).filter((c) => c !== card)
+      .flatMap((c) => [
+        c.pullRequest && `pr:${c.pullRequest}`,
+        c.issue && `issue:${c.issue}`,
+      ]).filter(Boolean),
+  )
+  const pulls = pullRequests.filter((p) =>
+    p.project === project.slug && p.state === 'open' &&
+    !taken.has(`pr:${p.number}`)
+  )
+  const open = issues.filter((i) =>
+    i.project === project.slug && i.state === 'open' &&
+    !taken.has(`issue:${i.number}`)
+  )
+  const value = card.pullRequest
+    ? `pr:${card.pullRequest}`
+    : card.issue
+    ? `issue:${card.issue}`
+    : ''
+  // Nothing to link, and nothing linked: no control
+  if (!value && !pulls.length && !open.length) return null
+  return (
+    <select
+      value={value}
+      aria-label={t`Lien GitHub de « ${card.title} »`}
+      onChange={(event) => {
+        const [kind, number] = event.currentTarget.value.split(':')
+        linkCard(project.slug, card, {
+          pullRequest: kind === 'pr' ? Number(number) : undefined,
+          issue: kind === 'issue' ? Number(number) : undefined,
+        })
+      }}
+      class='well h-9 min-w-0 px-2 text-[13px] text-ink'
+    >
+      <option value=''>Carte interne</option>
+      {card.pullRequest && !pulls.some((p) => p.number === card.pullRequest) &&
+        <option value={value}>PR #{card.pullRequest}</option>}
+      {card.issue && !open.some((i) => i.number === card.issue) &&
+        <option value={value}>Issue #{card.issue}</option>}
+      {pulls.map((p) => (
+        <option key={`pr${p.number}`} value={`pr:${p.number}`}>
+          PR #{p.number} · {p.title}
+        </option>
+      ))}
+      {open.map((i) => (
+        <option key={`issue${i.number}`} value={`issue:${i.number}`}>
+          Issue #{i.number} · {i.title}
+        </option>
+      ))}
+    </select>
+  )
 }
 
 const BoardCard = (
@@ -110,6 +168,7 @@ const BoardCard = (
           </span>
         )}
       </div>
+      {canMove && <LinkSelect project={project} card={card} />}
       {canMove && (
         <div class='flex justify-end gap-2 pr-[3px] pb-0.5'>
           <button
@@ -152,7 +211,8 @@ const NewCard = ({ project }: { project: Project }) => {
   const [title, setTitle] = useState('')
   const add = () => {
     if (!title.trim()) return
-    addCard(project.slug as ProjectSlug, title.trim())
+    // Saved on the server: it stays after a reload, the others see it
+    createCard(project.slug, title.trim())
     setTitle('')
   }
   return (

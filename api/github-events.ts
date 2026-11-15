@@ -4,7 +4,7 @@ import { Entry, maybe } from '/api/entries.ts'
 import { seconds } from '/api/github.ts'
 import { scheduleSkillsRead } from '/api/pull-skills.ts'
 import { evaluateBadges, evaluateProject } from '/api/badges.ts'
-import { markPullRequestDone } from '/api/board.ts'
+import { cardForPullRequest, markPullRequestDone } from '/api/board.ts'
 import { RULES_VERSION } from '/api/reputation.ts'
 import {
   type GithubReview,
@@ -95,6 +95,8 @@ registerHandler('pull_request', (payload) => {
 
   if (action === 'opened' || action === 'reopened') {
     Entry.insert.PR_OPENED(relations)
+    // Its card on the board, in Review (§6.7)
+    cardForPullRequest(pullRequestId, userId ?? null)
   } else if (action === 'closed' && pull.merged_at) {
     // A proof: Open Source when the author does not own the project,
     // Project Building on their own projects (§8.1); its fields are frozen
