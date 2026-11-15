@@ -1,20 +1,91 @@
 import { useState } from 'preact/hooks'
+import { signal } from '@preact/signals'
+import {
+  profileAccents,
+  profileThemes,
+} from '/web/fixtures/profile-settings.ts'
 import { A } from '/web/ui/link.tsx'
 import { Copy, Download } from '/web/assets/icons.tsx'
 import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
 import { language, t } from '/web/lib/language.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
-import { Button } from '/web/ui/button.tsx'
+import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { notify } from '/web/ui/toast.tsx'
 
-/** Address of a profile, the only one it has (§9) */
-export const profileUrl = (login: Login) => `${location.origin}/@${login}`
+/**
+ * The style of the card being shared (§9.2): a theme and an accent, or
+ * none for those of the profile. It travels in the shared link, so the
+ * networks show the card chosen (api/og.ts)
+ */
+const style = signal<{ theme?: string; accent?: string }>({})
+
+const styleParams = () => {
+  const params = new URLSearchParams()
+  if (style.value.theme) params.set('theme', style.value.theme)
+  if (style.value.accent) params.set('accent', style.value.accent)
+  return params
+}
+
+/** Address of a profile, the only one it has (§9), with the card chosen */
+export const profileUrl = (login: Login) => {
+  const params = styleParams()
+  return `${location.origin}/@${login}${params.size ? `?${params}` : ''}`
+}
 
 /** The Share Card the server draws, the og:image of the profile (§17.2) */
-export const cardUrl = (login: Login) =>
-  `api/user/card?login=${encodeURIComponent(login)}`
+export const cardUrl = (login: Login) => {
+  const params = styleParams()
+  return `api/user/card?login=${encodeURIComponent(login)}${
+    params.size ? `&${params}` : ''
+  }`
+}
+
+/** The theme and the accent of the card, as on the profile (§9.2) */
+const StylePicker = () => (
+  <div class='flex flex-col gap-3'>
+    <div class='flex flex-wrap items-center gap-2'>
+      <span class='w-16 text-[13px] text-ink-muted'>Thème</span>
+      <OptionButton
+        pressed={!style.value.theme}
+        onClick={() => style.value = { ...style.peek(), theme: undefined }}
+      >
+        Celui du profil
+      </OptionButton>
+      {profileThemes.map(([key, label]) => (
+        <OptionButton
+          key={key}
+          pressed={style.value.theme === key}
+          onClick={() => style.value = { ...style.peek(), theme: key }}
+        >
+          {label}
+        </OptionButton>
+      ))}
+    </div>
+    <div class='flex flex-wrap items-center gap-2'>
+      <span class='w-16 text-[13px] text-ink-muted'>Accent</span>
+      <OptionButton
+        pressed={!style.value.accent}
+        onClick={() => style.value = { ...style.peek(), accent: undefined }}
+      >
+        Celui du profil
+      </OptionButton>
+      {profileAccents.map(([key, label]) => (
+        <OptionButton
+          key={key}
+          pressed={style.value.accent === key}
+          onClick={() => style.value = { ...style.peek(), accent: key }}
+          data-ptheme='minimal'
+          data-paccent={key}
+        >
+          <span class='size-3 rounded-full bg-indigo' />
+          {label}
+        </OptionButton>
+      ))}
+    </div>
+  </div>
+)
 
 const shareLinks = (login: Login) => {
   const link = encodeURIComponent(profileUrl(login))
@@ -187,7 +258,8 @@ const LinkPreview = ({ login }: { login: Login }) => {
 export const ShareDialog = ({ login }: { login: Login }) => (
   <Dialog id='share' title='Carte de partage' width={720}>
     <div class='flex flex-col gap-[18px] px-6 pt-5 pb-6'>
-      <Card login={login} />
+      <Card key={cardUrl(login)} login={login} />
+      <StylePicker />
       <div class='flex flex-wrap gap-3 pb-1'>
         {shareLinks(login).map(([network, href]) => (
           <a

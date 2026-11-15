@@ -1833,3 +1833,10 @@ Les candidatures d'un vrai projet ne se traitaient que depuis la notification : 
 
 - **Livrable** : `api/join.ts`, `api/contributors.ts`, `api/contributors_test.ts`, `api/join_test.ts`, `api/import.ts`, `api/sync.ts`, `api/projects.ts`, `api/routes.ts`, `web/lib/join-requests.ts`, `web/pages/project/join-requests.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/project/team-tab.tsx` ; §6.3, §6.6
 - **Par** : @Mirak29
+
+### 2026-11-15 · Share Card : photo, badges, et le style choisi au partage
+
+La carte d'un profil montre la photo GitHub du développeur dans un anneau de son accent (lue par le serveur, depuis les avatars de GitHub seulement, 4 s et 2 Mo au plus ; sinon les initiales) et ses badges débloqués, du plus haut niveau, dans la couleur de leur métal (Bronze, Argent, Or, Platine). Elle prend le thème et l'accent du profil (Minimal, Clair, Sombre, Terminal, Cyber ; Indigo, Vert, Ambre, Corail), avec les couleurs mêmes de l'app ; dans la fenêtre de partage, on en choisit d'autres, la carte se redessine, et le choix voyage dans le lien (`?theme=&accent=`) : LinkedIn ou WhatsApp montrent la carte choisie. Une valeur inconnue n'est jamais dessinée ni recopiée dans la page.
+
+- **Livrable** : `api/share-card.ts`, `api/og.ts`, `api/routes.ts`, `api/share_card_style_test.ts`, `web/pages/profile/share-dialog.tsx` ; §9.2, §17.2
+- **Par** : @Mirak29

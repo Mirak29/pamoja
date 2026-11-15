@@ -692,12 +692,18 @@ const defs = {
 
   // The Share Cards (§17.2): open to anyone, the crawlers have no session
   'GET/api/user/card': route({
-    fn: (ctx, { login }) =>
+    fn: (ctx, { login, theme, accent }) =>
       cardResponse(
-        profileCardData(login),
+        profileCardData(login, { theme, accent }),
         ctx.req.headers.get('if-none-match'),
       ),
-    input: OBJ({ login: STR('Login of the developer') }),
+    input: OBJ({
+      login: STR('Login of the developer'),
+      theme: optional(
+        STR('A profile theme (§9.2); the profile theme by default'),
+      ),
+      accent: optional(STR('An accent (§9.2); the profile accent by default')),
+    }),
     description: 'The Share Card of a profile: a PNG of 1200 × 630 (§17.2)',
   }),
 

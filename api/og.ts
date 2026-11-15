@@ -2,7 +2,9 @@ import { sql } from '@01edu/db'
 import { notSuspended } from '/api/revoked.ts'
 import { APP_ENV } from '/api/lib/env.ts'
 import {
+  CARD_ACCENTS,
   CARD_HEIGHT,
+  CARD_THEMES,
   CARD_WIDTH,
   cut,
   profileCardData,
@@ -70,7 +72,23 @@ const remembered = <T>(key: string, read: () => T): T => {
 /** Forgets the previews kept: a test that changes a profile reads it again */
 export const forgetPreviews = () => kept.clear()
 
-export const previewOf = (pathname: string, origin: string): Preview => {
+// The style of a shared card (§9.2): ?theme=&accent= on the profile link,
+// carried to its image, if they are known ones
+const styleOf = (search: string) => {
+  const params = new URLSearchParams(search)
+  const style = new URLSearchParams()
+  const theme = params.get('theme') ?? ''
+  const accent = params.get('accent') ?? ''
+  if (CARD_THEMES.includes(theme)) style.set('theme', theme)
+  if (CARD_ACCENTS.includes(accent)) style.set('accent', accent)
+  return style.size ? `&${style}` : ''
+}
+
+export const previewOf = (
+  pathname: string,
+  origin: string,
+  search = '',
+): Preview => {
   const url = `${origin}${pathname}`
   const profile = pathname.match(/^\/@([A-Za-z0-9-]{1,39})\/?$/)
   if (profile) {
@@ -89,7 +107,7 @@ export const previewOf = (pathname: string, origin: string): Preview => {
         ),
         image: `${origin}/api/user/card?login=${
           encodeURIComponent(card.login)
-        }`,
+        }${styleOf(search)}`,
         url,
       }
     }
@@ -144,10 +162,10 @@ export const tagsOf = (preview: Preview) => {
 
 /** The page with the preview of its path */
 export const pageWithPreview = (html: string, req: Request) => {
-  const { pathname } = new URL(req.url)
+  const { pathname, search } = new URL(req.url)
   return html.replace(
     /<title>[^<]*<\/title>/,
-    tagsOf(previewOf(pathname, originOf(req))),
+    tagsOf(previewOf(pathname, originOf(req), search)),
   )
 }
 
