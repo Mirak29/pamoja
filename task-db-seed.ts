@@ -32,3 +32,6 @@ const counts = seed(parseGithubIds(Deno.env.get('SEED_GITHUB_IDS')))
 console.log(
   `Seed terminé : ${counts.developers} développeurs, ${counts.communities} communautés, ${counts.projects} projets, ${counts.reviews} reviews (source = demo).`,
 )
+// The modules of the API start their timers on import: without this the
+// process, and `docker compose run seed`, would never end
+Deno.exit(0)

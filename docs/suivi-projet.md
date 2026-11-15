@@ -1781,3 +1781,12 @@ Abandonnée : figures décoratives qui ne disaient rien du produit. Le système 
 ### 2026-10-08 · PAM-304 · Developer Passport
 
 Fusionnée dans PAM-301 : le passeport devient la vue publique du profil, à la même adresse `/@login`.
+
+### 2026-11-15 · README et vitrine vidéo
+
+Le dépôt a un README professionnel, en français par défaut et en anglais. Il présente le produit, renvoie vers les fichiers de référence, et explique trois façons de lancer l'app sans GitHub App : l'image publiée, l'image construite depuis le clone, et Deno. Les trois méthodes ont été vérifiées sur un clone neuf. L'aperçu vidéo est du code réutilisable (`docs/vitrine/`) : capture des écrans, scène animée, rendu image par image en MP4 et GIF.
+
+- **Corrigé au passage** : `deno task seed` et `pamoja seed` ne rendaient jamais la main, à cause des minuteurs des modules de l'API ; le script termine maintenant le processus.
+- **Nettoyage** : `docs/reste-a-faire.md` (point d'étape du 13 novembre) retiré.
+- **Livrable** : `README.md`, `README.en.md`, `docs/vitrine/`, `task-db-seed.ts`, `.gitignore`
+- **Par** : @Mirak29

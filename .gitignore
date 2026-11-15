@@ -25,3 +25,7 @@ AGENTS.md
 # logs
 .logs
 *.log
+
+# preview video drafts (docs/vitrine)
+docs/vitrine/sheet.png
+docs/vitrine/draft.mp4

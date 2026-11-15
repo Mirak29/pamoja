@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Pamoja — aperçu</title>
+<!--
+  The preview video of the README (docs/vitrine/README.md). Every frame is a
+  pure function of time: window.renderAt(seconds). Opened in a browser, it
+  plays in a loop; render.ts draws it frame by frame into an MP4.
+  The screens come from capture.ts (./screens/).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500&family=Instrument+Serif:ital@1&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F6F8;
+    --card: #FFFFFF;
+    --ink: #1D1D25;
+    --muted: #5E5E6B;
+    --line: #E0E0E6;
+    --indigo: #3340B8;
+    --indigo-soft: #E8EAFB;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); font-family: 'IBM Plex Sans', sans-serif; color: var(--ink); }
+  .glow { position: absolute; width: 900px; height: 900px; border-radius: 50%; filter: blur(140px); opacity: .55; }
+  .glow.a { background: #C9CEF7; left: -380px; bottom: -520px; }
+  .glow.b { background: #DCDFFA; right: -360px; top: -560px; }
+  .world { position: absolute; inset: 0; perspective: 2200px; perspective-origin: 50% 20%; }
+  .plane { position: absolute; left: 50%; top: 0; transform-style: preserve-3d; transform-origin: 50% 0; will-change: transform, opacity; }
+  .page { position: absolute; top: 0; width: 1240px; border-radius: 18px; overflow: hidden; background: var(--card); box-shadow: 0 2px 0 var(--line), 0 60px 120px -30px rgba(29,29,37,.28), 0 0 0 1px rgba(29,29,37,.06); }
+  .page img { display: block; width: 100%; }
+  .fog { position: absolute; left: 0; right: 0; top: 0; height: 520px; background: linear-gradient(var(--bg) 18%, rgba(246,246,248,0)); pointer-events: none; }
+  .fog.bottom { top: auto; bottom: 0; height: 160px; background: linear-gradient(rgba(246,246,248,0), var(--bg)); }
+  .caption { position: absolute; left: 0; right: 0; top: 92px; text-align: center; will-change: transform, opacity; }
+  .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: .18em; text-transform: uppercase; color: var(--indigo); }
+  .title { margin-top: 18px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 64px; letter-spacing: -.02em; line-height: 1.05; }
+  .title em { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--indigo); letter-spacing: 0; }
+  .float { position: absolute; border-radius: 16px; overflow: hidden; box-shadow: 0 40px 80px -20px rgba(29,29,37,.35), 0 0 0 1px rgba(29,29,37,.08); will-change: transform, opacity; }
+  .float img { display: block; width: 100%; }
+  #end { position: absolute; inset: 0; will-change: opacity; }
+  .chip { position: absolute; left: 50%; top: 150px; display: flex; align-items: center; gap: 12px; padding: 10px 20px 10px 12px; border-radius: 999px; background: var(--card); box-shadow: 0 0 0 1px var(--line), 0 10px 30px -10px rgba(29,29,37,.2); font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 30px; }
+  .chip svg { width: 40px; height: 40px; }
+  .headline { position: absolute; left: 0; right: 0; top: 250px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 104px; letter-spacing: -.03em; }
+  .serif { position: absolute; left: 0; right: 0; top: 378px; text-align: center; font-family: 'Instrument Serif', serif; font-style: italic; font-size: 76px; color: var(--muted); }
+  .url { position: absolute; left: 0; right: 0; top: 490px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; color: var(--indigo); }
+  .frame { position: absolute; left: 50%; top: 580px; width: 1180px; height: 640px; margin-left: -590px; border-radius: 22px 22px 0 0; overflow: hidden; background: var(--card); box-shadow: 0 0 0 1px var(--line), 0 50px 100px -30px rgba(29,29,37,.3); }
+  .frame img { width: 100%; display: block; }
+  .tile { position: absolute; width: 104px; height: 104px; border-radius: 26px; background: var(--card); display: grid; place-items: center; box-shadow: 0 0 0 1px var(--line), 0 24px 50px -16px rgba(29,29,37,.3); }
+  .tile svg { width: 54px; height: 54px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+  <div class="world"><div class="plane" id="plane"></div></div>
+  <div class="fog"></div>
+  <div class="fog bottom"></div>
+  <img class="float" id="card" alt="" style="width:760px;opacity:0">
+  <div class="caption" id="caption"><div class="eyebrow" id="eyebrow"></div><div class="title" id="title"></div></div>
+  <div id="end">
+    <div class="frame" id="frame"><img alt=""></div>
+    <div class="tile" id="tile-a"><svg viewBox="0 0 24 24" fill="none" stroke="#3340B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v4a5.5 5.5 0 0 0 5.5 5.5h4"/><path d="M13 15.5 15.5 18 13 20.5"/></svg></div>
+    <div class="tile" id="tile-b"><svg viewBox="0 0 24 24" fill="none" stroke="#3340B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.3 7.5 9.5 4.3-1.2 7.5-4.9 7.5-9.5V6Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></div>
+    <div class="chip" id="chip"><svg viewBox="0 0 64 64"><line x1="22" y1="12" x2="22" y2="54" stroke="#1D1D25" stroke-width="4" stroke-linecap="round"/><path d="M22 12 C 51 12, 51 38, 22 38" fill="none" stroke="#3340B8" stroke-width="4" stroke-linecap="round"/><circle cx="22" cy="12" r="5.5" fill="#3340B8"/><circle cx="22" cy="38" r="5.5" fill="#3340B8"/></svg>Pamoja</div>
+    <div class="headline" id="headline">Your work is your profile.</div>
+    <div class="serif" id="serif">des preuves, pas des promesses</div>
+    <div class="url" id="url">pamoja-tech.duckdns.org</div>
+  </div>
+</div>
+<script>
+// ---- The style, as numbers -------------------------------------------------
+const FPS = 30
+// One shot per screen: [file, eyebrow, title, start, end]; the title may hold
+// one <em> for the serif accent
+const SHOTS = [
+  ['landing', '01 · Pamoja', 'Les développeurs africains, <em>autour de leur vrai travail</em>', 0, 3.4],
+  ['feed', '02 · Le fil', 'Des PRs, des reviews, <em>des projets</em>', 3.4, 6.4],
+  ['project', '03 · Le projet', 'Chaque projet, <em>relié à GitHub</em>', 6.4, 9.4],
+  ['help', "04 · L'aide", 'Une demande précise, <em>aux bons développeurs</em>', 9.4, 12.6],
+  ['board', '05 · Le board', 'Les cartes suivent <em>les PRs</em>', 12.6, 15.4],
+  ['profile', '06 · La preuve', "L'aide vérifiée <em>devient ta réputation</em>", 15.4, 18.6],
+]
+const OVERVIEW = [18.6, 21.2] // every screen at once
+const END = [21.2, 25] // the end card, held
+const DURATION = END[1]
+const TILT = { x: 44, z: -8 } // degrees: the plane leans away, turned a little
+const PAGE_W = 1240
+const CROSS = 0.45 // seconds of cross-fade between shots
+
+// ---- Easing ----------------------------------------------------------------
+const bezier = (x1, y1, x2, y2) => (t) => {
+  // Newton on x, then y: cubic-bezier as in CSS
+  let u = t
+  for (let i = 0; i < 6; i++) {
+    const x = 3 * x1 * u * (1 - u) ** 2 + 3 * x2 * u ** 2 * (1 - u) + u ** 3 - t
+    const dx = 3 * x1 * (1 - u) ** 2 + 6 * (x2 - x1) * u * (1 - u) + 3 * (1 - x2) * u ** 2
+    if (Math.abs(dx) < 1e-6) break
+    u = Math.min(1, Math.max(0, u - x / dx))
+  }
+  return 3 * y1 * u * (1 - u) ** 2 + 3 * y2 * u ** 2 * (1 - u) + u ** 3
+}
+const out = bezier(0.22, 1, 0.36, 1) // fast start, long settle
+const inOut = bezier(0.65, 0, 0.35, 1)
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v))
+const span = (t, a, b) => clamp((t - a) / (b - a))
+const mix = (a, b, p) => a + (b - a) * p
+
+// ---- The pages -------------------------------------------------------------
+const plane = document.getElementById('plane')
+const names = [...new Set([...SHOTS.map((s) => s[0]), 'roadmap', 'pulse', 'explore'])]
+const pages = {}
+for (const name of names) {
+  const page = document.createElement('div')
+  page.className = 'page'
+  const img = document.createElement('img')
+  img.src = `screens/${name}.png`
+  page.append(img)
+  plane.append(page)
+  pages[name] = page
+}
+document.querySelector('#frame img').src = 'screens/landing.png'
+document.getElementById('card').src = 'screens/share-card.png'
+const heightOf = (name) => {
+  const img = pages[name].firstChild
+  return img.naturalHeight ? img.naturalHeight * PAGE_W / img.naturalWidth : 2000
+}
+
+const $ = (id) => document.getElementById(id)
+const set = (el, transform, opacity) => {
+  el.style.transform = transform
+  el.style.opacity = opacity
+}
+
+// ---- One frame -------------------------------------------------------------
+window.renderAt = (t) => {
+  t = clamp(t, 0, DURATION - 1e-6)
+  const overview = span(t, OVERVIEW[0], OVERVIEW[1])
+  const ending = span(t, END[0], END[0] + 0.9)
+
+  // Shots: the active page glides down. The cut dips to the background: the
+  // page leaves before the next arrives, two pages never show through
+  let caption = null
+  for (const name of names) pages[name].style.opacity = 0
+  if (t < OVERVIEW[0]) {
+    for (const [name, eyebrow, title, a, b] of SHOTS) {
+      if (t < a - CROSS || t > b + CROSS) continue
+      const fadeIn = a === 0 ? 1 : out(span(t, a, a + CROSS))
+      const fadeOut = b === OVERVIEW[0] ? 1 : 1 - inOut(span(t, b - CROSS * 0.6, b))
+      const opacity = Math.min(fadeIn, fadeOut)
+      const p = span(t, a - CROSS, b + CROSS)
+      const travel = Math.min(heightOf(name) - 900, 1500)
+      const scroll = mix(0, travel, inOut(p))
+      const rise = (1 - fadeIn) * 220
+      set(
+        pages[name],
+        `translate3d(${-PAGE_W / 2}px, ${340 + rise - scroll}px, 0)`,
+        opacity,
+      )
+      if (t >= a && t < b) caption = { eyebrow, title, a, b }
+    }
+    plane.style.transform = `translateY(40px) rotateX(${TILT.x}deg) rotateZ(${TILT.z}deg) scale(1.18)`
+  } else {
+    // Overview: the screens side by side, the camera pulls back and rises
+    const order = ['feed', 'project', 'help', 'board', 'roadmap', 'pulse', 'profile']
+    const e = inOut(overview)
+    const gap = 80
+    order.forEach((name, i) => {
+      const x = (i - (order.length - 1) / 2) * (PAGE_W + gap) - PAGE_W / 2
+      const appear = out(span(t, OVERVIEW[0] + i * 0.06, OVERVIEW[0] + 0.5 + i * 0.06))
+      set(pages[name], `translate3d(${x}px, ${mix(700, 200, e) + (1 - appear) * 160}px, 0)`, appear * (1 - ending))
+    })
+    const scale = mix(0.7, 0.36, e)
+    plane.style.transform =
+      `translateY(${mix(-60, 40, e)}px) rotateX(${mix(TILT.x, 34, e)}deg) rotateZ(${mix(TILT.z, -4, e)}deg) scale(${scale})`
+  }
+
+  // The caption: rises in, leaves before the cut
+  const cap = $('caption')
+  if (caption) {
+    if ($('title').dataset.at !== String(caption.a)) {
+      $('eyebrow').textContent = caption.eyebrow
+      $('title').innerHTML = caption.title
+      $('title').dataset.at = String(caption.a)
+    }
+    const inP = out(span(t, caption.a + 0.15, caption.a + 0.75))
+    const outP = inOut(span(t, caption.b - 0.35, caption.b))
+    set(cap, `translateY(${(1 - inP) * 30 - outP * 20}px)`, inP * (1 - outP))
+  } else set(cap, 'none', 0)
+
+  // The Share Card lands on the profile shot
+  const [, , , pa, pb] = SHOTS[5]
+  const cardIn = out(span(t, pa + 1.0, pa + 1.8))
+  const cardOut = inOut(span(t, pb - 0.3, pb + 0.2))
+  set(
+    $('card'),
+    `translate(${1080 + (1 - cardIn) * 120}px, ${560 + (1 - cardIn) * 60}px) rotate(${mix(6, 3, cardIn)}deg)`,
+    cardIn * (1 - cardOut),
+  )
+
+  // The end card
+  const end = $('end')
+  end.style.opacity = ending
+  const step = (delay, dur = 0.8) => out(span(t, END[0] + delay, END[0] + delay + dur))
+  const chip = step(0.1)
+  set($('chip'), `translate(-50%, ${(1 - chip) * 24}px)`, chip)
+  const head = step(0.3)
+  set($('headline'), `translateY(${(1 - head) * 36}px)`, head)
+  const serif = step(0.65)
+  set($('serif'), `translateY(${(1 - serif) * 28}px)`, serif)
+  const url = step(0.95)
+  set($('url'), 'none', url)
+  const frame = step(0.4, 1.1)
+  set($('frame'), `translateY(${(1 - frame) * 260}px)`, frame)
+  const ta = step(1.0)
+  set($('tile-a'), `translate(${380 - (1 - ta) * 40}px, ${640 + (1 - ta) * 30}px) rotate(-8deg)`, ta)
+  const tb = step(1.15)
+  set($('tile-b'), `translate(${1436 + (1 - tb) * 40}px, ${620 + (1 - tb) * 30}px) rotate(8deg)`, tb)
+}
+
+window.DURATION = DURATION
+window.FPS = FPS
+window.ready = Promise.all([
+  document.fonts.ready,
+  ...[...document.images].map((img) => img.decode().catch(() => {})),
+]).then(() => document.fonts.ready)
+
+// Preview in a browser: plays in a loop (render.ts drives renderAt instead)
+if (!new URLSearchParams(location.search).has('render')) {
+  window.ready.then(() => {
+    const start = performance.now()
+    const loop = () => {
+      window.renderAt(((performance.now() - start) / 1000) % DURATION)
+      requestAnimationFrame(loop)
+    }
+    loop()
+  })
+}
+</script>
+</body>
+</html>
