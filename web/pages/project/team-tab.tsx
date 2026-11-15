@@ -1,26 +1,17 @@
+import { useEffect } from 'preact/hooks'
 import { Batched } from '/web/ui/infinite-list.tsx'
-import { signal } from '@preact/signals'
 import { A } from '/web/ui/link.tsx'
-import { Check, Send } from '/web/assets/icons.tsx'
+import { Check } from '/web/assets/icons.tsx'
 import { activityChanged, logActivity } from '/web/fixtures/activity.ts'
 import {
   applications,
   applicationsChanged,
   decideApplication,
 } from '/web/fixtures/applications.ts'
-import { pushNotification } from '/web/fixtures/notifications.ts'
-import {
-  type Login,
-  me,
-  people,
-  type Person,
-  personOf,
-  placeOf,
-} from '/web/fixtures/people.ts'
-import { confirmedHelpsOf } from '/web/fixtures/reputation.ts'
+import { type Login, me, personOf, placeOf } from '/web/fixtures/people.ts'
+import { helpers, inviteHelper, loadHelpers } from '/web/lib/project-helpers.ts'
 import { counted } from '/web/lib/plural.ts'
 import {
-  needSkills,
   type Project,
   type ProjectRole,
   type ProjectSlug,
@@ -30,7 +21,6 @@ import { Avatar } from '/web/ui/avatar.tsx'
 import { SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { notify } from '/web/ui/toast.tsx'
 import { t } from '/web/lib/language.ts'
 import { ScrollFrame } from '/web/ui/scroll-frame.tsx'
 
@@ -41,11 +31,6 @@ const roles: [ProjectRole, string][] = [
   ['Reviewer', 'Relit les PRs et reçoit les demandes de review.'],
   ['Observateur', 'Lit les canaux sans écrire.'],
 ]
-
-// People invited to a project during the session, by project and login
-const invited = signal<Record<string, string[]>>({})
-
-const firstName = (login: Login) => personOf(login).name.split(' ')[0]
 
 const SectionHeader = (
   { label, title }: { label: string; title: string },
@@ -158,114 +143,81 @@ const Members = (
   )
 }
 
-const invite = (project: Project, login: Login, need: string) => {
-  invited.value = {
-    ...invited.value,
-    [project.slug]: [...(invited.value[project.slug] ?? []), login],
-  }
-  pushNotification({
-    to: login,
-    category: 'projects',
-    kind: 'promising',
-    title: t`${
-      firstName(me.login)
-    } pense que tu pourrais aider ${project.name}`,
-    body:
-      t`Besoin : ${need}. Tu peux proposer ton aide ou rejoindre le projet.`,
-    href: `project/${project.slug}`,
-  })
-  notify({
-    title: 'Invitation envoyée',
-    body: t`${personOf(login).name} recevra une notification.`,
-    icon: Send,
-    tone: 'verified',
-  })
-}
-
-/** For each need, the three developers whose skills match it best */
-const Helpers = (
-  { project, canManage, invitedLogins }: {
-    project: Project
-    canManage: boolean
-    invitedLogins: string[]
-  },
-) => {
-  const isMember = (login: string) =>
-    project.members.some((m) => m.login === login)
+/**
+ * For each open need, who could help: the matching of the server (§6.6),
+ * among every developer, members aside. A manager invites one
+ */
+const Helpers = ({ project }: { project: Project }) => {
+  useEffect(() => {
+    loadHelpers(project.slug)
+  }, [project.slug])
+  const data = helpers.value[project.slug]
+  if (!data) return null
   return (
     <section class='slab flex flex-col gap-1.5 p-[22px]'>
       <Eyebrow accent>Ils pourraient aider</Eyebrow>
       <span class='text-[13px] leading-5 text-ink-muted'>
-        Pour chaque besoin du projet, les développeurs dont les skills
-        correspondent.
+        Pour chaque besoin du projet, les développeurs que le matching propose :
+        leurs skills, leurs aides confirmées, leur disponibilité.
       </span>
-      {project.needs.map((need) => {
-        const wanted = needSkills[need] ?? project.stack
-        const candidates = Object.values(people as Record<Login, Person>)
-          .filter((p) => !isMember(p.login) && p.login !== me.login)
-          .map((p) => ({
-            person: p,
-            hits: wanted.filter((skill) => p.skills.includes(skill)),
-          }))
-          .filter((c) => c.hits.length)
-          .sort((a, b) =>
-            b.hits.length - a.hits.length ||
-            confirmedHelpsOf(b.person.login as Login) -
-              confirmedHelpsOf(a.person.login as Login)
-          )
-          .slice(0, 3)
-        return (
-          <div key={need} class='flex flex-col pt-4'>
-            <span class='flex items-center gap-2.5 pb-1.5 font-display text-[15px] leading-[22px] font-semibold'>
-              <span aria-hidden='true' class='diamond size-2 bg-indigo' />
-              {need}
+      {data.needs.map((need) => (
+        <div key={need.title} class='flex flex-col pt-4'>
+          <span class='flex items-center gap-2.5 pb-1.5 font-display text-[15px] leading-[22px] font-semibold'>
+            <span aria-hidden='true' class='diamond size-2 bg-indigo' />
+            {need.title}
+          </span>
+          {need.helpers.map((helper) => {
+            const login = helper.login as Login
+            return (
+              <div
+                key={login}
+                class='flex flex-wrap items-center gap-3 border-t border-line py-2.5'
+              >
+                <PersonLink
+                  login={login}
+                  size={30}
+                  detail={[
+                    helper.skills.join(', '),
+                    counted(
+                      helper.confirmed,
+                      'aide confirmée',
+                      'aides confirmées',
+                    ),
+                    helper.city,
+                  ].filter(Boolean).join(' · ')}
+                />
+                {data.canInvite && !helper.invited && (
+                  <Button
+                    variant='secondary'
+                    size={36}
+                    aria-label={t`Inviter ${helper.name} pour ${need.title}`}
+                    onClick={() =>
+                      inviteHelper(project.slug, helper, need.title)}
+                  >
+                    Inviter
+                  </Button>
+                )}
+                {helper.invited && (
+                  <span class='inline-flex items-center gap-1.5 text-[13px] font-semibold text-verified'>
+                    <Check class='size-3.5' />
+                    Invité
+                  </span>
+                )}
+              </div>
+            )
+          })}
+          {!need.helpers.length && (
+            <span class='border-t border-line py-2 text-[13px] text-ink-muted'>
+              Personne ne correspond encore à ce besoin.
             </span>
-            {candidates.map(({ person, hits }) => {
-              const login = person.login as Login
-              const done = invitedLogins.includes(login)
-              return (
-                <div
-                  key={login}
-                  class='flex flex-wrap items-center gap-3 border-t border-line py-2.5'
-                >
-                  <PersonLink
-                    login={login}
-                    size={30}
-                    detail={`${hits.join(', ')} · ${
-                      counted(
-                        confirmedHelpsOf(person.login as Login),
-                        'aide confirmée',
-                        'aides confirmées',
-                      )
-                    } · ${person.city}`}
-                  />
-                  {canManage && !done && (
-                    <Button
-                      variant='secondary'
-                      size={32}
-                      aria-label={t`Inviter ${person.name} pour ${need}`}
-                      onClick={() => invite(project, login, need)}
-                    >
-                      Inviter
-                    </Button>
-                  )}
-                  {done && (
-                    <span class='inline-flex items-center gap-1.5 text-[13px] font-semibold text-verified'>
-                      <Check class='size-3.5' />
-                      Invité
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-            {!candidates.length && (
-              <span class='border-t border-line py-2 text-[13px] text-ink-muted'>
-                Personne ne correspond encore à ce besoin.
-              </span>
-            )}
-          </div>
-        )
-      })}
+          )}
+        </div>
+      ))}
+      {!data.needs.length && (
+        <span class='pt-2 text-[13px] text-ink-muted'>
+          Aucun besoin ouvert pour l’instant.
+        </span>
+      )}
     </section>
   )
 }
@@ -408,11 +360,7 @@ export const TeamTab = ({ project }: { project: Project }) => {
     <div class='mr-2 grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
       <div class='flex min-w-0 flex-col gap-8'>
         <Members project={project} isOwner={isOwner} />
-        <Helpers
-          project={project}
-          canManage={canManage}
-          invitedLogins={invited.value[project.slug] ?? []}
-        />
+        <Helpers project={project} />
       </div>
       <div class='flex min-w-0 flex-col gap-8'>
         {canManage && <Applications project={project} />}

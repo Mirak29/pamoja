@@ -36,7 +36,10 @@ const setUser = (user: User) => {
     order: user.sectionOrder,
     featured: user.featured,
   })
-  settings.matching = matchingModes[user.matchingMode]
+  // The digest is hidden until it exists (PAM-509): it reads as instant
+  settings.matching = user.matchingMode === 'off'
+    ? matchingModes.off
+    : matchingModes.instant
   // The matching preferences saved on the server (§7.4)
   settings.minScore = user.minScore
   settings.onlySkills = user.onlySkills

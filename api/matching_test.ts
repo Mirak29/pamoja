@@ -376,3 +376,17 @@ Deno.test('matching: the filters are read back and checked', async () => {
   const older = await call('/api/notification/preferences', cookie, base)
   assertEquals(older.json.onlySkills, [])
 })
+
+Deno.test('matching: a developer once on the digest is told at once (PAM-509)', () => {
+  restore()
+  const abdou = dev('abdou', ['Go'])
+  dev('later', ['Go', 'SQLite'], { mode: 'digest', minScore: 0 })
+  const ranked = rank({
+    authorId: abdou,
+    category: 'code_review',
+    skills: skillIdsOf(['Go', 'SQLite']),
+    projectId: null,
+  })
+  // No digest is sent yet: never left without anything
+  assertEquals(ranked.map((c) => [c.login, c.instant]), [['later', true]])
+})

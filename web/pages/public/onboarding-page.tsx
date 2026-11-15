@@ -6,7 +6,6 @@ import {
   FolderGit2,
   Github,
   Sparkles,
-  Sun,
   Zap,
 } from '/web/assets/icons.tsx'
 import {
@@ -38,12 +37,6 @@ const steps = ['Profil', 'Skills', 'Intentions', 'Matching', 'Premier projet']
 
 const matchingOptions: [MatchingMode, string, IconComponent][] = [
   ['Instantané', 'Une notification dès qu’une demande te correspond.', Zap],
-  // The e-mail itself comes with PAM-509 (QA-31)
-  [
-    'Résumé quotidien',
-    'Un récapitulatif chaque matin à 8 h, par e-mail (bientôt).',
-    Sun,
-  ],
   ['Désactivé', 'Tu cherches toi-même dans Aide et Explorer.', BellOff],
 ]
 

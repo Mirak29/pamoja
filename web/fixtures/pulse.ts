@@ -2,11 +2,11 @@ import { issues } from '/web/fixtures/issues.ts'
 import type { Project } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { counted } from '/web/lib/plural.ts'
-import { livePulses } from '/web/lib/pulse.ts'
+import { liveDnas, livePulses } from '/web/lib/pulse.ts'
 
 // The Pulse of a project: the counts of GET/api/project/pulse for a project
-// the server knows (PAM-306), the fixtures for the demo projects; health
-// and story stay computed here until PAM-308
+// the server knows (PAM-306), and its DNA, Health and Story from
+// GET/api/project/dna (PAM-308); the fixtures for the demo projects
 
 type Weekly = {
   merged: number
@@ -92,6 +92,7 @@ export type HealthIndicator = {
 
 export const projectPulse = (project: Project) => {
   const live = project.demo ? undefined : livePulses.value[project.slug]
+  const dna = project.demo ? undefined : liveDnas.value[project.slug]
   const open = pullRequests.filter((pr) =>
     pr.project === project.slug && pr.state === 'open'
   )
@@ -195,11 +196,14 @@ export const projectPulse = (project: Project) => {
       { label: 'Releases', value: week.releases },
     ],
     blockers,
-    health,
+    // Measured by the server on the repo for a real project (§6.5)
+    health: dna?.hasRepository ? dna.health as HealthIndicator[] : health,
     // Read from GitHub only: skills are not languages
     languages: languages[project.slug] ?? project.languages ?? [],
-    domains: domains[project.slug] ?? [],
-    story: stories[project.slug] ?? [],
+    domains: dna ? dna.domains : domains[project.slug] ?? [],
+    story: dna
+      ? dna.story.map((m) => [m.when, m.text] as [string, string])
+      : stories[project.slug] ?? [],
   }
 }
 

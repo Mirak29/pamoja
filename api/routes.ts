@@ -146,6 +146,8 @@ import {
   listBoard,
   moveTask,
 } from '/api/board.ts'
+import { inviteHelper, listProjectHelpers } from '/api/project-helpers.ts'
+import { projectDna } from '/api/project-dna.ts'
 import {
   attachTask,
   createMilestone,
@@ -1891,6 +1893,46 @@ const defs = {
     description: 'Attach a card to a milestone of the roadmap (§6.7)',
   }),
 
+  'GET/api/project/helpers': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => listProjectHelpers(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: OBJ({
+      canInvite: BOOL('True for an owner or a maintainer'),
+      needs: ARR(
+        OBJ({
+          title: STR('The open need'),
+          helpers: ARR(
+            OBJ({
+              login: STR('Login'),
+              name: STR('Name'),
+              city: STR('City, empty if none'),
+              score: NUM('Score of the matching, out of 100'),
+              skills: ARR(STR('Skill'), 'The skills of the need they hold'),
+              confirmed: NUM('Helps confirmed on these skills'),
+              invited: BOOL('Invited by the managers this month'),
+            }),
+            'Best first, three at most',
+          ),
+        }),
+        'In the order of the needs',
+      ),
+    }),
+    description: 'For each open need, who could help: the matching (§6.6)',
+  }),
+
+  'POST/api/project/invite': route({
+    authorize: editing,
+    fn: (ctx, input) => inviteHelper(ctx.session.userId, input),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      login: STR('Login of the developer invited'),
+      need: STR('Title of the open need'),
+    }),
+    output: OBJ({ invited: BOOL('True') }),
+    description: 'Invite a developer to help on a need of the project',
+  }),
+
   'GET/api/project/roadmap': route({
     authorize: withSession,
     fn: (ctx, { slug }) => listRoadmap(ctx.session.userId, slug),
@@ -2122,6 +2164,34 @@ const defs = {
       replies: ARR(channelMessage, 'The thread under the alert'),
     })),
     description: 'The alerts of #suivi and their threads (§6.8)',
+  }),
+
+  'GET/api/project/dna': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => projectDna(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: OBJ({
+      hasRepository: BOOL('False: nothing of GitHub is measured yet'),
+      health: ARR(
+        OBJ({
+          label: STR('What is measured'),
+          value: STR('Its value, — when unknown'),
+          state: STR('What it means'),
+          rule: STR('The rule applied, shown on hover'),
+          tone: STR('ok, warning, danger or unknown'),
+        }),
+        'The indicators of Health (§6.5)',
+      ),
+      domains: ARR(STR('Backend, Frontend, Testing, DevOps, Documentation')),
+      story: ARR(
+        OBJ({
+          when: STR('Month and year'),
+          text: STR('The moment'),
+        }),
+        'The marking moments, oldest first',
+      ),
+    }),
+    description: 'DNA, Health and Story of a project (§6.5)',
   }),
 
   'GET/api/project/pulse': route({

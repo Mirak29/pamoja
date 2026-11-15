@@ -22,3 +22,17 @@ export const loadPulse = (project: string) =>
     },
     () => {},
   )
+
+export type LiveDna = ApiOutput['GET/api/project/dna']
+
+/** DNA, Health and Story computed by the server (PAM-308), per slug */
+export const liveDnas = signal<Record<string, LiveDna>>({})
+
+/** Reads DNA, Health and Story of a project, each time its Pulse opens */
+export const loadDna = (slug: string) =>
+  api['GET/api/project/dna'].fetch({ slug }).then(
+    (dna) => {
+      liveDnas.value = { ...liveDnas.peek(), [slug]: dna }
+    },
+    () => {},
+  )
