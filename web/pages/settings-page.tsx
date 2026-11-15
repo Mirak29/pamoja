@@ -1,3 +1,5 @@
+import { A } from '/web/ui/link.tsx'
+import { followsProfile, setFollowsProfile } from '/web/lib/app-theme.ts'
 import { useState } from 'preact/hooks'
 import { Download, Github, Info } from '/web/assets/icons.tsx'
 import { helpTypes, matchingRequests } from '/web/fixtures/help.ts'
@@ -373,6 +375,23 @@ export const SettingsPage = () => {
             </OptionButton>
           ))}
         </div>
+        <Choices label='Le style de ton profil (thème et accent) dans toute l’app'>
+          <OptionButton
+            pressed={followsProfile.value}
+            onClick={() => setFollowsProfile(true)}
+          >
+            Celui de mon profil
+          </OptionButton>
+          <OptionButton
+            pressed={!followsProfile.value}
+            onClick={() => setFollowsProfile(false)}
+          >
+            Le style Pamoja
+          </OptionButton>
+        </Choices>
+        <A href='profile/edit' class='self-start text-[13px] font-semibold'>
+          Changer le thème de mon profil
+        </A>
       </section>
       <section class='slab mr-2 flex flex-col gap-3.5 p-[22px]'>
         <Eyebrow>Langue</Eyebrow>

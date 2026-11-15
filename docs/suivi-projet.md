@@ -1840,3 +1840,10 @@ La carte d'un profil montre la photo GitHub du développeur dans un anneau de so
 
 - **Livrable** : `api/share-card.ts`, `api/og.ts`, `api/routes.ts`, `api/share_card_style_test.ts`, `web/pages/profile/share-dialog.tsx` ; §9.2, §17.2
 - **Par** : @Mirak29
+
+### 2026-11-15 · Le thème du profil dans toute l'app
+
+Le thème et l'accent de son profil (Terminal, Cyber, Sombre… ; Vert, Ambre, Corail) habillent maintenant toute l'app pour soi, pas seulement son profil : `<body>` porte `data-ptheme` et `data-paccent`, et les variables de couleur suivent partout. Minimal Indigo étant le style de l'app, rien ne change pour un profil jamais personnalisé ; un réglage (Réglages › Thème) garde le style Pamoja sur cet appareil. Le profil d'un autre garde le sien : Minimal redéclare les couleurs claires et sombres de l'app au lieu d'en hériter, et la police à chasse fixe de Terminal ne descend plus dans un profil d'un autre thème.
+
+- **Livrable** : `web/lib/app-theme.ts`, `web/pages/settings-page.tsx`, `web/app.tsx`, `web/assets/styles/theme.css`, `task-generate-theme.ts` ; §9.2
+- **Par** : @Mirak29

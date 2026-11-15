@@ -339,6 +339,131 @@
     inset 3.46px 2px 0 0 var(--surface-200);
 }
 
+/* Minimal is the app's own look, light or dark: declared again, so a
+ * minimal profile shown inside another theme (the whole app in a profile
+ * theme, §9.2) takes the app's colours, not those around it */
+[data-ptheme='minimal'] {
+  color-scheme: light;
+  --surface-000: #f6f6f8;
+  --surface-100: #ffffff;
+  --surface-200: #eeeef2;
+  --line: #e0e0e6;
+  --line-strong: #c3c3cb;
+  --line-control: #85859a;
+  --ink: #1d1d25;
+  --ink-muted: #5d5d6b;
+  --figure-edge: #a4a4ae;
+  --side: #ececf1;
+  --indigo-side: #25308f;
+  --indigo-edge: #18206a;
+  --indigo-soft-side: #cbd0f4;
+  --scrim: rgba(29, 29, 37, 0.32);
+  --indigo: #3340b8;
+  --indigo-soft: #e8eafb;
+  --on-indigo: #ffffff;
+  --verified: #1e7a4e;
+  --verified-soft: #e3f3ea;
+  --warning: #8a5700;
+  --warning-soft: #fbf0dc;
+  --danger: #b42318;
+  --danger-soft: #fce8e6;
+  --metal-bronze: #b87648;
+  --metal-bronze-soft: #f6e7da;
+  --metal-bronze-edge: #7e4e2c;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #eef1f5;
+  --metal-silver-edge: #626b79;
+  --metal-gold: #cf9f1e;
+  --metal-gold-soft: #fbf1d2;
+  --metal-gold-edge: #8c6a0e;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #e7f2f5;
+  --metal-platinum-edge: #4e7482;
+  --pop: 0 14px 32px rgba(29, 29, 37, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) [data-ptheme='minimal'] {
+    color-scheme: dark;
+    --surface-000: #0e0e13;
+    --surface-100: #16161d;
+    --surface-200: #1f1f28;
+    --line: #2c2c37;
+    --line-strong: #4a4a58;
+    --line-control: #72728a;
+    --ink: #ededf3;
+    --ink-muted: #a2a2b2;
+    --figure-edge: #5a5a68;
+    --side: #101016;
+    --indigo-side: #5c66cf;
+    --indigo-edge: #3d4597;
+    --indigo-soft-side: #171935;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --indigo: #8c96ff;
+    --indigo-soft: #23264d;
+    --on-indigo: #0e0e13;
+    --verified: #4fc88a;
+    --verified-soft: #12301f;
+    --warning: #e9b04c;
+    --warning-soft: #33270f;
+    --danger: #ff7b6e;
+    --danger-soft: #3a1715;
+    --metal-bronze: #b5774a;
+    --metal-bronze-soft: #3a2a1e;
+    --metal-bronze-edge: #e0a97e;
+    --metal-silver: #9aa3b1;
+    --metal-silver-soft: #2a2e36;
+    --metal-silver-edge: #d3d9e2;
+    --metal-gold: #c99a1e;
+    --metal-gold-soft: #3a3218;
+    --metal-gold-edge: #f0cd66;
+    --metal-platinum: #7fa9b8;
+    --metal-platinum-soft: #22313a;
+    --metal-platinum-edge: #bfe0ea;
+    --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme='dark'] [data-ptheme='minimal'] {
+  color-scheme: dark;
+  --surface-000: #0e0e13;
+  --surface-100: #16161d;
+  --surface-200: #1f1f28;
+  --line: #2c2c37;
+  --line-strong: #4a4a58;
+  --line-control: #72728a;
+  --ink: #ededf3;
+  --ink-muted: #a2a2b2;
+  --figure-edge: #5a5a68;
+  --side: #101016;
+  --indigo-side: #5c66cf;
+  --indigo-edge: #3d4597;
+  --indigo-soft-side: #171935;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --indigo: #8c96ff;
+  --indigo-soft: #23264d;
+  --on-indigo: #0e0e13;
+  --verified: #4fc88a;
+  --verified-soft: #12301f;
+  --warning: #e9b04c;
+  --warning-soft: #33270f;
+  --danger: #ff7b6e;
+  --danger-soft: #3a1715;
+  --metal-bronze: #b5774a;
+  --metal-bronze-soft: #3a2a1e;
+  --metal-bronze-edge: #e0a97e;
+  --metal-silver: #9aa3b1;
+  --metal-silver-soft: #2a2e36;
+  --metal-silver-edge: #d3d9e2;
+  --metal-gold: #c99a1e;
+  --metal-gold-soft: #3a3218;
+  --metal-gold-edge: #f0cd66;
+  --metal-platinum: #7fa9b8;
+  --metal-platinum-soft: #22313a;
+  --metal-platinum-edge: #bfe0ea;
+  --pop: 0 14px 32px rgba(0, 0, 0, 0.6);
+}
+
 [data-ptheme='terminal'] {
   color-scheme: dark;
   --surface-000: #0a0d0b;
@@ -380,8 +505,14 @@
 }
 
 [data-ptheme='terminal'],
-[data-ptheme='terminal'] * {
+[data-ptheme='terminal'] *:not(:where([data-ptheme]:not([data-ptheme='terminal']), [data-ptheme]:not([data-ptheme='terminal']) *)) {
   font-family: var(--font-mono) !important;
+}
+
+/* Another profile theme shown inside Terminal (the whole app in a profile
+ * theme, §9.2): the app's own font again */
+[data-ptheme]:not([data-ptheme='terminal']) {
+  font-family: var(--font-sans);
 }
 
 [data-ptheme='cyber'] {

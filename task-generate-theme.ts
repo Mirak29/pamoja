@@ -97,13 +97,23 @@ const { themes, accents } = tokens.profile
 const darkThemes = themes.filter((t) => t.base === 'dark').map((t) => t.id)
 
 const profileCss = [
+  // Minimal is the app's own look, light or dark: declared again, so a
+  // minimal profile shown inside another theme (the whole app in a profile
+  // theme, §9.2) takes the app's colours, not those around it
+  `[data-ptheme='minimal'] {\n${themeVars('light')}\n}`,
+  `@media (prefers-color-scheme: dark) {\n:root:not([data-theme='light']) [data-ptheme='minimal'] {\n${
+    themeVars('dark')
+  }\n}\n}`,
+  `:root[data-theme='dark'] [data-ptheme='minimal'] {\n${themeVars('dark')}\n}`,
   ...themes.filter((t) => t.base).map((t) => {
     const selector = `[data-ptheme='${t.id}']`
     return [
       block(selector, { ...appVars(t.base!), ...t.colors })
         .replace('{\n', `{\n  color-scheme: ${t.base};\n`),
+      // Its font, never on another profile theme shown within it, which
+      // takes the app's font again
       t.font &&
-      `${selector},\n${selector} * {\n  font-family: var(--font-${t.font}) !important;\n}`,
+      `${selector},\n${selector} *:not(:where([data-ptheme]:not(${selector}), [data-ptheme]:not(${selector}) *)) {\n  font-family: var(--font-${t.font}) !important;\n}\n\n[data-ptheme]:not(${selector}) {\n  font-family: var(--font-sans);\n}`,
     ].filter(Boolean).join('\n\n')
   }),
   ...accents.filter((a) => a.colors).flatMap((a) => {

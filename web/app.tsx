@@ -12,6 +12,8 @@ import '/web/lib/notifications.ts'
 import '/web/lib/messages.ts'
 import { effect } from '@preact/signals'
 import { startPwa } from '/web/lib/pwa.ts'
+// The whole app in the theme of one's profile (§9.2)
+import '/web/lib/app-theme.ts'
 import { navigate, url } from '@01edu/signal-router'
 import { englishAddress } from '/web/lib/addresses.ts'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
