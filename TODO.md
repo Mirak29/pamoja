@@ -170,7 +170,7 @@ Responsable : _à répartir_
 - [x] **PAM-405** · Roadmap et milestones (§6.7)
 - [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
 - [x] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6) — `api/presence.ts` — @Mirak29
-- [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
+- [x] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
 - [x] **PAM-409** · Upload d'images : redimensionnement dans le navigateur, `POST/api/media/upload`, table `Media`, nettoyage à 24 h (§17.3)
 - [x] **PAM-410** · Vidéos intégrées par lien : oEmbed, miniature puis lecteur au clic, `frame-src` (§17.3) ; demande d'aide et vidéo de démo du projet, les posts avec PAM-427 — @niangoos
 - [x] **PAM-411** · Canal `#suivi` : alertes PR, review, merge, CI en échec / réparée, PR sans review depuis 2 jours, pushes regroupés ; boutons « Demander de l'aide » et « Demander une review » ; fils sous une alerte (§6.8, §13.3) `[démo]` — @niangoos
@@ -392,3 +392,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · Limites de débit sur toutes les routes d'écriture (PAM-510), larges pour un réseau social : réponses séparées des posts (300/h), J'aime 1 000/h, reposts 200/h, favoris 500/h, follows 300/h, modifications 300/h, cartes déplacées 1 000/h ; une action retirée n'est jamais comptée · §16
 - 2026-11-15 · Explore liste tous les projets publics (PAM-505, `GET/api/explore/projects`), pas seulement ceux de démo et les miens · §10.3
 - 2026-11-15 · File de modération sur le serveur (PAM-508) : `GET/api/moderation/queue`, `POST/api/moderation/decide` (ignorer, masquer, avertir, suspendre 1/7/30 jours, motif obligatoire envoyé à l'auteur) ; un compte suspendu lit mais n'écrit plus ; l'auteur voit son contenu masqué avec le motif ; admins plateforme par `PAMOJA_ADMINS` ; reste le retrait d'une preuve · §10.5
+- 2026-11-15 · Demandes de collaboration sur le serveur (PAM-408) : `POST/api/collaboration/request` crée une demande d'aide adressée à une seule personne (`targetUserId`), sans matching, notifiée à elle seule, refusée si elle a bloqué l'auteur ; la colonne de droite de l'Accueil lit les vrais membres et projets (PAM-504) · §6.2, §7.6

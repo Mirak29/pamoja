@@ -133,6 +133,12 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: translate('Ton compte est suspendu'),
         body: t`Tu peux lire, pas écrire. Motif : ${n.excerpt}`,
       }
+    case 'collaboration_request':
+      return {
+        kind: 'collaboration',
+        title: t`${who} te propose : ${translate(n.title)}`,
+        body: n.excerpt,
+      }
     case 'repost':
       return {
         kind: 'repost',

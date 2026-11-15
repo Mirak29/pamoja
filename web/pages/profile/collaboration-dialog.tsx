@@ -1,19 +1,17 @@
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
 import { Send } from '/web/assets/icons.tsx'
-import { pushNotification } from '/web/fixtures/notifications.ts'
+import { api } from '/web/lib/api.ts'
+import { notifyFailure } from '/web/lib/failure.ts'
+import type { HelpCategory } from '/api/vocabulary.ts'
 import { type Login, me, people } from '/web/fixtures/people.ts'
-import {
-  projects,
-  type ProjectSlug,
-  projectsOf,
-} from '/web/fixtures/projects.ts'
+import { projectsOf } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Dialog } from '/web/ui/dialog.tsx'
 import { Field, Select, Textarea } from '/web/ui/input.tsx'
 import { notify } from '/web/ui/toast.tsx'
-import { t, translate } from '/web/lib/language.ts'
+import { t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 
 const kinds = [
@@ -34,8 +32,20 @@ const withProject = [
   'Construire quelque chose ensemble',
 ]
 
+// Each kind is a help category of the server (§7.6)
+const categories: Record<string, HelpCategory> = {
+  'Relire ma PR': 'code_review',
+  'M’aider à débugger': 'debugging',
+  'Conseil d’architecture': 'architecture',
+  'Rejoindre mon projet': 'contributor_search',
+  'Pair programming': 'pair_programming',
+  'Me mentorer': 'mentorship',
+  'Construire quelque chose ensemble': 'contributor_search',
+}
+
 const CollaborationForm = ({ login }: { login: Login }) => {
   const first = people[login].name.split(' ')[0]
+  const [sending, setSending] = useState(false)
   const [kind, setKind] = useState(kinds[0])
   const [project, setProject] = useState('')
   const [pullRequest, setPullRequest] = useState('')
@@ -67,23 +77,27 @@ const CollaborationForm = ({ login }: { login: Login }) => {
       )?.focus()
       return
     }
-    const name = project && projects[project as ProjectSlug].name
-    pushNotification({
-      to: login,
-      category: 'social',
-      kind: 'collaboration',
-      title: t`${me.name.split(' ')[0]} te propose : ${translate(kind)}`,
-      body: [name, pullRequest && `PR #${pullRequest}`, message.trim()]
-        .filter(Boolean).join(' · ') || 'Pas de message.',
-      href: project ? `project/${project}` : `@${me.login}`,
-    })
-    navigate({ params: { dialog: null } })
-    notify({
-      title: 'Proposition envoyée',
-      body: t`${people[login].name} la reçoit dans ses notifications.`,
-      icon: Send,
-      tone: 'verified',
-    })
+    // A help request addressed to this developer alone (§7.6), saved on the
+    // server: they receive it, and its lifecycle is that of any request
+    setSending(true)
+    api['POST/api/collaboration/request'].fetch({
+      target: login,
+      category: categories[kind],
+      project,
+      pullRequest: Number(pullRequest) || 0,
+      message: message.trim(),
+    }).then(
+      () => {
+        navigate({ params: { dialog: null } })
+        notify({
+          title: 'Proposition envoyée',
+          body: t`${people[login].name} la reçoit dans ses notifications.`,
+          icon: Send,
+          tone: 'verified',
+        })
+      },
+      (error) => notifyFailure('Proposition non envoyée', error),
+    ).finally(() => setSending(false))
   }
 
   return (
@@ -177,7 +191,9 @@ const CollaborationForm = ({ login }: { login: Login }) => {
         />
       </Field>
       <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
-        <Button size={40} onClick={send}>Envoyer la proposition</Button>
+        <Button size={40} aria-busy={sending} onClick={send}>
+          {sending ? 'Envoi…' : 'Envoyer la proposition'}
+        </Button>
         <Button variant='secondary' size={40} params={{ dialog: null }}>
           Annuler
         </Button>

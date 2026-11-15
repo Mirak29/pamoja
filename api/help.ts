@@ -1,4 +1,5 @@
 import { db, sql } from '@01edu/db'
+import { blockOf } from '/api/messages.ts'
 import { keepRequestVector } from '/api/embeddings.ts'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
@@ -16,7 +17,13 @@ import { sendWave } from '/api/matching.ts'
 import { attach, mediaOf, type shownMedia } from '/api/media.ts'
 import { HelpRequest } from '/api/schema.ts'
 import { skillIdsOf, skillNamesOf } from '/api/skills.ts'
-import type { HelpCategory, HelpLevel } from '/api/vocabulary.ts'
+import {
+  helpCategories,
+  type HelpCategory,
+  type HelpLevel,
+} from '/api/vocabulary.ts'
+import { createNotification } from '/api/notifications.ts'
+import { stringsOf } from '/api/lib/json.ts'
 
 // Help requests (§7.1): the creation, from the form or from a PR with
 // « Demander une review », and the requests a developer is part of. The
@@ -113,8 +120,11 @@ const placeOf = (userId: number, input: HelpInput) => {
   return { projectId: project.projectId, pullRequestId: pull.pullRequestId }
 }
 
-/** The checks of the form, again on the server */
-const checked = (input: HelpInput) => {
+/**
+ * The checks of the form, again on the server. A request to one person
+ * (§7.6) is matched by nobody: it may come without skills
+ */
+const checked = (input: HelpInput, targeted = false) => {
   const title = input.title.trim()
   const description = input.description.trim()
   const videoUrl = input.videoUrl.trim()
@@ -124,7 +134,9 @@ const checked = (input: HelpInput) => {
     throw badRequest('Description too long')
   }
   const skills = skillIdsOf(input.skills)
-  if (!skills.length) throw badRequest('At least one skill is required')
+  if (!skills.length && !targeted) {
+    throw badRequest('At least one skill is required')
+  }
   if (skills.length > SKILLS_MAX) throw badRequest('Too many skills')
   if (videoUrl && (videoUrl.length > VIDEO_URL_MAX || !isWebLink(videoUrl))) {
     throw badRequest('The video must be a web link')
@@ -167,8 +179,13 @@ export const createHelpRequest = (
   input: HelpInput,
   // Its embedding, computed before (PAM-311); the background fills it if not
   prepared?: { text: string; vector?: Float32Array },
+  // A collaboration request goes to this developer only, never matched (§7.6)
+  targetUserId?: number,
 ) => {
-  const { title, description, videoUrl, skills } = checked(input)
+  const { title, description, videoUrl, skills } = checked(
+    input,
+    !!targetUserId,
+  )
   const media = input.media ?? []
   if (media.length > HELP_MEDIA_MAX) {
     throw new respond.BadRequestError({
@@ -200,8 +217,23 @@ export const createHelpRequest = (
       createdAt: at,
       updatedAt: at,
       videoUrl: videoUrl || null,
+      targetUserId: targetUserId ?? null,
     })
     attach(userId, media, 'help_request', helpRequestId)
+    // The one it is addressed to learns of it at once (§7.6)
+    if (targetUserId) {
+      createNotification({
+        userId: targetUserId,
+        type: 'collaboration_request',
+        category: 'for-you',
+        actorId: userId,
+        payload: {
+          helpRequestId,
+          title,
+          excerpt: description.slice(0, 90),
+        },
+      })
+    }
     // Read by the search reindexing, sent to nobody (§13.3)
     Entry.insert.HELP_REQUEST_CREATED({
       userId,
@@ -212,9 +244,70 @@ export const createHelpRequest = (
     return helpRequestId
   })()
   prepared && keepRequestVector(helpRequestId, prepared.text, prepared.vector)
-  // The first wave goes out at once (§7.3)
-  sendWave(helpRequestId)
+  // The first wave goes out at once (§7.3); a collaboration request has none
+  if (!targetUserId) sendWave(helpRequestId)
   return helpRequestId
+}
+
+/** The kinds of a collaboration request, as help categories (§7.6) */
+export const COLLABORATION_KINDS: HelpCategory[] = [
+  'code_review',
+  'debugging',
+  'architecture',
+  'contributor_search',
+  'pair_programming',
+  'mentorship',
+]
+
+const userByLogin = sql<{ userId: number; skills: string | null }, string>`
+  SELECT user.userId,
+    (SELECT json_group_array(DISTINCT skill.name) FROM userSkill
+      JOIN skill ON skill.skillId = userSkill.skillId
+      WHERE userSkill.userId = user.userId) AS skills
+  FROM user WHERE githubUsername = ? COLLATE NOCASE
+`.get
+
+/**
+ * Proposes a collaboration to one developer from their profile (§7.6): a
+ * help request addressed to them alone, with the same lifecycle and no
+ * matching. Someone who blocked the author never receives it
+ */
+export const requestCollaboration = (
+  me: number,
+  input: {
+    target: string
+    category: string
+    project: string
+    pullRequest: number
+    message: string
+  },
+) => {
+  const target = userByLogin(input.target)
+  if (!target) throw badRequest('Unknown developer')
+  if (target.userId === me) throw badRequest('Not to oneself')
+  if (!COLLABORATION_KINDS.includes(input.category as HelpCategory)) {
+    throw badRequest('Unknown kind')
+  }
+  const message = input.message.trim()
+  if (!message) throw badRequest('A few words are required')
+  if (blockOf(me, target.userId).byThem) {
+    throw new respond.ForbiddenError({ message: 'Not reachable' })
+  }
+  const category = input.category as HelpCategory
+  const help: HelpInput = {
+    category,
+    title: helpCategories[category],
+    description: message,
+    // What the developer asked is known for: their first skills
+    skills: stringsOf(target.skills).slice(0, 3),
+    expectedLevel: 'intermediate',
+    estimatedMinutes: 60,
+    project: input.project,
+    pullRequest: input.pullRequest,
+    videoUrl: '',
+  }
+  within(countRequests, HELP_RATE, me, 'Too many help requests today')
+  return createHelpRequest(me, help, undefined, target.userId)
 }
 
 type HelpRow = {

@@ -54,6 +54,7 @@ import { DemoBadge, SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { InfiniteList, useBatches } from '/web/ui/infinite-list.tsx'
+import { loadForRail } from '/web/lib/explore.ts'
 import { Page } from '/web/ui/layout.tsx'
 import { NewPostDialog } from '/web/ui/new-post-dialog.tsx'
 import { PostCard } from '/web/ui/post.tsx'
@@ -602,6 +603,8 @@ const homeData = () => {
 }
 
 const Rail = () => {
+  // Real developers and projects, not only the demo ones (§6.2)
+  useEffect(loadForRail, [])
   const { matches, waiting, matchTitle, reviewTitle } = homeData()
   const followed = me.follows ?? []
   const people_ = (Object.values(people) as Person[])

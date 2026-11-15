@@ -1434,6 +1434,18 @@ La page Modération lisait les fixtures. Un post masqué par trois signalements 
 - **Livrable** : `api/moderation.ts`, `api/moderation_test.ts`, `api/reports.ts`, `api/session.ts`, `api/user.ts`, `api/posts.ts`, `api/routes.ts`, `web/lib/moderation.ts`, `web/pages/moderation-page.tsx`, `web/fixtures/reports.ts`, `web/fixtures/people.ts`, `web/fixtures/posts.ts`, `web/lib/notifications.ts`, `web/lib/failure.ts`, `.env.production.example` ; §10.5
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-408 · Demandes de collaboration enregistrées
+
+« Proposer une collaboration » affichait « Proposition envoyée », mais rien ne partait : la notification n'existait que dans la page de l'auteur. `POST/api/collaboration/request` crée maintenant une demande d'aide adressée à une seule personne (`targetUserId`, déjà prévu par le schéma et le cycle de vie).
+
+- **Sans matching** : aucune vague ne part, seule la personne visée est notifiée (`collaboration_request`) et peut accepter.
+- **Contenu** : le type proposé devient la catégorie (Relire ma PR → Review de code, Me mentorer → Mentorat…), le message devient la description, avec le projet et la PR choisis.
+- **Refus** : une demande à soi-même, à un inconnu, sans message, ou à quelqu'un qui a bloqué l'auteur. Elle compte dans la limite des demandes d'aide.
+- **Colonne de droite de l'Accueil (PAM-504)** : « Avec qui construire » et les projets qui cherchent des contributeurs lisaient seulement ce qu'Explore avait chargé. L'Accueil lit maintenant les vrais membres et projets, au plus toutes les cinq minutes.
+
+- **Livrable** : `api/help.ts`, `api/messages.ts`, `api/routes.ts`, `api/collaboration_test.ts`, `web/pages/profile/collaboration-dialog.tsx`, `web/lib/notifications.ts`, `web/lib/explore.ts`, `web/pages/home/home-page.tsx` ; §6.2, §7.6
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

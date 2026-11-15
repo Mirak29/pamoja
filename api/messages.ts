@@ -142,7 +142,7 @@ const getBlock = sql<
       AS byThem
 `.get
 
-const blockOf = (me: number, other: number) => {
+export const blockOf = (me: number, other: number) => {
   const row = getBlock({ me, other })!
   return { byMe: !!row.byMe, byThem: !!row.byThem }
 }
