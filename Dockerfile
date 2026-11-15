@@ -15,13 +15,16 @@ COPY . .
 # The bundle and its CSS into dist/, from an empty folder (task-prod.ts)
 RUN deno task prod:build
 # Without node_modules: it holds the build tools (esbuild, Tailwind), which
-# the server never runs. Only the packages the server imports go in.
+# the server never runs. Only the packages the server imports go in, the
+# wasm of resvg with them; the fonts of the Share Card are in api/assets
+# (§17.2).
 RUN rm -rf node_modules && deno compile \
   --allow-all \
   --no-check \
   --node-modules-dir=none \
   --include=dist \
   --include=migrations \
+  --include=api/assets \
   --output pamoja \
   deploy/main.ts
 

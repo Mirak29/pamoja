@@ -1446,6 +1446,24 @@ La page Modération lisait les fixtures. Un post masqué par trois signalements 
 - **Livrable** : `api/help.ts`, `api/messages.ts`, `api/routes.ts`, `api/collaboration_test.ts`, `web/pages/profile/collaboration-dialog.tsx`, `web/lib/notifications.ts`, `web/lib/explore.ts`, `web/pages/home/home-page.tsx` ; §6.2, §7.6
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-104, PAM-305 · Share Card et aperçus des liens partagés
+
+Un lien `/@login` ou `/project/slug` collé sur LinkedIn, X, WhatsApp, Discord ou Slack n'avait aucun aperçu : la SPA renvoyait une page vide de contenu.
+
+- **Share Card** (`api/share-card.ts`) : une image PNG de 1200 × 630, en thème clair.
+  - **Profil** : initiales, nom, @login, ville et pays, accroche, preuves et dimensions les plus fortes, skills. Avant la première preuve, une phrase plutôt qu'un zéro.
+  - **Projet** : nom, auteur, description, membres, besoins ouverts, étoiles, stack.
+  - **Rendu** : `satori` produit le SVG, `@resvg/resvg-wasm` le PNG. Les polices IBM Plex Sans et Bricolage Grotesque (licence OFL) sont dans `api/assets/fonts`.
+  - **Cache** : la carte est gardée sur disque (`MEDIA_DIR/cards`) sous l'empreinte de ses données et de la version du gabarit. Les mêmes données redonnent le même fichier, sinon une nouvelle carte est dessinée.
+  - **Routes** : `GET/api/user/card` et `GET/api/project/card`, ouvertes sans session (les robots n'en ont pas), avec ETag et 304.
+- **PAM-104** : le risque était le rendu dans le binaire. Un binaire compilé comme le Dockerfile, sans `node_modules`, dessine la carte en 0,2 s, puis 2 ms depuis le cache. Le Dockerfile embarque `api/assets`.
+- **Aperçus** (`api/og.ts`) : les serveurs de production et de dev écrivent dans la page de `/@login` et de `/project/slug` le titre, la description, `og:*` et `twitter:card = summary_large_image` avec la carte. Tout est lu en base et échappé en HTML. Les autres pages reçoivent les balises par défaut.
+- **`sitemap.xml`** : il liste les profils non suspendus et les projets publics.
+- **Fenêtre « Carte de partage »** : elle montre la vraie image, qui est aussi celle des aperçus WhatsApp et LinkedIn. Elle la dessine dans la page le temps du chargement, et le bouton Télécharger donne le PNG.
+
+- **Livrable** : `api/share-card.ts`, `api/og.ts`, `api/og_test.ts`, `api/routes.ts`, `api/assets/fonts/`, `prod-server.ts`, `task-dev.ts`, `Dockerfile`, `deno.json`, `web/pages/profile/share-dialog.tsx` ; §17.1, §17.2
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

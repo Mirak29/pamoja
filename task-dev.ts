@@ -3,6 +3,7 @@ import { context } from 'npm:esbuild@0.25.5'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import api from '/api/server.ts'
 import { VIDEO_FRAMES } from '/api/video-links.ts'
+import { pageWithPreview, sitemap } from '/api/og.ts'
 
 const ctx = await context({
   ...config,
@@ -56,19 +57,22 @@ const fromDisk = (request: Request) =>
   fresh(serveDir(request, { fsRoot: 'dist', quiet: true }))
 
 // A page frames the players of the embedded videos only (§17.3)
+// The page with the preview of a shared link, as in production (§17.1)
 const index = async (request: Request) => {
   const res = await fromDisk(new Request(new URL('/index.html', request.url)))
-  res.headers.set(
-    'Content-Security-Policy',
-    `frame-src ${VIDEO_FRAMES.join(' ')}`,
-  )
-  return res
+  const html = pageWithPreview(await res.text(), request)
+  const headers = new Headers(res.headers)
+  headers.delete('content-length')
+  headers.delete('etag')
+  headers.set('Content-Security-Policy', `frame-src ${VIDEO_FRAMES.join(' ')}`)
+  return new Response(html, { status: res.status, headers })
 }
 
 export default {
   fetch(request: Request) {
     const url = new URL(request.url)
     if (url.pathname.startsWith('/api')) return api.fetch(request)
+    if (url.pathname === '/sitemap.xml') return sitemap(request)
     if (url.pathname === '/esbuild') {
       const { headers, signal } = request
       return fetch(`http://127.0.0.1:${port}/esbuild`, { headers, signal })

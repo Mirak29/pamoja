@@ -4,14 +4,13 @@ import api from './api/server.ts'
 import { serveDir } from 'jsr:@std/http@^1.0.20/file-server'
 import { BASE_URL } from '/api/lib/env.ts'
 import { VIDEO_FRAMES } from '/api/video-links.ts'
+import { pageWithPreview, sitemap } from '/api/og.ts'
 
 const html = Deno.readTextFileSync(import.meta.dirname + '/dist/index.html')
   .replace(
     '<base href="/" />',
     `<base href="${BASE_URL}" />`,
   )
-const encoder = new TextEncoder()
-const indexHtml = encoder.encode(html)
 const port = Number(Deno.env.get('PORT')) || 8000
 const serveDirOpts = { fsRoot: import.meta.dirname + '/dist' }
 // The page and the files without a hash in their name are revalidated (an
@@ -44,9 +43,13 @@ Deno.serve({ port, automaticCompression: true }, (req) => {
     return api.fetch(req)
   }
 
+  // The public profiles and projects, for the search engines (§17.1)
+  if (pathname === '/sitemap.xml') return sitemap(req)
+
   if (pathname.includes('.')) {
     return cached(serveDir(req, serveDirOpts), pathname)
   }
 
-  return new Response(indexHtml, htmlContent)
+  // A shared link shows its preview: title, description and card (§17.1)
+  return new Response(pageWithPreview(html, req), htmlContent)
 })

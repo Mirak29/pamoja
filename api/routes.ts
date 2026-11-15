@@ -1,4 +1,10 @@
 import { makeRouter, route } from '@01edu/api/router'
+import {
+  cardResponse,
+  profileCardData,
+  projectCardData,
+} from '/api/share-card.ts'
+import { originOf } from '/api/og.ts'
 import { decide, MODERATION_ACTIONS, moderationQueue } from '/api/moderation.ts'
 import { memoryLimit } from '/api/lib/rate.ts'
 import { respond } from '@01edu/api/response'
@@ -646,6 +652,29 @@ const defs = {
     authorize: withOptionalSession,
     fn: (ctx) => endSession(ctx.session),
     description: 'Close the session, even when the cookie was copied',
+  }),
+
+  // The Share Cards (§17.2): open to anyone, the crawlers have no session
+  'GET/api/user/card': route({
+    fn: (ctx, { login }) =>
+      cardResponse(
+        profileCardData(login),
+        new URL(originOf(ctx.req)).host,
+        ctx.req.headers.get('if-none-match'),
+      ),
+    input: OBJ({ login: STR('Login of the developer') }),
+    description: 'The Share Card of a profile: a PNG of 1200 × 630 (§17.2)',
+  }),
+
+  'GET/api/project/card': route({
+    fn: (ctx, { slug }) =>
+      cardResponse(
+        projectCardData(slug),
+        new URL(originOf(ctx.req)).host,
+        ctx.req.headers.get('if-none-match'),
+      ),
+    input: OBJ({ slug: STR('Slug of a public project') }),
+    description: 'The Share Card of a public project: a PNG of 1200 × 630',
   }),
 
   'GET/api/user/badges': route({
