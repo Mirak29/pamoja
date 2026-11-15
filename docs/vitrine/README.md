@@ -43,9 +43,11 @@ Il faut Deno, ffmpeg et Chrome (ou Edge ; `CHROME=<chemin>` pour un autre).
 ## Le style
 
 - **Plans** : un écran par plan, environ 3 s, la page inclinée (44° vers
-  l'arrière, 8° de rotation) qui défile vers le bas ; fondu de 0,45 s entre deux
-  plans. Puis tous les écrans côte à côte, la caméra recule, et le carton final
-  tient 2,5 s.
+  l'arrière, 8° de rotation) qui défile vers le bas. Entre deux plans, un
+  glissement latéral de 0,8 s : la page part à gauche pendant que la suivante
+  arrive par la droite, côte à côte, jamais l'une sur l'autre. Puis la caméra
+  recule depuis le profil (2,4 s) et découvre tous les écrans côte à côte,
+  tenus 1,2 s ; le carton final tient 2,5 s.
 - **Textes** : un sur-titre en IBM Plex Mono (`01 · Le fil`), un titre en
   Bricolage Grotesque, une partie en Instrument Serif italique, en indigo. Assez
   court pour être lu pendant le plan (environ 0,3 s par mot).

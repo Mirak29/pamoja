@@ -84,12 +84,14 @@ const SHOTS = [
   ['board', '05 · Le board', 'Les cartes suivent <em>les PRs</em>', 12.6, 15.4],
   ['profile', '06 · La preuve', "L'aide vérifiée <em>devient ta réputation</em>", 15.4, 18.6],
 ]
-const OVERVIEW = [18.6, 21.2] // every screen at once
-const END = [21.2, 25] // the end card, held
+const OVERVIEW = [18.6, 22.2] // every screen at once: 2.4 s of pull-back, then held
+const END = [22.2, 26] // the end card, held
 const DURATION = END[1]
 const TILT = { x: 44, z: -8 } // degrees: the plane leans away, turned a little
 const PAGE_W = 1240
-const CROSS = 0.45 // seconds of cross-fade between shots
+const GAP = 120 // between two pages side by side
+const SLIDE = 0.8 // seconds of lateral slide between two shots
+const PULL = 2.4 // seconds of the pull-back to the overview
 
 // ---- Easing ----------------------------------------------------------------
 const bezier = (x1, y1, x2, y2) => (t) => {
@@ -135,47 +137,63 @@ const set = (el, transform, opacity) => {
   el.style.opacity = opacity
 }
 
+/** Where a page sits during its shot: it scrolls down from top to bottom */
+const shotY = (name, a, b, t) => {
+  const travel = Math.min(heightOf(name) - 900, 1500)
+  const p = span(t, a - SLIDE / 2, b + SLIDE / 2)
+  return 340 - mix(0, travel, inOut(p))
+}
+
+/** The camera: 0 in a shot, 1 pulled back over every screen */
+const planeAt = (e, drift = 0) =>
+  `translateY(${mix(40, 150, e) - drift * 20}px) rotateX(${mix(TILT.x, 30, e)}deg) ` +
+  `rotateZ(${mix(TILT.z, -3, e) + drift * 0.6}deg) scale(${mix(1.18, 0.44, e) + drift * 0.02})`
+
 // ---- One frame -------------------------------------------------------------
 window.renderAt = (t) => {
   t = clamp(t, 0, DURATION - 1e-6)
-  const overview = span(t, OVERVIEW[0], OVERVIEW[1])
   const ending = span(t, END[0], END[0] + 0.9)
+  const shift = PAGE_W + GAP
 
-  // Shots: the active page glides down. The cut dips to the background: the
-  // page leaves before the next arrives, two pages never show through
+  // Shots: the active page glides down. At a cut the camera pans along the
+  // plane: the page leaves to the left while the next comes in from the
+  // right, side by side, never on top of each other
   let caption = null
   for (const name of names) pages[name].style.opacity = 0
+  const fog = Math.max(0, 1 - 0.85 * inOut(span(t, OVERVIEW[0], OVERVIEW[0] + PULL)))
+  document.querySelectorAll('.fog').forEach((el) => el.style.opacity = fog)
   if (t < OVERVIEW[0]) {
     for (const [name, eyebrow, title, a, b] of SHOTS) {
-      if (t < a - CROSS || t > b + CROSS) continue
-      const fadeIn = a === 0 ? 1 : out(span(t, a, a + CROSS))
-      const fadeOut = b === OVERVIEW[0] ? 1 : 1 - inOut(span(t, b - CROSS * 0.6, b))
-      const opacity = Math.min(fadeIn, fadeOut)
-      const p = span(t, a - CROSS, b + CROSS)
-      const travel = Math.min(heightOf(name) - 900, 1500)
-      const scroll = mix(0, travel, inOut(p))
-      const rise = (1 - fadeIn) * 220
+      if (t < a - SLIDE / 2 || t > b + SLIDE / 2) continue
+      const enter = a === 0 ? 1 : inOut(span(t, a - SLIDE / 2, a + SLIDE / 2))
+      const leave = b === OVERVIEW[0] ? 0 : inOut(span(t, b - SLIDE / 2, b + SLIDE / 2))
+      const x = (1 - enter) * shift - leave * shift
       set(
         pages[name],
-        `translate3d(${-PAGE_W / 2}px, ${340 + rise - scroll}px, 0)`,
-        opacity,
+        `translate3d(${x - PAGE_W / 2}px, ${shotY(name, a, b, t)}px, 0)`,
+        1,
       )
       if (t >= a && t < b) caption = { eyebrow, title, a, b }
     }
-    plane.style.transform = `translateY(40px) rotateX(${TILT.x}deg) rotateZ(${TILT.z}deg) scale(1.18)`
+    plane.style.transform = planeAt(0)
   } else {
-    // Overview: the screens side by side, the camera pulls back and rises
-    const order = ['feed', 'project', 'help', 'board', 'roadmap', 'pulse', 'profile']
-    const e = inOut(overview)
-    const gap = 80
+    // Overview: the camera pulls back from the profile, which stays where it
+    // was, and the other screens slide in on both sides of it
+    const order = ['help', 'project', 'feed', 'profile', 'board', 'roadmap', 'pulse']
+    const [, , , a, b] = SHOTS[SHOTS.length - 1]
+    const e = inOut(span(t, OVERVIEW[0], OVERVIEW[0] + PULL))
+    const yProfile = shotY('profile', a, b, OVERVIEW[0])
     order.forEach((name, i) => {
-      const x = (i - (order.length - 1) / 2) * (PAGE_W + gap) - PAGE_W / 2
-      const appear = out(span(t, OVERVIEW[0] + i * 0.06, OVERVIEW[0] + 0.5 + i * 0.06))
-      set(pages[name], `translate3d(${x}px, ${mix(700, 200, e) + (1 - appear) * 160}px, 0)`, appear * (1 - ending))
+      const side = i - 3
+      const appear = side === 0
+        ? 1
+        : out(span(t, OVERVIEW[0] + 0.3 + Math.abs(side) * 0.12, OVERVIEW[0] + 1.3 + Math.abs(side) * 0.12))
+      const x = side * shift + Math.sign(side) * (1 - appear) * 500 - PAGE_W / 2
+      set(pages[name], `translate3d(${x}px, ${mix(yProfile, 160, e)}px, 0)`, appear * (1 - ending))
     })
-    const scale = mix(0.7, 0.36, e)
-    plane.style.transform =
-      `translateY(${mix(-60, 40, e)}px) rotateX(${mix(TILT.x, 34, e)}deg) rotateZ(${mix(TILT.z, -4, e)}deg) scale(${scale})`
+    // Held: a slow drift keeps the frame alive
+    const drift = span(t, OVERVIEW[0] + PULL, OVERVIEW[1])
+    plane.style.transform = planeAt(e, drift)
   }
 
   // The caption: rises in, leaves before the cut

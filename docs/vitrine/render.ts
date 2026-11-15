@@ -88,13 +88,13 @@ if (sheet) {
 
   if (!draft) {
     // The README shows a GIF (GitHub plays no video from the repository
-    // inline): 720 px, 10 frames a second, one palette for the whole clip,
+    // inline): 680 px, 9 frames a second, one palette for the whole clip,
     // under 10 MB so the README opens fast
     const gif = new Deno.Command('ffmpeg', {
       args: [
         '-v', 'error', '-y', '-i', video,
         '-vf',
-        'fps=10,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
+        'fps=9,scale=680:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
         path('pamoja-apercu.gif'),
       ],
     })
