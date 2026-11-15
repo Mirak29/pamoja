@@ -22,7 +22,7 @@ Construit pour le concours **CADEV**, hébergé sur le cloud souverain sénégal
 ## Aperçu
 
 <a href="docs/vitrine/pamoja-apercu.mp4">
-  <img src="docs/vitrine/pamoja-apercu.gif" alt="Aperçu de Pamoja : le fil, une page projet, une demande d'aide, le profil et sa Share Card" width="100%">
+  <img src="docs/vitrine/pamoja-apercu.gif" alt="Aperçu de Pamoja : la gestion de projet (import GitHub, Pulse, board, roadmap, PRs, équipe, canaux), la collaboration (fil, communautés, messages, notifications, Assistant, recherche, modération), puis la demande d'aide et le profil avec sa Share Card" width="100%">
 </a>
 
 *Cliquer sur l'aperçu ouvre la vidéo complète. Le code qui la produit est dans

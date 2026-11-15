@@ -18,6 +18,11 @@ import {
   UserIntent,
 } from '/api/schema.ts'
 import { rankBetween } from '/api/lib/rank.ts'
+import {
+  conversationIdOf,
+  sendMessage,
+  startConversation,
+} from '/api/messages.ts'
 import { boards } from '/web/fixtures/board.ts'
 import { setDeclaredSkills, skillIdsOf } from '/api/skills.ts'
 import { countryCodeOf, helpCategories, keyOf } from '/api/vocabulary.ts'
@@ -217,6 +222,21 @@ const MOUSSA_REVIEWS: SeedReview[] = [
  * account in the demo (§18.1). Logging in with that account then opens the
  * seeded profile, found by `githubId` (§5.3).
  */
+/** Abdou's conversations: the other developer, then the messages in turn */
+const DEMO_CONVERSATIONS: [string, string[]][] = [
+  ['moussa', [
+    'Merci pour la review de la PR #81 ! Ta remarque sur la transaction SQLite m’a évité un vrai bug.',
+    'Avec plaisir. Le test de réconciliation passe chez toi maintenant ?',
+    'Oui, la CI est au vert. Tu serais partant pour relire la #84 la semaine prochaine ?',
+    'Partant. Envoie-moi la demande d’aide, je la prends.',
+  ]],
+  ['fatou', [
+    'On cale la démo de la v0.4 jeudi ?',
+    'Jeudi 10 h, ça me va. Je prépare le board et la roadmap.',
+    'Parfait, je m’occupe des webhooks d’ici là.',
+  ]],
+]
+
 export const parseGithubIds = (text = '') =>
   new Map(
     text.split(',').map((pair) => pair.split(':').map((part) => part.trim()))
@@ -496,6 +516,36 @@ export const seed = (githubIds = new Map<string, number>()) => {
       }
     }
   })()
+
+  /*
+   * Direct messages (§10.6): two conversations of Abdou, written through the
+   * same functions as the app, so Messages is not empty in the demo
+   */
+  const githubIdOf = (login: string) =>
+    (db.prepare('SELECT githubId FROM user WHERE userId = ?').get(
+      userIds.get(login),
+    ) as { githubId: number } | undefined)?.githubId
+  const lastEntry = (db.prepare('SELECT max(id) AS id FROM entry').get() as {
+    id: number | null
+  }).id ?? 0
+  for (const [other, lines] of DEMO_CONVERSATIONS) {
+    const abdou = userIds.get('abdou')
+    const them = userIds.get(other)
+    const githubId = githubIdOf(other)
+    if (!abdou || !them || !githubId) continue
+    const [first, ...replies] = lines
+    const conversationId = conversationIdOf(
+      startConversation(abdou, githubId, first),
+    )
+    replies.forEach((body, i) =>
+      sendMessage(i % 2 ? abdou : them, conversationId, body)
+    )
+  }
+  // Written by the app's own functions, so `platform`: they are demo data
+  db.prepare('UPDATE entrySource SET source = ? WHERE entryId > ?').run(
+    source,
+    lastEntry,
+  )
 
   return {
     developers: userIds.size,

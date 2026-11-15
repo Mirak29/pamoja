@@ -42,13 +42,18 @@ Il faut Deno, ffmpeg et Chrome (ou Edge ; `CHROME=<chemin>` pour un autre).
 
 ## Le style
 
+- **Trois actes, 19 plans, environ une minute** : *Gérer un projet* (import
+  GitHub, page projet, Pulse, board, roadmap, PRs, équipe, canaux),
+  *Collaborer* (fil, Explorer, communautés, messages, notifications,
+  Assistant, recherche, signalement), puis *Prouver* (demande d'aide et
+  matching, profil et Share Card).
 - **Plans** : un écran par plan, environ 3 s, la page inclinée (44° vers
   l'arrière, 8° de rotation) qui défile vers le bas. Entre deux plans, un
   glissement latéral de 0,8 s : la page part à gauche pendant que la suivante
   arrive par la droite, côte à côte, jamais l'une sur l'autre. Puis la caméra
   recule depuis le profil (2,4 s) et découvre tous les écrans côte à côte,
   tenus 1,2 s ; le carton final tient 2,5 s.
-- **Textes** : un sur-titre en IBM Plex Mono (`01 · Le fil`), un titre en
+- **Textes** : l'acte en sur-titre, en IBM Plex Mono, un titre en
   Bricolage Grotesque, une partie en Instrument Serif italique, en indigo. Assez
   court pour être lu pendant le plan (environ 0,3 s par mot).
 - **Couleurs** : celles du thème clair ([`docs/identite/tokens.json`](../identite/tokens.json)) :
@@ -57,5 +62,13 @@ Il faut Deno, ffmpeg et Chrome (ou Edge ; `CHROME=<chemin>` pour un autre).
   `(0.65, 0, 0.35, 1)` pour les défilements. Pas de particules, de lueurs ni de
   rebonds.
 
-Pour changer les plans, modifier `SHOTS` en haut du script de `scene.html` ;
-pour ajouter un écran, l'ajouter aussi à `screens` dans `capture.ts`.
+Pour changer les plans, modifier `PLAN` en haut du script de `scene.html`
+(écran, acte, titre, durée) : les temps s'en déduisent. Pour ajouter un écran,
+l'ajouter aussi à `screens` dans `capture.ts`, avec ses options : `view` pour
+ne garder que la fenêtre (une boîte de dialogue, un panneau), `from` pour
+commencer sous l'en-tête (les onglets d'un projet), `open` pour ouvrir un
+élément de la page, `assistant` pour ouvrir l'Assistant.
+
+Les captures demandent les données de démo avec Abdou admin
+(`PAMOJA_ADMINS=abdou`) et la connexion simulée : un serveur sans les clés de
+la GitHub App de dev (`.env-dev` seul, pas `.env-local`).

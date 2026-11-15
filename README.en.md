@@ -21,7 +21,7 @@ Built for the **CADEV** competition, hosted on the Senegalese sovereign cloud
 ## Preview
 
 <a href="docs/vitrine/pamoja-apercu.mp4">
-  <img src="docs/vitrine/pamoja-apercu.gif" alt="Pamoja preview: the feed, a project page, a help request, the profile and its Share Card" width="100%">
+  <img src="docs/vitrine/pamoja-apercu.gif" alt="Pamoja preview: project management (GitHub import, Pulse, board, roadmap, PRs, team, channels), collaboration (feed, communities, messages, notifications, Assistant, search, moderation), then a help request and the profile with its Share Card" width="100%">
 </a>
 
 *Click the preview to open the full video. The code that renders it lives in

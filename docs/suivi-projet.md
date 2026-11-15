@@ -1797,3 +1797,10 @@ Les diagrammes de la modélisation sont des images, rendues depuis leurs sources
 
 - **Livrable** : `docs/modelisation/README.md`, `docs/modelisation/sources/`, `docs/modelisation/images/`, `docs/modelisation/render.ts`
 - **Par** : @Mirak29
+
+### 2026-11-15 · Vitrine : toutes les fonctionnalités, et des messages dans la démo
+
+L'aperçu vidéo passe de 6 à 19 écrans, en trois actes : gérer un projet (import GitHub, page projet, Pulse, board, roadmap, PRs, équipe, canaux), collaborer (fil, Explorer, communautés, messages, notifications, Assistant, recherche, signalement), prouver (demande d'aide et matching, profil et Share Card). La messagerie de la démo était vide : le seed écrit maintenant deux conversations d'Abdou, avec Moussa et Fatou, par les fonctions de la messagerie elles-mêmes, et marque leurs entries `demo`.
+
+- **Livrable** : `api/seed.ts`, `docs/vitrine/`, `README.md`, `README.en.md`
+- **Par** : @Mirak29

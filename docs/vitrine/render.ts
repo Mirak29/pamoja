@@ -73,7 +73,7 @@ if (sheet) {
   const video = path(draft ? 'draft.mp4' : 'pamoja-apercu.mp4')
   const encode = ffmpeg([
     '-f', 'image2pipe', '-framerate', String(fps), '-i', '-',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', draft ? '28' : '24',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', draft ? '30' : '27',
     '-preset', 'slow', '-movflags', '+faststart', video,
   ])
   const writer = encode.stdin.getWriter()
@@ -88,13 +88,13 @@ if (sheet) {
 
   if (!draft) {
     // The README shows a GIF (GitHub plays no video from the repository
-    // inline): 680 px, 9 frames a second, one palette for the whole clip,
+    // inline): 560 px, 6 frames a second, one palette for the whole clip,
     // under 10 MB so the README opens fast
     const gif = new Deno.Command('ffmpeg', {
       args: [
         '-v', 'error', '-y', '-i', video,
         '-vf',
-        'fps=9,scale=680:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
+        'fps=6,scale=560:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
         path('pamoja-apercu.gif'),
       ],
     })

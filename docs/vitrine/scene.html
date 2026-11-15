@@ -74,18 +74,39 @@
 <script>
 // ---- The style, as numbers -------------------------------------------------
 const FPS = 30
-// One shot per screen: [file, eyebrow, title, start, end]; the title may hold
-// one <em> for the serif accent
-const SHOTS = [
-  ['landing', '01 · Pamoja', 'Les développeurs africains, <em>autour de leur vrai travail</em>', 0, 3.4],
-  ['feed', '02 · Le fil', 'Des PRs, des reviews, <em>des projets</em>', 3.4, 6.4],
-  ['project', '03 · Le projet', 'Chaque projet, <em>relié à GitHub</em>', 6.4, 9.4],
-  ['help', "04 · L'aide", 'Une demande précise, <em>aux bons développeurs</em>', 9.4, 12.6],
-  ['board', '05 · Le board', 'Les cartes suivent <em>les PRs</em>', 12.6, 15.4],
-  ['profile', '06 · La preuve', "L'aide vérifiée <em>devient ta réputation</em>", 15.4, 18.6],
+// One shot per screen, in three acts: [file, act, title, seconds]; the title
+// may hold one <em> for the serif accent. The last shot is the one the camera
+// pulls back from.
+const PLAN = [
+  ['landing', 'Pamoja', 'Les développeurs africains, <em>autour de leur vrai travail</em>', 3.4],
+  ['import', 'Gérer un projet', 'Un dépôt GitHub, <em>importé en trois clics</em>', 2.8],
+  ['project', 'Gérer un projet', 'Chaque projet, <em>relié à GitHub</em>', 2.8],
+  ['pulse', 'Gérer un projet', 'Pulse, DNA et Health, <em>mesurés sur le dépôt</em>', 2.8],
+  ['board', 'Gérer un projet', 'Un board dont les cartes <em>suivent les PRs</em>', 2.8],
+  ['roadmap', 'Gérer un projet', 'Une roadmap, <em>jalons et critères</em>', 2.8],
+  ['prs', 'Gérer un projet', 'Les PRs, <em>leur CI et leurs reviews</em>', 2.8],
+  ['team', 'Gérer un projet', "L'équipe, <em>ses besoins, ses candidatures</em>", 2.8],
+  ['channels', 'Gérer un projet', 'Des canaux, <em>et #suivi nourri par la CI</em>', 2.8],
+  ['feed', 'Collaborer', 'Un fil de PRs, <em>de reviews et de projets</em>', 2.8],
+  ['explore', 'Collaborer', 'Découvrir <em>par pays et par techno</em>', 2.8],
+  ['communities', 'Collaborer', 'Des communautés <em>par pays, techno et domaine</em>', 2.8],
+  ['messages', 'Collaborer', 'Des messages directs, <em>entre développeurs</em>', 2.8],
+  ['notifications', 'Collaborer', 'Tout arrive <em>en temps réel</em>', 2.8],
+  ['assistant', 'Collaborer', 'Un Assistant <em>qui connaît ton travail</em>', 2.8],
+  ['search', 'Collaborer', 'Une recherche <em>sur tout Pamoja</em>', 2.8],
+  ['report', 'Collaborer', 'Une modération <em>par la communauté</em>', 2.8],
+  ['help', 'Prouver', "Une demande d'aide précise, <em>aux bons développeurs</em>", 3.2],
+  ['profile', 'Prouver', "L'aide vérifiée sur GitHub <em>devient ta réputation</em>", 3.6],
 ]
-const OVERVIEW = [18.6, 22.2] // every screen at once: 2.4 s of pull-back, then held
-const END = [22.2, 26] // the end card, held
+// [file, eyebrow, title, start, end]
+const SHOTS = []
+for (const [name, act, title, seconds] of PLAN) {
+  const start = SHOTS.length ? SHOTS[SHOTS.length - 1][4] : 0
+  SHOTS.push([name, act, title, start, start + seconds])
+}
+const LAST = SHOTS[SHOTS.length - 1][4]
+const OVERVIEW = [LAST, LAST + 3.6] // every screen at once: 2.4 s of pull-back, then held
+const END = [OVERVIEW[1], OVERVIEW[1] + 3.8] // the end card, held
 const DURATION = END[1]
 const TILT = { x: 44, z: -8 } // degrees: the plane leans away, turned a little
 const PAGE_W = 1240
@@ -113,7 +134,7 @@ const mix = (a, b, p) => a + (b - a) * p
 
 // ---- The pages -------------------------------------------------------------
 const plane = document.getElementById('plane')
-const names = [...new Set([...SHOTS.map((s) => s[0]), 'roadmap', 'pulse', 'explore'])]
+const names = [...new Set(SHOTS.map((s) => s[0]))]
 const pages = {}
 for (const name of names) {
   const page = document.createElement('div')
@@ -139,7 +160,8 @@ const set = (el, transform, opacity) => {
 
 /** Where a page sits during its shot: it scrolls down from top to bottom */
 const shotY = (name, a, b, t) => {
-  const travel = Math.min(heightOf(name) - 900, 1500)
+  // A window-sized capture (a dialog, a panel) stays still
+  const travel = Math.max(0, Math.min(heightOf(name) - 900, 1500))
   const p = span(t, a - SLIDE / 2, b + SLIDE / 2)
   return 340 - mix(0, travel, inOut(p))
 }
@@ -179,7 +201,7 @@ window.renderAt = (t) => {
   } else {
     // Overview: the camera pulls back from the profile, which stays where it
     // was, and the other screens slide in on both sides of it
-    const order = ['help', 'project', 'feed', 'profile', 'board', 'roadmap', 'pulse']
+    const order = ['board', 'project', 'feed', 'profile', 'messages', 'help', 'roadmap']
     const [, , , a, b] = SHOTS[SHOTS.length - 1]
     const e = inOut(span(t, OVERVIEW[0], OVERVIEW[0] + PULL))
     const yProfile = shotY('profile', a, b, OVERVIEW[0])
@@ -210,7 +232,7 @@ window.renderAt = (t) => {
   } else set(cap, 'none', 0)
 
   // The Share Card lands on the profile shot
-  const [, , , pa, pb] = SHOTS[5]
+  const [, , , pa, pb] = SHOTS.find((s) => s[0] === 'profile')
   const cardIn = out(span(t, pa + 1.0, pa + 1.8))
   const cardOut = inOut(span(t, pb - 0.3, pb + 0.2))
   set(
