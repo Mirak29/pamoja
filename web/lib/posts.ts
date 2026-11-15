@@ -16,12 +16,15 @@ import { signal } from '@preact/signals'
 
 /** The latest posts, into the feed */
 export const loadPosts = () =>
-  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then((list) => {
-    adoptPosts(list)
-    feedStart.value = list.length < FEED_PAGE
-    // Read with the others: none waits any more
-    newPosts.value = []
-  }, () => {})
+  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then(
+    (list) => {
+      adoptPosts(list)
+      feedStart.value = list.length < FEED_PAGE
+      // Read with the others: none waits any more
+      newPosts.value = []
+    },
+    () => {},
+  )
 
 // As many as the server reads at once (FEED_PAGE of api/posts.ts)
 const FEED_PAGE = 50
@@ -44,7 +47,9 @@ export const loadOlderPosts = async () => {
 /** The posts and the replies of one developer, for their profile */
 export const loadPostsOf = (login: string) =>
   Promise.all([
-    api['GET/api/posts'].fetch({ after: '', author: login, before: '' }).then(adoptPosts),
+    api['GET/api/posts'].fetch({ after: '', author: login, before: '' }).then(
+      adoptPosts,
+    ),
     api['GET/api/replies'].fetch({ author: login }).then(adoptReplies),
   ]).catch(() => {})
 
