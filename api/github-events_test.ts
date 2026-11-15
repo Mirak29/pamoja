@@ -136,6 +136,12 @@ Deno.test('events: a PR opened, merged, closed', async () => {
   setup()
   await deliver('pull_request', { action: 'opened', pull_request: pull(81) })
   assertEquals(count('PR_OPENED'), 1)
+  // Its card on the board, in Review (§6.7)
+  const card = () =>
+    db.prepare(`SELECT task.boardColumn AS col FROM task
+      JOIN pullRequest ON pullRequest.pullRequestId = task.pullRequestId
+      WHERE pullRequest.number = 81`).all()
+  assertEquals(card(), [{ col: 'review' }])
   assertEquals(
     db.prepare('SELECT state, additions, branch FROM pullRequest').get(),
     { state: 'open', additions: 120, branch: 'feat/81' },
@@ -149,6 +155,8 @@ Deno.test('events: a PR opened, merged, closed', async () => {
     }),
   })
   assertEquals(count('PR_MERGED'), 1)
+  // Merged: the same card, in Done
+  assertEquals(card(), [{ col: 'done' }])
   assertEquals(
     db.prepare(`SELECT p.state, o.authorIsOwner, r.rulesVersion
       FROM pullRequest p, entryAuthorIsOwner o, entryRulesVersion r

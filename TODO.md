@@ -198,7 +198,7 @@ Responsable : _à répartir_
 **Critères d'acceptation (§4)**
 
 - [ ] Deux utilisateurs déplacent des cartes en même temps sans perte
-- [ ] Une PR mergée déplace sa carte en Done
+- [x] Une PR mergée déplace sa carte en Done
 - [ ] Une candidature s'accepte depuis la notification
 - [ ] Une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic
 
@@ -395,3 +395,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · Demandes de collaboration sur le serveur (PAM-408) : `POST/api/collaboration/request` crée une demande d'aide adressée à une seule personne (`targetUserId`), sans matching, notifiée à elle seule, refusée si elle a bloqué l'auteur ; la colonne de droite de l'Accueil lit les vrais membres et projets (PAM-504) · §6.2, §7.6
 - 2026-11-15 · Share Card et aperçus de partage (PAM-104, PAM-305) : `GET/api/user/card` et `GET/api/project/card` dessinent un PNG 1200 × 630 (satori puis resvg-wasm, polices dans `api/assets`), gardé sur disque sous l'empreinte de ses données ; `/@login` et `/project/slug` reçoivent title, description, og:* et twitter:* échappés ; `sitemap.xml` ; la fenêtre « Carte de partage » montre et télécharge la vraie image · §17.1, §17.2
 - 2026-11-15 · Point du TODO vérifié dans le code : PAM-501, 504, 505 et 512 cochées (fil paginé, reposts et réponses sur le serveur, colonne de droite et Explore sur les vrais membres et projets) ; critères `PRAGMA`, seed en une commande et routes en vrais chemins avec balises OG cochés. Restent ouverts : PAM-508 (retrait d'une preuve) et « une PR mergée déplace sa carte en Done », car aucune carte n'est encore liée à une PR
+- 2026-11-15 · Cartes du Board liées à GitHub (PAM-404) : une carte peut pointer sur une issue ou une PR du projet (`POST/api/task/create`, `POST/api/task/link`, une carte par lien) ; une PR ouverte reçoit sa carte en Review, mergée elle passe en Done (webhook, et la synchro pour un projet sans webhook) ; « Nouvelle carte » et « Ajouter au board » enregistrent sur le serveur · §6.7

@@ -7,6 +7,7 @@ import { errorMessage, log } from '/api/lib/log.ts'
 import { readPullRequestSkills } from '/api/pull-skills.ts'
 import { resyncReviews } from '/api/review-check.ts'
 import { Repository } from '/api/schema.ts'
+import { markMergedPullDone } from '/api/board.ts'
 
 // The refresh of the poll mode (§5.4): every 15 minutes, conditional reads of
 // each repo, its issues and its PRs. A 304 does not count in the quota and
@@ -182,7 +183,11 @@ export const refreshRepository = async (repositoryId: number) => {
     }
     if (pulls.status === 200) {
       etags[pullsPath] = pulls.etag ?? ''
-      for (const pull of pulls.data) upsertPullRequest(repositoryId, pull)
+      for (const pull of pulls.data) {
+        upsertPullRequest(repositoryId, pull)
+        // Merged while no webhook came: its card goes to Done (§6.7)
+        pull.merged_at && markMergedPullDone(repositoryId, pull.number)
+      }
     }
   })()
   // The reviews of the PRs a helper accepted: a lost webhook does not lose

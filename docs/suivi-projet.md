@@ -1464,6 +1464,21 @@ Un lien `/@login` ou `/project/slug` collé sur LinkedIn, X, WhatsApp, Discord o
 - **Livrable** : `api/share-card.ts`, `api/og.ts`, `api/og_test.ts`, `api/routes.ts`, `api/assets/fonts/`, `prod-server.ts`, `task-dev.ts`, `Dockerfile`, `deno.json`, `web/pages/profile/share-dialog.tsx` ; §17.1, §17.2
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-404 (suite) · Cartes liées aux issues et aux PR
+
+Le critère « une PR mergée déplace sa carte en Done » ne pouvait pas se vérifier : le webhook savait déplacer la carte d'une PR, mais aucune carte n'était jamais liée à une PR. Autre défaut : « Nouvelle carte » et « Ajouter au board » (onglet Issues) n'écrivaient que dans la page, et la carte disparaissait au rechargement.
+
+- **Une carte est interne, ou liée à une issue ou une PR du dépôt du projet**, une carte par lien (§6.7).
+  - `POST/api/task/create` accepte une issue (Backlog) ou une PR (Review, ou Done si elle est déjà mergée), avec son titre par défaut.
+  - `POST/api/task/link` lie une carte existante ou la rend interne.
+  - `GET/api/project/board` donne le numéro de chaque lien.
+- **Côté GitHub** : une PR ouverte (webhook `opened` ou `reopened`) reçoit sa carte en Review. Mergée, la carte passe en Done, par le webhook, ou par la synchro périodique pour un projet sans webhook ou une livraison perdue.
+- **Interface** : « Nouvelle carte » et « Ajouter au board » passent par le serveur. Chaque carte a un sélecteur « Carte interne / PR / issue », limité aux PR et issues ouvertes qui n'ont pas encore de carte.
+- **Testé** avec de vrais webhooks signés : une PR ouverte, sa carte en Review, la PR mergée, la même carte en Done.
+
+- **Livrable** : `api/board.ts`, `api/board_test.ts`, `api/github-events.ts`, `api/github-events_test.ts`, `api/sync.ts`, `api/routes.ts`, `web/lib/board.ts`, `web/fixtures/board.ts`, `web/pages/project/board-tab.tsx`, `web/pages/project/issues-tab.tsx` ; §6.7
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

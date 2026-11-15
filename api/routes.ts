@@ -139,7 +139,13 @@ import {
   setReaction,
   setRepost,
 } from '/api/posts.ts'
-import { BOARD_COLUMNS, createTask, listBoard, moveTask } from '/api/board.ts'
+import {
+  BOARD_COLUMNS,
+  createTask,
+  linkTask,
+  listBoard,
+  moveTask,
+} from '/api/board.ts'
 import {
   attachTask,
   createMilestone,
@@ -1857,6 +1863,8 @@ const defs = {
       title: STR('Title of the card'),
       rank: STR('Fractional rank in its column'),
       milestone: NUM('Id of its milestone, 0 for none'),
+      issue: NUM('Number of its GitHub issue, 0 for none'),
+      pullRequest: NUM('Number of its GitHub PR, 0 for none'),
     })),
     description: 'The cards of a project board (§6.7)',
   }),
@@ -1927,18 +1935,47 @@ const defs = {
 
   'POST/api/task/create': route({
     authorize: editing,
-    fn: (ctx, input) => createTask(ctx.session.userId, input.slug, input.title),
+    fn: (ctx, input) =>
+      createTask(ctx.session.userId, input.slug, input.title, {
+        issue: input.issue ?? 0,
+        pullRequest: input.pullRequest ?? 0,
+      }),
     input: OBJ({
       slug: STR('Slug of the project'),
-      title: STR('Title of the card'),
+      title: STR('Title of the card, empty to take the one of its link'),
+      issue: optional(NUM('Number of an issue of the project to link')),
+      pullRequest: optional(NUM('Number of a PR of the project to link')),
     }),
     output: OBJ({
       id: NUM('Id of the new card'),
-      column: STR('Its column: backlog'),
+      column: STR('Its column: backlog, or review for a PR'),
       title: STR('Its title'),
       rank: STR('Its rank'),
+      issue: NUM('Its issue, 0 for none'),
+      pullRequest: NUM('Its PR, 0 for none'),
     }),
-    description: 'Add an internal card to the Backlog (§6.7)',
+    description: 'Add a card: internal, or linked to an issue or a PR (§6.7)',
+  }),
+
+  'POST/api/task/link': route({
+    authorize: editing,
+    fn: (ctx, input) =>
+      linkTask(ctx.session.userId, input.taskId, {
+        issue: input.issue,
+        pullRequest: input.pullRequest,
+      }),
+    input: OBJ({
+      taskId: NUM('Id of the card'),
+      issue: NUM('Number of an issue of the project, 0 for none'),
+      pullRequest: NUM('Number of a PR of the project, 0 for none'),
+    }),
+    output: OBJ({
+      id: NUM('Id of the card'),
+      column: STR('Its column: Done for a PR already merged'),
+      issue: NUM('Its issue, 0 for none'),
+      pullRequest: NUM('Its PR, 0 for none'),
+    }),
+    description: 'Link a card to an issue or a PR of its project, or unlink it',
   }),
 
   'POST/api/task/move': route({
