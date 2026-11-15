@@ -479,6 +479,7 @@ Deno.test("messages: edit and delete one's own message (PAM-523)", async () => {
   await sena.call('/api/conversation/message/react', {
     id: first.id,
     emoji: '👍',
+    on: true,
   })
   assertEquals(
     (await kadi.call('/api/conversation/message/delete', { id: first.id }))
@@ -532,18 +533,21 @@ Deno.test('messages: reply to a message, react to it (PAM-525)', async () => {
     })).status,
     400,
   )
-  // Reactions: one of the list, toggled, counted
-  const react = (who: Dev, emoji: string) =>
-    who.call('/api/conversation/message/react', { id: first.id, emoji })
+  // Reactions: one of the list, the state wanted, counted
+  const react = (who: Dev, emoji: string, on = true) =>
+    who.call('/api/conversation/message/react', { id: first.id, emoji, on })
   assertEquals((await react(sena, '🦄')).status, 400)
   await react(sena, '👍')
+  await react(kadi, '👍')
+  // Sent twice, from two tabs: still one
   await react(kadi, '👍')
   await react(kadi, '🎉')
   assertEquals((await open(kadi, id)).messages[0].reactions, [
     { emoji: '👍', count: 2, mine: true },
     { emoji: '🎉', count: 1, mine: true },
   ])
-  await react(kadi, '👍')
+  await react(kadi, '👍', false)
+  await react(kadi, '👍', false)
   assertEquals((await open(sena, id)).messages[0].reactions, [
     { emoji: '👍', count: 1, mine: true },
     { emoji: '🎉', count: 1, mine: false },

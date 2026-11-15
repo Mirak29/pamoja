@@ -1371,6 +1371,28 @@ Le seed crée le projet `openpay-africa` d'Abdou, sans repo, qui porte les 14 re
 - **Livrable** : `api/import.ts`, `api/import_test.ts`, `web/fixtures/repos.ts` ; §5.4, §6.3, §18.2
 - **Par** : @Mirak29
 
+### 2026-11-15 · PAM-501 (suite) · Un J'aime ne disparaît plus
+
+Un J'aime pouvait s'effacer, y compris sur ses propres posts. `POST/api/reaction/toggle` et `POST/api/bookmark/toggle` inversaient l'état du serveur, et un post déjà affiché ne reprenait jamais l'état lu. Un onglet resté ouvert, ou le téléphone, qui avait manqué un changement affichait donc l'inverse de ce qu'il enregistrait : un clic pour aimer retirait le J'aime, qui revenait ou disparaissait au rechargement suivant. Les routes deviennent `POST/api/reaction` et `POST/api/bookmark`, qui reçoivent l'état voulu (`on`), comme le follow (PAM-503) et l'adhésion à une communauté (PAM-502). Une requête rejouée donne le même résultat. `adoptPosts` et `adoptThread` reprennent les J'aime et le favori lus pour les posts déjà affichés, sauf pendant qu'une action de la page s'enregistre (`whileSaving`). Toucher Accueil remet donc la page à l'état du serveur.
+
+- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/reactions_test.ts`, `web/fixtures/posts.ts`, `web/lib/reactions.ts`, `docs/cahier-des-charges.md` ; §10.1, §15
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-501 (suite) · Reposts, réponses et fil qui tiennent
+
+Revue de toutes les interactions qui pouvaient disparaître.
+
+- **Reposts** : ils n'existaient que dans la page et s'effaçaient au rechargement. `POST/api/post/repost` les enregistre, avec l'état voulu. Un repost est un post qui pointe sur son original (`repostOfId`) ; il n'apparaît jamais comme un post du fil ou du profil. Un repost retiré reste masqué dans la table, où ses entries pointent, et revient s'il est refait. L'auteur du post est notifié la première fois.
+- **Fil** : `GET/api/posts` renvoie qui a republié chaque post, et un repost récent ramène un post plus ancien dans les derniers.
+- **Réponses** : le fil, la communauté et le profil ne comptaient que les réponses déjà lues, donc 0 après un rechargement. `GET/api/posts` donne maintenant le nombre de réponses directes, et ouvrir les commentaires d'une carte lit son fil. `GET/api/replies` donne l'onglet Réponses du profil. Une réponse écrite à une réponse pas encore enregistrée attend son id au lieu de rester dans la page, et une sous-réponse suit l'id que sa réponse reçoit.
+- **Réactions des messages privés** : `POST/api/conversation/message/react` reçoit aussi l'état voulu (`on`).
+- **Fil en direct** : un post, un repost ou une réponse (`POST_CREATED`, `POST_REPOSTED`, `POST_REPLIED`, aussi vers les autres onglets de l'auteur) fait relire le fil. Un post déjà affiché reprend ses J'aime, reposts et réponses ; un post pas encore affiché attend derrière « nouveaux posts ». Le retour sur l'onglet ou sur l'app du téléphone fait de même.
+- **Page communauté** : elle compte les J'aime des autres.
+- **Pagination du fil** : il ne lisait que les 50 derniers posts, et rien de plus ancien n'était accessible. `GET/api/posts` prend un curseur (`before`, moment où le post est arrivé dans les fils, publication ou dernier repost). Arrivée au bout de ce qu'elle tient, la liste lit la page suivante, jusqu'au plus ancien post (« Tu as tout vu »).
+
+- **Livrable** : `api/posts.ts`, `api/routes.ts`, `api/entries.ts`, `api/messages.ts`, `api/schema.ts` (commentaire), `api/reactions_test.ts`, `api/messages_test.ts`, `api/entry_triggers_test.ts`, `web/fixtures/posts.ts`, `web/lib/posts.ts`, `web/lib/reactions.ts`, `web/lib/replies.ts`, `web/lib/live-data.ts`, `web/lib/messages.ts`, `web/lib/notifications.ts`, `web/ui/post.tsx`, `web/pages/messages-page.tsx`, `web/pages/communities/community-page.tsx`, `web/pages/home/home-page.tsx` ; §10.1, §10.6, §12.2, §12.7, §15
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

@@ -1,6 +1,6 @@
 import { debounced, onEvent, onReconnect } from '/web/lib/realtime.ts'
 import { reloadHelpRequests } from '/web/lib/help.ts'
-import { loadProjects } from '/web/lib/session.ts'
+import { loadProjects, signedIn } from '/web/lib/session.ts'
 import { reloadOpenedChannels } from '/web/lib/channels.ts'
 import { loadNewPosts } from '/web/lib/posts.ts'
 import { reloadPulses } from '/web/lib/pulse.ts'
@@ -73,9 +73,15 @@ onReconnect(() => {
   reloadChannels()
 })
 
-// A post of someone the developer follows, of their community, or theirs
-// from another tab: only what is new is read, and held behind « nouveaux
-// posts » (posts.ts)
+// A post, a repost or a reply of someone the developer follows, of their
+// community, or theirs from another tab: the feed is read again, what is new
+// held behind « nouveaux posts » (posts.ts)
 const readNewPosts = debounced(loadNewPosts, 1500)
-onEvent('POST_CREATED', readNewPosts)
+onEvent(['POST_CREATED', 'POST_REPOSTED', 'POST_REPLIED'], readNewPosts)
 onReconnect(readNewPosts)
+
+// Back on the tab, or on the app of the phone: likes and replies given
+// meanwhile elsewhere show without a reload
+addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && signedIn.peek()) readNewPosts()
+})

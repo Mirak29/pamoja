@@ -604,6 +604,7 @@ export const Post = createTable('post', {
   attachments: { type: 'JSON', optional: true },
   parentId: { type: 'INTEGER', optional: true },
   rootId: { type: 'INTEGER', optional: true },
+  // A repost taken back stays, hidden: its entries point at it (PAM-501)
   repostOfId: { type: 'INTEGER', optional: true },
   acceptedReplyId: { type: 'INTEGER', optional: true },
   hiddenAt: { type: 'REAL', optional: true },

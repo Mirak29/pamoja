@@ -15,8 +15,8 @@ import { evaluateBadges } from '/api/badges.ts'
 export const REACTION_KINDS = ['like']
 
 // Posts saved on the server with their images and their video (PAM-427,
-// §10.1, §17.3): written from the composers, read by the feed. Replies,
-// reactions and the full feed come with PAM-501.
+// §10.1, §17.3): written from the composers, read by the feed with their
+// likes, bookmarks, replies and reposts (PAM-501).
 
 /** The types of a post a member writes (§10.1) */
 export const POST_TYPES = [
@@ -77,24 +77,71 @@ const postSelect = `
   LEFT JOIN community ON community.communityId = post.communityId
 `
 
+// A post of the feed: neither a reply nor a repost, which is shown on the
+// post it points at (§10.1)
+const original = `post.parentId IS NULL AND post.repostOfId IS NULL
+  AND post.hiddenAt IS NULL`
+
+// When a post last came into the feeds: published, or reposted since
+const lastSeen = `
+  SELECT postId, createdAt AS at FROM post
+  WHERE parentId IS NULL AND repostOfId IS NULL AND hiddenAt IS NULL
+  UNION ALL
+  SELECT repostOfId, createdAt FROM post
+  WHERE repostOfId IS NOT NULL AND hiddenAt IS NULL
+`
+
+// The latest posts, a repost bringing an older one back into them
 const listRecent = sql<PostRow, number>`${postSelect}
-  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+  WHERE ${original} AND post.postId IN (
+    SELECT postId FROM (${lastSeen})
+    GROUP BY postId ORDER BY max(at) DESC LIMIT ?
+  )
   ORDER BY post.createdAt DESC
-  LIMIT ?
 `.all
 
-// Those published since a time: what a feed open on the page lacks (§12.2)
-const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
-  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
-    AND post.createdAt > :after
+// The page before a time: posts that last came into the feeds earlier, for
+// a feed read further down (cursor, §12.7)
+const listBefore = sql<PostRow, { before: number; limit: number }>`${postSelect}
+  WHERE ${original} AND post.postId IN (
+    SELECT postId FROM (${lastSeen})
+    GROUP BY postId HAVING max(at) < :before
+    ORDER BY max(at) DESC LIMIT :limit
+  )
   ORDER BY post.createdAt DESC
-  LIMIT :limit
+`.all
+
+// Those published or reposted since a time: what a feed open on the page
+// lacks (§12.2)
+const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
+  WHERE ${original} AND post.postId IN (
+    SELECT postId FROM (${lastSeen}) WHERE at > :after
+    GROUP BY postId ORDER BY max(at) DESC LIMIT :limit
+  )
+  ORDER BY post.createdAt DESC
 `.all
 
 // The posts of one developer, for the activity of their profile
 const listByAuthor =
   sql<PostRow, { author: string; limit: number }>`${postSelect}
-  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+  WHERE ${original} AND user.githubUsername = :author COLLATE NOCASE
+  ORDER BY post.createdAt DESC
+  LIMIT :limit
+`.all
+
+// The replies of one developer, for the activity of their profile
+const listRepliesByAuthor = sql<
+  PostRow & { parentId: number; rootId: number },
+  { author: string; limit: number }
+>`
+  SELECT post.postId, post.parentId, post.rootId, user.githubUsername AS author,
+    profile.displayName AS authorName, community.slug AS community,
+    post.type, post.title, post.body, post.videoUrl, post.createdAt
+  FROM post
+  JOIN user ON user.userId = post.authorId
+  JOIN profile ON profile.userId = post.authorId
+  LEFT JOIN community ON community.communityId = post.communityId
+  WHERE post.parentId IS NOT NULL AND post.hiddenAt IS NULL
     AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
@@ -114,6 +161,27 @@ const reactionRows = sql<
   GROUP BY targetId, kind
 `.all
 
+// The replies of each post, those shown: a hidden one is not counted
+const replyRows = sql<{ parentId: number; n: number }, string>`
+  SELECT parentId, count(*) AS n FROM post
+  WHERE parentId IN (SELECT value FROM json_each(?)) AND hiddenAt IS NULL
+  GROUP BY parentId
+`.all
+
+// Who reposted each post, and when, oldest first
+const repostRows = sql<
+  { postId: number; by: string; name: string; at: number },
+  string
+>`
+  SELECT post.repostOfId AS postId, user.githubUsername AS by,
+    profile.displayName AS name, post.createdAt AS at
+  FROM post JOIN user ON user.userId = post.authorId
+  JOIN profile ON profile.userId = post.authorId
+  WHERE post.repostOfId IN (SELECT value FROM json_each(?))
+    AND post.hiddenAt IS NULL
+  ORDER BY post.createdAt ASC
+`.all
+
 const bookmarkRows = sql<{ postId: number }, { me: number; ids: string }>`
   SELECT postId FROM bookmark
   WHERE userId = :me AND postId IN (SELECT value FROM json_each(:ids))
@@ -127,6 +195,8 @@ const shown = (me: number, rows: PostRow[]) => {
     { counts: Record<string, number>; mine: string[] }
   >()
   const bookmarked = new Set<number>()
+  const replies = new Map<number, number>()
+  const reposts = new Map<number, { by: string; name: string; at: number }[]>()
   if (ids.length) {
     const json = JSON.stringify(ids)
     for (const r of reactionRows({ me, ids: json })) {
@@ -136,6 +206,12 @@ const shown = (me: number, rows: PostRow[]) => {
       reactions.set(r.targetId, entry)
     }
     for (const b of bookmarkRows({ me, ids: json })) bookmarked.add(b.postId)
+    for (const r of replyRows(json)) replies.set(r.parentId, r.n)
+    for (const r of repostRows(json)) {
+      const list = reposts.get(r.postId) ?? []
+      list.push({ by: r.by, name: r.name, at: r.at })
+      reposts.set(r.postId, list)
+    }
   }
   return rows.map((row) => {
     const r = reactions.get(row.postId)
@@ -153,6 +229,9 @@ const shown = (me: number, rows: PostRow[]) => {
       // The kinds the developer reacted with, and whether they saved it
       mine: r?.mine ?? [],
       bookmarked: bookmarked.has(row.postId),
+      // Counted by the server: the page knows them before the thread is read
+      replies: replies.get(row.postId) ?? 0,
+      reposts: reposts.get(row.postId) ?? [],
       createdAt: row.createdAt,
     }
   })
@@ -160,23 +239,45 @@ const shown = (me: number, rows: PostRow[]) => {
 
 /**
  * The latest posts, newest first; with `after` (seconds), only those
- * published since: a feed open on the page reads just what is new. With
- * `author`, those of one developer, for their profile.
+ * published or reposted since: a feed open on the page reads just what is
+ * new. With `before`, the page before that time, for a feed read further
+ * down. With `author`, those of one developer, for their profile.
  */
-export const listPosts = (me: number, after = 0, author = '') =>
+export const listPosts = (
+  me: number,
+  after = 0,
+  author = '',
+  before = 0,
+) =>
   shown(
     me,
     author
-      ? listByAuthor({ author, limit: 50 })
+      ? listByAuthor({ author, limit: FEED_PAGE })
       : after
-      ? listSince({ after, limit: 50 })
-      : listRecent(50),
+      ? listSince({ after, limit: FEED_PAGE })
+      : before
+      ? listBefore({ before, limit: FEED_PAGE })
+      : listRecent(FEED_PAGE),
   )
+
+/** Posts read at once by the feed: fewer means it reached its start */
+export const FEED_PAGE = 50
+
+/** The replies of one developer, with where they go, for their profile */
+export const listRepliesOf = (me: number, author: string) => {
+  const rows = listRepliesByAuthor({ author, limit: 50 })
+  const place = new Map(rows.map((row) => [row.postId, row]))
+  return shown(me, rows).map((p) => ({
+    ...p,
+    parentId: place.get(p.id)!.parentId,
+    rootId: place.get(p.id)!.rootId,
+  }))
+}
 
 // Posts the developer saved, newest saved first (§10.1)
 const listBookmarked = sql<PostRow, number>`${postSelect}
   JOIN bookmark ON bookmark.postId = post.postId AND bookmark.userId = ?
-  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+  WHERE ${original}
   ORDER BY bookmark.createdAt DESC
   LIMIT 50
 `.all
@@ -199,7 +300,7 @@ const getReaction = sql<
 const deleteReaction = sql<undefined, number>`
   DELETE FROM reaction WHERE reactionId = ?
 `.run
-// A second toggle at the same time finds the row written: it stays
+// Two requests at the same time: the second finds the row written
 const addReaction = sql<
   undefined,
   { me: number; postId: number; kind: string }
@@ -223,23 +324,100 @@ const addBookmark = sql<undefined, { me: number; postId: number; at: number }>`
   ON CONFLICT DO NOTHING
 `.run
 
-/** React to a post with a kind, or take the reaction back (§10.1) */
-export const toggleReaction = (me: number, postId: number, kind: string) => {
+/**
+ * Puts a reaction on a post, or takes it back (§10.1). The request says the
+ * state wanted, never a toggle: replayed, or sent from a tab that missed a
+ * change, it gives the same result (§15)
+ */
+export const setReaction = (
+  me: number,
+  postId: number,
+  kind: string,
+  on: boolean,
+) => {
   if (!REACTION_KINDS.includes(kind)) throw badRequest('Unknown reaction')
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getReaction({ me, postId, kind })
-  if (row) deleteReaction(row.reactionId)
-  else addReaction({ me, postId, kind })
-  return { reacted: !row }
+  if (on && !row) addReaction({ me, postId, kind })
+  if (!on && row) deleteReaction(row.reactionId)
+  return { reacted: on }
 }
 
-/** Save a post or remove it from the saved ones (§10.1) */
-export const toggleBookmark = (me: number, postId: number) => {
+/** Saves a post or removes it from the saved ones, as wanted (§10.1, §15) */
+export const setBookmark = (me: number, postId: number, on: boolean) => {
   if (!postExists(postId)) throw badRequest('Unknown post')
   const row = getBookmark({ me, postId })
-  if (row) deleteBookmark(row.bookmarkId)
-  else addBookmark({ me, postId, at: now() })
-  return { bookmarked: !row }
+  if (on && !row) addBookmark({ me, postId, at: now() })
+  if (!on && row) deleteBookmark(row.bookmarkId)
+  return { bookmarked: on }
+}
+
+const getRepost = sql<
+  { postId: number; hiddenAt: number | null },
+  { me: number; postId: number }
+>`
+  SELECT postId, hiddenAt FROM post WHERE authorId = :me AND repostOfId = :postId
+`.get
+// A repost taken back stays in the table, where its entries point, hidden
+const withdrawRepost =
+  sql<undefined, { me: number; postId: number; at: number }>`
+  UPDATE post SET hiddenAt = :at, updatedAt = :at
+  WHERE authorId = :me AND repostOfId = :postId AND hiddenAt IS NULL
+`.run
+const renewRepost = sql<undefined, { repostId: number; at: number }>`
+  UPDATE post SET hiddenAt = NULL, createdAt = :at, updatedAt = :at
+  WHERE postId = :repostId
+`.run
+
+/**
+ * Reposts a post, or takes the repost back, as wanted (§10.1, §15). A
+ * repost is a post that points at its original: it brings it into the feed
+ * of the followers, and its author is told the first time
+ */
+export const setRepost = (me: number, postId: number, on: boolean) => {
+  const target = getFull(postId)
+  if (!target || target.parentId || target.repostOfId) {
+    throw badRequest('Unknown post')
+  }
+  const row = getRepost({ me, postId })
+  if (!on) {
+    withdrawRepost({ me, postId, at: now() })
+    return { reposted: false }
+  }
+  if (row && row.hiddenAt === null) return { reposted: true }
+  within(countPosts, POST_RATE, me, 'Too many posts this hour')
+  db.transaction(() => {
+    const at = now()
+    const repostId = row?.postId ?? Post.insert({
+      authorId: me,
+      communityId: target.communityId,
+      type: 'Repost',
+      title: null,
+      body: '',
+      repostOfId: postId,
+      source: 'platform',
+      createdAt: at,
+      updatedAt: at,
+    })
+    if (row) renewRepost({ repostId, at })
+    // The followers and the community read it in direct (§12.2)
+    Entry.insert.POST_REPOSTED({
+      userId: me,
+      communityId: maybe(target.communityId),
+      postId: repostId,
+      source: 'platform',
+    })
+    if (!row && target.authorId !== me) {
+      createNotification({
+        userId: target.authorId,
+        type: 'repost',
+        category: 'communities',
+        actorId: me,
+        payload: { postId, excerpt: excerpt(target) },
+      })
+    }
+  })()
+  return { reposted: true }
 }
 
 /** Publishes a post with its images and its video, checked first */
@@ -301,12 +479,13 @@ type Full = {
   body: string
   parentId: number | null
   rootId: number | null
+  repostOfId: number | null
   acceptedReplyId: number | null
 }
 
 const getFull = sql<Full, number>`
   SELECT postId, authorId, communityId, type, title, body,
-    parentId, rootId, acceptedReplyId
+    parentId, rootId, repostOfId, acceptedReplyId
   FROM post WHERE postId = ? AND hiddenAt IS NULL
 `.get
 

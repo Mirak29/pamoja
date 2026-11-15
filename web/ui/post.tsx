@@ -22,15 +22,18 @@ import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
 import {
   childrenOf,
   descendantCount,
+  lacksReplies,
   likeCountOf,
   type Post,
   posts,
   postsChanged,
-  toggleRepost,
+  replyCountOf,
+  serverIdOf,
 } from '/web/fixtures/posts.ts'
-import { toggleBookmark, toggleLike } from '/web/lib/reactions.ts'
+import { toggleBookmark, toggleLike, toggleRepost } from '/web/lib/reactions.ts'
 import {
   accept as acceptServer,
+  loadThread,
   reply as replyServer,
 } from '/web/lib/replies.ts'
 import { projects } from '/web/fixtures/projects.ts'
@@ -161,7 +164,7 @@ const share = (post: Post) => {
 }
 
 const repost = (post: Post) => {
-  const on = toggleRepost(post, me.login)
+  const on = toggleRepost(post)
   notify({
     title: on ? 'Republié' : 'Republication retirée',
     body: on
@@ -504,7 +507,7 @@ const ReplyRow = (
         <Actions
           post={post}
           size='reply'
-          replies={childrenOf(post.id).length}
+          replies={replyCountOf(post)}
           replying={replying}
           onReply={onToggleReply}
           before={row.fold && (
@@ -817,9 +820,14 @@ export const PostCard = (
           <Actions
             post={post}
             size='post'
-            replies={childrenOf(post.id).length}
+            replies={replyCountOf(post)}
             replying={open}
-            onReply={() => setOpen(!open)}
+            onReply={() => {
+              // Replies counted by the server but not read yet: the thread
+              const id = !open && lacksReplies(post) && serverIdOf(post.id)
+              if (id) loadThread(id)
+              setOpen(!open)
+            }}
           />
           {open && (
             <div class='flex animate-enter-fast flex-col gap-2.5 border-t border-line pt-3 pb-1'>

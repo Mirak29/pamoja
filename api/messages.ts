@@ -900,6 +900,14 @@ const insertReaction = sql<
   VALUES (:messageId, :me, :emoji, :at)
 `.run
 
+const hasReaction = sql<
+  { emoji: string },
+  { messageId: number; me: number; emoji: string }
+>`
+  SELECT emoji FROM directMessageReaction
+  WHERE directMessageId = :messageId AND userId = :me AND emoji = :emoji
+`.get
+
 const removeReaction = sql<
   undefined,
   { messageId: number; me: number; emoji: string }
@@ -910,7 +918,7 @@ const removeReaction = sql<
 
 /** Adds or takes back a reaction to a message of the conversation */
 export const reactToMessage = db.transaction(
-  (me: number, messageId: number, emoji: string) => {
+  (me: number, messageId: number, emoji: string, on: boolean) => {
     const message = getMessage(messageId)
     const row = message &&
       getMine({ conversationId: message.conversationId, userId: me })
@@ -924,8 +932,10 @@ export const reactToMessage = db.transaction(
     if (block.byMe || block.byThem || row.status !== 'accepted') {
       throw forbidden('You cannot react here')
     }
-    // Taken back when it was there, added otherwise
-    if (!removeReaction({ messageId, me, emoji })) {
+    // The state wanted, never a toggle: a replayed request or a page that
+    // missed a change gives the same result (§15)
+    if (!on) removeReaction({ messageId, me, emoji })
+    else if (!hasReaction({ messageId, me, emoji })) {
       within(countReactions, RATE.reactions, me, 'Too many reactions')
       insertReaction({ messageId, me, emoji, at: now() })
     }

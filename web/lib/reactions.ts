@@ -7,34 +7,54 @@ import {
   serverIdOf,
   toggleBookmark as bookmarkLocal,
   toggleLike as likeLocal,
+  toggleRepost as repostLocal,
+  whileSaving,
 } from '/web/fixtures/posts.ts'
 
-// Reactions and bookmarks persisted on the server (PAM-501): shown at once,
+// Likes, reposts and bookmarks persisted on the server (PAM-501): shown at once,
 // then saved; a failure puts it back. A post of the demo, whose id is a
 // fixture string, stays handled in the page (§10.1).
 
 /** « J'aime » on a post, or taken back: the only reaction (PAM-539) */
 export const toggleLike = (post: Post) => {
-  likeLocal(post, me.login)
+  const on = likeLocal(post, me.login)
   const postId = serverIdOf(post.id)
   if (!postId) return
-  api['POST/api/reaction/toggle'].fetch({ postId, kind: 'like' }).catch(
+  // The state wanted, not a toggle: a tab that missed a change keeps it
+  whileSaving(
+    post,
+    api['POST/api/reaction'].fetch({ postId, kind: 'like', on }),
+  ).catch((error) => {
+    likeLocal(post, me.login)
+    notifyFailure('Action non enregistrée', error)
+  })
+}
+
+/** Save a post, or remove it from the saved ones */
+export const toggleBookmark = (post: Post) => {
+  const on = bookmarkLocal(post, me.login)
+  const postId = serverIdOf(post.id)
+  if (!postId) return
+  whileSaving(post, api['POST/api/bookmark'].fetch({ postId, on })).catch(
     (error) => {
-      likeLocal(post, me.login)
+      bookmarkLocal(post, me.login)
       notifyFailure('Action non enregistrée', error)
     },
   )
 }
 
-/** Save a post, or remove it from the saved ones */
-export const toggleBookmark = (post: Post) => {
-  bookmarkLocal(post, me.login)
+/** Reposts a post to the followers, or takes the repost back */
+export const toggleRepost = (post: Post) => {
+  const on = repostLocal(post, me.login)
   const postId = serverIdOf(post.id)
-  if (!postId) return
-  api['POST/api/bookmark/toggle'].fetch({ postId }).catch((error) => {
-    bookmarkLocal(post, me.login)
-    notifyFailure('Action non enregistrée', error)
-  })
+  if (postId) {
+    whileSaving(post, api['POST/api/post/repost'].fetch({ postId, on }))
+      .catch((error) => {
+        repostLocal(post, me.login)
+        notifyFailure('Action non enregistrée', error)
+      })
+  }
+  return on
 }
 
 /** The posts the developer saved, for the « Enregistrés » page */

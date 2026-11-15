@@ -460,7 +460,10 @@ export const Entry = initEntries(entries, relations, {
     communityId: 'community, if any',
     postId: 'the reply',
     fields: { source },
-    trigger: communityMember,
+    // The feeds that show its post count it: the author's other tabs, the
+    // community, the followers of the author (PAM-501)
+    trigger: (entry, sub) =>
+      self(entry, sub) || communityMember(entry, sub) || fan(entry, sub),
   },
   POST_REPOSTED: {
     userId: 'developer who reposted',
@@ -468,8 +471,7 @@ export const Entry = initEntries(entries, relations, {
     postId: 'the repost',
     fields: { source },
     trigger: (entry, sub) =>
-      communityMember(entry, sub) ||
-      fan(entry, sub),
+      self(entry, sub) || communityMember(entry, sub) || fan(entry, sub),
   },
   ANSWER_ACCEPTED: {
     userId: 'author of the answer: Community Help',

@@ -19,10 +19,11 @@ import {
   personOf,
 } from '/web/fixtures/people.ts'
 import {
-  childrenOf,
+  likeCountOf,
   type Post,
   posts,
   postsChanged,
+  replyCountOf,
 } from '/web/fixtures/posts.ts'
 import {
   type Project,
@@ -69,9 +70,10 @@ const excerpt = (body: string) => {
 }
 
 const statsOf = (post: Post) => {
-  const reactions = Object.values(post.reactions)
-    .reduce((sum, list) => sum + (list?.length ?? 0), 0)
-  const replies = childrenOf(post.id).length
+  // Counted by the server too: the likes of the others, the replies not
+  // read yet (PAM-501)
+  const reactions = likeCountOf(post)
+  const replies = replyCountOf(post)
   return `${counted(reactions, 'réaction')} · ${counted(replies, 'réponse')}`
 }
 

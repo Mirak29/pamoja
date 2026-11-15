@@ -63,7 +63,13 @@ import { dotted, t } from '/web/lib/language.ts'
 import { LIMITS } from '/api/limits.ts'
 import { Counter } from '/web/ui/input.tsx'
 import { overLimit } from '/web/lib/limits.ts'
-import { newPosts, savePost, showNewPosts } from '/web/lib/posts.ts'
+import {
+  feedStart,
+  loadOlderPosts,
+  newPosts,
+  savePost,
+  showNewPosts,
+} from '/web/lib/posts.ts'
 import { IMAGE_TYPES, MediaThumbs, useMediaPicker } from '/web/ui/media.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 
@@ -814,8 +820,9 @@ export const HomePage = () => {
           </div>
         )}
         <InfiniteList
-          more={more}
-          onMore={next}
+          // Past what the page holds, the next page of the server (§12.7)
+          more={more || !feedStart.value}
+          onMore={more ? next : () => loadOlderPosts().then(next)}
           end='Tu as tout vu. Suis des développeurs ou des communautés pour voir plus de publications.'
           class='flex flex-col gap-5'
         >
