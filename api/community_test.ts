@@ -5,6 +5,7 @@ import { communitiesOf, userIdOfLogin } from '/api/user.ts'
 import {
   createCommunity,
   listCommunities,
+  MEMBERSHIP_RATE,
   setMembership,
 } from '/api/community.ts'
 import { createSession } from '/api/session.ts'
@@ -51,7 +52,7 @@ Deno.test('community: leaving is never limited (PAM-502)', () => {
     `INSERT INTO communityMember (communityId, userId, role, joinedAt)
      VALUES (?, ?, 'member', ?)`,
   )
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < MEMBERSHIP_RATE.count; i++) {
     const { communityId } = community.get(`limit-${i}`, `Limite ${i}`, at) as {
       communityId: number
     }

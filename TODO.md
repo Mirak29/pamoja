@@ -167,7 +167,7 @@ Responsable : _à répartir_
 - [ ] **PAM-402** · Needs et « People who could help » (§6.6) — informations et besoins d'un projet enregistrés par `POST/api/project/update` (propriétaire, mainteneurs) ; reste le calcul serveur des « personnes qui peuvent aider », qui attend les compétences par besoin de l'extraction IA (PAM-310) — @niangoos
 - [x] **PAM-403** · Join project : candidatures, acceptation depuis la notification, rôles (§3, §6.6) — @niangoos ; reste : changer le rôle d'un membre (`POST/api/project/member/role`, §3)
 - [x] **PAM-404** · Board : 5 colonnes, rang fractionnaire, synchro GitHub → board, PR mergée → Done (§6.7) — @niangoos
-- [ ] **PAM-405** · Roadmap et milestones (§6.7)
+- [x] **PAM-405** · Roadmap et milestones (§6.7)
 - [x] **PAM-406** · Canaux du projet : `#général`, `#aide`, `#annonces` imposés, messages, fils, réactions, images, vidéos intégrées, droits d'écriture et de lecture par canal (§6.8) — @niangoos
 - [x] **PAM-407** · Présence en mémoire, indexée par connexion SSE (§13.6) — `api/presence.ts` — @Mirak29
 - [ ] **PAM-408** · Collaboration Requests depuis un profil (§7.6)
@@ -223,7 +223,7 @@ Responsable : _à répartir_
 - [x] **PAM-507** · Meilisearch : index, worker de synchro depuis les entries, réindexation nocturne, repli `LIKE` (§10.4) — @Mirak29
 - [ ] **PAM-508** · Signalement et modération : file, actions, historique, masquage à 3 signalements ; un contenu masqué reste visible pour son auteur, avec un bandeau (§10.5)
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
-- [ ] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
+- [x] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
 - [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5) — réponse, réponse acceptée (preuve d'Entraide) et lecture d'un fil enregistrées sur le serveur (`POST/api/post/reply`, `POST/api/post/accept`, `GET/api/post/thread`) ; republication reportée avec son rendu dans le fil (exception §4, voir suivi) — @niangoos
 - [x] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
@@ -388,3 +388,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · J'aime et favoris par état voulu (PAM-501) : `POST/api/reaction` et `POST/api/bookmark` reçoivent `on`, jamais une bascule ; un post déjà affiché reprend les J'aime et le favori lus, sauf pendant qu'une action s'enregistre. Un J'aime ne s'efface plus depuis un onglet ou un téléphone en retard · §10.1, §15
 - 2026-11-15 · Interactions qui tiennent (PAM-501) : reposts enregistrés (`POST/api/post/repost`, état voulu), nombre de réponses et reposts lus avec chaque post, onglet Réponses du profil (`GET/api/replies`), réaction de message privé par état voulu ; le fil se relit à chaque post, repost ou réponse et au retour sur l'onglet · §10.1, §12.2, §15
 - 2026-11-15 · Fil paginé par curseur (PAM-501) : `GET/api/posts` prend `before` ; le fil lit la page suivante en bas de liste, jusqu'au plus ancien post · §12.7
+- 2026-11-15 · Roadmap sur le serveur (PAM-405) : `GET/api/project/roadmap`, `POST/api/milestone/create` et `update` pour les propriétaires et mainteneurs, `POST/api/task/update` pour rattacher une carte ; progression = cartes terminées / cartes du milestone ; Board et Roadmap suivent en direct (`TASK_UPDATED`, `PROJECT_UPDATED`) ; migration 015 pour les cartes déjà seedées · §6.7
+- 2026-11-15 · Limites de débit sur toutes les routes d'écriture (PAM-510), larges pour un réseau social : réponses séparées des posts (300/h), J'aime 1 000/h, reposts 200/h, favoris 500/h, follows 300/h, modifications 300/h, cartes déplacées 1 000/h ; une action retirée n'est jamais comptée · §16

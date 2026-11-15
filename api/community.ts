@@ -14,7 +14,7 @@ import { MEILI_URL } from '/api/lib/env.ts'
 // subscriptions the server computes (§13.2): a member then receives the
 // community's posts in real time. Writes are rate limited (§16).
 
-export const MEMBERSHIP_RATE = { count: 60, per: 3600 }
+export const MEMBERSHIP_RATE = { count: 120, per: 3600 }
 export const CREATE_RATE = { count: 10, per: 3600 }
 
 /** The types of a community, stored in English (§10.2) */

@@ -15,7 +15,8 @@ export type FollowTarget = 'user' | 'project' | 'community'
 
 export const FOLLOW_TARGETS: FollowTarget[] = ['user', 'project', 'community']
 
-export const FOLLOW_RATE = { count: 60, per: 3600 }
+// Room for an onboarding that follows a whole list at once (§16)
+export const FOLLOW_RATE = { count: 300, per: 3600 }
 
 const badRequest = (message: string) => new respond.BadRequestError({ message })
 

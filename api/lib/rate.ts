@@ -48,3 +48,23 @@ export const memoryWindow = () => {
     clear: () => times.clear(),
   }
 }
+
+/**
+ * A limit kept in memory (§16): refuses the action of `me` past `limit` in
+ * the window, or counts it. For the actions the database does not date, or
+ * dates in a table shared with others
+ *
+ * @example
+ * const liked = memoryLimit({ count: 600, per: 3600 }, 'Too many likes')
+ * liked(me) // before saving the like
+ */
+export const memoryLimit = (
+  limit: { count: number; per: number },
+  message: string,
+) => {
+  const window = memoryWindow()
+  return (me: number) => {
+    within(window.count, limit, me, message)
+    window.add(me)
+  }
+}

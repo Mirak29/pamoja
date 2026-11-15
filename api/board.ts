@@ -23,7 +23,10 @@ const badRequest = (m: string) => new respond.BadRequestError({ message: m })
 const forbidden = (m: string) => new respond.ForbiddenError({ message: m })
 
 // A public project, or a private one the developer is a member of
-const getProjectId = sql<{ projectId: number }, { slug: string; me: number }>`
+export const getProjectId = sql<
+  { projectId: number },
+  { slug: string; me: number }
+>`
   SELECT projectId FROM project
   WHERE slug = :slug AND (visibility = 'public' OR EXISTS (
     SELECT 1 FROM projectMember
@@ -31,7 +34,7 @@ const getProjectId = sql<{ projectId: number }, { slug: string; me: number }>`
       AND projectMember.userId = :me))
 `.get
 
-const isMember = (projectId: number, userId: number) =>
+export const isMember = (projectId: number, userId: number) =>
   !!getRole({ projectId, userId })
 
 type TaskRow = {
@@ -39,9 +42,10 @@ type TaskRow = {
   boardColumn: string
   title: string
   rank: string
+  milestoneId: number | null
 }
 const listTasks = sql<TaskRow, number>`
-  SELECT taskId, boardColumn, title, rank FROM task
+  SELECT taskId, boardColumn, title, rank, milestoneId FROM task
   WHERE projectId = ? ORDER BY boardColumn, rank
 `.all
 
@@ -84,6 +88,7 @@ const card = (t: TaskRow) => ({
   column: t.boardColumn,
   title: t.title,
   rank: t.rank,
+  milestone: t.milestoneId ?? 0,
 })
 
 /** The cards of a project's board, by column and rank (§6.7) */

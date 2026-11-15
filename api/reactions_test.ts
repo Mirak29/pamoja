@@ -199,3 +199,16 @@ Deno.test('feed: read page by page, each post once, to the oldest', () => {
   assert(pages >= 3)
   assert(read.size >= 120)
 })
+
+Deno.test('rate: replies have their own limit, a lively thread goes on', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const post = newPost(abdou, 'Un fil animé')
+  // More replies than the 20 posts an hour: a discussion, not a flood
+  for (let i = 0; i < 30; i++) createReply(moussa, post, `Réponse ${i}`)
+  assertEquals(listPosts(abdou).find((p) => p.id === post)!.replies, 30)
+  // And Moussa can still publish a post of his own
+  newPost(moussa, 'Mon post après la discussion')
+})

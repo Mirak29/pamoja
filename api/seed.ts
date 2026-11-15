@@ -229,6 +229,8 @@ export const seed = (githubIds = new Map<string, number>()) => {
   const userIds = new Map<string, number>()
   const communityIds = new Map<string, number>()
   const projectIdBySlug = new Map<string, number>()
+  // The milestone in progress of each project: its board cards join it
+  const activeMilestone = new Map<string, number>()
   const list = Object.values(people) as Person[]
 
   db.transaction(() => {
@@ -377,8 +379,8 @@ export const seed = (githubIds = new Map<string, number>()) => {
           updatedAt: at,
         })
       }
-      project.milestones.forEach((milestone, position) =>
-        Milestone.insert({
+      project.milestones.forEach((milestone, position) => {
+        const milestoneId = Milestone.insert({
           projectId,
           title: milestone.title,
           description: milestone.description,
@@ -386,7 +388,10 @@ export const seed = (githubIds = new Map<string, number>()) => {
           position,
           createdAt,
         })
-      )
+        if (milestone.state === 'active') {
+          activeMilestone.set(project.slug, milestoneId)
+        }
+      })
       for (const login of project.followers) {
         const followerId = userIds.get(login)
         followerId && Follow.insert({
@@ -480,6 +485,8 @@ export const seed = (githubIds = new Map<string, number>()) => {
         lastRank[task.column] = rank
         Task.insert({
           projectId,
+          // Its progress is real: the cards of the board (§6.7)
+          milestoneId: activeMilestone.get(slug) ?? null,
           boardColumn: task.column,
           title: task.title,
           rank,
