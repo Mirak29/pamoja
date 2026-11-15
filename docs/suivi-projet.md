@@ -1854,3 +1854,10 @@ Un visiteur sans compte lit le fil (`/feed`) et ses discussions (`/post/…`), e
 
 - **Livrable** : `api/routes.ts`, `api/guest_feed_test.ts`, `web/lib/guest-feed.ts`, `web/pages/public/guest-feed.tsx`, `web/app.tsx`, `web/ui/public-header.tsx`, `web/pages/public/landing-page.tsx` ; §10.1
 - **Par** : @Mirak29
+
+### 2026-11-15 · Des canaux qui défilent, des alertes qui mènent à GitHub
+
+Les messages d'un canal (#général, #suivi, #aide, #annonces) défilent dans leur propre cadre au lieu d'allonger la page, comme dans une messagerie : le canal s'ouvre sur les derniers messages et suit un nouveau message quand on était en bas, jamais pendant qu'on lit plus haut. Les réponses d'un fil défilent de même dans leur panneau. Chaque alerte de #suivi porte un lien « Voir sur GitHub », qui ouvre dans un nouvel onglet sa PR, son issue, sa release ou les commits de sa branche.
+
+- **Livrable** : `web/pages/project/channels-tab.tsx`, `web/lib/links.ts` ; §6.8
+- **Par** : @Mirak29

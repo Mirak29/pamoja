@@ -12,6 +12,7 @@ import {
   Clock,
   Flag,
   FolderGit2,
+  Github,
   GitMerge,
   GitPullRequest,
   Image,
@@ -68,6 +69,31 @@ import {
 import { notify } from '/web/ui/toast.tsx'
 import { VideoEmbed, videoIn } from '/web/ui/video.tsx'
 import { textOf } from '/web/lib/tracking.ts'
+import { alertGithubUrl } from '/web/lib/links.ts'
+
+/**
+ * A list of messages that scrolls in its own frame, as a chat does: it
+ * opens on the last ones, and follows a new one when the reader was at the
+ * bottom, never while they read higher up
+ */
+const useStickToBottom = (count: number) => {
+  const list = useRef<HTMLDivElement>(null)
+  const atBottom = useRef(true)
+  useEffect(() => {
+    const el = list.current
+    if (!el) return
+    const near = () => {
+      atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    }
+    el.addEventListener('scroll', near, { passive: true })
+    return () => el.removeEventListener('scroll', near)
+  }, [])
+  useEffect(() => {
+    const el = list.current
+    if (el && atBottom.current) el.scrollTop = el.scrollHeight
+  }, [count])
+  return list
+}
 
 type IconComponent = (props: JSX.IntrinsicElements['svg']) => JSX.Element
 
@@ -187,8 +213,9 @@ const Author = ({ message }: { message: Message }) => {
 }
 
 const MessageRow = (
-  { project, message, canAct }: {
+  { project, repo, message, canAct }: {
     project: string
+    repo: Project
     message: Message
     canAct: boolean
   },
@@ -202,6 +229,15 @@ const MessageRow = (
   const action = canAct && alertAction(project, message)
   const text = textOf(message)
   const video = videoIn(text)
+  // An alert of GitHub leads back to what it tells of
+  const onGithub = message.author === 'platform'
+    ? alertGithubUrl(repo, text, {
+      pullRequest: message.alert?.pullRequest || message.pullRequest,
+      issue: message.alert?.issue,
+      tag: message.alert?.tag,
+      branch: message.alert?.branch,
+    })
+    : undefined
   return (
     <div class='flex gap-3 rounded-md p-2.5 hover:bg-surface-000'>
       <Author message={message} />
@@ -260,6 +296,17 @@ const MessageRow = (
               </button>
             )
           }
+          {onGithub && (
+            <a
+              href={onGithub}
+              target='_blank'
+              rel='noopener noreferrer'
+              class='inline-flex h-[26px] items-center gap-1 rounded-md px-2 text-[12px] leading-none font-medium text-ink-muted no-underline hover:text-indigo hover:no-underline'
+            >
+              <Github class='size-3.5' />
+              Voir sur GitHub
+            </a>
+          )}
           <A
             params={{ thread: message.id }}
             class='inline-flex h-[26px] items-center gap-1 rounded-md px-2 text-[12px] leading-none font-medium text-ink-muted no-underline hover:text-indigo hover:no-underline'
@@ -427,7 +474,10 @@ const Thread = (
         />
       </div>
     </div>
-    <div class='flex flex-col gap-3.5 px-[18px] py-3.5'>
+    <div
+      data-scroller='contain'
+      class='flex max-h-[min(50vh,480px)] flex-col gap-3.5 overflow-y-auto overscroll-contain px-[18px] py-3.5'
+    >
       {repliesOf(message).map((reply) => (
         <div key={reply.id} class='flex gap-2.5'>
           <Avatar
@@ -586,6 +636,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
     ? 'Seuls le Propriétaire et les Mainteneurs écrivent dans #annonces.'
     : 'Rejoins le projet pour écrire ici. Les abonnés lisent #suivi et #annonces.'
   const thread = messages.find((m) => m.id === url.params.thread)
+  const messageList = useStickToBottom(messages.length)
 
   return (
     <div
@@ -628,7 +679,7 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
         </nav>
         <Presence channelName={name} />
       </aside>
-      <section class='slab flex min-h-[560px] min-w-0 flex-col overflow-hidden'>
+      <section class='slab flex min-w-0 flex-col overflow-hidden'>
         <div class='flex flex-wrap items-center gap-3 border-b border-line px-[18px] py-3.5'>
           <div class='flex min-w-[160px] flex-1 flex-col'>
             <span class='font-mono text-[17px] leading-[22px] font-semibold'>
@@ -640,11 +691,16 @@ export const ChannelsTab = ({ project }: { project: Project }) => {
           </div>
           <NotifySelect project={slug} channel={key} saved={saved} />
         </div>
-        <div class='flex flex-1 flex-col gap-0.5 p-2.5'>
+        <div
+          ref={messageList}
+          data-scroller='contain'
+          class='flex h-[min(62vh,640px)] min-h-[280px] flex-col gap-0.5 overflow-y-auto overscroll-contain p-2.5'
+        >
           {messages.map((message) => (
             <MessageRow
               key={message.id}
               project={project.slug}
+              repo={project}
               message={message}
               canAct={isMember || following}
             />

@@ -16,6 +16,38 @@ export const githubUrl = (
   number?: number,
 ) => `https://${repoPath(project)}/${kind}${number ? `/${number}` : ''}`
 
+/**
+ * Where an alert of #suivi leads on GitHub: its PR, its issue, its release,
+ * or the commits of its branch. Read from the facts of the server when it
+ * sent them, else from the sentence (the alerts of a demo project).
+ */
+export const alertGithubUrl = (
+  project: Repo,
+  text: string,
+  facts: {
+    pullRequest?: number
+    issue?: number
+    tag?: string
+    branch?: string
+  } = {},
+) => {
+  const pr = facts.pullRequest || Number(text.match(/PR #(\d+)/)?.[1])
+  if (pr) return githubUrl(project, 'pull', pr)
+  const issue = facts.issue || Number(text.match(/[Ii]ssue #(\d+)/)?.[1])
+  if (issue) return githubUrl(project, 'issues', issue)
+  if (facts.tag) {
+    return `${githubUrl(project, 'releases')}/tag/${
+      encodeURIComponent(facts.tag)
+    }`
+  }
+  if (/[Rr]elease/.test(text)) return githubUrl(project, 'releases')
+  if (facts.branch) {
+    return `https://${repoPath(project)}/commits/${
+      encodeURIComponent(facts.branch)
+    }`
+  }
+}
+
 export type Link = { href: string; params?: Record<string, string> }
 
 /**
