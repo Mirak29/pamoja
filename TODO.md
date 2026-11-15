@@ -64,7 +64,7 @@ Responsable : _à répartir_
 - [x] **PAM-101** · Initialiser le projet Deno : `deno.json` (imports `@01edu` aux versions de Tournament, fmt et lint), arborescence `api/`, `web/`, `migrations/` (§12.1, §12.6) — @niangoos
 - [x] **PAM-102** · Build esbuild + `task-dev.ts` (route `/api` vers l'API) + `prod-server.ts` (§12.2) — @niangoos
 - [x] **PAM-103** · **Prototype à risque** : Tailwind CLI v4 sans twind ni daisyUI, en watch en dev et dans le build (§12.3) — à finir fin J1 — @niangoos
-- [ ] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — à finir fin J1
+- [x] **PAM-104** · **Prototype à risque** : `satori` + `@resvg/resvg-wasm` dans un binaire `deno compile` (§17.2) — validé : un binaire compilé sans `node_modules`, comme le Dockerfile, dessine la carte (0,2 s, puis le cache)
 - [x] **PAM-105** · Schéma initial et migrations ; `PRAGMA foreign_keys = ON` et `busy_timeout = 5000` au démarrage (§12.5, §14)
 - [x] **PAM-106** · `api/entries.ts` + `initEntries` avec toutes les relations (§13.1, §14.6)
 - [x] **PAM-107** · Route `GET/api/events` : abonnements calculés côté serveur, `ack` toutes les 15 s (§13.2)
@@ -90,10 +90,10 @@ Responsable : _à répartir_
 
 - [ ] Login GitHub de bout en bout en prod via Caddy, protocole `h2` visible
 - [ ] Une entry insérée côté serveur arrive dans un autre navigateur en moins d'1 s
-- [ ] `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage
-- [ ] Seed rejouable en une commande
+- [x] `PRAGMA foreign_keys` et `busy_timeout` actifs au démarrage
+- [x] Seed rejouable en une commande
 - [ ] Meilisearch répond depuis l'app et n'est pas joignable depuis l'extérieur
-- [ ] Toutes les routes en vrais chemins, sans `#` ; `/@login` ouvert sans connexion renvoie la page avec ses balises OG
+- [x] Toutes les routes en vrais chemins, sans `#` ; `/@login` ouvert sans connexion renvoie la page avec ses balises OG
 
 ## Bloc 2 — Boucle de démo (J3 – J5 · 9 – 11 oct.)
 
@@ -139,7 +139,7 @@ Responsable : _à répartir_
 - [x] **PAM-302** · Personnalisation : cover, accent, thèmes (Clair, Sombre, Terminal, Cyber), ordre des sections (§9.2) — @niangoos
 - [x] **PAM-303** · Réputation par dimensions avec preuves, mentions « vérifié par GitHub » / « donnée de démonstration » (§8.1, §14) `[démo]`
 - [x] **PAM-304** · ~~Developer Passport~~ — fusionnée dans PAM-301 : le passeport est la vue publique du profil
-- [ ] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
+- [x] **PAM-305** · Share Card + `GET/api/user/card` + injection des balises OG + `sitemap.xml` (§17.1, §17.2) `[démo]`
 - [x] **PAM-306** · Pulse déterministe (§6.4) `[démo]` — @niangoos
 - [x] **PAM-307** · Résumé IA du Pulse : tâche de fond, `ProjectSummary`, entry `PULSE_READY` (§6.4, §11) `[démo]` — @Mirak29
 - [ ] **PAM-308** · Project DNA, Health, Story (§6.5)
@@ -206,11 +206,11 @@ Responsable : _à répartir_
 
 Responsable : _à répartir_
 
-- [ ] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réaction J'aime (seule réaction, voir PAM-539), bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
+- [x] **PAM-501** · Accueil en fil social : rédaction (texte, code, images, communauté, type), onglets Pour toi / Abonnements / Communautés / Questions, événements GitHub et carte « Ce projet a besoin de toi » insérés, réaction J'aime (seule réaction, voir PAM-539), bookmarks, partage par lien, pagination par curseur (§6.2, §10.1)
 - [x] **PAM-502** · Communautés, dont les communautés de pays créées par le seed (§10.2) — rejoindre, quitter, créer (`POST/api/community/create`) et lire la liste (`GET/api/communities`) sur le serveur ; une communauté créée est là après un rechargement, la recherche la réindexe — @niangoos
 - [x] **PAM-503** · Follow : utilisateurs, projets, communautés (§14.1) — @niangoos
-- [ ] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
-- [ ] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
+- [x] **PAM-504** · Colonne de droite de l'Accueil : demandes d'aide pour toi, PRs à relire, avec qui construire, projets qui cherchent des contributeurs (§6.2)
+- [x] **PAM-505** · Explore : développeurs et projets, avec filtres (§10.3)
 - [x] **PAM-506** · « What can I work on? » calculé par le serveur, sans IA : demandes qui correspondent, besoins des autres projets, `good first issue`, chacun avec sa correspondance sur 100 (§10.3, §11) — @Mirak29
 - [x] **PAM-533** · Premier pas pour qui n'a jamais contribué : une issue choisie (`good first issue` ou `documentation`), les étapes, un mentor à un clic ; frameworks les plus utilisés ajoutés au vocabulaire (Tailwind CSS, Next.js, Laravel, Angular, Spring, Express, NestJS, React Native) ; d'après State of Dev Sénégal 2026 (§6.1, §10.3) — @Mirak29
 - [x] **PAM-532** · Assistant sur Ollama Cloud : questions du genre « Sur quoi puis-je travailler aujourd'hui ? », réponses qui ne citent que la liste de PAM-506, vérifiées par le serveur, avec repli sans IA (§11) — @Mirak29
@@ -225,7 +225,7 @@ Responsable : _à répartir_
 - [ ] **PAM-509** · Digest quotidien par email (§7.4)
 - [x] **PAM-510** · Limite de débit sur les routes d'écriture (§16)
 - [ ] **PAM-511** · Conditions d'utilisation et politique de confidentialité (§20)
-- [ ] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5) — réponse, réponse acceptée (preuve d'Entraide) et lecture d'un fil enregistrées sur le serveur (`POST/api/post/reply`, `POST/api/post/accept`, `GET/api/post/thread`) ; republication reportée avec son rendu dans le fil (exception §4, voir suivi) — @niangoos
+- [x] **PAM-512** · Réponses imbriquées (une réponse est un post), dépliage à la demande, réponse acceptée, republications (§10.1, §14.5) — réponse, réponse acceptée (preuve d'Entraide) et lecture d'un fil enregistrées sur le serveur (`POST/api/post/reply`, `POST/api/post/accept`, `GET/api/post/thread`) ; republication enregistrée (`POST/api/post/repost`) et rendue dans le fil — @niangoos
 - [x] **PAM-522** · Messages directs : conversations à deux depuis le profil, demande de message pour un inconnu (accepter, refuser), blocage, signalement, non lus, temps réel, Markdown réduit (§10.6)
 - [x] **PAM-523** · Messages directs : modifier et supprimer son message (« modifié », « Message supprimé ») (§10.6)
 - [x] **PAM-524** · Messages directs : « en train d'écrire… » et statut en ligne, par la présence (§10.6, §13.6) — avec PAM-407
@@ -393,3 +393,5 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · Explore liste tous les projets publics (PAM-505, `GET/api/explore/projects`), pas seulement ceux de démo et les miens · §10.3
 - 2026-11-15 · File de modération sur le serveur (PAM-508) : `GET/api/moderation/queue`, `POST/api/moderation/decide` (ignorer, masquer, avertir, suspendre 1/7/30 jours, motif obligatoire envoyé à l'auteur) ; un compte suspendu lit mais n'écrit plus ; l'auteur voit son contenu masqué avec le motif ; admins plateforme par `PAMOJA_ADMINS` ; reste le retrait d'une preuve · §10.5
 - 2026-11-15 · Demandes de collaboration sur le serveur (PAM-408) : `POST/api/collaboration/request` crée une demande d'aide adressée à une seule personne (`targetUserId`), sans matching, notifiée à elle seule, refusée si elle a bloqué l'auteur ; la colonne de droite de l'Accueil lit les vrais membres et projets (PAM-504) · §6.2, §7.6
+- 2026-11-15 · Share Card et aperçus de partage (PAM-104, PAM-305) : `GET/api/user/card` et `GET/api/project/card` dessinent un PNG 1200 × 630 (satori puis resvg-wasm, polices dans `api/assets`), gardé sur disque sous l'empreinte de ses données ; `/@login` et `/project/slug` reçoivent title, description, og:* et twitter:* échappés ; `sitemap.xml` ; la fenêtre « Carte de partage » montre et télécharge la vraie image · §17.1, §17.2
+- 2026-11-15 · Point du TODO vérifié dans le code : PAM-501, 504, 505 et 512 cochées (fil paginé, reposts et réponses sur le serveur, colonne de droite et Explore sur les vrais membres et projets) ; critères `PRAGMA`, seed en une commande et routes en vrais chemins avec balises OG cochés. Restent ouverts : PAM-508 (retrait d'une preuve) et « une PR mergée déplace sa carte en Done », car aucune carte n'est encore liée à une PR
