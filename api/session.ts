@@ -76,6 +76,18 @@ export const withSession = async (ctx: RequestContext) => {
   return session
 }
 
+/**
+ * The session of a request that only records what was read (a notification,
+ * a conversation, a channel): a suspended account may still do it (§10.5)
+ */
+export const withReadingSession = async (ctx: RequestContext) => {
+  const session = await decodeSession(ctx.cookies.session)
+  if (!session) {
+    throw new respond.UnauthorizedError({ message: 'Missing user session' })
+  }
+  return session
+}
+
 export const withOptionalSession = (ctx: RequestContext) =>
   decodeSession(ctx.cookies.session)
 

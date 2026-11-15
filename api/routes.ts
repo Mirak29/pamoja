@@ -101,6 +101,7 @@ import {
   endSession,
   setSessionCookie,
   withOptionalSession,
+  withReadingSession,
   withSession,
 } from '/api/session.ts'
 import {
@@ -1262,7 +1263,7 @@ const defs = {
     description: 'The inbox of the developer; the page writes the sentences',
   }),
   'POST/api/notification/read': route({
-    authorize: withSession,
+    authorize: withReadingSession,
     fn: (ctx, { id }) => {
       readNotification(ctx.session.userId, id)
     },
@@ -1270,7 +1271,7 @@ const defs = {
     description: 'Mark one of my notifications as read',
   }),
   'POST/api/notifications/read-all': route({
-    authorize: withSession,
+    authorize: withReadingSession,
     fn: (ctx) => {
       readAllNotifications(ctx.session.userId)
     },
@@ -1553,17 +1554,9 @@ const defs = {
   'GET/api/posts': route({
     authorize: withSession,
     // A query string carries text: the time is read as a number
-    fn: (ctx, { after, author, before }) =>
-      listPosts(
-        ctx.session.userId,
-        Number(after) || 0,
-        author ?? '',
-        Number(before) || 0,
-      ),
+    fn: (ctx, { author, before }) =>
+      listPosts(ctx.session.userId, author ?? '', Number(before) || 0),
     input: OBJ({
-      after: optional(
-        STR('Only the posts published after this time, in seconds'),
-      ),
       before: optional(
         STR('The page before this time, in seconds: the feed read further'),
       ),
@@ -2119,7 +2112,7 @@ const defs = {
   }),
 
   'POST/api/project/channel/read': route({
-    authorize: withSession,
+    authorize: withReadingSession,
     fn: (ctx, { project, channel }) => {
       markRead(ctx.session.userId, project, channel)
     },
@@ -2321,7 +2314,7 @@ const defs = {
   }),
 
   'POST/api/conversation/unread': route({
-    authorize: withSession,
+    authorize: withReadingSession,
     fn: (ctx, { id, from }) =>
       markUnread(ctx.session.userId, conversationIdOf(id), from),
     input: OBJ({
@@ -2371,7 +2364,7 @@ const defs = {
   }),
 
   'POST/api/conversation/read': route({
-    authorize: withSession,
+    authorize: withReadingSession,
     fn: (ctx, { id }) =>
       readConversation(ctx.session.userId, conversationIdOf(id)),
     input: OBJ({ id: conversationKey }),

@@ -52,3 +52,6 @@ export const tooLong = <K extends Limited>(
   (Object.keys(fields) as K[]).find((key) =>
     (fields[key] ?? '').trim().length > LIMITS[key]
   )
+
+/** Posts the feed reads at once: fewer means it reached its start (§12.7) */
+export const FEED_PAGE = 50

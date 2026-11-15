@@ -501,6 +501,22 @@ export const lacksReplies = (post: Post) =>
 export const likeCountOf = (post: Post) =>
   (post.reactions.like?.length ?? 0) + (post.otherLikes ?? 0)
 
+/** What the server says of a post the developer may change: likes, bookmark,
+ * reposts, replies */
+const serverState = (saved: ApiOutput['GET/api/posts'][number]) => {
+  const liked = saved.mine.includes('like')
+  return {
+    like: liked ? [me.login as Login] : [],
+    otherLikes: saved.reactions.like - (liked ? 1 : 0),
+    bookmarks: saved.bookmarked ? [me.login as Login] : [],
+    reposts: saved.reposts.map((repost) => ({
+      by: repost.by as Login,
+      at: repost.at * 1000,
+    })),
+    replyCount: saved.replies,
+  }
+}
+
 /**
  * A post of the server as the pages hold it. The server gives a count and
  * whether the developer liked it: their login, and the others as a number
@@ -512,6 +528,7 @@ const postFromServer = (
 ): Post => {
   hearOf(saved.author, saved.authorName, '')
   for (const repost of saved.reposts) hearOf(repost.by, repost.name, '')
+  const { like, ...state } = serverState(saved)
   return {
     id: savedId(saved.id),
     community: saved.community,
@@ -520,15 +537,8 @@ const postFromServer = (
     title: saved.title,
     body: saved.body,
     at: saved.createdAt * 1000,
-    reactions: { like: saved.mine.includes('like') ? [me.login as Login] : [] },
-    otherLikes: saved.reactions.like -
-      (saved.mine.includes('like') ? 1 : 0),
-    bookmarks: saved.bookmarked ? [me.login as Login] : [],
-    reposts: saved.reposts.map((repost) => ({
-      by: repost.by as Login,
-      at: repost.at * 1000,
-    })),
-    replyCount: saved.replies,
+    reactions: { like },
+    ...state,
     ...place,
     media: saved.media,
     video: saved.videoUrl || undefined,
@@ -539,12 +549,14 @@ const postFromServer = (
   }
 }
 
-// Posts with a reaction or a bookmark on its way to the server: what the
-// developer just did is shown, not an answer read before it
+// What the developer did on a post, and when: a read sent before it, or
+// while it is on its way, never takes it back
 const saving = new Map<Post, number>()
+const touchedAt = new Map<Post, number>()
 
-/** Keeps the state shown of a post while `request` saves it */
+/** Keeps the state shown of a post while `request` saves it, and after */
 export const whileSaving = <T>(post: Post, request: Promise<T>) => {
+  touchedAt.set(post, Date.now())
   saving.set(post, (saving.get(post) ?? 0) + 1)
   const done = () => {
     const left = (saving.get(post) ?? 1) - 1
@@ -557,62 +569,80 @@ export const whileSaving = <T>(post: Post, request: Promise<T>) => {
 /**
  * A post already shown takes what the server counted: likes, bookmark,
  * reposts and replies. What was done in another tab, on the phone or by
- * the others shows here too
+ * the others shows here too; not a read older than the developer's own
+ * action (`readAt`, when the read was sent)
  */
-const refresh = (post: Post, saved: ApiOutput['GET/api/posts'][number]) => {
-  if (saving.has(post)) return false
-  const fresh = postFromServer(saved)
-  const key = (p: Post) =>
-    JSON.stringify([
-      p.reactions.like ?? [],
-      p.otherLikes ?? 0,
-      p.bookmarks ?? [],
-      p.reposts,
-      p.replyCount ?? 0,
-    ])
-  if (key(post) === key(fresh)) return false
-  post.reactions.like = fresh.reactions.like
-  post.otherLikes = fresh.otherLikes
-  post.bookmarks = fresh.bookmarks
-  post.reposts = fresh.reposts
-  post.replyCount = fresh.replyCount
+const refresh = (
+  post: Post,
+  saved: ApiOutput['GET/api/posts'][number],
+  readAt: number,
+) => {
+  if (saving.has(post) || (touchedAt.get(post) ?? 0) > readAt) return false
+  const { like, ...state } = serverState(saved)
+  const now = JSON.stringify([like, state])
+  const before = JSON.stringify([post.reactions.like ?? [], {
+    otherLikes: post.otherLikes ?? 0,
+    bookmarks: post.bookmarks ?? [],
+    reposts: post.reposts,
+    replyCount: post.replyCount ?? 0,
+  }])
+  if (now === before) return false
+  for (const repost of saved.reposts) hearOf(repost.by, repost.name, '')
+  post.reactions.like = like
+  Object.assign(post, state)
   return true
+}
+
+/**
+ * Brings posts read from the server into the pages: a post already shown
+ * takes what was read, a new one joins them. `readAt`: when the read was
+ * sent. Returns the new ones and whether anything changed
+ */
+const adoptAll = (
+  list: ApiOutput['GET/api/posts'],
+  readAt: number,
+  placeOf: (i: number) => Pick<Post, 'parent' | 'root'> = () => ({}),
+) => {
+  const known = new Map(posts.map((post) => [post.id, post]))
+  const added: Post[] = []
+  let refreshed = false
+  list.forEach((saved, i) => {
+    const post = known.get(savedId(saved.id))
+    if (post) refreshed = refresh(post, saved, readAt) || refreshed
+    else added.push(postFromServer(saved, placeOf(i)))
+  })
+  return { added, changed: refreshed || added.length > 0 }
 }
 
 /**
  * Brings the posts read from GET/api/posts into the feed, newest first; a
  * post already shown keeps its place and takes the reactions read
  */
-export const adoptPosts = (list: ApiOutput['GET/api/posts']) => {
-  const known = new Map(posts.map((post) => [post.id, post]))
-  let refreshed = false
-  for (const saved of list) {
-    const post = known.get(savedId(saved.id))
-    if (post && refresh(post, saved)) refreshed = true
-  }
-  const added = [...list].reverse().filter((saved) =>
-    !known.has(savedId(saved.id))
-  )
-  for (const saved of added) posts.unshift(postFromServer(saved))
-  if (added.length || refreshed) changed()
+export const adoptPosts = (
+  list: ApiOutput['GET/api/posts'],
+  readAt = Date.now(),
+) => {
+  const { added, changed: any } = adoptAll(list, readAt)
+  posts.unshift(...added)
+  any && changed()
 }
 
 /**
  * Brings a thread read from GET/api/post/thread into the pages: every post
  * with its parent and its root, and the accepted answer on the root (§12.7)
  */
-export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
-  for (const p of data.posts) {
-    const known = posts.find((post) => post.id === savedId(p.id))
-    if (known) {
-      refresh(known, p)
-      continue
-    }
-    posts.push(postFromServer(p, {
+export const adoptThread = (
+  data: ApiOutput['GET/api/post/thread'],
+  readAt = Date.now(),
+) => {
+  const { added } = adoptAll(data.posts, readAt, (i) => {
+    const p = data.posts[i]
+    return {
       parent: p.parentId ? savedId(p.parentId) : undefined,
       root: p.id === data.rootId ? undefined : savedId(data.rootId),
-    }))
-  }
+    }
+  })
+  posts.push(...added)
   const root = posts.find((post) => post.id === savedId(data.rootId))
   if (root && data.acceptedReplyId) {
     root.acceptedReply = savedId(data.acceptedReplyId)
@@ -624,17 +654,15 @@ export const adoptThread = (data: ApiOutput['GET/api/post/thread']) => {
  * Brings the replies of a developer read from GET/api/replies, each under
  * its parent and in its thread; a reply already shown takes what was read
  */
-export const adoptReplies = (list: ApiOutput['GET/api/replies']) => {
-  for (const saved of list) {
-    const known = posts.find((post) => post.id === savedId(saved.id))
-    if (known) refresh(known, saved)
-    else {
-      posts.push(postFromServer(saved, {
-        parent: savedId(saved.parentId),
-        root: savedId(saved.rootId),
-      }))
-    }
-  }
+export const adoptReplies = (
+  list: ApiOutput['GET/api/replies'],
+  readAt = Date.now(),
+) => {
+  const { added } = adoptAll(list, readAt, (i) => ({
+    parent: savedId(list[i].parentId),
+    root: savedId(list[i].rootId),
+  }))
+  posts.push(...added)
   changed()
 }
 
@@ -667,15 +695,3 @@ export const dropPost = (post: Post) => {
 /** Whether a post of the server is already in the pages */
 export const isKnownPost = (id: number) =>
   posts.some((post) => post.id === savedId(id))
-
-/**
- * When the oldest post of the server the feed holds last came into the
- * feeds (published, or reposted since), in seconds: where the next page
- * starts. 0 while it holds none
- */
-export const oldestSeenAt = () =>
-  posts.reduce((oldest, post) => {
-    if (!post.id.startsWith('s') || post.parent) return oldest
-    const seen = Math.max(post.at, ...post.reposts.map((r) => r.at)) / 1000
-    return oldest ? Math.min(oldest, seen) : seen
-  }, 0)

@@ -2,7 +2,7 @@ import { db, sql } from '@01edu/db'
 import { respond } from '@01edu/api/response'
 import { now } from '@01edu/time'
 import { memoryLimit, type Window, within } from '/api/lib/rate.ts'
-import { LIMITS } from '/api/limits.ts'
+import { FEED_PAGE, LIMITS } from '/api/limits.ts'
 import { Entry, maybe } from '/api/entries.ts'
 import { attach, mediaOf } from '/api/media.ts'
 import { Post } from '/api/schema.ts'
@@ -84,10 +84,12 @@ type PostRow = {
   videoUrl: string | null
   createdAt: number
   hiddenAt?: number | null
+  parentId?: number | null
+  rootId?: number | null
 }
 
 const postSelect = `
-  SELECT post.postId, user.githubUsername AS author,
+  SELECT post.postId, post.parentId, post.rootId, user.githubUsername AS author,
     profile.displayName AS authorName, community.slug AS community,
     post.type, post.title, post.body, post.videoUrl, post.createdAt,
     post.hiddenAt
@@ -108,35 +110,17 @@ const lastSeen = `
   WHERE parentId IS NULL AND repostOfId IS NULL AND hiddenAt IS NULL
   UNION ALL
   SELECT repostOfId, createdAt FROM post
-  WHERE repostOfId IS NOT NULL AND hiddenAt IS NULL
+  WHERE repostOfId IS NOT NULL AND hiddenAt IS NULL AND withdrawnAt IS NULL
 `
 
-// The latest posts, a repost bringing an older one back into them
-const listRecent = sql<PostRow, number>`${postSelect}
-  WHERE ${original} AND post.postId IN (
-    SELECT postId FROM (${lastSeen})
-    GROUP BY postId ORDER BY max(at) DESC LIMIT ?
-  )
-  ORDER BY post.createdAt DESC
-`.all
-
-// The page before a time: posts that last came into the feeds earlier, for
-// a feed read further down (cursor, §12.7)
-const listBefore = sql<PostRow, { before: number; limit: number }>`${postSelect}
+// A page of the feed, newest first: the posts that last came into the
+// feeds (published, or reposted since) before a time, a repost bringing an
+// older one back into them (cursor, §12.7)
+const listFeed = sql<PostRow, { before: number; limit: number }>`${postSelect}
   WHERE ${original} AND post.postId IN (
     SELECT postId FROM (${lastSeen})
     GROUP BY postId HAVING max(at) < :before
     ORDER BY max(at) DESC LIMIT :limit
-  )
-  ORDER BY post.createdAt DESC
-`.all
-
-// Those published or reposted since a time: what a feed open on the page
-// lacks (§12.2)
-const listSince = sql<PostRow, { after: number; limit: number }>`${postSelect}
-  WHERE ${original} AND post.postId IN (
-    SELECT postId FROM (${lastSeen}) WHERE at > :after
-    GROUP BY postId ORDER BY max(at) DESC LIMIT :limit
   )
   ORDER BY post.createdAt DESC
 `.all
@@ -156,17 +140,9 @@ const listByAuthor = sql<
 
 // The replies of one developer, for the activity of their profile
 const listRepliesByAuthor = sql<
-  PostRow & { parentId: number; rootId: number },
+  PostRow,
   { author: string; limit: number; me: number }
->`
-  SELECT post.postId, post.parentId, post.rootId, user.githubUsername AS author,
-    profile.displayName AS authorName, community.slug AS community,
-    post.type, post.title, post.body, post.videoUrl, post.createdAt,
-    post.hiddenAt
-  FROM post
-  JOIN user ON user.userId = post.authorId
-  JOIN profile ON profile.userId = post.authorId
-  LEFT JOIN community ON community.communityId = post.communityId
+>`${postSelect}
   WHERE post.parentId IS NOT NULL
     AND (post.hiddenAt IS NULL OR post.authorId = :me)
     AND user.githubUsername = :author COLLATE NOCASE
@@ -205,7 +181,7 @@ const repostRows = sql<
   FROM post JOIN user ON user.userId = post.authorId
   JOIN profile ON profile.userId = post.authorId
   WHERE post.repostOfId IN (SELECT value FROM json_each(?))
-    AND post.hiddenAt IS NULL
+    AND post.hiddenAt IS NULL AND post.withdrawnAt IS NULL
   ORDER BY post.createdAt ASC
 `.all
 
@@ -268,39 +244,26 @@ const shown = (me: number, rows: PostRow[]) => {
 }
 
 /**
- * The latest posts, newest first; with `after` (seconds), only those
- * published or reposted since: a feed open on the page reads just what is
- * new. With `before`, the page before that time, for a feed read further
- * down. With `author`, those of one developer, for their profile.
+ * The latest posts, newest first; with `before` (seconds), the page before
+ * that time, for a feed read further down. With `author`, those of one
+ * developer, for their profile.
  */
-export const listPosts = (
-  me: number,
-  after = 0,
-  author = '',
-  before = 0,
-) =>
+export const listPosts = (me: number, author = '', before = 0) =>
   shown(
     me,
-    author
-      ? listByAuthor({ author, limit: FEED_PAGE, me })
-      : after
-      ? listSince({ after, limit: FEED_PAGE })
-      : before
-      ? listBefore({ before, limit: FEED_PAGE })
-      : listRecent(FEED_PAGE),
+    author ? listByAuthor({ author, limit: FEED_PAGE, me }) : listFeed({
+      before: before || Number.MAX_SAFE_INTEGER,
+      limit: FEED_PAGE,
+    }),
   )
-
-/** Posts read at once by the feed: fewer means it reached its start */
-export const FEED_PAGE = 50
 
 /** The replies of one developer, with where they go, for their profile */
 export const listRepliesOf = (me: number, author: string) => {
   const rows = listRepliesByAuthor({ author, limit: 50, me })
-  const place = new Map(rows.map((row) => [row.postId, row]))
-  return shown(me, rows).map((p) => ({
+  return shown(me, rows).map((p, i) => ({
     ...p,
-    parentId: place.get(p.id)!.parentId,
-    rootId: place.get(p.id)!.rootId,
+    parentId: rows[i].parentId ?? 0,
+    rootId: rows[i].rootId ?? 0,
   }))
 }
 
@@ -389,19 +352,21 @@ export const setBookmark = (me: number, postId: number, on: boolean) => {
 }
 
 const getRepost = sql<
-  { postId: number; hiddenAt: number | null },
+  { postId: number; withdrawnAt: number | null },
   { me: number; postId: number }
 >`
-  SELECT postId, hiddenAt FROM post WHERE authorId = :me AND repostOfId = :postId
+  SELECT postId, withdrawnAt FROM post
+  WHERE authorId = :me AND repostOfId = :postId
 `.get
-// A repost taken back stays in the table, where its entries point, hidden
+// A repost taken back stays in the table, where its entries point,
+// withdrawn; a moderator's hiddenAt is never touched here
 const withdrawRepost =
   sql<undefined, { me: number; postId: number; at: number }>`
-  UPDATE post SET hiddenAt = :at, updatedAt = :at
-  WHERE authorId = :me AND repostOfId = :postId AND hiddenAt IS NULL
+  UPDATE post SET withdrawnAt = :at, updatedAt = :at
+  WHERE authorId = :me AND repostOfId = :postId AND withdrawnAt IS NULL
 `.run
 const renewRepost = sql<undefined, { repostId: number; at: number }>`
-  UPDATE post SET hiddenAt = NULL, createdAt = :at, updatedAt = :at
+  UPDATE post SET withdrawnAt = NULL, createdAt = :at, updatedAt = :at
   WHERE postId = :repostId
 `.run
 
@@ -420,7 +385,7 @@ export const setRepost = (me: number, postId: number, on: boolean) => {
     withdrawRepost({ me, postId, at: now() })
     return { reposted: false }
   }
-  if (row && row.hiddenAt === null) return { reposted: true }
+  if (row && row.withdrawnAt === null) return { reposted: true }
   reposted(me)
   db.transaction(() => {
     const at = now()

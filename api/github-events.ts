@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { CI_FAILURES as failures } from '/api/vocabulary.ts'
 import { now } from '@01edu/time'
 import { Entry, maybe } from '/api/entries.ts'
 import { seconds } from '/api/github.ts'
@@ -307,8 +308,6 @@ const getPreviousConclusion = sql<
     AND completedAt IS NOT NULL
   ORDER BY completedAt DESC LIMIT 1
 `.get
-
-const failures = ['failure', 'timed_out', 'error', 'startup_failure']
 
 /**
  * Keeps a CI run; a completed one may alert #suivi: CI_FAILED, and CI_FIXED

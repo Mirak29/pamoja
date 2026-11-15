@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { notRevoked } from '/api/revoked.ts'
 import { now } from '@01edu/time'
 import { respond } from '@01edu/api/response'
 // The entry tables exist before the queries below are prepared
@@ -335,6 +336,7 @@ const crossBorder = sql<
     AND entry.type IN (${entries.REVIEW_HELP_CONFIRMED}, ${entries.HELP_CONFIRMED})
     AND helperProfile.country IS NOT NULL AND askerProfile.country IS NOT NULL
     AND helperProfile.country != askerProfile.country
+    AND ${notRevoked()}
   ORDER BY entry.createdAt ASC LIMIT 1
 `.get
 

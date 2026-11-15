@@ -3,57 +3,72 @@ import {
   adoptPosts,
   adoptReplies,
   isKnownPost,
-  oldestSeenAt,
   type PostDraft,
   publishPost,
   savedId,
 } from '/web/fixtures/posts.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
+import { FEED_PAGE } from '/api/limits.ts'
 import { signal } from '@preact/signals'
 
 // Posts saved on the server with their images and their video (PAM-427),
 // read with their likes, reposts and replies (PAM-501)
 
-/** The latest posts, into the feed */
-export const loadPosts = () =>
-  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then(
-    (list) => {
-      adoptPosts(list)
-      feedStart.value = list.length < FEED_PAGE
-      // Read with the others: none waits any more
-      newPosts.value = []
-    },
-    () => {},
-  )
+type Saved = ApiOutput['GET/api/posts']
 
-// As many as the server reads at once (FEED_PAGE of api/posts.ts)
-const FEED_PAGE = 50
+const page = (author = '', before = 0) =>
+  api['GET/api/posts'].fetch({
+    author,
+    before: before ? String(before) : '',
+  })
+
+// Where the feed is read to: the oldest moment a post it read came into the
+// feeds (published, or reposted since). Only what the feed itself read:
+// the posts of a profile or of « Enregistrés » never move it
+let cursor = 0
+const reach = (list: Saved) => {
+  for (const post of list) {
+    const seen = Math.max(post.createdAt, ...post.reposts.map((r) => r.at))
+    cursor = cursor ? Math.min(cursor, seen) : seen
+  }
+}
 
 /** Whether the feed holds the oldest post: nothing more to read below */
 export const feedStart = signal(false)
 
-/** The page of the feed below what it holds (cursor, §12.7) */
+/** The latest posts, into the feed */
+export const loadPosts = () => {
+  const readAt = Date.now()
+  return page().then((list) => {
+    adoptPosts(list, readAt)
+    reach(list)
+    feedStart.value = list.length < FEED_PAGE
+    // Read with the others: none waits any more
+    newPosts.value = []
+  }, () => {})
+}
+
+/** The page of the feed below what it read (cursor, §12.7) */
 export const loadOlderPosts = async () => {
-  const before = oldestSeenAt()
-  if (!before) return
-  const list = await api['GET/api/posts']
-    .fetch({ after: '', author: '', before: String(before) })
-    .catch(() => undefined)
+  if (!cursor) return
+  const readAt = Date.now()
+  const list = await page('', cursor).catch(() => undefined)
   if (!list) return
-  adoptPosts(list)
+  adoptPosts(list, readAt)
+  reach(list)
   if (list.length < FEED_PAGE) feedStart.value = true
 }
 
 /** The posts and the replies of one developer, for their profile */
-export const loadPostsOf = (login: string) =>
-  Promise.all([
-    api['GET/api/posts'].fetch({ after: '', author: login, before: '' }).then(
-      adoptPosts,
+export const loadPostsOf = (login: string) => {
+  const readAt = Date.now()
+  return Promise.all([
+    page(login).then((list) => adoptPosts(list, readAt)),
+    api['GET/api/replies'].fetch({ author: login }).then((list) =>
+      adoptReplies(list, readAt)
     ),
-    api['GET/api/replies'].fetch({ author: login }).then(adoptReplies),
   ]).catch(() => {})
-
-type Saved = ApiOutput['GET/api/posts']
+}
 
 /**
  * Posts published while the feed is open (§12.2): held here, not in the
@@ -67,27 +82,29 @@ export const newPosts = signal<Saved>([])
  * replies as the server counts them, and a post not shown yet (new, or
  * brought back by a repost) is held behind « nouveaux posts »
  */
-export const loadNewPosts = () =>
-  api['GET/api/posts'].fetch({ after: '', author: '', before: '' }).then(
-    (list) => {
-      adoptPosts(list.filter((post) => isKnownPost(post.id)))
-      const held = new Set(newPosts.peek().map((post) => post.id))
-      const fresh = list.filter((post) =>
-        !held.has(post.id) && !isKnownPost(post.id)
-      )
-      // The held ones take what was read too
-      const read = new Map(list.map((post) => [post.id, post]))
-      const kept = newPosts.peek().map((post) => read.get(post.id) ?? post)
-      if (fresh.length || kept.some((post, i) => post !== newPosts.peek()[i])) {
-        newPosts.value = [...fresh, ...kept]
-      }
-    },
-    () => {},
-  )
+export const loadNewPosts = () => {
+  const readAt = Date.now()
+  return page().then((list) => {
+    const known = list.filter((post) => isKnownPost(post.id))
+    adoptPosts(known, readAt)
+    const unknown = list.filter((post) => !isKnownPost(post.id))
+    if (!unknown.length && !newPosts.peek().length) return
+    // The held ones take what was read; the new ones come first
+    const read = new Map(unknown.map((post) => [post.id, post]))
+    const held = newPosts.peek().map((post) => read.get(post.id) ?? post)
+    const heldIds = new Set(held.map((post) => post.id))
+    newPosts.value = [
+      ...unknown.filter((post) => !heldIds.has(post.id)),
+      ...held,
+    ]
+  }, () => {})
+}
 
 /** The posts held, into the feed */
 export const showNewPosts = () => {
-  adoptPosts(newPosts.peek())
+  const held = newPosts.peek()
+  adoptPosts(held)
+  reach(held)
   newPosts.value = []
 }
 

@@ -98,9 +98,9 @@ Deno.test('moderation: a hidden post stays for its author, with why', () => {
   assert(hiddenAt(post))
   // Gone from the feed and from the profile for the others
   assert(!listPosts(moussa).some((p) => p.id === post))
-  assert(!listPosts(moussa, 0, 'abdou').some((p) => p.id === post))
+  assert(!listPosts(moussa, 'abdou').some((p) => p.id === post))
   // Its author still reads it on their profile, with the reason
-  const mine = listPosts(abdou, 0, 'abdou').find((p) => p.id === post)!
+  const mine = listPosts(abdou, 'abdou').find((p) => p.id === post)!
   assert(mine.hidden)
   assertEquals(mine.hiddenReason, 'Hors sujet pour la communauté')
   // The author is told

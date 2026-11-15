@@ -613,6 +613,9 @@ export const Post = createTable('post', {
   updatedAt: { type: 'REAL' },
   // Added by migrations/012: the link of the video (§17.3)
   videoUrl: { type: 'TEXT', optional: true },
+  // Added by migrations/017: a repost its author took back (hiddenAt stays
+  // the column of moderation)
+  withdrawnAt: { type: 'REAL', optional: true },
 })
 index('post_community', 'post', 'communityId, createdAt')
 index('post_replies', 'post', 'parentId, createdAt')

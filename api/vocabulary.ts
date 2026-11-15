@@ -327,3 +327,6 @@ export const proofTitleOf = (proof: {
     (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
     proof.projectName,
   ].filter(Boolean).join(' · ')
+
+/** The conclusions of a CI run that count as a failure (§6.8) */
+export const CI_FAILURES = ['failure', 'timed_out', 'error', 'startup_failure']

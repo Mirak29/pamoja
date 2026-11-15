@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertThrows } from 'jsr:@std/assert@^1.0.13'
-import { makeRestorePoint, sql } from '@01edu/db'
+import { db, makeRestorePoint, sql } from '@01edu/db'
 import { seed } from '/api/seed.ts'
 import { Post } from '/api/schema.ts'
 import { userIdOfLogin } from '/api/user.ts'
@@ -126,15 +126,13 @@ Deno.test('reposts: the state wanted, shown on the post, never as a post', () =>
   assertEquals(shown.reposts.map((r) => r.by), ['moussa'])
   // The repost itself never shows as a post of the feed or of the profile
   assert(listPosts(abdou).every((p) => p.body !== ''))
-  assert(listPosts(abdou, 0, 'moussa').every((p) => p.body !== ''))
-  // Read by a feed open since before it
-  assert(listPosts(abdou, shown.createdAt).some((p) => p.id === old))
+  assert(listPosts(abdou, 'moussa').every((p) => p.body !== ''))
 
   // Taken back twice: none
   setRepost(moussa, old, false)
   setRepost(moussa, old, false)
   assertEquals(
-    listPosts(abdou, 0, 'abdou').find((p) => p.id === old)!.reposts,
+    listPosts(abdou, 'abdou').find((p) => p.id === old)!.reposts,
     [],
   )
   // Reposted again: back, its author told only the first time
@@ -146,6 +144,14 @@ Deno.test('reposts: the state wanted, shown on the post, never as a post', () =>
   // A reply is not reposted
   const reply = createReply(moussa, old, 'Une réponse').id
   assertThrows(() => setRepost(abdou, reply, true))
+
+  // A repost a moderator hid stays hidden, whatever its author does
+  db.prepare(
+    'UPDATE post SET hiddenAt = ? WHERE repostOfId = ? AND authorId = ?',
+  ).run(Date.now() / 1000, old, moussa)
+  setRepost(moussa, old, false)
+  setRepost(moussa, old, true)
+  assertEquals(listPosts(abdou).find((p) => p.id === old)?.reposts ?? [], [])
 })
 
 Deno.test('replies: counted with the post, listed for the profile', () => {
@@ -194,7 +200,7 @@ Deno.test('feed: read page by page, each post once, to the oldest', () => {
       read.add(post.id)
     }
     const oldest = Math.min(...page.map((p) => p.createdAt))
-    page = listPosts(abdou, 0, '', oldest)
+    page = listPosts(abdou, '', oldest)
   }
   assert(pages >= 3)
   assert(read.size >= 120)

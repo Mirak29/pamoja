@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { CI_FAILURES } from '/api/vocabulary.ts'
 import { respond } from '@01edu/api/response'
 import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
 import { readmeSummary } from '/api/lib/readme.ts'
@@ -202,8 +203,6 @@ const ciRuns = sql<
     AND conclusion IS NOT NULL
   ORDER BY completedAt ASC, ciRunId ASC
 `.all
-
-const CI_FAILURES = ['failure', 'timed_out', 'error', 'startup_failure']
 
 /**
  * The CI of each PR: failed when the last run of one of its jobs failed,

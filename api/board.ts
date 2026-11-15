@@ -369,19 +369,24 @@ export const markPullRequestDone = (
   })
 }
 
-const pullIdOf = sql<
-  { pullRequestId: number },
+const pullOfNumber = sql<
+  { pullRequestId: number; state: string },
   { repositoryId: number; number: number }
 >`
-  SELECT pullRequestId FROM pullRequest
+  SELECT pullRequestId, state FROM pullRequest
   WHERE repositoryId = :repositoryId AND number = :number
 `.get
 
+/** The state of a PR as last stored, before a refresh writes it again */
+export const storedPullState = (repositoryId: number, number: number) =>
+  pullOfNumber({ repositoryId, number })?.state
+
 /**
- * A PR the refresh found merged moves its card to Done too: a project
- * without webhooks, or a delivery lost (§5.2, §6.7)
+ * A PR the refresh found merged, that was not before, moves its card to
+ * Done: a project without webhooks, or a delivery lost (§5.2, §6.7). Once
+ * merged, a member may move the card elsewhere: it stays there
  */
 export const markMergedPullDone = (repositoryId: number, number: number) => {
-  const pull = pullIdOf({ repositoryId, number })
+  const pull = pullOfNumber({ repositoryId, number })
   pull && markPullRequestDone(pull.pullRequestId, null)
 }

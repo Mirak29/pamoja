@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { notRevoked } from '/api/revoked.ts'
 // The entry tables exist before the query below is prepared
 import '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
@@ -23,6 +24,8 @@ const countPair = sql<
   WHERE entry.type IN (${entries.REVIEW_HELP_CONFIRMED}, ${entries.HELP_CONFIRMED})
     AND entry.userId = :helperId AND requester.requesterId = :requesterId
     AND eligible.eligible = 1 AND entry.createdAt >= :since
+    -- A proof withdrawn for fraud no longer counts toward the pair (§10.5)
+    AND ${notRevoked()}
 `.get
 
 /**
