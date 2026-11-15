@@ -8,12 +8,13 @@ import {
   type Decision,
   loadQueue,
   moderation,
+  proofsOfAuthor,
   type QueueItem,
 } from '/web/lib/moderation.ts'
 import { ago } from '/web/lib/time.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
-import { Field, Textarea } from '/web/ui/input.tsx'
+import { Field, Select, Textarea } from '/web/ui/input.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { EmptyState, GhostSlab } from '/web/ui/states.tsx'
 import { notify } from '/web/ui/toast.tsx'
@@ -26,12 +27,35 @@ const decisions: [Decision, string][] = [
   ['hide', 'Masquer'],
   ['warn', 'Avertir'],
   ['suspend', 'Suspendre'],
+  ['revoke_evidence', 'Retirer une preuve'],
 ]
 const durations: [number, string][] = [
   [1, '1 jour'],
   [7, '7 jours'],
   [30, '30 jours'],
 ]
+
+const proofKinds: Record<string, string> = {
+  review: 'Review',
+  help: 'Aide',
+  merged: 'PR mergée',
+  release: 'Release',
+  created: 'Projet',
+  answer: 'Réponse acceptée',
+}
+
+// A proof in a few words: its kind, what it is about, when
+const proofLabel = (
+  proof: Awaited<ReturnType<typeof proofsOfAuthor>>[number],
+) =>
+  [
+    proofKinds[proof.kind] ?? proof.kind,
+    proof.title ||
+    (proof.prNumber ? `${proof.repository} #${proof.prNumber}` : '') ||
+    proof.projectName,
+    proof.by && t`pour ${proof.by}`,
+    new Date(proof.at * 1000).toLocaleDateString('fr-FR'),
+  ].filter(Boolean).join(' · ')
 
 const labelOf = (action: string) =>
   decisions.find(([key]) => key === action)?.[1] ?? action
@@ -51,10 +75,21 @@ const OpenItem = ({ item }: { item: QueueItem }) => {
   const [days, setDays] = useState(7)
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
+  // The proofs of the author, read when a moderator means to withdraw one
+  const [proofs, setProofs] = useState<
+    Awaited<ReturnType<typeof proofsOfAuthor>>
+  >()
+  const [proofId, setProofId] = useState(0)
+  useEffect(() => {
+    if (action === 'revoke_evidence' && !proofs) {
+      proofsOfAuthor(item.author).then(setProofs)
+    }
+  }, [action])
+  const revoking = action === 'revoke_evidence'
   const confirm = async () => {
-    if (!action || !reason.trim() || saving) return
+    if (!action || !reason.trim() || saving || (revoking && !proofId)) return
     setSaving(true)
-    const saved = await decideOn(item, action, reason.trim(), days)
+    const saved = await decideOn(item, action, reason.trim(), days, proofId)
     setSaving(false)
     if (!saved) return
     notify({
@@ -140,6 +175,28 @@ const OpenItem = ({ item }: { item: QueueItem }) => {
           </div>
         </div>
       )}
+      {revoking && (
+        <Field label='La preuve à retirer (fraude avérée)'>
+          <Select
+            value={String(proofId)}
+            onChange={(event) => setProofId(Number(event.currentTarget.value))}
+          >
+            <option value='0'>
+              {proofs ? 'Choisis une preuve' : 'Chargement des preuves…'}
+            </option>
+            {(proofs ?? []).map((proof) => (
+              <option key={proof.id} value={proof.id}>
+                {proofLabel(proof)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {revoking && proofs && !proofs.length && (
+        <span class='text-[13px] text-ink-muted'>
+          Cet auteur n’a aucune preuve qui compte.
+        </span>
+      )}
       {action && (
         <div class='flex animate-enter-fast flex-col gap-2.5'>
           <Field label='Motif (obligatoire, envoyé à l’auteur)'>
@@ -152,7 +209,7 @@ const OpenItem = ({ item }: { item: QueueItem }) => {
           </Field>
           <div class='flex flex-wrap gap-3 pb-1'>
             <Button
-              disabled={!reason.trim()}
+              disabled={!reason.trim() || (revoking && !proofId)}
               aria-busy={saving}
               onClick={confirm}
             >

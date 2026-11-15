@@ -20,7 +20,12 @@ export const loadQueue = () =>
     () => {},
   )
 
-export type Decision = 'dismiss' | 'hide' | 'warn' | 'suspend'
+export type Decision =
+  | 'dismiss'
+  | 'hide'
+  | 'warn'
+  | 'suspend'
+  | 'revoke_evidence'
 
 /** Decides on a content; true once saved, the queue read again */
 export const decideOn = (
@@ -28,6 +33,7 @@ export const decideOn = (
   action: Decision,
   reason: string,
   days = 0,
+  proofId = 0,
 ) =>
   api['POST/api/moderation/decide'].fetch({
     targetType: item.targetType,
@@ -35,6 +41,7 @@ export const decideOn = (
     action,
     reason,
     days,
+    proofId,
   }).then(
     () => (loadQueue(), true),
     (error) => (notifyFailure('Décision non enregistrée', error), false),
@@ -43,3 +50,7 @@ export const decideOn = (
 // A report or a decision of another moderator: the queue follows
 const reload = debounced(() => moderation.peek() && loadQueue())
 onEvent(['CONTENT_REPORTED', 'MODERATION_ACTION'], reload)
+
+/** The proofs of the author of a content, to withdraw one (§10.5) */
+export const proofsOfAuthor = (login: string) =>
+  api['GET/api/user/proofs'].fetch({ username: login }).catch(() => [])

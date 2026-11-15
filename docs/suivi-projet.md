@@ -1479,6 +1479,26 @@ Le critère « une PR mergée déplace sa carte en Done » ne pouvait pas se vé
 - **Livrable** : `api/board.ts`, `api/board_test.ts`, `api/github-events.ts`, `api/github-events_test.ts`, `api/sync.ts`, `api/routes.ts`, `web/lib/board.ts`, `web/fixtures/board.ts`, `web/pages/project/board-tab.tsx`, `web/pages/project/issues-tab.tsx` ; §6.7
 - **Par** : @Mirak29
 
+### 2026-11-15 · Bloc 4 · Critères d'acceptation vérifiés
+
+- **Deux utilisateurs déplacent des cartes en même temps sans perte** : un test envoie douze déplacements simultanés en HTTP, par deux membres. Toutes les cartes arrivent, chacune avec un rang distinct et ordonné. Le Board des autres suit en direct (`TASK_UPDATED`).
+- **Une candidature s'accepte depuis la notification** : dans le navigateur, en tactile, Moussa candidate à OpenPay Africa et Abdou accepte d'un toucher depuis sa notification. Moussa devient contributeur.
+- **Une CI en échec apparaît dans `#suivi` et devient une demande d'aide en un clic** : l'alerte arrivait bien, mais pour une vraie PR la page fixait `ci: 'ok'` et le bouton « Demander de l'aide » ne s'affichait jamais. Le formulaire, lui, écrivait un job et un lien d'exemple. Les PR du serveur portent maintenant l'état de leur CI : `failed` quand la dernière exécution d'un job a échoué, avec ce job et son lien GitHub. Le formulaire préremplit le job, le lien et les skills réels. Testé avec de vrais webhooks `workflow_run` : échec, puis réparation.
+
+- **Livrable** : `api/projects.ts`, `api/routes.ts`, `api/board_test.ts`, `api/github-events_test.ts`, `web/fixtures/repos.ts`, `web/fixtures/pull-requests.ts`, `web/pages/help/new-help.tsx` ; §6.7, §6.8
+- **Par** : @Mirak29
+
+### 2026-11-15 · PAM-508 (fin) · Retrait d'une preuve de réputation
+
+La dernière action de modération du §10.5 : retirer une preuve pour fraude avérée.
+
+- **Dans la file** : « Retirer une preuve » propose les preuves de l'auteur du contenu signalé (par exemple un profil signalé pour triche à la réputation), puis demande un motif.
+- **Côté serveur** : l'entry reste telle qu'elle a été figée (§8.3). Une ligne `moderationAction` (`revoke_evidence`, cible `proof`) la retire de la liste des preuves, des badges (le niveau peut redescendre) et du matching. Le filtre est commun : `notRevoked` dans `api/revoked.ts`. L'auteur est notifié avec le motif.
+- **Testé** : sur le serveur, puis en tactile dans le navigateur (14 preuves, puis 13).
+
+- **Livrable** : `api/revoked.ts`, `api/moderation.ts`, `api/moderation_test.ts`, `api/proofs.ts`, `api/badges.ts`, `api/matching.ts`, `api/routes.ts`, `web/lib/moderation.ts`, `web/pages/moderation-page.tsx`, `web/lib/notifications.ts` ; §8.3, §10.5
+- **Par** : @Mirak29
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

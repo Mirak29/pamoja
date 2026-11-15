@@ -13,6 +13,8 @@ export type PullRequest = {
   /** Reviewers detected on GitHub */
   reviewers?: Login[]
   ci: 'ok' | 'failed'
+  /** The job that failed and its run on GitHub, read by the server */
+  ciJob?: { name: string; url: string }
   at: number
   /** Languages of the changed files, read by the server (§7.1) */
   skills?: string[]

@@ -1,4 +1,5 @@
 import { sql } from '@01edu/db'
+import { notRevoked } from '/api/revoked.ts'
 // The entry tables exist before the query below is prepared
 import '/api/entries.ts'
 import { entries } from '/api/entry-types.ts'
@@ -85,6 +86,8 @@ const listProofs = sql<Row, number>`
     ${entries.PR_MERGED}, ${entries.RELEASE_PUBLISHED},
     ${entries.REVIEW_HELP_CONFIRMED}, ${entries.HELP_CONFIRMED},
     ${entries.ANSWER_ACCEPTED})
+    -- A proof withdrawn by a moderator is no proof any more (§10.5)
+    AND ${notRevoked()}
   ORDER BY entry.createdAt DESC, entry.id DESC
 `.all
 

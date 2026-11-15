@@ -127,6 +127,12 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: translate('Avertissement de la modération'),
         body: t`« ${n.title} » · Motif : ${n.excerpt}`,
       }
+    case 'moderation_proof_revoked':
+      return {
+        kind: 'moderation',
+        title: translate('Une de tes preuves a été retirée'),
+        body: t`« ${n.title} » · Motif : ${n.excerpt}`,
+      }
     case 'moderation_suspended':
       return {
         kind: 'moderation',

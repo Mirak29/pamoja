@@ -260,7 +260,9 @@ const toPull = (key: ProjectSlug, pull: ApiPull): PullRequest => ({
   state: pull.state as PullRequest['state'],
   // A review seen on GitHub: no longer waiting (§6.4)
   review: pull.reviewed ? 'received' : 'waiting',
-  ci: 'ok',
+  // Its CI as GitHub reported it: the job that failed, for the help (§6.8)
+  ci: pull.ci === 'failed' ? 'failed' : 'ok',
+  ciJob: pull.ciJob ? { name: pull.ciJob, url: pull.ciUrl } : undefined,
   at: pull.createdAt * 1000,
   skills: pull.skills,
   demo: false,
