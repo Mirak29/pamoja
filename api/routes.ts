@@ -21,6 +21,7 @@ import { suggestImport } from '/api/import-suggest.ts'
 import { embedOne, requestText } from '/api/embeddings.ts'
 import {
   getProject,
+  listExploreProjects,
   listMyProjects,
   listProjectIssues,
   listProjectPulls,
@@ -1040,6 +1041,13 @@ const defs = {
     }),
     description: 'What the developer can work on, computed without AI (§10.3)',
   }),
+  'GET/api/explore/projects': route({
+    authorize: withSession,
+    fn: (ctx) => listExploreProjects(ctx.session.userId),
+    output: ARR(projectShape, 'Public projects, and those of the developer'),
+    description: 'Every project Explore lists and filters, newest first',
+  }),
+
   'GET/api/explore/developers': route({
     authorize: withSession,
     fn: () => listDevelopers(),

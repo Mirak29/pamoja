@@ -272,6 +272,36 @@ export const listMyProjects = (userId: number) => {
   return rows.map((row) => shownProject(row, counts))
 }
 
+// Every public project, and the private ones of the developer, newest
+// first: what Explore lists and filters (§10.3)
+const listVisible = sql<ProjectRow, { userId: number; limit: number }>`
+  SELECT project.projectId, slug, project.name, description, vision, status,
+    project.skills, project.demoVideoUrl, project.createdAt,
+    owner.githubUsername AS ownerLogin,
+    repository.repositoryId, repository.owner AS repoOwner,
+    repository.name AS repoName, syncMode,
+    substr(readme, 1, 8000) AS readme, stats, lastSyncedAt
+  FROM project
+  JOIN user owner ON owner.userId = project.ownerId
+  LEFT JOIN repository ON repository.projectId = project.projectId
+  WHERE project.visibility = 'public'
+    OR EXISTS (SELECT 1 FROM projectMember
+      WHERE projectMember.projectId = project.projectId
+        AND projectMember.userId = :userId)
+  ORDER BY project.createdAt DESC
+  LIMIT :limit
+`.all
+
+/**
+ * The projects Explore lists (§10.3): every public one, so a project
+ * imported by someone else is findable, not only the demo ones
+ */
+export const listExploreProjects = (userId: number) => {
+  const rows = listVisible({ userId, limit: 200 })
+  const counts = countsOf(rows.flatMap((row) => row.repositoryId ?? []))
+  return rows.map((row) => shownProject(row, counts))
+}
+
 // A public project, or one the developer is a member of, by its slug
 const getBySlug = sql<ProjectRow, { slug: string; userId: number }>`
   SELECT project.projectId, slug, project.name, description, vision, status,

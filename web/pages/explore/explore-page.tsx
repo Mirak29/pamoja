@@ -2,7 +2,7 @@ import { counted } from '/web/lib/plural.ts'
 import { useEffect, useState } from 'preact/hooks'
 import { helpCategories, type HelpCategory } from '/api/vocabulary.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
-import { loadDevelopers } from '/web/lib/explore.ts'
+import { loadDevelopers, loadExploreProjects } from '/web/lib/explore.ts'
 import { currentUser } from '/web/lib/session.ts'
 import { openAssistant } from '/web/lib/assistant.ts'
 import type { ComponentChildren, JSX } from 'preact'
@@ -607,6 +607,7 @@ export const ExplorePage = () => {
   // not only the demo profiles (§10.3)
   useEffect(() => {
     loadDevelopers()
+    loadExploreProjects()
   }, [])
   // Read here: the projects and requests of the API arrive after the first
   // render, and the tabs list them
