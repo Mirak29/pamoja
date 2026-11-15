@@ -14,9 +14,9 @@ export const notificationRows: [NotificationCategory, string, string][] = [
   ['system', 'Système', 'Sécurité du compte et modération.'],
 ]
 
+// The daily digest stays hidden until it exists (PAM-509)
 export const matchingModes = [
   'Instantané',
-  'Résumé quotidien',
   'Désactivé',
 ] as const
 

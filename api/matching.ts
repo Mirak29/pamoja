@@ -296,7 +296,9 @@ export const rank = (
       reasons,
       newcomer: (mine?.total ?? 0) < NEWCOMER_BELOW &&
         held.size * 2 >= need.skills.length,
-      instant: profile.matchingMode === 'instant',
+      // No digest is sent yet (PAM-509): a developer who chose it is told at
+      // once, never left without anything
+      instant: profile.matchingMode !== 'off',
     })
   }
   return ranked.sort((a, b) =>
