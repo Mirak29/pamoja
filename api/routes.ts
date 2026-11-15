@@ -167,7 +167,11 @@ import {
   listCommunities,
   setMembership,
 } from '/api/community.ts'
-import { applyToProject, decideJoinRequest } from '/api/join.ts'
+import {
+  applyToProject,
+  decideJoinRequest,
+  listJoinRequests,
+} from '/api/join.ts'
 import { suggestMentions } from '/api/mentions.ts'
 import { REPORTABLE, reportContent } from '/api/reports.ts'
 import { pulseOf } from '/api/pulse.ts'
@@ -472,6 +476,14 @@ const projectShape = OBJ({
     topics: ARR(STR()),
     languages: ARR(OBJ({ name: STR(), share: NUM() })),
     contributors: NUM(),
+    people: ARR(
+      OBJ({
+        github: STR('Login on GitHub'),
+        avatarUrl: STR('GitHub avatar'),
+        login: STR('Login on Pamoja, empty when not on Pamoja'),
+      }),
+      'Contributors beside the team, 30 at most; empty in a list',
+    ),
     release: STR(),
     releasedAt: NUM(),
     lastSyncedAt: NUM(),
@@ -1768,6 +1780,25 @@ const defs = {
     }),
     output: OBJ({ applied: BOOL('True once the candidature is sent') }),
     description: 'Apply to join a project (§6.6)',
+  }),
+
+  'GET/api/project/join-requests': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => listJoinRequests(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: ARR(OBJ({
+      id: NUM('Id of the candidature'),
+      login: STR('Login of the applicant'),
+      name: STR('Their name'),
+      avatarUrl: STR('Their avatar'),
+      areas: ARR(STR('How they can help')),
+      availability: STR('How much time they can give'),
+      message: STR('Their word for the team, empty if none'),
+      status: STR('pending, accepted or refused'),
+      createdAt: NUM('Sent, in seconds'),
+    })),
+    description:
+      'The candidatures of a project, waiting first, for its managers (§6.6)',
   }),
 
   'POST/api/project/join-request/decide': route({

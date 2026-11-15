@@ -7,6 +7,11 @@ import { errorMessage, log } from '/api/lib/log.ts'
 import { readPullRequestSkills } from '/api/pull-skills.ts'
 import { resyncReviews } from '/api/review-check.ts'
 import { Repository } from '/api/schema.ts'
+import {
+  contributorsPath,
+  type GithubContributor,
+  keptContributors,
+} from '/api/contributors.ts'
 import { markMergedPullDone, storedPullState } from '/api/board.ts'
 
 // The refresh of the poll mode (§5.4): every 15 minutes, conditional reads of
@@ -155,11 +160,15 @@ export const refreshRepository = async (repositoryId: number) => {
   const path = `/repos/${repository.fullName}`
   const issuesPath = `${path}/issues?state=all&sort=updated&per_page=100`
   const pullsPath = `${path}/pulls?state=all&sort=updated&per_page=100`
+  const peoplePath = contributorsPath(repository.fullName)
 
-  const [repo, issues, pulls] = await Promise.all([
+  const [repo, issues, pulls, people] = await Promise.all([
     github<GithubRepo>(path, { etag: etags[path] }),
     github<GithubIssue[]>(issuesPath, { etag: etags[issuesPath] }),
     github<GithubPull[]>(pullsPath, { etag: etags[pullsPath] }),
+    // Who contributed, with their face (§6.3): unchanged, it costs nothing
+    github<GithubContributor[]>(peoplePath, { etag: etags[peoplePath] })
+      .catch(() => ({ status: 404 as const })),
   ])
 
   let stats: Stats | null = null
@@ -171,6 +180,13 @@ export const refreshRepository = async (repositoryId: number) => {
       forks: repo.data.forks_count,
       topics: repo.data.topics ?? [],
       pushedAt: seconds(repo.data.pushed_at),
+    }
+  }
+  if (people.status === 200 && Array.isArray(people.data)) {
+    etags[peoplePath] = people.etag ?? ''
+    stats = {
+      ...(stats ?? json<Stats>(repository.stats, {})),
+      people: keptContributors(people.data),
     }
   }
   // Up to 200 rows: one transaction, not one commit each

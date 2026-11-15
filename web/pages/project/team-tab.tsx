@@ -1,3 +1,4 @@
+import { JoinRequests } from '/web/pages/project/join-requests.tsx'
 import { useEffect } from 'preact/hooks'
 import { Batched } from '/web/ui/infinite-list.tsx'
 import { A } from '/web/ui/link.tsx'
@@ -6,7 +7,6 @@ import { activityChanged, logActivity } from '/web/fixtures/activity.ts'
 import {
   applications,
   applicationsChanged,
-  decideApplication,
 } from '/web/fixtures/applications.ts'
 import { type Login, me, personOf, placeOf } from '/web/fixtures/people.ts'
 import { helpers, inviteHelper, loadHelpers } from '/web/lib/project-helpers.ts'
@@ -16,9 +16,7 @@ import {
   type ProjectRole,
   type ProjectSlug,
 } from '/web/fixtures/projects.ts'
-import { ago } from '/web/lib/time.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
-import { SkillChip } from '/web/ui/badge.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { t } from '/web/lib/language.ts'
@@ -222,88 +220,6 @@ const Helpers = ({ project }: { project: Project }) => {
   )
 }
 
-const Applications = ({ project }: { project: Project }) => {
-  const mine = applications.filter((a) => a.project === project.slug)
-  const pending = mine.filter((a) => a.status === 'pending')
-  const past = mine.filter((a) => a.status !== 'pending')
-  return (
-    <section class='slab overflow-hidden'>
-      <SectionHeader
-        label='Candidatures'
-        title={pending.length
-          ? counted(
-            pending.length,
-            'candidature en attente',
-            'candidatures en attente',
-          )
-          : 'Aucune candidature en attente'}
-      />
-      {pending.map((application) => (
-        <div
-          key={application.id}
-          class='flex animate-enter flex-col gap-2.5 border-t border-line px-5 py-4'
-        >
-          <PersonLink
-            login={application.login}
-            size={34}
-            detail={`${application.availability} · ${ago(application.at)}`}
-          />
-          <div class='flex flex-wrap gap-1.5'>
-            {application.areas.map((area) => (
-              <SkillChip key={area} match>{area}</SkillChip>
-            ))}
-          </div>
-          <p class='rounded-md border border-line-strong bg-surface-000 px-3 py-2.5 text-[14px] leading-[22px] text-pretty inset-shadow-well'>
-            « {application.message} »
-          </p>
-          <div class='flex flex-wrap gap-3 pb-1'>
-            <Button
-              size={36}
-              aria-label={t`Accepter la candidature de ${
-                personOf(application.login).name
-              }`}
-              onClick={() => decideApplication(application, true)}
-            >
-              Accepter
-            </Button>
-            <Button
-              variant='secondary'
-              size={36}
-              aria-label={t`Refuser la candidature de ${
-                personOf(application.login).name
-              }`}
-              onClick={() => decideApplication(application, false)}
-            >
-              Refuser
-            </Button>
-          </div>
-        </div>
-      ))}
-      {past.length > 0 && (
-        <div class='flex flex-col gap-2 border-t border-line bg-surface-000 px-5 py-3.5'>
-          {past.map((application) => (
-            <span
-              key={application.id}
-              class='flex justify-between gap-2 text-[13px]'
-            >
-              <span>{personOf(application.login).name}</span>
-              <span
-                class={`font-semibold ${
-                  application.status === 'accepted'
-                    ? 'text-verified'
-                    : 'text-ink-muted'
-                }`}
-              >
-                {application.status === 'accepted' ? 'Acceptée' : 'Refusée'}
-              </span>
-            </span>
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
 const Join = ({ project, applied }: { project: Project; applied: boolean }) => (
   <section class='slab-selected flex flex-col gap-3 p-[22px]'>
     <Eyebrow accent>Rejoindre</Eyebrow>
@@ -363,7 +279,7 @@ export const TeamTab = ({ project }: { project: Project }) => {
         <Helpers project={project} />
       </div>
       <div class='flex min-w-0 flex-col gap-8'>
-        {canManage && <Applications project={project} />}
+        {canManage && <JoinRequests project={project} />}
         {!role && <Join project={project} applied={applied} />}
         <Roles />
       </div>

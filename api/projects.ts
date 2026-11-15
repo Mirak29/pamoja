@@ -5,6 +5,7 @@ import { after, readBatch, type Slice } from '/api/lib/cursor.ts'
 import { readmeSummary } from '/api/lib/readme.ts'
 import { galleryOf } from '/api/project-gallery.ts'
 import { skillNamesOf } from '/api/skills.ts'
+import { type Contributor, shownContributors } from '/api/contributors.ts'
 
 // The projects of the signed-in developer, as the web shows them until the
 // project screens read the API themselves (PAM-401)
@@ -273,6 +274,7 @@ type Stats = {
   topics?: string[]
   languages?: [string, number][]
   contributors?: number
+  people?: Contributor[]
   openIssues?: number
   openPullRequests?: number
   release?: { tag: string; at: number | null } | null
@@ -291,6 +293,7 @@ const shownProject = (
 ) => {
   const stats = parse<Stats>(row.stats, {})
   const repositoryId = row.repositoryId
+  const members = listMembers(row.projectId)
   return {
     slug: row.slug,
     name: row.name,
@@ -300,7 +303,7 @@ const shownProject = (
     skills: skillNamesOf(parse<number[]>(row.skills, [])),
     createdAt: row.createdAt,
     owner: row.ownerLogin,
-    members: listMembers(row.projectId),
+    members,
     followers: listFollowers(row.projectId).map((f) => f.login),
     needs: listNeeds(row.projectId).map((n) => n.title),
     gallery: galleryOf(row.projectId),
@@ -319,6 +322,11 @@ const shownProject = (
         languages: (stats.languages ?? [])
           .map(([name, share]) => ({ name, share })),
         contributors: stats.contributors ?? 0,
+        // Their faces, beside the team, for the page of the project only
+        people: light ? [] : shownContributors(
+          stats.people,
+          members.map((m) => m.login),
+        ),
         release: stats.release?.tag ?? '',
         releasedAt: stats.release?.at ?? 0,
         lastSyncedAt: row.lastSyncedAt ?? 0,

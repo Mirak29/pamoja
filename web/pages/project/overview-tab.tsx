@@ -3,7 +3,9 @@ import { useEffect } from 'preact/hooks'
 import { Batched } from '/web/ui/infinite-list.tsx'
 import { A } from '/web/ui/link.tsx'
 import { ImagePlus, Play } from '/web/assets/icons.tsx'
-import { isMe, personOf } from '/web/fixtures/people.ts'
+import { isMe, me, personOf } from '/web/fixtures/people.ts'
+import { JoinRequests } from '/web/pages/project/join-requests.tsx'
+import { memberLink } from '/web/lib/member-links.ts'
 import { type Project, projectsChanged } from '/web/fixtures/projects.ts'
 import { counted } from '/web/lib/plural.ts'
 import { followRoadmap, milestonesOf } from '/web/lib/roadmap.ts'
@@ -185,7 +187,12 @@ const Needs = ({ project }: { project: Project }) => (
 )
 
 const Team = ({ project }: { project: Project }) => {
-  const more = Math.max(0, project.contributors - project.members.length)
+  const people = project.people ?? []
+  // Those GitHub counts without a face: anonymous commits, beyond the 30
+  const more = Math.max(
+    0,
+    project.contributors - project.members.length - people.length,
+  )
   return (
     <Card class='gap-3 p-5'>
       <Eyebrow>
@@ -223,6 +230,63 @@ const Team = ({ project }: { project: Project }) => {
           )}
         />
       </ScrollFrame>
+      {people.length > 0 && (
+        <div class='flex flex-col gap-2.5 border-t border-line pt-3'>
+          <span class='text-[12px] leading-4 text-ink-muted'>
+            {counted(people.length, 'contributeur', 'contributeurs')} sur GitHub
+          </span>
+          <ScrollFrame class='-mr-2 max-h-[220px] pr-2'>
+            <div class='flex flex-col gap-2.5'>
+              {people.map((person) => {
+                // On Pamoja: their profile; else their GitHub
+                const body = (
+                  <>
+                    <Avatar
+                      name={person.login
+                        ? personOf(person.login).name
+                        : person.github}
+                      src={person.avatarUrl}
+                      size={30}
+                    />
+                    <span class='flex min-w-0 flex-col'>
+                      <span class='truncate text-[14px] leading-5 font-semibold'>
+                        {person.login
+                          ? personOf(person.login).name
+                          : person.github}
+                      </span>
+                      <span class='truncate font-mono text-[12px] leading-4 text-ink-muted'>
+                        {person.login ? `@${person.login}` : 'sur GitHub'}
+                      </span>
+                    </span>
+                  </>
+                )
+                const row =
+                  'flex items-center gap-2.5 text-ink no-underline hover:no-underline'
+                return person.login
+                  ? (
+                    <A
+                      key={person.github}
+                      href={`@${person.login}`}
+                      class={row}
+                    >
+                      {body}
+                    </A>
+                  )
+                  : (
+                    <a
+                      key={person.github}
+                      href={`https://github.com/${person.github}`}
+                      {...memberLink}
+                      class={row}
+                    >
+                      {body}
+                    </a>
+                  )
+              })}
+            </div>
+          </ScrollFrame>
+        </div>
+      )}
       {more > 0 && (
         <span class='text-[13px] text-ink-muted'>
           + {counted(more, 'contributeur')} sur GitHub
@@ -246,6 +310,11 @@ const Release = ({ project }: { project: Project }) => (
   </Card>
 )
 
+/** The owner and the maintainers accept the candidatures (§6.6) */
+const canManage = (project: Project) =>
+  project.owner === me.login ||
+  project.members.some((m) => m.login === me.login && m.role === 'Mainteneur')
+
 /** What it is, what happens, who builds it, what it needs (§6.3) */
 export const OverviewTab = ({ project }: { project: Project }) => (
   <div class='mr-2 grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
@@ -255,6 +324,10 @@ export const OverviewTab = ({ project }: { project: Project }) => (
       <EventList project={project} title='Activité récente' limit={6} />
     </div>
     <div class='flex min-w-0 flex-col gap-8'>
+      {
+        // The candidatures waiting, for who decides them (§6.6)
+        canManage(project) && <JoinRequests project={project} compact />
+      }
       <CurrentMilestone project={project} />
       <Needs project={project} />
       <Team project={project} />

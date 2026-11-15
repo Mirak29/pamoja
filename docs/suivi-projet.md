@@ -1826,3 +1826,10 @@ Pamoja s'installe comme une application, sur téléphone comme sur ordinateur. U
 
 - **Livrable** : `api/mentions.ts`, `api/mentions_test.ts`, `api/posts.ts`, `api/channels.ts`, `api/notifications.ts`, `api/routes.ts` (`GET/api/mentions`), `web/ui/mentions.tsx`, `web/ui/input.tsx`, `web/ui/rich-text.tsx`, `web/ui/post.tsx`, `web/lib/notifications.ts`, `web/pages/notifications.tsx`, et les champs du nouveau post, de l'accueil, des réponses et des canaux ; §10.1
 - **Par** : @Mirak29
+
+### 2026-11-15 · Candidatures sur la page projet, contributeurs GitHub avec leur visage
+
+Les candidatures d'un vrai projet ne se traitaient que depuis la notification : le panneau de l'onglet Équipe ne montrait que celles de démo. `GET/api/project/join-requests` les donne au propriétaire et aux mainteneurs, celles en attente d'abord, puis les dix dernières décidées ; elles s'acceptent ou se refusent depuis l'aperçu du projet (un bloc en haut, seulement quand l'une attend) et depuis l'onglet Équipe, avec un seul composant pour les projets réels et de démo. Une nouvelle candidature arrive en direct ; accepter ajoute le membre à l'équipe sans recharger. La carte Équipe montre les contributeurs du dépôt avec leur photo au lieu de « + 1 contributeur » : lus sur GitHub à l'import et à chaque synchro (avec ETag), sans les robots, 30 au plus ; reconnus par leur identifiant GitHub, ils mènent à leur profil Pamoja, sinon à GitHub.
+
+- **Livrable** : `api/join.ts`, `api/contributors.ts`, `api/contributors_test.ts`, `api/join_test.ts`, `api/import.ts`, `api/sync.ts`, `api/projects.ts`, `api/routes.ts`, `web/lib/join-requests.ts`, `web/pages/project/join-requests.tsx`, `web/pages/project/overview-tab.tsx`, `web/pages/project/team-tab.tsx` ; §6.3, §6.6
+- **Par** : @Mirak29

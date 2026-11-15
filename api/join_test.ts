@@ -4,7 +4,11 @@ import { db, makeRestorePoint } from '@01edu/db'
 import { listNotifications, readAllNotifications } from '/api/notifications.ts'
 import { seed } from '/api/seed.ts'
 import { userIdOfLogin } from '/api/user.ts'
-import { applyToProject, decideJoinRequest } from '/api/join.ts'
+import {
+  applyToProject,
+  decideJoinRequest,
+  listJoinRequests,
+} from '/api/join.ts'
 
 const restore = makeRestorePoint()
 
@@ -170,4 +174,27 @@ Deno.test('join: manager decisions follow request state independently of reading
     assertEquals(outcome.accepted, accept ? 1 : 0)
     assertEquals(outcome.joinRequestId, 0)
   }
+})
+
+Deno.test('join: the managers read the candidatures, waiting first (§6.6)', () => {
+  restore()
+  seed()
+  const abdou = userIdOfLogin('abdou')!
+  const moussa = userIdOfLogin('moussa')!
+  const awa = userIdOfLogin('awa')!
+  applyToProject(moussa, 'openpay-africa', ['Backend'], WEEKLY, 'Go et SQLite')
+  applyToProject(awa, 'openpay-africa', ['Frontend'], WEEKLY, '')
+  decideJoinRequest(abdou, lastRequest(moussa).joinRequestId, true)
+
+  const list = listJoinRequests(abdou, 'openpay-africa')
+  // Awa waits, Moussa was accepted: the one waiting comes first
+  assertEquals(list.map((r) => [r.login, r.status]), [
+    ['awa', 'pending'],
+    ['moussa', 'accepted'],
+  ])
+  assertEquals(list[1].areas, ['Backend'])
+  assertEquals(list[1].message, 'Go et SQLite')
+  // Only the owner and the maintainers read them
+  assertThrows(() => listJoinRequests(awa, 'openpay-africa'))
+  assertThrows(() => listJoinRequests(abdou, 'nope'))
 })

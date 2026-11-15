@@ -187,3 +187,61 @@ export const decideJoinRequest = (
   if (accept) refreshListeners(request.userId)
   return { status: accept ? 'accepted' : 'refused' }
 }
+
+// The candidatures of a project for its managers (§6.6): those waiting,
+// oldest first, then the last ten decided
+const listRequests = sql<
+  {
+    joinRequestId: number
+    login: string
+    name: string
+    avatarUrl: string
+    areas: string
+    availability: string
+    message: string
+    status: string
+    createdAt: number
+  },
+  number
+>`
+  SELECT joinRequest.joinRequestId, user.githubUsername AS login,
+    profile.displayName AS name, user.avatarUrl, joinRequest.areas,
+    joinRequest.availability, joinRequest.message, joinRequest.status,
+    joinRequest.createdAt
+  FROM joinRequest
+  JOIN user ON user.userId = joinRequest.userId
+  JOIN profile ON profile.userId = joinRequest.userId
+  WHERE joinRequest.projectId = ?
+  ORDER BY joinRequest.status != 'pending',
+    CASE WHEN joinRequest.status = 'pending' THEN joinRequest.createdAt
+      ELSE -joinRequest.createdAt END
+  LIMIT 60
+`.all
+
+const projectIdOf = sql<{ projectId: number }, string>`
+  SELECT projectId FROM project WHERE slug = ?
+`.get
+
+/** The candidatures of a project, for its owner and maintainers only */
+export const listJoinRequests = (me: number, slug: string) => {
+  const project = projectIdOf(slug)
+  if (!project) throw notFound('Unknown project', 'unknown')
+  const role = getRole({ projectId: project.projectId, userId: me })?.role
+  if (role !== 'owner' && role !== 'maintainer') {
+    throw forbidden('Only the owner and the maintainers read them')
+  }
+  const rows = listRequests(project.projectId)
+  const pending = rows.filter((row) => row.status === 'pending')
+  const decided = rows.filter((row) => row.status !== 'pending').slice(0, 10)
+  return [...pending, ...decided].map((row) => ({
+    id: row.joinRequestId,
+    login: row.login,
+    name: row.name,
+    avatarUrl: row.avatarUrl,
+    areas: JSON.parse(row.areas) as string[],
+    availability: row.availability,
+    message: row.message,
+    status: row.status,
+    createdAt: row.createdAt,
+  }))
+}

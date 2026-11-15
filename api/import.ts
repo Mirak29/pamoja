@@ -1,3 +1,8 @@
+import {
+  contributorsPath,
+  type GithubContributor,
+  keptContributors,
+} from '/api/contributors.ts'
 import { respond } from '@01edu/api/response'
 import { db, sql } from '@01edu/db'
 import { now } from '@01edu/time'
@@ -65,8 +70,8 @@ export const fetchRepository = async (login: string, name: string) => {
     throw forbidden('Only the owner of a repository imports it')
   }
   const path = `/repos/${repo.full_name}`
-  const [languages, readme, release, contributors, openPulls] = await Promise
-    .all([
+  const [languages, readme, release, contributors, openPulls, people] =
+    await Promise.all([
       read<Record<string, number>>(`${path}/languages`),
       readOptional<string>(`${path}/readme`, { raw: true }),
       readOptional<{ tag_name: string; published_at: string | null }>(
@@ -74,6 +79,7 @@ export const fetchRepository = async (login: string, name: string) => {
       ),
       countOf(`${path}/contributors?anon=1`),
       countOf(`${path}/pulls?state=open`),
+      readOptional<GithubContributor[]>(contributorsPath(repo.full_name)),
     ])
   const total = Object.values(languages).reduce((sum, n) => sum + n, 0) || 1
   const shares = Object.entries(languages)
@@ -88,6 +94,7 @@ export const fetchRepository = async (login: string, name: string) => {
       topics: repo.topics ?? [],
       languages: shares,
       contributors,
+      people: keptContributors(people ?? []),
       openIssues: Math.max(0, repo.open_issues_count - openPulls),
       openPullRequests: openPulls,
       release: release

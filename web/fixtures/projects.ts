@@ -41,6 +41,8 @@ export type Project = {
   stage: 'Idée' | 'Prototype' | 'Bêta' | 'Production'
   activity: 'Très actif' | 'Actif' | 'Calme'
   about?: string
+  /** Contributors of the repository beside the team, with their face */
+  people?: { github: string; avatarUrl: string; login: string }[]
   /** The whole README of the repository, Markdown (§6.3) */
   readme?: string
   /** Its default branch: where its relative links and images lead */
