@@ -139,6 +139,13 @@ const sentence = (n: Item): Pick<Notification, 'title' | 'body' | 'kind'> & {
         title: translate('Ton compte est suspendu'),
         body: t`Tu peux lire, pas écrire. Motif : ${n.excerpt}`,
       }
+    case 'project_invite':
+      return {
+        kind: 'promising',
+        title: t`${who} pense que tu pourrais aider ${n.project}`,
+        body:
+          t`Besoin : ${n.title}. Tu peux proposer ton aide ou rejoindre le projet.`,
+      }
     case 'collaboration_request':
       return {
         kind: 'collaboration',
@@ -217,6 +224,8 @@ const toPage = (n: Item): Notification => ({
     ? `@${me.login}`
     : n.type === 'application' && n.projectSlug
     ? `project/${n.projectSlug}/team`
+    : n.type === 'project_invite' && n.projectSlug
+    ? `project/${n.projectSlug}`
     : n.postId
     ? `post/s${n.postId}`
     : 'notifications',

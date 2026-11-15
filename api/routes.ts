@@ -146,6 +146,7 @@ import {
   listBoard,
   moveTask,
 } from '/api/board.ts'
+import { inviteHelper, listProjectHelpers } from '/api/project-helpers.ts'
 import {
   attachTask,
   createMilestone,
@@ -1889,6 +1890,46 @@ const defs = {
       milestone: NUM('Its milestone, 0 for none'),
     }),
     description: 'Attach a card to a milestone of the roadmap (§6.7)',
+  }),
+
+  'GET/api/project/helpers': route({
+    authorize: withSession,
+    fn: (ctx, { slug }) => listProjectHelpers(ctx.session.userId, slug),
+    input: OBJ({ slug: STR('Slug of the project') }),
+    output: OBJ({
+      canInvite: BOOL('True for an owner or a maintainer'),
+      needs: ARR(
+        OBJ({
+          title: STR('The open need'),
+          helpers: ARR(
+            OBJ({
+              login: STR('Login'),
+              name: STR('Name'),
+              city: STR('City, empty if none'),
+              score: NUM('Score of the matching, out of 100'),
+              skills: ARR(STR('Skill'), 'The skills of the need they hold'),
+              confirmed: NUM('Helps confirmed on these skills'),
+              invited: BOOL('Invited by the managers this month'),
+            }),
+            'Best first, three at most',
+          ),
+        }),
+        'In the order of the needs',
+      ),
+    }),
+    description: 'For each open need, who could help: the matching (§6.6)',
+  }),
+
+  'POST/api/project/invite': route({
+    authorize: editing,
+    fn: (ctx, input) => inviteHelper(ctx.session.userId, input),
+    input: OBJ({
+      slug: STR('Slug of the project'),
+      login: STR('Login of the developer invited'),
+      need: STR('Title of the open need'),
+    }),
+    output: OBJ({ invited: BOOL('True') }),
+    description: 'Invite a developer to help on a need of the project',
   }),
 
   'GET/api/project/roadmap': route({
