@@ -172,7 +172,17 @@ export const Entry = initEntries(entries, relations, {
   /*
    * Identity
    */
-  USER_LOGIN: { userId: 'user who logged in', fields: { source } },
+  USER_LOGIN: {
+    userId: 'user who logged in',
+    fields: {
+      source,
+      tokenHash: {
+        type: 'TEXT',
+        description:
+          'SHA-256 of the secret of the session cookie, never the secret',
+      },
+    },
+  },
   PROFILE_UPDATED: {
     userId: 'user whose profile changed, reindexed in Meilisearch',
     fields: { source },

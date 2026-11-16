@@ -1906,3 +1906,10 @@ Les messages d'un canal (#général, #suivi, #aide, #annonces) défilent dans le
 
 - **Livrable** : `task-prod-reset.ts`, `deno.json`, `docs/deploiement.md`, `README.md`, `README.en.md` ; §18.1, PAM-909
 - **Par** : @Mirak29
+
+### 2026-11-16 · PAM-126 · Une session ne s'ouvre plus chez quelqu'un d'autre
+
+Signalé en prod : une personne s'est retrouvée dans la session d'un autre membre et a envoyé un message à sa place. Cause : le cookie ne portait que l'id signé de l'entry `USER_LOGIN` ; `prod:reset` recrée la base, les ids repartent de 1 et `SESSION_SECRET` reste, donc un cookie d'avant la remise désignait la nouvelle connexion de quelqu'un d'autre. Le cookie porte maintenant aussi un secret aléatoire de 32 octets, l'entry son empreinte SHA-256, vérifiée à chaque requête ; les anciens cookies sont refusés et chacun se reconnecte une fois. Reproduit par un test avant la correction (le cookie de l'utilisateur 1 ouvrait l'utilisateur 2), vérifié en dev : ancien cookie refusé, nouvelle connexion valide.
+
+- **Livrable** : `api/session.ts`, `api/entries.ts`, `api/auth_test.ts`, `api/entries_test.ts` ; §5.3, §17, `docs/deploiement.md`
+- **Par** : @niangoos

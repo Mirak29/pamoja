@@ -3,14 +3,22 @@ import { respond } from '@01edu/api/response'
 import type { RequestContext } from '@01edu/api/context'
 import { isSuspended } from '/api/moderation.ts'
 import { now } from '@01edu/time'
+import { sql } from '@01edu/db'
 import { entries, Entry } from '/api/entries.ts'
 import { b64url } from '/api/lib/encoding.ts'
 import { BASE_URL } from '/api/lib/env.ts'
 import { sessionKey } from '/api/lib/sign.ts'
 
 // A session is a USER_LOGIN entry, like in Tournament. The cookie holds its
-// id, signed with SESSION_SECRET: Tournament signs with the password salt,
-// Pamoja has no password (§5.3).
+// id and a random secret, signed with SESSION_SECRET: Tournament signs with
+// the password salt, Pamoja has no password (§5.3).
+//
+// The id alone is not enough: entry ids start again at 1 on a new database
+// (deno task prod:reset, a restored backup), while SESSION_SECRET stays. A
+// cookie of the old database then named the login of someone else, who was
+// opened to its holder. The secret ties the cookie to the one login it was
+// made for; the entry keeps only its SHA-256, so a copy of the database
+// opens no session.
 
 export type Session = { entryId: number; userId: number; createdAt: number }
 
@@ -18,21 +26,38 @@ export type Session = { entryId: number; userId: number; createdAt: number }
 // on the server from the entry, not only by the cookie expiry
 const MAX_AGE = 30 * 24 * 60 * 60
 
-const encodeId = (entryId: number) =>
-  new Uint8Array(new Float64Array([entryId]).buffer)
+// 8 bytes of entry id (a float64, like before), then the secret
+const ID_BYTES = 8
+const SECRET_BYTES = 32
 
-const getLogin = Entry.sql<'userId' | 'createdAt', number>`
-  SELECT userId, createdAt
+const hashOf = async (secret: Uint8Array<ArrayBuffer>) =>
+  new Uint8Array(await crypto.subtle.digest('SHA-256', secret)).toBase64(
+    b64url,
+  )
+
+const getLogin = sql<
+  { userId: number; createdAt: number; tokenHash: string },
+  number
+>`
+  SELECT userId, createdAt, tokenHash
   FROM entry
-  WHERE id = ? AND type = ${entries.USER_LOGIN}
+  JOIN entryTokenHash ON entryTokenHash.entryId = entry.id
+  WHERE entry.id = ? AND type = ${entries.USER_LOGIN}
 `.get
 
 export const createSession = async (
   userId: number,
   source: 'github' | 'demo',
 ) => {
-  const entryId = Entry.insert.USER_LOGIN({ userId, source })
-  const data = encodeId(entryId)
+  const secret = crypto.getRandomValues(new Uint8Array(SECRET_BYTES))
+  const entryId = Entry.insert.USER_LOGIN({
+    userId,
+    source,
+    tokenHash: await hashOf(secret),
+  })
+  const data = new Uint8Array(ID_BYTES + SECRET_BYTES)
+  data.set(new Uint8Array(new Float64Array([entryId]).buffer))
+  data.set(secret, ID_BYTES)
   const signature = await crypto.subtle.sign('HMAC', sessionKey, data)
   return `${data.toBase64(b64url)}:${
     new Uint8Array(signature).toBase64(b64url)
@@ -51,13 +76,16 @@ export const decodeSession = async (
   } catch {
     return
   }
-  if (bytes.byteLength !== 8) return
+  // A cookie made before the secret (8 bytes) is refused: one more login
+  if (bytes.byteLength !== ID_BYTES + SECRET_BYTES) return
   // verify compares in constant time
   if (!await crypto.subtle.verify('HMAC', sessionKey, hash, bytes)) return
-  const [entryId] = new Float64Array(bytes.buffer)
+  const [entryId] = new Float64Array(bytes.buffer.slice(0, ID_BYTES))
   // An archived entry (logout) is no longer in the `entry` view
   const login = getLogin(entryId)
   if (!login?.userId || now() - login.createdAt > MAX_AGE) return
+  // Another database gave this id to another login: its secret differs
+  if (login.tokenHash !== await hashOf(bytes.slice(ID_BYTES))) return
   return { entryId, userId: login.userId, createdAt: login.createdAt }
 }
 
