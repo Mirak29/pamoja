@@ -151,7 +151,11 @@ Deno.test('entries: a relation « if any » can be absent', () => {
 Deno.test('entries: an archived entry leaves the entry view', () => {
   restore()
   const userId = addUser(1)
-  const entryId = Entry.insert.USER_LOGIN({ userId, source: 'platform' })
+  const entryId = Entry.insert.USER_LOGIN({
+    userId,
+    source: 'platform',
+    tokenHash: '',
+  })
   Entry.archive(entryId)
   assertEquals(
     db.prepare('SELECT count(*) AS n FROM entry WHERE id = ?').get(entryId),
@@ -163,7 +167,7 @@ Deno.test('entries: a type without trigger is never broadcast', () => {
   restore()
   const userId = addUser(1)
   const received = listen(userId)
-  Entry.insert.USER_LOGIN({ userId, source: 'platform' })
+  Entry.insert.USER_LOGIN({ userId, source: 'platform', tokenHash: '' })
   clear()
   assertEquals(received, [])
 })

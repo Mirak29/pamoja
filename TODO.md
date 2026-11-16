@@ -86,6 +86,7 @@ Responsable : _à répartir_
 - [x] **PAM-123** · Modélisation du backend en images : architecture de production, entité-relation en six domaines (dont messages directs, Assistant et blocages), états (demande d'aide, livraison webhook, synchro d'un projet), séquences (connexion, synchro live, boucle de démo), flowcharts (webhook, matching), modèle de domaine ; vérifiée sur le schéma réel ; sources Mermaid, images et script de rendu dans `docs/modelisation/` (§5, §7, §13, §14, §17.4) — @Mirak29
 - [x] **PAM-124** · Interface en anglais au choix : langue du système par défaut, réglage et bouton de l'en-tête ; traduction des seules phrases de l'interface, jamais du contenu des développeurs ; phrases à valeurs écrites ``t`…` `` (§2) — @Mirak29
 - [x] **PAM-125** · Adresses de navigation en anglais : chemins et paramètres sans français, anciennes adresses redirigées ; ids opaques pour le privé : une conversation par un id public aléatoire, une nouvelle conversation par l'id GitHub de la personne, jamais le login ni un numéro qui se suit (§9, §10.6, §12.2, §16) — @Mirak29
+- [x] **PAM-126** · Session liée à sa connexion : un secret aléatoire dans le cookie, son empreinte sur l'entry `USER_LOGIN`, pour qu'un cookie d'avant `prod:reset` n'ouvre plus la session d'un autre (§5.3, §17) — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -413,3 +414,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 
 - [x] Suppression de ses posts et réponses depuis l’Activité du profil — @Mirak29
 - 2026-11-16 · Suppression avec confirmation et contrôle d’auteur côté serveur ; retrait de la publication et de sa discussion des lectures, recherche et enregistrés ; médias rendus inaccessibles ; historique conservé, migration 018.
+- 2026-11-16 · Sessions (PAM-126) : le cookie porte l'id de l'entry `USER_LOGIN` et un secret aléatoire de 32 octets, l'entry son empreinte SHA-256 (champ `tokenHash`) ; avec l'id seul, après `prod:reset` (ids repartis de 1, `SESSION_SECRET` inchangé), un ancien cookie ouvrait la session d'un autre membre, constaté en prod. Les cookies d'avant sont refusés : chacun se reconnecte une fois · §5.3, §17

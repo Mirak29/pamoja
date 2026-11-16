@@ -77,7 +77,7 @@ La tâche ([`task-prod-reset.ts`](../task-prod-reset.ts)) demande de taper `pamo
 3. elle efface la base et les médias, puis recharge la démo ;
 4. elle redémarre l'app, même après un échec, et attend qu'elle réponde.
 
-`--vide` repart sur une base vide, sans démo ; `--yes` ne pose pas de question. `PAMOJA_HOST`, `PAMOJA_DIR`, `PAMOJA_BACKUPS` et `SSH` changent l'hôte, le dossier sur la VM, le dossier des archives et le programme ssh (sous Windows, celui du système par défaut). Les comptes et les sessions partent avec la base : chacun se reconnecte avec GitHub.
+`--vide` repart sur une base vide, sans démo ; `--yes` ne pose pas de question. `PAMOJA_HOST`, `PAMOJA_DIR`, `PAMOJA_BACKUPS` et `SSH` changent l'hôte, le dossier sur la VM, le dossier des archives et le programme ssh (sous Windows, celui du système par défaut). Les comptes et les sessions partent avec la base : chacun se reconnecte avec GitHub. Un cookie d'avant la remise ne vaut plus rien, même si sa connexion a le même id qu'une nouvelle (PAM-126).
 
 Pour restaurer une archive : `tar xf pamoja-avant-reset-….tar` donne `pamoja.db`, son `pamoja.db-wal` et `media/`, à remettre ensemble dans `/data` comme une copie ci-dessous (le `-wal` de l'archive est copié avec la base, pas effacé).
 
