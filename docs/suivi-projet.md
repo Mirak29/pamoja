@@ -1798,6 +1798,14 @@ Les posts et réponses enregistrés proposent à leur auteur une action Supprime
 - **Livrable** : migration 018, route de suppression, filtres de lecture et actions des publications.
 - **Par** : @Mirak29
 
+
+### 2026-11-16 · Corriger le menu actif des posts
+
+Les publications personnelles sélectionnent Accueil dans le menu, et les publications communautaires sélectionnent Communautés. La sélection se met à jour lorsque le post est chargé depuis son lien direct.
+
+- **Validation** : TypeScript et lint.
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

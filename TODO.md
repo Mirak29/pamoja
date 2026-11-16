@@ -413,3 +413,6 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 
 - [x] Suppression de ses posts et réponses depuis l’Activité du profil — @Mirak29
 - 2026-11-16 · Suppression avec confirmation et contrôle d’auteur côté serveur ; retrait de la publication et de sa discussion des lectures, recherche et enregistrés ; médias rendus inaccessibles ; historique conservé, migration 018.
+
+- [x] Sélection du menu adaptée aux posts personnels et communautaires — @Mirak29
+- 2026-11-16 · Le détail d’un post personnel sélectionne Accueil ; Communautés reste sélectionné uniquement pour un post rattaché à une communauté.

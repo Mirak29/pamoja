@@ -1189,3 +1189,5 @@ Le bouton « Partager » de l’en-tête de chaque projet copie son adresse prin
 ### Suppression de ses publications
 
 Un auteur peut supprimer ses posts et réponses depuis leurs actions, notamment dans Activité du profil, après confirmation. Le serveur vérifie l’auteur connecté. La publication et sa discussion descendante disparaissent des lectures (profil, fil, recherche, enregistrés et liens directs) ; les lignes et preuves historiques restent conservées. Les médias concernés deviennent inaccessibles. La suppression est distincte de la modération et du retrait d’une republication.
+
+Sur le détail d’un post, le menu sélectionne Accueil pour une publication personnelle et Communautés uniquement si elle appartient à une communauté.

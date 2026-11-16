@@ -1,3 +1,4 @@
+import { posts, postsChanged } from '/web/fixtures/posts.ts'
 import { refreshPage } from '/web/lib/refresh.ts'
 import { fromMenu } from '/web/lib/scroll-position.ts'
 import { reloadHelpRequests } from '/web/lib/help.ts'
@@ -114,11 +115,10 @@ const navItems = (): {
   },
 ]
 
-// A project page belongs to Projets, a post to Communautés
+// Project and community pages belong to their respective sections.
 const sections: Record<string, string> = {
   project: 'projects',
   community: 'communities',
-  post: 'communities',
 }
 
 // What a menu item does as it navigates (§12.2). On another page, it goes
@@ -143,7 +143,11 @@ const itemProps = (
 export const homeLinkProps = () => itemProps(navItems()[0])
 
 const currentSection = () => {
-  const [first] = url.relativePath.slice(1).split('/')
+  const [first, id] = url.relativePath.slice(1).split('/')
+  if (first === 'post') {
+    postsChanged.value
+    return posts.find((post) => post.id === id)?.community ? 'communities' : ''
+  }
   return sections[first] ?? first
 }
 
