@@ -87,6 +87,7 @@ Responsable : _à répartir_
 - [x] **PAM-124** · Interface en anglais au choix : langue du système par défaut, réglage et bouton de l'en-tête ; traduction des seules phrases de l'interface, jamais du contenu des développeurs ; phrases à valeurs écrites ``t`…` `` (§2) — @Mirak29
 - [x] **PAM-125** · Adresses de navigation en anglais : chemins et paramètres sans français, anciennes adresses redirigées ; ids opaques pour le privé : une conversation par un id public aléatoire, une nouvelle conversation par l'id GitHub de la personne, jamais le login ni un numéro qui se suit (§9, §10.6, §12.2, §16) — @Mirak29
 - [x] **PAM-126** · Session liée à sa connexion : un secret aléatoire dans le cookie, son empreinte sur l'entry `USER_LOGIN`, pour qu'un cookie d'avant `prod:reset` n'ouvre plus la session d'un autre (§5.3, §17) — @niangoos
+- [x] **PAM-126** · Session liée à sa connexion : un secret aléatoire dans le cookie, son empreinte sur l'entry `USER_LOGIN`, pour qu'un cookie d'avant `prod:reset` n'ouvre plus la session d'un autre (§5.3, §17) — @niangoos
 
 **Critères d'acceptation (§4)**
 
