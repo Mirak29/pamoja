@@ -2,6 +2,9 @@ import { assert, assertEquals } from 'jsr:@std/assert@^1.0.13'
 import { db, makeRestorePoint } from '@01edu/db'
 import server from '/api/server.ts'
 import { loginFlow } from '/api/testing.ts'
+import { createSession } from '/api/session.ts'
+import { sessionKey } from '/api/lib/sign.ts'
+import { findOrCreateGithubUser } from '/api/user.ts'
 
 // The test env has no GitHub App: the login is the simulated one (§5.3)
 const restore = makeRestorePoint()
@@ -101,6 +104,53 @@ Deno.test('auth: a tampered cookie is refused', async () => {
     401,
   )
   assertEquals((await me(`${data}:${signature.slice(1)}`)).status, 401)
+})
+
+// The ids start again at 1 on a new database (prod:reset), SESSION_SECRET
+// stays: the cookie of a login before it named the login of someone else
+Deno.test('auth: a cookie of an erased database opens no session', async () => {
+  restore()
+  const { session: old } = await login()
+  restore()
+  const { userId } = findOrCreateGithubUser({
+    id: 4242,
+    login: 'awa',
+    avatar_url: '',
+    name: 'Awa',
+    email: null,
+    bio: null,
+    blog: null,
+    location: null,
+    languages: [],
+  }, 'github')
+  const fresh = await createSession(userId, 'github')
+  // The same entry id, given to Awa's login on the new database
+  const idOf = (cookie: string) =>
+    new Float64Array(
+      Uint8Array.fromBase64(cookie.split(':')[0], { alphabet: 'base64url' })
+        .slice(0, 8).buffer,
+    )[0]
+  assertEquals(idOf(fresh), idOf(old))
+  assertEquals((await me(old)).status, 401)
+  const current = await me(fresh)
+  assertEquals(current.status, 200)
+  assertEquals((await current.json()).userId, userId)
+})
+
+Deno.test('auth: a cookie without its secret is refused', async () => {
+  restore()
+  const { session } = await login()
+  const data = Uint8Array.fromBase64(session.split(':')[0], {
+    alphabet: 'base64url',
+  }).slice(0, 8)
+  const signature = new Uint8Array(
+    await crypto.subtle.sign('HMAC', sessionKey, data),
+  )
+  const b64 = { alphabet: 'base64url' } as const
+  assertEquals(
+    (await me(`${data.toBase64(b64)}:${signature.toBase64(b64)}`)).status,
+    401,
+  )
 })
 
 Deno.test('auth: logout invalidates even a copied cookie', async () => {
