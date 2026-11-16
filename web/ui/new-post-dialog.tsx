@@ -1,3 +1,4 @@
+import { PostLink } from '/web/ui/post-link.tsx'
 import { useState } from 'preact/hooks'
 import { navigate } from '@01edu/signal-router'
 import { CircleAlert, Send } from '/web/assets/icons.tsx'
@@ -199,6 +200,7 @@ const NewPost = (
               />
             </Field>
             {link && !badVideo && <VideoEmbed url={link} />}
+            <PostLink body={body} />
             <div class='flex flex-wrap gap-3.5 border-t border-line pt-[18px]'>
               <Button
                 size={40}

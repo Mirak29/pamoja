@@ -1,3 +1,4 @@
+import { PostLink } from '/web/ui/post-link.tsx'
 import { useEffect, useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { Heart, MessageSquare } from '/web/assets/icons.tsx'
@@ -104,6 +105,7 @@ const GuestPostCard = (
           label={t`Images du post`}
         />
         {post.videoUrl && <VideoEmbed url={post.videoUrl} />}
+        <PostLink body={post.body} />
         <div class='flex flex-wrap items-center gap-4 pt-1 text-[13px] text-ink-muted'>
           <A
             href='login'

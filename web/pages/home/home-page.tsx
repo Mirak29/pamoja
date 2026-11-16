@@ -1,3 +1,4 @@
+import { PostLink } from '/web/ui/post-link.tsx'
 import { Mentions } from '/web/ui/mentions.tsx'
 import { toTop } from '/web/lib/refresh.ts'
 import { useDraft } from '/web/lib/draft.ts'
@@ -489,6 +490,7 @@ const Composer = () => {
         <Counter value={text} limit={LIMITS.post} />
         <MediaThumbs picker={picker} />
         {video && <VideoEmbed url={video} />}
+        <PostLink body={text} />
         <div
           class={`flex-wrap items-center gap-2 sm:flex ${
             opened ? 'flex' : 'hidden'

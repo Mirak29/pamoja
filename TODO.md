@@ -404,3 +404,6 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 - 2026-11-15 · DNA, Health et Story sur le serveur (PAM-308) : `GET/api/project/dna` mesure huit indicateurs sur le dépôt, chacun avec sa règle (activité 14 j, délai médian avant merge, PRs en attente, bloqueurs, contributeurs 30 j, CI 7 j, README, good first issues), déduit les domaines des langages et des labels, et tire la Story du journal ; les projets de démo gardent leurs données · §6.5
 
 - 2026-11-15 · Fil visiteur complété avec les publications et discussions de démonstration identifiées ; notifications initiales fictives retirées, compteurs réinitialisés à la déconnexion ; membres du projet affichés dans les canaux à la place des présences figées.
+
+- [x] Cartes d’aperçu pour les liens collés dans les posts — @Mirak29
+- 2026-11-16 · Aperçu du premier lien HTTP(S) dans la rédaction et les posts publiés : métadonnées des projets publics, titre et description des sites externes, repli sur le domaine ; fil visiteur inclus.

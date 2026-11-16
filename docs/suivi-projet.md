@@ -1774,6 +1774,14 @@ Le fil public rassemble les publications du serveur et celles de démonstration 
 
 - **Par** : @Mirak29
 
+
+### 2026-11-16 · Cartes d’aperçu des liens dans les posts
+
+Un lien collé dans le texte affiche une carte cliquable pendant la rédaction puis dans le fil, le détail du post et le fil visiteur. Les projets publics affichent leur nom et leur description ; les sites externes leur titre, description et domaine. Sans métadonnées, le domaine reste accessible. Les vidéos gardent leur lecteur. Les aperçus externes réutilisent les contrôles réseau existants et un cache borné.
+
+- **Validation** : six tests ciblés réussis (liens invalides, réseau privé, métadonnées, projets publics/non publics), vérification TypeScript et lint ; navigateur local sur base temporaire : collage, publication, aperçu externe et lecture sans compte.
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

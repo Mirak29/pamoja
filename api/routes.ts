@@ -1,3 +1,4 @@
+import { postLinkPreview } from '/api/post-link-preview.ts'
 import { makeRouter, route } from '@01edu/api/router'
 import {
   cardResponse,
@@ -2311,6 +2312,14 @@ const defs = {
     output: ARR(channelMessage),
     description:
       'The latest messages of the channels the developer reads, then their threads',
+  }),
+
+  'GET/api/post/link-preview': route({
+    authorize: withOptionalSession,
+    fn: (ctx, { url }) => postLinkPreview(url, new URL(ctx.req.url).origin),
+    input: OBJ({ url: STR('HTTP or HTTPS link') }),
+    output: OBJ({ url: STR(), title: STR(), description: STR(), site: STR() }),
+    description: 'Public metadata for a link shared in a post',
   }),
 
   'GET/api/video/preview': route({

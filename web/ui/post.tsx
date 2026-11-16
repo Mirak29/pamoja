@@ -1,3 +1,4 @@
+import { PostLink } from '/web/ui/post-link.tsx'
 import { repoPath } from '/web/lib/links.ts'
 import type { ComponentChildren, JSX } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
@@ -806,6 +807,7 @@ export const PostCard = (
             label={t`Images du post`}
           />
           {post.video && <VideoEmbed url={post.video} />}
+          <PostLink body={post.body} />
           {project && (
             <A
               href={`project/${project.slug}`}

@@ -1,3 +1,4 @@
+import { PostLink } from '/web/ui/post-link.tsx'
 import { useEffect, useState } from 'preact/hooks'
 import { url } from '@01edu/signal-router'
 import { A } from '/web/ui/link.tsx'
@@ -108,6 +109,7 @@ const Article = ({ post }: { post: Post }) => {
         label={t`Images du post`}
       />
       {post.video && <VideoEmbed url={post.video} />}
+      <PostLink body={post.body} />
       {project && (
         <A
           href={`project/${project.slug}`}
