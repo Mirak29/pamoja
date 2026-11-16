@@ -1789,6 +1789,15 @@ L’en-tête du projet propose « Partager » à tous ses lecteurs connectés. L
 
 - **Par** : @Mirak29
 
+
+### 2026-11-16 · Supprimer ses publications depuis le profil
+
+Les posts et réponses enregistrés proposent à leur auteur une action Supprimer, notamment dans Activité du profil. Une confirmation précise que la publication et sa discussion seront retirées. Le serveur vérifie l’auteur ; la suppression est persistante, distincte de la modération, et retire le contenu des profils, fils, liens directs, enregistrés et résultats de recherche. Les médias associés deviennent inaccessibles ; les lignes historiques sont conservées.
+
+- **Validation** : TypeScript et lint ; huit tests ciblés réussis sur bases isolées (publications, fil visiteur, recherche). Le test de recherche a été relancé seul pour éviter les données de seed du test précédent. Parcours navigateur : profil → Supprimer → Annuler, puis confirmation ; disparition et compteur vérifiés après rechargement.
+- **Livrable** : migration 018, route de suppression, filtres de lecture et actions des publications.
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

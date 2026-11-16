@@ -1559,6 +1559,12 @@ export const english: Record<string, string> = {
   'Réagir': 'React',
   'Modifier': 'Edit',
   'Supprimer': 'Delete',
+  'Supprimer la publication': 'Delete publication',
+  'Supprimer cette publication et sa discussion ?':
+    'Delete this publication and its discussion?',
+  'Publication supprimée': 'Publication deleted',
+  'Impossible de supprimer la publication': 'Could not delete the publication',
+  'Confirmer la suppression': 'Confirm deletion',
   'Supprimer définitivement': 'Delete for good',
   'Marquer comme non lu': 'Mark as unread',
   '· modifié': '· edited',

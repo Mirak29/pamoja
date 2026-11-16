@@ -1,3 +1,4 @@
+import { deletePublication } from '/web/lib/posts.ts'
 import { PostLink } from '/web/ui/post-link.tsx'
 import { repoPath } from '/web/lib/links.ts'
 import type { ComponentChildren, JSX } from 'preact'
@@ -181,6 +182,62 @@ const repost = (post: Post) => {
   })
 }
 
+const DeletePublication = ({ post }: { post: Post }) => {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  if (!confirming) {
+    return (
+      <Button
+        variant='secondary'
+        size={32}
+        onClick={() => setConfirming(true)}
+      >
+        Supprimer
+      </Button>
+    )
+  }
+  return (
+    <div
+      class='flex w-full flex-wrap items-center gap-2 rounded-md border border-line p-3'
+      role='group'
+      aria-label={t`Supprimer la publication`}
+    >
+      <span class='w-full text-[13px]'>
+        Supprimer cette publication et sa discussion ?
+      </span>
+      <Button
+        variant='secondary'
+        size={32}
+        disabled={busy}
+        onClick={() => setConfirming(false)}
+      >
+        Annuler
+      </Button>
+      <Button
+        variant='danger'
+        size={32}
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true)
+          try {
+            await deletePublication(post.id)
+            notify({ title: 'Publication supprimée', tone: 'verified' })
+          } catch {
+            notify({
+              title: 'Impossible de supprimer la publication',
+              tone: 'danger',
+            })
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        Confirmer la suppression
+      </Button>
+    </div>
+  )
+}
+
 /** Reply, repost, like, then bookmark, share and report */
 const Actions = (
   { post, size, replies, replying, onReply, before }: {
@@ -240,6 +297,9 @@ const Actions = (
         size={size}
         onClick={() => share(post)}
       />
+      {isMe(post.author) && serverIdOf(post.id) && (
+        <DeletePublication post={post} />
+      )}
       {!isMe(post.author) && (
         // The report dialog comes with PAM-516
         <A
@@ -298,7 +358,7 @@ const ReplyInput = (
         <Avatar
           name={me.name}
           src={me.avatarUrl}
-          size={28}
+          size={32}
         />
       )}
       <input

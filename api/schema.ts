@@ -616,6 +616,8 @@ export const Post = createTable('post', {
   // Added by migrations/017: a repost its author took back (hiddenAt stays
   // the column of moderation)
   withdrawnAt: { type: 'REAL', optional: true },
+  // Author deletion, separate from moderation and repost withdrawal.
+  deletedAt: { type: 'REAL', optional: true },
 })
 index('post_community', 'post', 'communityId, createdAt')
 index('post_replies', 'post', 'parentId, createdAt')

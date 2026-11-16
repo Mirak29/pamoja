@@ -125,7 +125,7 @@ const postRows = sql<
   FROM post
   JOIN profile ON profile.userId = post.authorId
   LEFT JOIN community ON community.communityId = post.communityId
-  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL
+  WHERE post.parentId IS NULL AND post.hiddenAt IS NULL AND post.deletedAt IS NULL
     AND post.repostOfId IS NULL
     AND (:ids IS NULL OR post.postId IN (SELECT value FROM json_each(:ids)))
     AND (:like IS NULL OR coalesce(post.title, '') || ' ' || post.body
@@ -458,7 +458,15 @@ const fromMeili = async (query: string, limit: number): Promise<Found> => {
 export const search = async (query: string, limit = 5): Promise<Found> => {
   if (!MEILI_URL || Date.now() < downUntil) return fromSql(query, limit)
   try {
-    return await fromMeili(query, limit)
+    const found = await fromMeili(query, limit)
+    // A deletion takes effect before the asynchronous index catches up.
+    const visible = new Set(
+      documentsOf('posts', { ids: found.posts.map((post) => post.id) }).map(
+        (post) => post.id,
+      ),
+    )
+    found.posts = found.posts.filter((post) => visible.has(post.id))
+    return found
   } catch (err) {
     downUntil = Date.now() + REST_MS
     log.warn('search-fallback', { message: errorMessage(err) })

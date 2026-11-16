@@ -131,6 +131,7 @@ import {
   acceptAnswer,
   createPost,
   createReply,
+  deletePost,
   listPosts,
   listRepliesOf,
   listSaved,
@@ -1564,6 +1565,14 @@ const defs = {
     }),
     description:
       'Set the information and the open needs of a project: owner and maintainers only (§6.3)',
+  }),
+
+  'POST/api/post/delete': route({
+    authorize: withSession,
+    fn: (ctx, { postId }) => deletePost(ctx.session.userId, postId),
+    input: OBJ({ postId: NUM() }),
+    output: OBJ({ deleted: ARR(NUM()) }),
+    description: 'Delete your publication and its discussion',
   }),
 
   'POST/api/post/create': route({

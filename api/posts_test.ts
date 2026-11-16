@@ -134,3 +134,82 @@ Deno.test('posts: those of one developer, for their profile', async () => {
   // Without an author, the whole feed
   assertEquals((await awa.call('/api/posts')).json.length, 2)
 })
+
+Deno.test('posts: only the author deletes, including its discussion and media', async () => {
+  restore()
+  const owner = await dev('owner')
+  const other = await dev('other')
+  const image = await owner.upload()
+  const created = await owner.call('/api/post/create', {
+    ...post,
+    media: [image],
+  })
+  const id = created.json.id
+  const reply = await other.call('/api/post/reply', {
+    postId: id,
+    body: 'Une réponse',
+  })
+  assertEquals(reply.status, 200)
+  const sibling = await other.call('/api/post/create', post)
+  assertEquals(
+    (await request('/api/post/delete', { body: { postId: id } })).status,
+    401,
+  )
+  assertEquals(
+    (await other.call('/api/post/delete', { postId: id })).status,
+    403,
+  )
+  await other.call('/api/bookmark', { postId: id, on: true })
+  const removed = await owner.call('/api/post/delete', { postId: id })
+  assertEquals(removed.status, 200)
+  assertEquals((await other.call('/api/saved')).json, [])
+  assertEquals(
+    (await owner.call('/api/media?key=' + created.json.media[0].key)).status,
+    404,
+  )
+  const results = (await owner.call('/api/search?q=AfriCommerce')).json.posts
+  assertEquals(results.some((item: { id: number }) => item.id === id), false)
+  assertEquals(removed.json.deleted.includes(reply.json.id), true)
+  assertEquals((await owner.call('/api/posts?author=owner')).json, [])
+  assertEquals((await other.call('/api/replies?author=other')).json, [])
+  assertEquals((await owner.call('/api/post/thread?postId=' + id)).status, 400)
+  assertEquals(
+    (await other.call('/api/post/thread?postId=' + reply.json.id)).status,
+    400,
+  )
+  assertEquals(
+    (await other.call('/api/post/reply', { postId: id, body: 'Trop tard' }))
+      .status,
+    400,
+  )
+  assertEquals(
+    (await owner.call('/api/posts')).json.map((p: { id: number }) => p.id),
+    [sibling.json.id],
+  )
+  assertEquals(
+    (await owner.call('/api/post/delete', { postId: id })).status,
+    200,
+  )
+})
+
+Deno.test('posts: deleting a reply preserves the root and sibling replies', async () => {
+  restore()
+  const owner = await dev('owner')
+  const other = await dev('other')
+  const root = (await owner.call('/api/post/create', post)).json.id
+  const reply =
+    (await other.call('/api/post/reply', { postId: root, body: 'Retirée' }))
+      .json.id
+  const sibling =
+    (await owner.call('/api/post/reply', { postId: root, body: 'Conservée' }))
+      .json.id
+  assertEquals(
+    (await other.call('/api/post/delete', { postId: reply })).status,
+    200,
+  )
+  const thread = await owner.call('/api/post/thread?postId=' + root)
+  assertEquals(thread.json.posts.map((p: { id: number }) => p.id), [
+    root,
+    sibling,
+  ])
+})

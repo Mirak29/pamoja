@@ -410,3 +410,6 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 
 - [x] Partager un projet depuis son en-tête — @Mirak29
 - 2026-11-16 · Bouton Partager sur les projets : copie de l’URL principale pour la coller dans un post ; confirmation après copie et message d’erreur si le navigateur la refuse.
+
+- [x] Suppression de ses posts et réponses depuis l’Activité du profil — @Mirak29
+- 2026-11-16 · Suppression avec confirmation et contrôle d’auteur côté serveur ; retrait de la publication et de sa discussion des lectures, recherche et enregistrés ; médias rendus inaccessibles ; historique conservé, migration 018.

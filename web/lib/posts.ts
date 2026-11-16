@@ -4,8 +4,11 @@ import {
   adoptReplies,
   isKnownPost,
   type PostDraft,
+  posts,
+  postsChanged,
   publishPost,
   savedId,
+  serverIdOf,
 } from '/web/fixtures/posts.ts'
 import { api, type ApiOutput } from '/web/lib/api.ts'
 import { FEED_PAGE } from '/api/limits.ts'
@@ -125,4 +128,23 @@ export const savePost = async (draft: PostDraft) => {
   // Its @logins that are developers, as the server read them
   post.mentions = saved.mentions
   return post
+}
+
+/** Remove only after the server has checked ownership and saved deletion. */
+export const deletePublication = async (id: string) => {
+  const postId = serverIdOf(id)
+  if (!postId) throw new Error('Demo post')
+  const result = await api['POST/api/post/delete'].fetch({ postId })
+  const removed = new Set(result.deleted.map(savedId))
+  for (const deleted of posts.filter((post) => removed.has(post.id))) {
+    const parent = posts.find((post) => post.id === deleted.parent)
+    if (parent?.replyCount) parent.replyCount--
+  }
+  for (let i = posts.length - 1; i >= 0; i--) {
+    if (removed.has(posts[i].id)) posts.splice(i, 1)
+  }
+  newPosts.value = newPosts.peek().filter((post) =>
+    !removed.has(savedId(post.id))
+  )
+  postsChanged.value++
 }

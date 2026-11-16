@@ -103,15 +103,15 @@ const postSelect = `
 // A post of the feed: neither a reply nor a repost, which is shown on the
 // post it points at (§10.1)
 const original = `post.parentId IS NULL AND post.repostOfId IS NULL
-  AND post.hiddenAt IS NULL`
+  AND post.hiddenAt IS NULL AND post.deletedAt IS NULL`
 
 // When a post last came into the feeds: published, or reposted since
 const lastSeen = `
   SELECT postId, createdAt AS at FROM post
-  WHERE parentId IS NULL AND repostOfId IS NULL AND hiddenAt IS NULL
+  WHERE parentId IS NULL AND repostOfId IS NULL AND hiddenAt IS NULL AND deletedAt IS NULL
   UNION ALL
   SELECT repostOfId, createdAt FROM post
-  WHERE repostOfId IS NOT NULL AND hiddenAt IS NULL AND withdrawnAt IS NULL
+  WHERE repostOfId IS NOT NULL AND hiddenAt IS NULL AND deletedAt IS NULL AND withdrawnAt IS NULL
 `
 
 // A page of the feed, newest first: the posts that last came into the
@@ -133,7 +133,7 @@ const listByAuthor = sql<
   { author: string; limit: number; me: number }
 >`${postSelect}
   WHERE post.parentId IS NULL AND post.repostOfId IS NULL
-    AND (post.hiddenAt IS NULL OR post.authorId = :me)
+    AND (post.hiddenAt IS NULL OR post.authorId = :me) AND post.deletedAt IS NULL
     AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
@@ -145,7 +145,7 @@ const listRepliesByAuthor = sql<
   { author: string; limit: number; me: number }
 >`${postSelect}
   WHERE post.parentId IS NOT NULL
-    AND (post.hiddenAt IS NULL OR post.authorId = :me)
+    AND (post.hiddenAt IS NULL OR post.authorId = :me) AND post.deletedAt IS NULL
     AND user.githubUsername = :author COLLATE NOCASE
   ORDER BY post.createdAt DESC
   LIMIT :limit
@@ -168,7 +168,7 @@ const reactionRows = sql<
 // The replies of each post, those shown: a hidden one is not counted
 const replyRows = sql<{ parentId: number; n: number }, string>`
   SELECT parentId, count(*) AS n FROM post
-  WHERE parentId IN (SELECT value FROM json_each(?)) AND hiddenAt IS NULL
+  WHERE parentId IN (SELECT value FROM json_each(?)) AND hiddenAt IS NULL AND deletedAt IS NULL
   GROUP BY parentId
 `.all
 
@@ -182,7 +182,7 @@ const repostRows = sql<
   FROM post JOIN user ON user.userId = post.authorId
   JOIN profile ON profile.userId = post.authorId
   WHERE post.repostOfId IN (SELECT value FROM json_each(?))
-    AND post.hiddenAt IS NULL AND post.withdrawnAt IS NULL
+    AND post.hiddenAt IS NULL AND post.deletedAt IS NULL AND post.withdrawnAt IS NULL
   ORDER BY post.createdAt ASC
 `.all
 
@@ -284,7 +284,7 @@ const listBookmarked = sql<PostRow, number>`${postSelect}
 export const listSaved = (me: number) => shown(me, listBookmarked(me))
 
 const postExists = sql<{ postId: number }, number>`
-  SELECT postId FROM post WHERE postId = ? AND hiddenAt IS NULL
+  SELECT postId FROM post WHERE postId = ? AND hiddenAt IS NULL AND deletedAt IS NULL
 `.get
 
 const getReaction = sql<
@@ -502,7 +502,7 @@ type Full = {
 const getFull = sql<Full, number>`
   SELECT postId, authorId, communityId, type, title, body,
     parentId, rootId, repostOfId, acceptedReplyId
-  FROM post WHERE postId = ? AND hiddenAt IS NULL
+  FROM post WHERE postId = ? AND hiddenAt IS NULL AND deletedAt IS NULL
 `.get
 
 // The whole thread, the root and its replies, oldest first; the page nests
@@ -518,7 +518,7 @@ const listThread = sql<
   JOIN user ON user.userId = post.authorId
   JOIN profile ON profile.userId = post.authorId
   LEFT JOIN community ON community.communityId = post.communityId
-  WHERE (post.postId = :root OR post.rootId = :root) AND post.hiddenAt IS NULL
+  WHERE (post.postId = :root OR post.rootId = :root) AND post.hiddenAt IS NULL AND post.deletedAt IS NULL
   ORDER BY post.createdAt ASC
   LIMIT 200
 `.all
@@ -667,3 +667,38 @@ export const readThread = (me: number, postId: number) => {
     acceptedReplyId: roots?.acceptedReplyId ?? 0,
   }
 }
+
+/** Remove a publication and its descendant discussion, preserving history. */
+export const deletePost = db.transaction((me: number, postId: number) => {
+  const row = db.prepare(
+    'SELECT authorId, communityId, deletedAt FROM post WHERE postId = ?',
+  ).get(postId) as {
+    authorId: number
+    communityId: number | null
+    deletedAt: number | null
+  } | undefined
+  if (!row) throw new respond.NotFoundError('Unknown post')
+  if (row.authorId !== me) {
+    throw new respond.ForbiddenError('Only the author deletes')
+  }
+  const rows = db.prepare(`WITH RECURSIVE discussion(id) AS (
+    SELECT postId FROM post WHERE postId = ?
+    UNION SELECT postId FROM post JOIN discussion ON post.parentId = discussion.id
+  ) SELECT id FROM discussion`).all(postId) as { id: number }[]
+  if (row.deletedAt !== null) return { deleted: rows.map((row) => row.id) }
+  const at = now()
+  for (const { id } of rows) {
+    db.prepare('UPDATE post SET deletedAt = ?, updatedAt = ? WHERE postId = ?')
+      .run(at, at, id)
+    db.prepare(
+      "UPDATE media SET hiddenAt = ? WHERE targetType = 'post' AND targetId = ?",
+    ).run(at, id)
+    Entry.insert.POST_UPDATED({
+      userId: me,
+      communityId: maybe(row.communityId),
+      postId: id,
+      source: 'platform',
+    })
+  }
+  return { deleted: rows.map((row) => row.id) }
+})
