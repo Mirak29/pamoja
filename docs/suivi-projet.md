@@ -1782,6 +1782,13 @@ Un lien collé dans le texte affiche une carte cliquable pendant la rédaction p
 - **Validation** : six tests ciblés réussis (liens invalides, réseau privé, métadonnées, projets publics/non publics), vérification TypeScript et lint ; navigateur local sur base temporaire : collage, publication, aperçu externe et lecture sans compte.
 - **Par** : @Mirak29
 
+
+### 2026-11-16 · Partager le lien d’un projet
+
+L’en-tête du projet propose « Partager » à tous ses lecteurs connectés. Le bouton copie l’adresse principale du projet, sans l’onglet ni les paramètres courants, pour la coller dans un post et afficher sa carte d’aperçu. Une confirmation suit la copie réussie ; un refus du presse-papiers affiche le lien et un message d’erreur.
+
+- **Par** : @Mirak29
+
 ## Fermé sans réalisation
 
 ### 2026-10-07 · PAM-009 · Installer le skill Hairline

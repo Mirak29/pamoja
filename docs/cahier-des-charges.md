@@ -1183,3 +1183,5 @@ Le fil public présente les publications du serveur et les publications de démo
 ### Aperçus des liens dans les posts
 
 Le premier lien HTTP(S) collé dans un post affiche une carte cliquable dès la rédaction et après publication, y compris dans le fil visiteur. Un projet public Pamoja affiche son nom et sa description ; un lien externe affiche le titre, la description et le domaine, sans charger de média tiers. Les vidéos conservent leur lecteur dédié. En cas de métadonnées indisponibles, le domaine reste cliquable. La collecte reprend les restrictions réseau des aperçus de messages, avec un cache borné et quatre collectes simultanées au maximum.
+
+Le bouton « Partager » de l’en-tête de chaque projet copie son adresse principale, indépendamment de l’onglet ouvert, pour la coller dans un post ou ailleurs. La confirmation apparaît uniquement après une copie réussie.

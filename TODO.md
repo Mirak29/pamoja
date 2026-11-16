@@ -407,3 +407,6 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 
 - [x] Cartes d’aperçu pour les liens collés dans les posts — @Mirak29
 - 2026-11-16 · Aperçu du premier lien HTTP(S) dans la rédaction et les posts publiés : métadonnées des projets publics, titre et description des sites externes, repli sur le domaine ; fil visiteur inclus.
+
+- [x] Partager un projet depuis son en-tête — @Mirak29
+- 2026-11-16 · Bouton Partager sur les projets : copie de l’URL principale pour la coller dans un post ; confirmation après copie et message d’erreur si le navigateur la refuse.

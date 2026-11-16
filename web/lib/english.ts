@@ -232,6 +232,7 @@ export const english: Record<string, string> = {
     'All three checks passed. Live sync is active.',
   'Libérer la demande': 'Release request',
   'Lien copié': 'Link copied',
+  'Impossible de copier le lien': 'Could not copy the link',
   'Lit les canaux sans écrire.': 'Reads channels without posting.',
   'M’aider à débugger': 'Help me debug',
   'Markdown accepté. Code entre accents graves, blocs entre trois accents graves.':

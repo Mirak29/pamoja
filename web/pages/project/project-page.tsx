@@ -6,6 +6,7 @@ import {
   Github,
   LifeBuoy,
   Plus,
+  Share2,
   Zap,
 } from '/web/assets/icons.tsx'
 import {
@@ -56,6 +57,7 @@ import { EmptyState, GhostSlab, LoadingState } from '/web/ui/states.tsx'
 import { loadProject } from '/web/fixtures/repos.ts'
 import { Tabs } from '/web/ui/tabs.tsx'
 import { t } from '/web/lib/language.ts'
+import { notify } from '/web/ui/toast.tsx'
 
 const tabs = [
   ['', 'Aperçu'],
@@ -130,6 +132,36 @@ const Stat = (
   </div>
 )
 
+const ShareProject = ({ project }: { project: Project }) => (
+  <Button
+    variant='secondary'
+    title={t`Copier le lien`}
+    onClick={async () => {
+      const link =
+        new URL(`/project/${encodeURIComponent(project.slug)}`, location.origin)
+          .href
+      try {
+        await navigator.clipboard.writeText(link)
+        notify({
+          title: 'Lien copié',
+          body: link,
+          icon: Share2,
+          tone: 'verified',
+        })
+      } catch {
+        notify({
+          title: 'Impossible de copier le lien',
+          body: link,
+          tone: 'warning',
+        })
+      }
+    }}
+  >
+    <Share2 />
+    Partager
+  </Button>
+)
+
 const Actions = ({ project }: { project: Project }) => {
   const following = project.followers.some(isMe)
   const isOwner = project.owner === me.login
@@ -142,6 +174,7 @@ const Actions = ({ project }: { project: Project }) => {
   if (isOwner || isMember) {
     return (
       <div class='flex flex-wrap gap-3 pb-1'>
+        <ShareProject project={project} />
         <Button href='help/new' params={{ project: project.slug }}>
           <LifeBuoy />
           Demander de l’aide
@@ -157,6 +190,7 @@ const Actions = ({ project }: { project: Project }) => {
   }
   return (
     <div class='flex flex-wrap gap-3 pb-1'>
+      <ShareProject project={project} />
       <Button
         variant='secondary'
         onClick={() => followProject(project)}
