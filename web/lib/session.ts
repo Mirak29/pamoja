@@ -110,18 +110,31 @@ export const finishLogin = async (code: string, state: string) => {
 // waits for it, or the cookie it sets could be the one deleted
 let leaving: Promise<unknown> = Promise.resolve()
 
-/** Opens the shared demo account, without GitHub (PAM-127) */
+/**
+ * Opens the shared demo account, without GitHub (PAM-127). True when it took
+ * the place of someone signed in: the page then has to load again, to drop
+ * what it kept of them (their lists, their realtime connection).
+ */
 export const startDemo = async () => {
   await leaving
+  const replaced = !!currentUser.peek()
   setUser(await api['POST/api/auth/demo'].fetch())
+  return replaced
 }
 
-/** Signs out; the promise ends once the server answered, even refused */
+/**
+ * Signs out. The promise ends once the server answered: false when it could
+ * not be reached, the session then being still open there.
+ */
 export const signOut = () => {
   currentUser.value = null
   // Signed out at once on this page; the server archives the session
-  leaving = api['POST/api/auth/logout'].fetch().catch(() => {})
-  return leaving
+  const left = api['POST/api/auth/logout'].fetch().then(
+    () => true,
+    () => false,
+  )
+  leaving = left
+  return left
 }
 
 type ProfileInput =

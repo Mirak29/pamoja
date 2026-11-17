@@ -23,11 +23,13 @@ export const DemoButton = (
     if (loading) return
     setLoading(true)
     startDemo().then(
-      () =>
-        navigate({
-          href: typeof next === 'function' ? next() : next,
-          replace: true,
-        }),
+      (replaced) => {
+        const href = typeof next === 'function' ? next() : next
+        // In place of someone signed in: a page loaded again, as after a
+        // login with GitHub, so that nothing of them stays on it
+        if (replaced) location.replace(new URL(href, document.baseURI))
+        else navigate({ href, replace: true })
+      },
       () => {
         setLoading(false)
         notify({
