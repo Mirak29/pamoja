@@ -60,18 +60,6 @@ export const videoOf = (link: string): Video | undefined => {
   }
 }
 
-// The demo of the contest, shown on the landing (PAM-128). A visitor has no
-// session: its thumbnail is the only one served without one.
-export const LANDING_VIDEO = 'https://youtu.be/2skXvFXGsb4'
-
-/** True for the video of the landing, whatever the form of its link */
-export const isLandingVideo = (link: string) => {
-  const video = videoOf(link)
-  const landing = videoOf(LANDING_VIDEO)
-  return !!video && video.provider === landing?.provider &&
-    video.id === landing.id
-}
-
 /** The players a page may frame (frame-src of the pages, §16) */
 export const VIDEO_FRAMES = [
   'https://www.youtube-nocookie.com',

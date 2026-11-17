@@ -79,26 +79,17 @@ export const thumbnailOf = async (link: string) => {
   let found = thumbnails.get(key)
   if (!found) {
     if (!thumbnailUrl) throw notFound()
-    // YouTube keeps a sharp 16:9 image for most videos; the one it names is
-    // small and letterboxed, good enough when the sharp one is missing
-    const candidates = provider === 'YouTube'
-      ? [`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, thumbnailUrl]
-      : [thumbnailUrl]
-    for (const candidate of candidates) {
-      const res = await fetch(candidate, {
-        signal: AbortSignal.timeout(5000),
-      }).catch(() => undefined)
-      const type = res?.headers.get('Content-Type') ?? ''
-      if (!res?.ok || !/^image\/(jpeg|png|webp)$/.test(type)) {
-        await res?.body?.cancel()
-        continue
-      }
-      const bytes = new Uint8Array(await res.arrayBuffer())
-      if (bytes.length > THUMBNAIL_MAX) continue
-      found = { bytes, type }
-      break
+    const res = await fetch(thumbnailUrl, {
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => undefined)
+    const type = res?.headers.get('Content-Type') ?? ''
+    if (!res?.ok || !/^image\/(jpeg|png|webp)$/.test(type)) {
+      await res?.body?.cancel()
+      throw notFound()
     }
-    if (!found) throw notFound()
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    if (bytes.length > THUMBNAIL_MAX) throw notFound()
+    found = { bytes, type }
     thumbnails.size >= 200 &&
       thumbnails.delete(thumbnails.keys().next().value!)
     thumbnails.set(key, found)

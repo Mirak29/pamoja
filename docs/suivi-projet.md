@@ -1543,13 +1543,6 @@ Le jury et les visiteurs sans compte GitHub ne pouvaient pas entrer dans l'app. 
 - **Livrable** : `api/routes.ts`, `api/user.ts`, `api/auth_test.ts`, `web/lib/session.ts`, `web/ui/demo-button.tsx`, `web/ui/demo-banner.tsx`, `web/ui/layout.tsx`, `web/pages/public/landing-page.tsx`, `web/pages/public/connexion-page.tsx`, `web/lib/english.ts` ; §5.3
 - **Par** : @niangoos
 
-### 2026-11-17 · PAM-128 · Une landing qui montre le produit en mouvement
-
-La landing était sobre face aux autres projets du concours. En haut de page, une figure isométrique animée joue la boucle de la démo en 10 secondes : la PR d'Abdou à Dakar, le matching qui retient Moussa à Abidjan, le fil indigo qui part en pointillé puis devient plein quand GitHub confirme, et la preuve de plus qui se pose sur sa colonne ; les quatre étapes s'allument dessous au même rythme. Sous le slogan, souligné par le fil, la vidéo de démo du concours (YouTube) est intégrée avec sa vraie miniature, que le serveur sert aux visiteurs pour cette seule vidéo. Une section présente les six lieux de la plateforme ; les sections arrivent au défilement et les barres du profil se remplissent. Tout passe par les tokens (thèmes clair et sombre) et rien ne bouge avec « réduire les animations ». Vérifié : suite de tests verte (327), navigateur en 1280 px et 375 px, thèmes clair et sombre, lecture de la vidéo dans la page.
-
-- **Livrable** : `web/pages/public/landing-page.tsx`, `web/pages/public/landing-scene.tsx`, `web/assets/styles/style.css`, `web/ui/video.tsx`, `web/lib/english.ts`, `api/video-links.ts`, `api/video.ts`, `api/routes.ts`, `api/video_test.ts` ; §6.2, §12.7, §17.3
-- **Par** : @niangoos
-
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front
