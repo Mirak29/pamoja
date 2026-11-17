@@ -117,8 +117,11 @@ let leaving: Promise<unknown> = Promise.resolve()
  */
 export const startDemo = async () => {
   await leaving
+  const demo = await api['POST/api/auth/demo'].fetch()
+  // Read once the demo answered: the first read of the session may have
+  // named someone meanwhile, and opened their realtime connection
   const replaced = !!currentUser.peek()
-  setUser(await api['POST/api/auth/demo'].fetch())
+  setUser(demo)
   return replaced
 }
 
