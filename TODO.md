@@ -87,7 +87,7 @@ Responsable : _à répartir_
 - [x] **PAM-124** · Interface en anglais au choix : langue du système par défaut, réglage et bouton de l'en-tête ; traduction des seules phrases de l'interface, jamais du contenu des développeurs ; phrases à valeurs écrites ``t`…` `` (§2) — @Mirak29
 - [x] **PAM-125** · Adresses de navigation en anglais : chemins et paramètres sans français, anciennes adresses redirigées ; ids opaques pour le privé : une conversation par un id public aléatoire, une nouvelle conversation par l'id GitHub de la personne, jamais le login ni un numéro qui se suit (§9, §10.6, §12.2, §16) — @Mirak29
 - [x] **PAM-126** · Session liée à sa connexion : un secret aléatoire dans le cookie, son empreinte sur l'entry `USER_LOGIN`, pour qu'un cookie d'avant `prod:reset` n'ouvre plus la session d'un autre (§5.3, §17) — @niangoos
-- [x] **PAM-126** · Session liée à sa connexion : un secret aléatoire dans le cookie, son empreinte sur l'entry `USER_LOGIN`, pour qu'un cookie d'avant `prod:reset` n'ouvre plus la session d'un autre (§5.3, §17) — @niangoos
+- [x] **PAM-127** · Essayer sans GitHub : bouton « Essayer sans GitHub » sur la landing et la connexion, qui ouvre le compte seedé partagé de Fatou (`POST/api/auth/demo`, comptes fictifs seulement) ; bandeau « compte de démonstration » et « Quitter la démo » dans l'app (§5.3) — @niangoos
 
 **Critères d'acceptation (§4)**
 
@@ -415,3 +415,4 @@ Format : `AAAA-MM-JJ · décision · section du cahier des charges`.
 
 - [x] Suppression de ses posts et réponses depuis l’Activité du profil — @Mirak29
 - 2026-11-16 · Suppression avec confirmation et contrôle d’auteur côté serveur ; retrait de la publication et de sa discussion des lectures, recherche et enregistrés ; médias rendus inaccessibles ; historique conservé, migration 018.
+- 2026-11-17 · Bouton démo (PAM-127) : `POST/api/auth/demo` ouvre en production le compte seedé `fatou`, fictif seulement (404 s'il est relié à un vrai compte ou absent) ; compte partagé signalé par un bandeau ; ses écritures restent `platform`, `demo` gardant son sens de donnée fictive locale côté web · §5.3

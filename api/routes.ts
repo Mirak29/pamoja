@@ -105,6 +105,7 @@ import {
   withSession,
 } from '/api/session.ts'
 import {
+  demoAccountId,
   findOrCreateGithubUser,
   getCurrentUser,
   getLogin,
@@ -313,6 +314,7 @@ const identity = {
 const currentUser = {
   userId: NUM('Id of the developer'),
   moderator: BOOL('Moderates a community or the platform (§10.5)'),
+  demoAccount: BOOL('The shared account of the demo button (PAM-127)'),
   ...identity,
   matchingMode,
   minScore: NUM('Score under which a help request does not reach them'),
@@ -684,6 +686,27 @@ const defs = {
       created: BOOL('First login: the onboarding follows'),
     }, 'The developer now signed in'),
     description: 'End the GitHub login and open a session',
+  }),
+
+  // The demo button (PAM-127): opens the seeded account of DEMO_LOGIN,
+  // without GitHub, for the jury and visitors. Only a fictional account,
+  // which no GitHub account holds, can be opened this way.
+  'POST/api/auth/demo': route({
+    fn: async () => {
+      const userId = demoAccountId()
+      if (!userId) {
+        throw new respond.NotFoundError({
+          message: 'No demo account on this database',
+          reason: 'missing',
+        })
+      }
+      const user = getCurrentUser(userId)!
+      log.info('user-login', { userId, created: false, demo: true })
+      const session = await createSession(userId, 'demo')
+      return setSessionCookie(respond.OK(user), session)
+    },
+    output: OBJ(currentUser, 'The demo developer now signed in'),
+    description: 'Open a session on the shared demo account',
   }),
 
   'POST/api/auth/logout': route({

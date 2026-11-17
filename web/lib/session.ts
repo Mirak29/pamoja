@@ -104,6 +104,11 @@ export const finishLogin = async (code: string, state: string) => {
   return created
 }
 
+/** Opens the shared demo account, without GitHub (PAM-127) */
+export const startDemo = async () => {
+  setUser(await api['POST/api/auth/demo'].fetch())
+}
+
 export const signOut = () => {
   currentUser.value = null
   // Signed out at once on this page; the server archives the session

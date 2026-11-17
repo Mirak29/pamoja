@@ -214,6 +214,8 @@ export const getCurrentUser = (userId: number) => {
     userId,
     // Has a moderation queue (§10.5)
     moderator: isModerator(userId),
+    // The shared account of the demo button: the page says so (PAM-127)
+    demoAccount: userId === demoAccountId(),
     login: user.githubUsername,
     // The account on GitHub: a demo account keeps its demo login (§14)
     githubLogin: user.githubLogin ?? user.githubUsername,
@@ -374,6 +376,19 @@ const getUserIdByLogin = sql<{ userId: number }, string>`
 
 /** The developer of a login, undefined if not on Pamoja */
 export const userIdOfLogin = (login: string) => getUserIdByLogin(login)?.userId
+
+// The account of the « Essayer sans GitHub » button (PAM-127): a seeded
+// developer that no GitHub account holds (negative githubId, §14), never a
+// real account, so a shared demo session can never open someone's profile
+export const DEMO_LOGIN = 'fatou'
+
+const getFictionalByLogin = sql<{ userId: number }, string>`
+  SELECT userId FROM user
+  WHERE githubUsername = ? COLLATE NOCASE AND githubId < 0
+`.get
+
+/** The demo account, undefined when the database was not seeded */
+export const demoAccountId = () => getFictionalByLogin(DEMO_LOGIN)?.userId
 
 /** The developer of a GitHub account, undefined if not on Pamoja */
 export const userIdOfGithubId = (githubId: number) =>

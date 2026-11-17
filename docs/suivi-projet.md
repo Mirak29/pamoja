@@ -1536,6 +1536,13 @@ Pour un vrai projet, trois indicateurs de Health restaient « Pas encore mesuré
 - **Livrable** : `api/project-dna.ts`, `api/project-dna_test.ts`, `api/routes.ts`, `web/lib/pulse.ts`, `web/fixtures/pulse.ts`, `web/pages/project/pulse-tab.tsx` ; §6.5
 - **Par** : @Mirak29
 
+### 2026-11-17 · PAM-127 · Essayer Pamoja sans GitHub
+
+Le jury et les visiteurs sans compte GitHub ne pouvaient pas entrer dans l'app. Un bouton « Essayer sans GitHub », sur la landing (haut et bas de page) et sur la page de connexion, ouvre en un clic le compte seedé partagé de Fatou, puis la page demandée. Le serveur n'ouvre ainsi qu'un compte fictif (`githubId` négatif) : relié à un vrai compte ou absent, il répond 404. Dans l'app, un bandeau dit qu'il s'agit d'un compte de démonstration partagé, que ce qui est publié est visible par tous, avec « Quitter la démo ». Libellés traduits en anglais, dont « Lire le fil sans compte » qui ne l'était pas. Vérifié : 3 tests de la route, suite complète verte (hors `videos/`, non suivi), parcours dans le navigateur sur bureau et à 375 px.
+
+- **Livrable** : `api/routes.ts`, `api/user.ts`, `api/auth_test.ts`, `web/lib/session.ts`, `web/ui/demo-button.tsx`, `web/ui/demo-banner.tsx`, `web/ui/layout.tsx`, `web/pages/public/landing-page.tsx`, `web/pages/public/connexion-page.tsx`, `web/lib/english.ts` ; §5.3
+- **Par** : @niangoos
+
 ## Audits QA
 
 ### 2026-10-19 · QA de régression front

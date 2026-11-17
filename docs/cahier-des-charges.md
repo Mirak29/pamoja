@@ -151,6 +151,8 @@ Réglages de l'app : `GITHUB_APP_SLUG` (son nom dans l'URL, qui donne la page d'
 
 **En dev, sans GitHub App.** Si `GITHUB_CLIENT_ID` est absent hors production, `GET/api/auth/github` renvoie directement vers `/login/github` avec un code de démonstration, et le serveur connecte le compte `abdou` (`source = demo`) sans appeler GitHub. Chacun peut ainsi travailler sans les secrets de l'app. En production, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` et `SESSION_SECRET` sont obligatoires : le serveur refuse de démarrer sans eux.
 
+**Bouton démo, sans GitHub (PAM-127).** Pour le jury et les visiteurs sans compte GitHub, la landing et la page de connexion proposent « Essayer sans GitHub ». `POST/api/auth/demo` ouvre une session (`source = demo`) sur le compte seedé `fatou`, en production aussi. Seul un compte fictif, au `githubId` négatif qu'aucun compte GitHub ne porte, peut s'ouvrir ainsi : si `fatou` est relié à un vrai compte par `SEED_GITHUB_IDS`, ou si la base n'est pas seedée, la route répond 404. Le compte est partagé par tous les visiteurs ; il n'est modérateur d'aucune communauté et n'installe rien sur GitHub (l'installation compare l'id GitHub, §5.4). `GET/api/user/me` le signale (`demoAccount`) et l'app affiche un bandeau sur toutes ses pages : compte de démonstration partagé, ce qui est publié est visible par tous, bouton « Quitter la démo ». Ce qu'il écrit reste une donnée normale (`platform`) : dans l'app, `demo` désigne les données fictives locales, qui ont leur propre logique (notifications simulées, matching côté client).
+
 L'utilisateur peut utiliser toute la plateforme sans jamais installer l'app.
 
 ### 5.4 Import d'un projet

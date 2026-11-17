@@ -4,7 +4,8 @@ import server from '/api/server.ts'
 import { loginFlow } from '/api/testing.ts'
 import { createSession } from '/api/session.ts'
 import { sessionKey } from '/api/lib/sign.ts'
-import { findOrCreateGithubUser } from '/api/user.ts'
+import { DEMO_LOGIN, findOrCreateGithubUser } from '/api/user.ts'
+import { seed } from '/api/seed.ts'
 
 // The test env has no GitHub App: the login is the simulated one (§5.3)
 const restore = makeRestorePoint()
@@ -170,4 +171,36 @@ Deno.test('auth: a session ends after 30 days', async () => {
       WHERE type = 1`,
   )
   assertEquals((await me(session)).status, 401)
+})
+
+// The demo button (PAM-127): the jury tries Pamoja without GitHub
+Deno.test('auth: the demo button opens the seeded demo account', async () => {
+  restore()
+  seed()
+  const res = await call('/api/auth/demo', { body: {} })
+  assertEquals(res.status, 200)
+  const user = await res.json()
+  assertEquals(user.login, DEMO_LOGIN)
+  assertEquals(user.demoAccount, true)
+  const session = res.headers.get('Set-Cookie')?.match(/session=([^;]*)/)?.[1]
+  const current = await me(session)
+  assertEquals(current.status, 200)
+  assertEquals((await current.json()).demoAccount, true)
+})
+
+Deno.test('auth: a real account is never the demo account', async () => {
+  restore()
+  // The seeded demo account linked to a real GitHub account: refused
+  seed(new Map([[DEMO_LOGIN, 4242]]))
+  const res = await call('/api/auth/demo', { body: {} })
+  assertEquals(res.status, 404)
+  assertEquals((await res.json()).reason, 'missing')
+  // A developer signed in with GitHub is not flagged as the demo
+  const { session } = await login()
+  assertEquals((await (await me(session)).json()).demoAccount, false)
+})
+
+Deno.test('auth: without a seed, there is no demo account', async () => {
+  restore()
+  assertEquals((await call('/api/auth/demo', { body: {} })).status, 404)
 })
