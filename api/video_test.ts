@@ -3,7 +3,7 @@ import { makeRestorePoint } from '@01edu/db'
 import { now } from '@01edu/time'
 import { Profile, Project, ProjectMember, User } from '/api/schema.ts'
 import { createSession } from '/api/session.ts'
-import { isLandingVideo, LANDING_VIDEO, videoOf } from '/api/video-links.ts'
+import { videoOf } from '/api/video-links.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
 import { request } from '/api/testing.ts'
 
@@ -175,40 +175,6 @@ Deno.test('video: the thumbnail served by Pamoja, read once (§17.3)', async () 
     const refused = await thumbnailOf('https://youtu.be/bbbbbbbbbbb')
       .catch((err) => err)
     assertEquals(refused instanceof Error, true)
-  } finally {
-    globalThis.fetch = realFetch
-  }
-})
-
-Deno.test('video: a visitor reads the thumbnail of the landing video only', async () => {
-  restore()
-  assertEquals(isLandingVideo(LANDING_VIDEO), true)
-  const id = videoOf(LANDING_VIDEO)!.id
-  assertEquals(isLandingVideo(`https://www.youtube.com/watch?v=${id}`), true)
-  assertEquals(isLandingVideo('https://youtu.be/aaaaaaaaaaa'), false)
-  assertEquals(isLandingVideo('https://example.com'), false)
-  const thumbnail = (link: string) =>
-    request(`/api/video/thumbnail?url=${encodeURIComponent(link)}`)
-  const realFetch = globalThis.fetch
-  globalThis.fetch = (input: string | URL | Request) => {
-    const url = String(input instanceof Request ? input.url : input)
-    return Promise.resolve(
-      url.includes(`i.ytimg.com/vi/${id}`)
-        ? new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
-          headers: { 'Content-Type': 'image/jpeg' },
-        })
-        : new Response('down', { status: 503 }),
-    )
-  }
-  try {
-    // Another video: a session is needed, as before
-    const refused = await thumbnail('https://youtu.be/aaaaaaaaaaa')
-    assertEquals(refused.status, 401)
-    await refused.body?.cancel()
-    const served = await thumbnail(LANDING_VIDEO)
-    assertEquals(served.status, 200)
-    assertEquals(served.headers.get('Content-Type'), 'image/jpeg')
-    await served.body?.cancel()
   } finally {
     globalThis.fetch = realFetch
   }

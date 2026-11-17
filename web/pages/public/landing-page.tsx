@@ -1,16 +1,5 @@
-import type { ComponentChildren } from 'preact'
-import { useEffect, useRef, useState } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
-import {
-  Compass,
-  FolderGit2,
-  Github,
-  LifeBuoy,
-  Play,
-  ShieldCheck,
-  Sparkles,
-  Users,
-} from '/web/assets/icons.tsx'
+import { Github } from '/web/assets/icons.tsx'
 import { type Login, people, placeOf } from '/web/fixtures/people.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
@@ -20,63 +9,11 @@ import { Page } from '/web/ui/layout.tsx'
 import { Plates } from '/web/ui/plates.tsx'
 import { Progress } from '/web/ui/progress.tsx'
 import { passportLink, PublicHeader } from '/web/ui/public-header.tsx'
-import { VideoEmbed } from '/web/ui/video.tsx'
-import { LANDING_VIDEO } from '/api/video-links.ts'
 import { dimensionsOf } from '/web/pages/profile/reputation.tsx'
-import { LandingScene } from '/web/pages/public/landing-scene.tsx'
 import { t } from '/web/lib/language.ts'
 
 // The developer shown to visitors, as in the demo scenario (§18)
 const sample: Login = 'moussa'
-
-// Where the demo of the contest stands on the page (§17.3)
-const DEMO_ID = 'demo-video'
-
-/** True once the element entered the screen, and for good */
-const useShown = <T extends Element>() => {
-  const ref = useRef<T>(null)
-  const [shown, setShown] = useState(false)
-  useEffect(() => {
-    const element = ref.current
-    if (!element || !('IntersectionObserver' in globalThis)) {
-      setShown(true)
-      return
-    }
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-      setShown(true)
-      observer.disconnect()
-    }, { rootMargin: '0px 0px -8% 0px' })
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-  return [ref, shown] as const
-}
-
-/**
- * A block that comes in along the 30° axis once it is read. It wraps its
- * content: a slab keeps its own relief and transitions.
- */
-const Reveal = (
-  { delay, class: className = '', children }: {
-    /** Milliseconds after its neighbours, for a row that comes in turn */
-    delay?: number
-    class?: string
-    children: ComponentChildren
-  },
-) => {
-  const [ref, shown] = useShown<HTMLDivElement>()
-  return (
-    <div
-      ref={ref}
-      data-shown={shown || undefined}
-      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
-      class={`reveal ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
 
 const Face = ({ points, fill }: { points: string; fill: string }) => (
   <polygon
@@ -250,272 +187,80 @@ const steps = [
   },
 ]
 
-// The step of the story the figure is playing, lit on the same clock
-const stepClocks = [
-  'animate-scene-step-1',
-  'animate-scene-step-2',
-  'animate-scene-step-3',
-  'animate-scene-step-4',
-]
-
-const toVideo = () =>
-  document.getElementById(DEMO_ID)?.scrollIntoView({
-    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 'auto'
-      : 'smooth',
-    block: 'center',
-  })
-
 const Hero = () => (
-  <section class='relative isolate grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-center gap-x-8 gap-y-9 pt-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]'>
-    <div
-      aria-hidden='true'
-      class='iso-ground pointer-events-none absolute -inset-x-7 -top-12 -bottom-10 -z-10'
-    />
+  <section class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-center gap-10 pt-8'>
     <div class='flex flex-col gap-[22px]'>
       <Eyebrow accent>Pour les développeurs africains</Eyebrow>
-      <h1 class='font-display text-[44px] leading-[46px] font-bold tracking-[-.025em] text-balance md:text-[64px] md:leading-[64px]'>
-        Your work is{' '}
-        <span class='relative inline-block'>
-          your profile.
-          {/* The thread of the brand, drawn under what it ties together */}
-          <svg
-            viewBox='0 0 300 12'
-            preserveAspectRatio='none'
-            aria-hidden='true'
-            fill='none'
-            class='absolute -bottom-2 left-0 h-3 w-full'
-          >
-            <path
-              d='M2 8 C 70 1, 160 12, 298 4'
-              stroke='var(--indigo)'
-              stroke-width='3'
-              stroke-linecap='round'
-              vector-effect='non-scaling-stroke'
-              pathLength='1'
-              stroke-dasharray='1'
-              class='animate-thread motion-reduce:animate-none'
-            />
-          </svg>
-        </span>
+      <h1 class='font-display text-[60px] leading-[62px] font-bold tracking-[-.025em] text-balance'>
+        Your work is your profile.
       </h1>
       <p class='max-w-[520px] text-[18px] leading-[29px] text-pretty text-ink-muted'>
         Pamoja relie les développeurs autour de leur vrai travail : reviews,
         PRs, projets. GitHub reste la source du code, Pamoja ajoute la couche
         humaine.
       </p>
-      <div class='flex flex-wrap gap-3.5'>
+      <div class='flex flex-wrap gap-3.5 pb-1.5'>
         <Button size={48} href='login'>
           <Github class='size-[18px]' />
           Continuer avec GitHub
         </Button>
         <DemoButton size={48} />
-      </div>
-      <div class='flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] font-semibold'>
-        <button
-          type='button'
-          onClick={toVideo}
-          class='inline-flex cursor-pointer items-center gap-1.5 text-indigo hover:underline'
-        >
-          <Play class='size-4' />
-          Voir la démo en vidéo
-        </button>
-        <A {...passportLink(sample)}>Voir un profil</A>
-        <A href='feed'>Lire le fil sans compte</A>
+        <Button size={48} variant='secondary' {...passportLink(sample)}>
+          Voir un profil
+        </Button>
+        <Button size={48} variant='secondary' href='feed'>
+          Lire le fil sans compte
+        </Button>
       </div>
       <span class='text-[13px] text-ink-muted'>
         « Pamoja » signifie « ensemble » en swahili.
       </span>
     </div>
-    {/* The loop told by the next section, played: read there, seen here */}
-    <div aria-hidden='true' class='flex flex-col items-center gap-3.5'>
-      <LandingScene />
-      <ol class='flex flex-wrap justify-center gap-2'>
-        {steps.map(({ title }, i) => (
-          <li
-            key={title}
-            class={`flex items-center gap-2 rounded-md border border-line-strong px-2.5 py-1.5 font-mono text-[12px] leading-none text-ink-muted motion-reduce:animate-none ${
-              stepClocks[i]
-            }`}
-          >
-            <span>{i + 1}</span>
-            {title}
-          </li>
-        ))}
-      </ol>
+    <div class='flex justify-center'>
+      <Plates width={440} />
     </div>
-  </section>
-)
-
-/**
- * What the video shows before it plays: its thumbnail, served by Pamoja to
- * visitors for this video only, over a figure drawn here in case it fails
- */
-const DemoPoster = () => {
-  const [failed, setFailed] = useState(false)
-  return (
-    <span class='absolute inset-0 overflow-hidden bg-surface-000'>
-      <span class='iso-ground absolute inset-0 [--ground-at:50%_50%]' />
-      <span class='absolute top-4 left-4 md:top-6 md:left-6'>
-        <Eyebrow accent>CADEV 2026</Eyebrow>
-      </span>
-      <span class='absolute right-[6%] bottom-[14%] hidden md:block'>
-        <Plates width={230} />
-      </span>
-      <span class='absolute bottom-[26%] left-[6%] hidden max-w-[300px] text-left font-display text-[30px] leading-[34px] font-bold tracking-[-.015em] text-ink md:block'>
-        De la PR à la preuve, pour de vrai.
-      </span>
-      {!failed && (
-        <img
-          src={`api/video/thumbnail?url=${encodeURIComponent(LANDING_VIDEO)}`}
-          alt=''
-          loading='lazy'
-          onError={() => setFailed(true)}
-          class='absolute inset-0 size-full object-cover'
-        />
-      )}
-    </span>
-  )
-}
-
-const Demo = () => (
-  <section id={DEMO_ID} class='flex scroll-mt-8 flex-col gap-7'>
-    <Reveal class='flex flex-col gap-2'>
-      <Eyebrow>La démo</Eyebrow>
-      <h2 class='font-display text-[36px] leading-[42px] font-bold tracking-[-.015em] text-balance'>
-        Pamoja en vrai, en vidéo
-      </h2>
-      <p class='max-w-[640px] text-[17px] leading-[27px] text-pretty text-ink-muted'>
-        La démo de Pamoja pour le concours CADEV 2026.
-      </p>
-    </Reveal>
-    <Reveal delay={120}>
-      <div class='slab mr-2 p-2.5 md:p-3.5'>
-        <VideoEmbed
-          url={LANDING_VIDEO}
-          label='Démo de Pamoja'
-          poster={<DemoPoster />}
-        />
-      </div>
-    </Reveal>
   </section>
 )
 
 const Loop = () => (
   <section class='flex flex-col gap-7'>
-    <Reveal class='flex flex-col gap-2'>
+    <div class='flex flex-col gap-2'>
       <Eyebrow>La boucle</Eyebrow>
       <h2 class='font-display text-[36px] leading-[42px] font-bold tracking-[-.015em] text-balance'>
         De la PR à la preuve, en quatre étapes
       </h2>
-    </Reveal>
+    </div>
     <div class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,230px),1fr))] gap-6'>
       {steps.map(({ title, text, Figure }, i) => (
-        <Reveal key={title} delay={i * 90} class='flex'>
-          <div class='slab mr-2 flex flex-1 flex-col gap-2.5 p-[18px]'>
-            <svg
-              width='100%'
-              height='110'
-              viewBox='0 0 160 110'
-              aria-hidden='true'
-              fill='none'
-            >
-              <Figure />
-            </svg>
-            <div class='flex items-center gap-2.5'>
-              <span class='flex size-7 flex-none items-center justify-center rounded-[5px] border border-figure-edge font-mono text-[13px] leading-none font-medium shadow-tile'>
-                {i + 1}
-              </span>
-              <span class='font-display text-[19px] leading-6 font-semibold'>
-                {title}
-              </span>
-            </div>
-            <span class='text-[14px] leading-[22px] text-pretty text-ink-muted'>
-              {text}
-            </span>
-          </div>
-        </Reveal>
-      ))}
-    </div>
-  </section>
-)
-
-// What a developer finds once inside, one slab per place of the app
-const features = [
-  {
-    Icon: LifeBuoy,
-    title: 'Demandes d’aide',
-    text:
-      'Review de PR, debug, mentorat : ta demande part aux développeurs qui correspondent, avec un score expliqué.',
-  },
-  {
-    Icon: FolderGit2,
-    title: 'Projets',
-    text:
-      'Importe ton repo GitHub public : board, roadmap, canaux et Pulse de la semaine.',
-  },
-  {
-    Icon: Users,
-    title: 'Communautés',
-    text:
-      'Par techno, pays ou domaine : des questions, des réponses acceptées, de l’entraide.',
-  },
-  {
-    Icon: ShieldCheck,
-    title: 'Réputation vérifiée',
-    text:
-      'Une review confirmée par GitHub devient une preuve. Des badges qui se gagnent, pas de score global.',
-  },
-  {
-    Icon: Compass,
-    title: 'Explorer',
-    text:
-      'Des développeurs, des projets à rejoindre et des issues pour commencer.',
-  },
-  {
-    Icon: Sparkles,
-    title: 'Assistant',
-    text:
-      'Un compagnon sur chaque page : il répond à partir de ton profil et de ce qui t’attend, sans rien inventer.',
-  },
-]
-
-const Features = () => (
-  <section class='flex flex-col gap-7'>
-    <Reveal class='flex flex-col gap-2'>
-      <Eyebrow>La plateforme</Eyebrow>
-      <h2 class='font-display text-[36px] leading-[42px] font-bold tracking-[-.015em] text-balance'>
-        Tout ce qu’il faut pour construire ensemble
-      </h2>
-    </Reveal>
-    <div class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-6'>
-      {features.map(({ Icon, title, text }, i) => (
-        <Reveal key={title} delay={(i % 3) * 90} class='flex'>
-          <div class='slab mr-2 flex flex-1 flex-col gap-2.5 p-5'>
-            <span class='tile flex size-10 items-center justify-center text-indigo'>
-              <Icon class='size-5' />
+        <div key={title} class='slab mr-2 flex flex-col gap-2.5 p-[18px]'>
+          <svg
+            width='100%'
+            height='110'
+            viewBox='0 0 160 110'
+            aria-hidden='true'
+            fill='none'
+          >
+            <Figure />
+          </svg>
+          <div class='flex items-center gap-2.5'>
+            <span class='flex size-7 flex-none items-center justify-center rounded-[5px] border border-figure-edge font-mono text-[13px] leading-none font-medium shadow-tile'>
+              {i + 1}
             </span>
             <span class='font-display text-[19px] leading-6 font-semibold'>
               {title}
             </span>
-            <span class='text-[14px] leading-[22px] text-pretty text-ink-muted'>
-              {text}
-            </span>
           </div>
-        </Reveal>
+          <span class='text-[14px] leading-[22px] text-pretty text-ink-muted'>
+            {text}
+          </span>
+        </div>
       ))}
     </div>
   </section>
 )
 
 /** The five dimensions of a real profile, out of 20 proofs */
-const ProfilePreview = (
-  { login, filled }: {
-    login: Login
-    /** The bars fill once the profile is on screen */
-    filled: boolean
-  },
-) => {
+const ProfilePreview = ({ login }: { login: Login }) => {
   const person = people[login]
   return (
     <div class='slab mr-2 overflow-hidden'>
@@ -562,12 +307,7 @@ const ProfilePreview = (
                 <span class='font-semibold'>{label}</span>
                 <span class='font-mono leading-4 font-medium'>{count}</span>
               </span>
-              <Progress
-                value={filled ? count : 0}
-                max={20}
-                label={label}
-                thin
-              />
+              <Progress value={count} max={20} label={label} thin />
             </div>
           ))}
         </div>
@@ -576,54 +316,44 @@ const ProfilePreview = (
   )
 }
 
-const Proofs = () => {
-  const [ref, shown] = useShown<HTMLElement>()
-  return (
-    <section
-      ref={ref}
-      class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] items-center gap-12'
-    >
-      <Reveal class='flex flex-col gap-4'>
-        <Eyebrow>Aperçu d’un profil</Eyebrow>
-        <h2 class='font-display text-[36px] leading-[42px] font-bold tracking-[-.015em] text-balance'>
-          Pas de score global. Des preuves.
-        </h2>
-        <p class='max-w-[480px] text-[17px] leading-[27px] text-pretty text-ink-muted'>
-          Cinq dimensions : review de code, construction de projets, mentorat,
-          open source, entraide. Chaque barre s’ouvre sur ses preuves, vérifiées
-          par GitHub.
-        </p>
-        <A {...passportLink(sample)} class='self-start font-semibold'>
-          {t`Voir le passeport de ${people[sample].name.split(' ')[0]}`}
-        </A>
-      </Reveal>
-      <Reveal delay={120}>
-        <ProfilePreview login={sample} filled={shown} />
-      </Reveal>
-    </section>
-  )
-}
+const Proofs = () => (
+  <section class='grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] items-center gap-12'>
+    <div class='flex flex-col gap-4'>
+      <Eyebrow>Aperçu d’un profil</Eyebrow>
+      <h2 class='font-display text-[36px] leading-[42px] font-bold tracking-[-.015em] text-balance'>
+        Pas de score global. Des preuves.
+      </h2>
+      <p class='max-w-[480px] text-[17px] leading-[27px] text-pretty text-ink-muted'>
+        Cinq dimensions : review de code, construction de projets, mentorat,
+        open source, entraide. Chaque barre s’ouvre sur ses preuves, vérifiées
+        par GitHub.
+      </p>
+      <A {...passportLink(sample)} class='self-start font-semibold'>
+        {t`Voir le passeport de ${people[sample].name.split(' ')[0]}`}
+      </A>
+    </div>
+    <ProfilePreview login={sample} />
+  </section>
+)
 
 const CallToAction = () => (
-  <Reveal>
-    <section class='slab-selected mr-2 flex flex-wrap items-center justify-between gap-6 p-9'>
-      <div class='flex flex-col gap-1.5'>
-        <span class='font-display text-[30px] leading-9 font-bold tracking-[-.01em]'>
-          Prêt à construire ensemble ?
-        </span>
-        <span class='text-[15px] text-ink-muted'>
-          Moins de 2 minutes pour créer ton profil à partir de GitHub.
-        </span>
-      </div>
-      <div class='flex flex-wrap gap-3.5'>
-        <Button size={48} href='login'>
-          <Github class='size-[18px]' />
-          Continuer avec GitHub
-        </Button>
-        <DemoButton size={48} />
-      </div>
-    </section>
-  </Reveal>
+  <section class='slab-selected mr-2 flex flex-wrap items-center justify-between gap-6 p-9'>
+    <div class='flex flex-col gap-1.5'>
+      <span class='font-display text-[30px] leading-9 font-bold tracking-[-.01em]'>
+        Prêt à construire ensemble ?
+      </span>
+      <span class='text-[15px] text-ink-muted'>
+        Moins de 2 minutes pour créer ton profil à partir de GitHub.
+      </span>
+    </div>
+    <div class='flex flex-wrap gap-3.5'>
+      <Button size={48} href='login'>
+        <Github class='size-[18px]' />
+        Continuer avec GitHub
+      </Button>
+      <DemoButton size={48} />
+    </div>
+  </section>
 )
 
 /** /, seen without a session: the product in one page (§6.1) */
@@ -636,9 +366,7 @@ export const LandingPage = () => (
     <PublicHeader />
     <main class='mx-auto flex w-full max-w-[1180px] flex-col gap-24 px-7 pt-6 pb-[120px]'>
       <Hero />
-      <Demo />
       <Loop />
-      <Features />
       <Proofs />
       <CallToAction />
     </main>

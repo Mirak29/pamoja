@@ -1,4 +1,3 @@
-import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { ExternalLink, Play } from '/web/assets/icons.tsx'
 import { videoOf } from '/api/video-links.ts'
@@ -14,7 +13,6 @@ import { t, translate } from '/web/lib/language.ts'
  *
  * @example
  * <VideoEmbed url={request.video} />
- * <VideoEmbed url={demo} label='Démo' poster={<DemoPoster />} />
  */
 
 type Preview = Awaited<
@@ -40,15 +38,7 @@ const frame =
   'aspect-video w-full overflow-hidden rounded-lg border border-figure-edge bg-surface-000 shadow-tile'
 
 export const VideoEmbed = (
-  { url, label = 'Vidéo', poster }: {
-    url: string
-    label?: string
-    /**
-     * Drawn in place of the thumbnail of the provider, which is then not
-     * asked for: a visitor without a session has no access to it
-     */
-    poster?: ComponentChildren
-  },
+  { url, label = 'Vidéo' }: { url: string; label?: string },
 ) => {
   const video = videoOf(url)
   const [preview, setPreview] = useState<Preview | undefined>()
@@ -56,7 +46,7 @@ export const VideoEmbed = (
   useEffect(() => {
     setPlaying(false)
     setPreview(undefined)
-    video && !poster && previewOf(url).then(setPreview)
+    video && previewOf(url).then(setPreview)
   }, [url])
   if (!video) {
     // Not an embeddable video: the link itself, opened elsewhere; not even
@@ -94,7 +84,6 @@ export const VideoEmbed = (
       aria-label={t`Lire : ${title}`}
       class={`${frame} relative flex cursor-pointer items-center justify-center`}
     >
-      {poster}
       {preview?.thumbnailUrl && (
         <img
           src={`api/video/thumbnail?url=${encodeURIComponent(url)}`}
