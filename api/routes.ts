@@ -191,6 +191,7 @@ import {
   updateProjectInfo,
 } from '/api/project-gallery.ts'
 import { previewVideo, thumbnailOf } from '/api/video.ts'
+import { isLandingVideo } from '/api/video-links.ts'
 
 /*
  * Limits of the writes that have none of their own (§16, PAM-510): counted
@@ -2368,9 +2369,17 @@ const defs = {
     description: 'What a page shows of a video link before its player',
   }),
 
+  // A visitor reads one thumbnail only: the demo of the landing (PAM-128)
   'GET/api/video/thumbnail': route({
-    authorize: withSession,
-    fn: (_, { url }) => thumbnailOf(url),
+    authorize: withOptionalSession,
+    fn: (ctx, { url }) => {
+      if (!ctx.session && !isLandingVideo(url)) {
+        throw new respond.UnauthorizedError({
+          message: 'Missing user session',
+        })
+      }
+      return thumbnailOf(url)
+    },
     input: OBJ({ url: STR('YouTube, Loom or Vimeo link') }),
     description: 'The thumbnail of a video, served by Pamoja (§17.3)',
   }),
