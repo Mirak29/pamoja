@@ -61,9 +61,11 @@ const setUser = (user: User) => {
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
 
+// A login that ended first wins (PAM-127): this read, sent before it, would
+// otherwise sign the visitor out again if it came back refused after it
 api['GET/api/user/me'].fetch().then(
-  setUser,
-  () => currentUser.value = null,
+  (user) => currentUser.peek() === undefined && setUser(user),
+  () => currentUser.peek() === undefined && (currentUser.value = null),
 )
 
 // The page asked for before the login, kept during the round trip to GitHub
@@ -104,10 +106,38 @@ export const finishLogin = async (code: string, state: string) => {
   return created
 }
 
+// The logout on its way: its answer deletes the session cookie, so a login
+// waits for it, or the cookie it sets could be the one deleted
+let leaving: Promise<unknown> = Promise.resolve()
+
+/**
+ * Opens the shared demo account, without GitHub (PAM-127). True when it took
+ * the place of someone signed in: the page then has to load again, to drop
+ * what it kept of them (their lists, their realtime connection).
+ */
+export const startDemo = async () => {
+  await leaving
+  const demo = await api['POST/api/auth/demo'].fetch()
+  // Read once the demo answered: the first read of the session may have
+  // named someone meanwhile, and opened their realtime connection
+  const replaced = !!currentUser.peek()
+  setUser(demo)
+  return replaced
+}
+
+/**
+ * Signs out. The promise ends once the server answered: false when it could
+ * not be reached, the session then being still open there.
+ */
 export const signOut = () => {
   currentUser.value = null
   // Signed out at once on this page; the server archives the session
-  api['POST/api/auth/logout'].fetch().catch(() => {})
+  const left = api['POST/api/auth/logout'].fetch().then(
+    () => true,
+    () => false,
+  )
+  leaving = left
+  return left
 }
 
 type ProfileInput =

@@ -3,6 +3,7 @@ import { Github } from '/web/assets/icons.tsx'
 import { type Login, people, placeOf } from '/web/fixtures/people.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
+import { DemoButton } from '/web/ui/demo-button.tsx'
 import { Eyebrow } from '/web/ui/eyebrow.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { Plates } from '/web/ui/plates.tsx'
@@ -203,6 +204,7 @@ const Hero = () => (
           <Github class='size-[18px]' />
           Continuer avec GitHub
         </Button>
+        <DemoButton size={48} />
         <Button size={48} variant='secondary' {...passportLink(sample)}>
           Voir un profil
         </Button>
@@ -344,10 +346,13 @@ const CallToAction = () => (
         Moins de 2 minutes pour créer ton profil à partir de GitHub.
       </span>
     </div>
-    <Button size={48} href='login'>
-      <Github class='size-[18px]' />
-      Continuer avec GitHub
-    </Button>
+    <div class='flex flex-wrap gap-3.5'>
+      <Button size={48} href='login'>
+        <Github class='size-[18px]' />
+        Continuer avec GitHub
+      </Button>
+      <DemoButton size={48} />
+    </div>
   </section>
 )
 

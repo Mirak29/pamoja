@@ -4,6 +4,7 @@ import { A } from '/web/ui/link.tsx'
 import { CircleAlert, Github, RotateCw } from '/web/assets/icons.tsx'
 import { finishLogin, startLogin, takeBack } from '/web/lib/session.ts'
 import { Button } from '/web/ui/button.tsx'
+import { DemoButton } from '/web/ui/demo-button.tsx'
 import { Page } from '/web/ui/layout.tsx'
 import { LogoMark } from '/web/ui/logo.tsx'
 
@@ -99,6 +100,19 @@ export const ConnexionPage = () => {
     })
   }
 
+  // The demo opens the page asked for, like the GitHub login: a path of
+  // this site only, never //host. Read at the click: after a failed
+  // callback it is the page kept from the first attempt, taken only then.
+  const demoNext = () => {
+    if (callback) return takeBack() || '.'
+    const asked = url.relativePath === '/login'
+      ? (url.params.next ?? '')
+      : `${url.relativePath}${location.search}`
+    return asked.startsWith('/') && !asked.startsWith('//')
+      ? asked.slice(1) || '.'
+      : '.'
+  }
+
   return (
     <Page
       title='Connexion'
@@ -186,6 +200,17 @@ export const ConnexionPage = () => {
               >
                 {loading ? 'Connexion…' : 'Continuer avec GitHub'}
               </Button>
+              <div class='flex flex-col gap-2.5 border-t border-line pt-4'>
+                <span class='text-[13px] leading-5 text-ink-muted'>
+                  Jury ou simple curieux ? Entre dans Pamoja avec Fatou, un
+                  compte de démonstration partagé, sans compte GitHub.
+                </span>
+                <DemoButton
+                  size={46}
+                  next={demoNext}
+                  class='w-[calc(100%-4px)]'
+                />
+              </div>
             </>
           )}
       </div>

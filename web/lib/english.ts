@@ -1652,6 +1652,21 @@ export const english: Record<string, string> = {
     'Another team member has already answered this application.',
   'Le serveur a refusé la demande.': 'The server refused the request.',
   'Cette candidature n’existe plus.': 'This application no longer exists.',
+  // The demo button and its banner (PAM-127)
+  'Essayer sans GitHub': 'Try without GitHub',
+  'Ouverture de la démo…': 'Opening the demo…',
+  'Démo indisponible': 'Demo unavailable',
+  'Le compte de démonstration n’a pas pu s’ouvrir. Réessaie dans un instant.':
+    'The demo account could not open. Try again in a moment.',
+  'Tu explores Pamoja avec Fatou, un compte de démonstration partagé. Ce que tu publies est visible par tous.':
+    'You are exploring Pamoja as Fatou, a shared demo account. Everything you post is public.',
+  'Quitter la démo': 'Leave the demo',
+  'Déconnexion non confirmée': 'Sign-out not confirmed',
+  'Le serveur n’a pas répondu : la session de démo est peut-être encore ouverte. Recharge la page pour vérifier.':
+    'The server did not answer: the demo session may still be open. Reload the page to check.',
+  'Jury ou simple curieux ? Entre dans Pamoja avec Fatou, un compte de démonstration partagé, sans compte GitHub.':
+    'Jury or just curious? Step into Pamoja as Fatou, a shared demo account, no GitHub account needed.',
+  'Lire le fil sans compte': 'Read the thread without an account',
 }
 
 // Sentences with values, written t`…` in the code: {0}, {1}… are the values,

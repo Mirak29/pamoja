@@ -8,6 +8,7 @@ import { assistantOpen } from '/web/lib/assistant.ts'
 import { CommandPalette } from '/web/ui/command-palette.tsx'
 import { Header } from '/web/ui/header.tsx'
 import { ConnectionBanner } from '/web/ui/connection-banner.tsx'
+import { DemoBanner } from '/web/ui/demo-banner.tsx'
 import { CreateMenu, MobileNav, Sidebar, unread } from '/web/ui/navigation.tsx'
 import { effect, signal } from '@preact/signals'
 import { unreadMessages } from '/web/lib/messages.ts'
@@ -129,6 +130,7 @@ export const AppLayout = ({ children }: { children: ComponentChildren }) => (
     <Sidebar />
     <div class='flex min-w-0 flex-1 flex-col'>
       <Header />
+      <DemoBanner />
       <main
         id='contenu'
         tabIndex={-1}
