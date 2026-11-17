@@ -1686,6 +1686,9 @@ export const english: Record<string, string> = {
   'Tu explores Pamoja avec Fatou, un compte de démonstration partagé. Ce que tu publies est visible par tous.':
     'You are exploring Pamoja as Fatou, a shared demo account. Everything you post is public.',
   'Quitter la démo': 'Leave the demo',
+  'Déconnexion non confirmée': 'Sign-out not confirmed',
+  'Le serveur n’a pas répondu : la session de démo est peut-être encore ouverte. Recharge la page pour vérifier.':
+    'The server did not answer: the demo session may still be open. Reload the page to check.',
   'Jury ou simple curieux ? Entre dans Pamoja avec Fatou, un compte de démonstration partagé, sans compte GitHub.':
     'Jury or just curious? Step into Pamoja as Fatou, a shared demo account, no GitHub account needed.',
   'Lire le fil sans compte': 'Read the thread without an account',
