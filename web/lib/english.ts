@@ -1652,6 +1652,31 @@ export const english: Record<string, string> = {
     'Another team member has already answered this application.',
   'Le serveur a refusé la demande.': 'The server refused the request.',
   'Cette candidature n’existe plus.': 'This application no longer exists.',
+  // The landing (PAM-128)
+  'Voir la démo en vidéo': 'Watch the demo video',
+  'La démo': 'The demo',
+  'Pamoja en vrai, en vidéo': 'Pamoja for real, on video',
+  'La démo de Pamoja pour le concours CADEV 2026.':
+    'The Pamoja demo for the CADEV 2026 contest.',
+  'Démo de Pamoja': 'Pamoja demo',
+  'De la PR à la preuve, pour de vrai.': 'From PR to proof, for real.',
+  'La plateforme': 'The platform',
+  'Tout ce qu’il faut pour construire ensemble':
+    'Everything you need to build together',
+  'Review de PR, debug, mentorat : ta demande part aux développeurs qui correspondent, avec un score expliqué.':
+    'PR review, debugging, mentoring: your request goes to the developers who match, with a score that is explained.',
+  'Importe ton repo GitHub public : board, roadmap, canaux et Pulse de la semaine.':
+    'Import your public GitHub repo: board, roadmap, channels, and the Pulse of the week.',
+  'Par techno, pays ou domaine : des questions, des réponses acceptées, de l’entraide.':
+    'By technology, country, or domain: questions, accepted answers, mutual help.',
+  'Réputation vérifiée': 'Verified reputation',
+  'Une review confirmée par GitHub devient une preuve. Des badges qui se gagnent, pas de score global.':
+    'A review confirmed by GitHub becomes a proof. Badges you earn, no overall score.',
+  'Des développeurs, des projets à rejoindre et des issues pour commencer.':
+    'Developers, projects to join, and issues to start with.',
+  'Un compagnon sur chaque page : il répond à partir de ton profil et de ce qui t’attend, sans rien inventer.':
+    'A companion on every page: it answers from your profile and what is waiting for you, and makes nothing up.',
+  'Assistant': 'Assistant',
   // The demo button and its banner (PAM-127)
   'Essayer sans GitHub': 'Try without GitHub',
   'Ouverture de la démo…': 'Opening the demo…',
