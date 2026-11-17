@@ -101,15 +101,17 @@ export const ConnexionPage = () => {
   }
 
   // The demo opens the page asked for, like the GitHub login: a path of
-  // this site only, never //host
-  const asked = url.relativePath === '/login'
-    ? (url.params.next ?? '')
-    : callback
-    ? ''
-    : `${url.relativePath}${location.search}`
-  const demoNext = asked.startsWith('/') && !asked.startsWith('//')
-    ? asked.slice(1) || '.'
-    : '.'
+  // this site only, never //host. Read at the click: after a failed
+  // callback it is the page kept from the first attempt, taken only then.
+  const demoNext = () => {
+    if (callback) return takeBack() || '.'
+    const asked = url.relativePath === '/login'
+      ? (url.params.next ?? '')
+      : `${url.relativePath}${location.search}`
+    return asked.startsWith('/') && !asked.startsWith('//')
+      ? asked.slice(1) || '.'
+      : '.'
+  }
 
   return (
     <Page

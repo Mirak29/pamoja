@@ -200,6 +200,31 @@ Deno.test('auth: a real account is never the demo account', async () => {
   assertEquals((await (await me(session)).json()).demoAccount, false)
 })
 
+Deno.test('auth: the demo account survives a real account taking its login', async () => {
+  restore()
+  seed()
+  const before = await (await call('/api/auth/demo', { body: {} })).json()
+  // A GitHub account named like the demo signs in: the seeded one is renamed
+  const real = findOrCreateGithubUser({
+    id: 4242,
+    login: DEMO_LOGIN,
+    avatar_url: '',
+    name: null,
+    email: null,
+    bio: null,
+    blog: null,
+    location: null,
+    languages: [],
+  }, 'github')
+  const res = await call('/api/auth/demo', { body: {} })
+  assertEquals(res.status, 200)
+  const user = await res.json()
+  assertEquals(user.userId, before.userId)
+  assert(user.userId !== real.userId)
+  assertEquals(user.demoAccount, true)
+  assert(user.login.startsWith(`${DEMO_LOGIN}~`))
+})
+
 Deno.test('auth: without a seed, there is no demo account', async () => {
   restore()
   assertEquals((await call('/api/auth/demo', { body: {} })).status, 404)

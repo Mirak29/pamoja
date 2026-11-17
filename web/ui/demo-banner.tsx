@@ -21,10 +21,9 @@ export const DemoBanner = () =>
           <Button
             size={32}
             variant='secondary'
-            onClick={() => {
-              signOut()
-              navigate({ href: '.', replace: true })
-            }}
+            // The landing shows the demo button: it comes once signed out
+            onClick={() =>
+              signOut().then(() => navigate({ href: '.', replace: true }))}
           >
             Quitter la démo
           </Button>

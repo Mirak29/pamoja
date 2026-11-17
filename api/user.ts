@@ -382,9 +382,14 @@ export const userIdOfLogin = (login: string) => getUserIdByLogin(login)?.userId
 // real account, so a shared demo session can never open someone's profile
 export const DEMO_LOGIN = 'fatou'
 
+// A real GitHub account named like it takes its login (releaseLogin): the
+// seeded account, left `login~<its id>`, stays the demo account
 const getFictionalByLogin = sql<{ userId: number }, string>`
   SELECT userId FROM user
-  WHERE githubUsername = ? COLLATE NOCASE AND githubId < 0
+  WHERE githubId < 0 AND (
+    githubUsername = ?1 COLLATE NOCASE
+    OR githubUsername = ?1 || '~' || abs(githubId) COLLATE NOCASE
+  )
 `.get
 
 /** The demo account, undefined when the database was not seeded */

@@ -13,8 +13,8 @@ import { notify } from '/web/ui/toast.tsx'
 export const DemoButton = (
   { size, next = '.', class: className }: {
     size: 46 | 48
-    /** The page to open once signed in */
-    next?: string
+    /** The page to open once signed in, read only then when a function */
+    next?: string | (() => string)
     class?: string
   },
 ) => {
@@ -23,7 +23,11 @@ export const DemoButton = (
     if (loading) return
     setLoading(true)
     startDemo().then(
-      () => navigate({ href: next, replace: true }),
+      () =>
+        navigate({
+          href: typeof next === 'function' ? next() : next,
+          replace: true,
+        }),
       () => {
         setLoading(false)
         notify({

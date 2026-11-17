@@ -61,9 +61,11 @@ const setUser = (user: User) => {
 export const loadProjects = () =>
   api['GET/api/projects'].fetch().then(adoptProjects, () => {})
 
+// A login that ended first wins (PAM-127): this read, sent before it, would
+// otherwise sign the visitor out again if it came back refused after it
 api['GET/api/user/me'].fetch().then(
-  setUser,
-  () => currentUser.value = null,
+  (user) => currentUser.peek() === undefined && setUser(user),
+  () => currentUser.peek() === undefined && (currentUser.value = null),
 )
 
 // The page asked for before the login, kept during the round trip to GitHub
@@ -104,15 +106,22 @@ export const finishLogin = async (code: string, state: string) => {
   return created
 }
 
+// The logout on its way: its answer deletes the session cookie, so a login
+// waits for it, or the cookie it sets could be the one deleted
+let leaving: Promise<unknown> = Promise.resolve()
+
 /** Opens the shared demo account, without GitHub (PAM-127) */
 export const startDemo = async () => {
+  await leaving
   setUser(await api['POST/api/auth/demo'].fetch())
 }
 
+/** Signs out; the promise ends once the server answered, even refused */
 export const signOut = () => {
   currentUser.value = null
   // Signed out at once on this page; the server archives the session
-  api['POST/api/auth/logout'].fetch().catch(() => {})
+  leaving = api['POST/api/auth/logout'].fetch().catch(() => {})
+  return leaving
 }
 
 type ProfileInput =
