@@ -599,7 +599,7 @@ export const CollaborationGraph = ({ login }: { login: Login }) => {
                   font-size='18'
                   class='font-display font-bold'
                 >
-                  {initials(people[login].name)}
+                  {initials(personOf(login).name)}
                 </text>
                 {hubs.map((hub) => (
                   <HubNode
@@ -1135,7 +1135,7 @@ export const NetworkDrawer = ({ login }: { login: Login }) => {
       label='Réseau de travail'
       width={480}
       clear={['lieu']}
-      header={<Eyebrow>Réseau de travail · {people[login].name}</Eyebrow>}
+      header={<Eyebrow>Réseau de travail · {personOf(login).name}</Eyebrow>}
     >
       <div class='flex flex-col gap-4 p-[22px]'>
         <Filters

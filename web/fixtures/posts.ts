@@ -7,8 +7,8 @@ import {
   hearOf,
   type Login,
   me,
-  people,
   type Person,
+  personOf,
 } from '/web/fixtures/people.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { counted } from '/web/lib/plural.ts'
@@ -322,7 +322,7 @@ export const postsChanged = signal(0)
 
 const changed = () => postsChanged.value++
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+const firstName = (login: Login) => personOf(login).name.split(' ')[0]
 
 /** Direct replies: the accepted answer first, then oldest first */
 export const childrenOf = (id: string) => {

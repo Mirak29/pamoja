@@ -7,7 +7,7 @@ import {
   notificationsChanged,
   pushNotification,
 } from '/web/fixtures/notifications.ts'
-import { type Login, people } from '/web/fixtures/people.ts'
+import { type Login, personOf } from '/web/fixtures/people.ts'
 import {
   type Project,
   projects,
@@ -44,7 +44,7 @@ export const applications: Application[] = [
 
 export const applicationsChanged = signal(0)
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+const firstName = (login: Login) => personOf(login).name.split(' ')[0]
 
 /** POST/api/project/join: the owner is notified */
 export const apply = (
@@ -98,7 +98,7 @@ export const decideApplication = (
     }
     logActivity(
       application.project,
-      `${people[application.login].name} rejoint l’équipe`,
+      `${personOf(application.login).name} rejoint l’équipe`,
     )
   }
   pushNotification({

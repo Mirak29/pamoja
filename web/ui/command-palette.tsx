@@ -14,7 +14,7 @@ import {
 } from '/web/assets/icons.tsx'
 import { communities, type Community } from '/web/fixtures/communities.ts'
 import { type HelpRequest, helpRequests } from '/web/fixtures/help.ts'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import { knownPeople, people, type Person } from '/web/fixtures/people.ts'
 import { type Post, posts, savedId } from '/web/fixtures/posts.ts'
 import {
   type Project,
@@ -119,8 +119,9 @@ const COMMUNITY_TYPES: Record<string, string> = {
   domain: 'Domaine',
 }
 const fromServer = (found: Found) => ({
-  developers: found.developers.map((d): Result =>
-    Object.hasOwn(people, d.login) ? ofPerson(people[d.login as Login]) : {
+  developers: found.developers.map((d): Result => {
+    const known = people[d.login]
+    return known ? ofPerson(known) : {
       title: d.name,
       sub: [
         `@${d.login}`,
@@ -131,7 +132,7 @@ const fromServer = (found: Found) => ({
       lead: initials(d.name),
       round: true,
     }
-  ),
+  }),
   projects: found.projects.map((p): Result =>
     Object.hasOwn(projects, p.slug)
       ? ofProject(projects[p.slug as ProjectSlug])
@@ -188,7 +189,7 @@ export const search = (query: string, limit: number, found?: Found) => {
   const groups: [string, Result[]][] = [
     [
       'Développeurs',
-      server?.developers ?? Object.values(people)
+      server?.developers ?? knownPeople()
         .filter((p) =>
           fuzzyMatch(
             query,

@@ -4,7 +4,7 @@ import { Send } from '/web/assets/icons.tsx'
 import { api } from '/web/lib/api.ts'
 import { notifyFailure } from '/web/lib/failure.ts'
 import type { HelpCategory } from '/api/vocabulary.ts'
-import { type Login, me, people } from '/web/fixtures/people.ts'
+import { type Login, me, personOf } from '/web/fixtures/people.ts'
 import { projectsOf } from '/web/fixtures/projects.ts'
 import { pullRequests } from '/web/fixtures/pull-requests.ts'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -44,7 +44,7 @@ const categories: Record<string, HelpCategory> = {
 }
 
 const CollaborationForm = ({ login }: { login: Login }) => {
-  const first = people[login].name.split(' ')[0]
+  const first = personOf(login).name.split(' ')[0]
   const [sending, setSending] = useState(false)
   const [kind, setKind] = useState(kinds[0])
   const [project, setProject] = useState('')
@@ -91,7 +91,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
         navigate({ params: { dialog: null } })
         notify({
           title: 'Proposition envoyée',
-          body: t`${people[login].name} la reçoit dans ses notifications.`,
+          body: t`${personOf(login).name} la reçoit dans ses notifications.`,
           icon: Send,
           tone: 'verified',
         })
@@ -103,7 +103,7 @@ const CollaborationForm = ({ login }: { login: Login }) => {
   return (
     <div class='flex flex-col gap-[18px] px-6 pt-5 pb-6'>
       <h2 class='font-display text-heading'>
-        {t`Avec ${people[login].name}`}
+        {t`Avec ${personOf(login).name}`}
       </h2>
       <div class='flex flex-col gap-2 text-[13px] font-semibold'>
         <span>Ce que tu proposes</span>

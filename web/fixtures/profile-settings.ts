@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import { type Login, me, type Person } from '/web/fixtures/people.ts'
 import type { ProjectSlug } from '/web/fixtures/projects.ts'
 import { saveMe } from '/web/lib/session.ts'
 
@@ -113,10 +113,14 @@ export type ProfileDraft =
   & ProfileSettings
   & Pick<Person, 'headline' | 'bio' | 'website' | 'skills'>
 
-/** POST/api/user/profile/update and POST/api/user/skills/update */
-export const saveProfile = (login: Login, draft: ProfileDraft) => {
+/**
+ * POST/api/user/profile/update and POST/api/user/skills/update: one's own
+ * profile, `me`, the record `people` holds for the signed-in developer
+ */
+export const saveProfile = (draft: ProfileDraft) => {
   const { headline, bio, website, skills, ...settings } = draft
-  const person: Person = people[login]
+  const person: Person = me
+  const login = me.login
   person.headline = headline.trim() || person.headline
   person.bio = bio.trim()
   person.website = website?.trim() || undefined

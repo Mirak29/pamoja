@@ -17,6 +17,7 @@ import '/web/lib/app-theme.ts'
 import { navigate, url } from '@01edu/signal-router'
 import { englishAddress } from '/web/lib/addresses.ts'
 import { NotFoundPage } from '/web/pages/public/not-found-page.tsx'
+import { PageBoundary } from '/web/ui/page-boundary.tsx'
 import { currentUser, signedIn } from '/web/lib/session.ts'
 import { language, languageReady } from '/web/lib/language.ts'
 import { lazyPage } from '/web/lib/lazy-page.ts'
@@ -184,7 +185,10 @@ const Pages = () => {
   if (!Route) return <NotFoundPage />
   return (
     <AppLayout>
-      <Route />
+      {/* A page that fails fails alone; the next address starts afresh */}
+      <PageBoundary key={path}>
+        <Route />
+      </PageBoundary>
     </AppLayout>
   )
 }

@@ -1,7 +1,7 @@
 import { communities } from '/web/fixtures/communities.ts'
 import {
+  knownPeople,
   type Login,
-  people,
   type Person,
   personOf,
 } from '/web/fixtures/people.ts'
@@ -116,7 +116,7 @@ export type Matched = {
 
 /** The 5 best profiles, one of them promising, then the next wave */
 export const waves = (request: Request): [Matched[], Matched[]] => {
-  const ranked = (Object.values(people) as Person[])
+  const ranked = knownPeople()
     .filter((person) => person.login !== request.author)
     .map((person) => ({ person, ...match(person, request) }))
     .filter((m) => m.total >= MIN_SCORE)

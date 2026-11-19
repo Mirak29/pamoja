@@ -3,13 +3,7 @@ import { daysAgo, hoursAgo } from '/web/fixtures/clock.ts'
 import { match, type Matched } from '/web/fixtures/matching.ts'
 import { demoImage } from '/web/fixtures/media.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import {
-  type Login,
-  me,
-  people,
-  type Person,
-  personOf,
-} from '/web/fixtures/people.ts'
+import { type Login, me, type Person, personOf } from '/web/fixtures/people.ts'
 import { projectsChanged, type ProjectSlug } from '/web/fixtures/projects.ts'
 import { proofs } from '/web/fixtures/reputation.ts'
 import { settings } from '/web/fixtures/settings.ts'
@@ -205,7 +199,7 @@ export const matchingRequests = (person: Person, min = settings.minScore) =>
     .filter((h) => h.request.demo ? h.score >= min : h.score > 0)
     .sort((a, b) => b.score - a.score)
 
-const firstName = (login: Login) => people[login].name.split(' ')[0]
+const firstName = (login: Login) => personOf(login).name.split(' ')[0]
 const log = (request: HelpRequest, text: string) => {
   request.log = [
     ...(request.log ?? [{ text: 'Demande publiée', at: request.at }]),

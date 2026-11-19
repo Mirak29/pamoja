@@ -6,7 +6,7 @@ import {
 } from '/web/fixtures/profile-settings.ts'
 import { A } from '/web/ui/link.tsx'
 import { Copy, Download } from '/web/assets/icons.tsx'
-import { isMe, type Login, me, people } from '/web/fixtures/people.ts'
+import { isMe, type Login, me, personOf } from '/web/fixtures/people.ts'
 import { language, t } from '/web/lib/language.ts'
 import { Avatar } from '/web/ui/avatar.tsx'
 import { Button, OptionButton } from '/web/ui/button.tsx'
@@ -92,7 +92,7 @@ const shareLinks = (login: Login) => {
   const text = encodeURIComponent(
     isMe(login)
       ? 'Mon profil Pamoja : mes reviews et contributions, vérifiées par GitHub.'
-      : t`Le profil Pamoja de ${people[login].name}`,
+      : t`Le profil Pamoja de ${personOf(login).name}`,
   )
   return [
     [
@@ -123,7 +123,7 @@ const Card = ({ login }: { login: Login }) => {
       {state !== 'failed' && (
         <img
           src={cardUrl(login)}
-          alt={t`Carte de partage de ${people[login].name}`}
+          alt={t`Carte de partage de ${personOf(login).name}`}
           width={1200}
           height={630}
           onLoad={() => setState('shown')}
@@ -141,7 +141,7 @@ const previews = [['whatsapp', 'WhatsApp'], ['linkedin', 'LinkedIn']] as const
 
 const LinkPreview = ({ login }: { login: Login }) => {
   const [current, setCurrent] = useState<string>('whatsapp')
-  const person = people[login]
+  const person = personOf(login)
   return (
     <div class='flex flex-col gap-3 border-t border-line pt-4'>
       <div class='flex flex-wrap items-center justify-between gap-3'>

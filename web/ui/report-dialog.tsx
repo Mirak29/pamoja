@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks'
 import { navigate, url } from '@01edu/signal-router'
 import { CircleAlert, Flag } from '/web/assets/icons.tsx'
-import { me, people } from '/web/fixtures/people.ts'
+import { me, personOf } from '/web/fixtures/people.ts'
 import {
   type ReportKind,
   reportReasons,
@@ -50,7 +50,7 @@ const ReportForm = ({ kind, id }: { kind: ReportKind; id: string }) => {
       <div class='flex flex-col gap-0.5 rounded-lg border border-line-strong bg-surface-000 px-3.5 py-3 inset-shadow-well'>
         <span class='font-semibold text-pretty'>{target.title}</span>
         <span class='text-[12px] text-ink-muted'>
-          {target.kindLabel} · {people[target.author].name}
+          {target.kindLabel} · {personOf(target.author).name}
         </span>
       </div>
       <div class='flex flex-col gap-2 text-[13px] font-semibold'>

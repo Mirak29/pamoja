@@ -11,7 +11,7 @@ import {
   Sparkles,
   Users,
 } from '/web/assets/icons.tsx'
-import { type Login, people, placeOf } from '/web/fixtures/people.ts'
+import { type Login, personOf, placeOf } from '/web/fixtures/people.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
 import { Button } from '/web/ui/button.tsx'
 import { DemoButton } from '/web/ui/demo-button.tsx'
@@ -516,7 +516,7 @@ const ProfilePreview = (
     filled: boolean
   },
 ) => {
-  const person = people[login]
+  const person = personOf(login)
   return (
     <div class='slab mr-2 overflow-hidden'>
       <div class='relative h-[110px] border-b border-figure-edge bg-surface-000'>
@@ -594,7 +594,7 @@ const Proofs = () => {
           par GitHub.
         </p>
         <A {...passportLink(sample)} class='self-start font-semibold'>
-          {t`Voir le passeport de ${people[sample].name.split(' ')[0]}`}
+          {t`Voir le passeport de ${personOf(sample).name.split(' ')[0]}`}
         </A>
       </Reveal>
       <Reveal delay={120}>

@@ -1927,3 +1927,14 @@ Signalé en prod : une personne s'est retrouvée dans la session d'un autre memb
 
 - **Livrable** : `api/session.ts`, `api/entries.ts`, `api/auth_test.ts`, `api/entries_test.ts` ; §5.3, §17, `docs/deploiement.md`
 - **Par** : @niangoos
+
+### 2026-11-19 · Un compte réel ne fait plus geler la navigation
+
+Sur le live, avec un vrai compte GitHub, un clic changeait l'adresse sans changer la page, et l'accueil restait vide jusqu'au rafraîchissement. L'origine tient en trois maillons. Deux vrais comptes (pas des comptes de démo) avaient republié un post ; le fil de ceux qui les suivent affichait « X a republié » en lisant `people[login]`, qui ne connaît que les comptes de démo, et la carte plantait. Le type `Login` était défini comme une clé des comptes de démo : TypeScript tenait cet accès pour sûr, et plus de vingt écrans faisaient de même sans qu'il le signale. Enfin aucune page n'était isolée : une carte qui plante arrêtait tout l'arbre de l'app, d'où la navigation figée.
+
+`Login` est maintenant une chaîne et `people` dit qu'un login peut manquer : le compilateur refuse tout accès non sûr, et chacun passe par `personOf` (qui retombe sur le nom donné par le serveur) ou `knownPeople()`. `saveProfile` écrit sur `me`. Chaque page est rendue dans une `PageBoundary` remise à zéro à chaque adresse : une page en erreur le dit, offre de réessayer ou de revenir à l'accueil, et la navigation, l'en-tête et l'Assistant continuent de marcher. Vérifié sur une copie de la base de prod : le fil s'affiche avec « mfatou a republié », et avec le bug remis exprès la page affiche l'erreur et les autres pages s'ouvrent.
+
+Au passage, sur téléphone l'Assistant couvre tout l'écran : suivre un de ses liens le referme désormais, et une visite ne s'ouvre plus dessus.
+
+- **Livrable** : `web/fixtures/people.ts`, `web/ui/page-boundary.tsx`, `web/app.tsx`, `web/lib/assistant.ts`, et les écrans qui lisaient `people[login]`
+- **Par** : @Mirak29

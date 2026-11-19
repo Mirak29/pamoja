@@ -1,7 +1,7 @@
 import { counted } from '/web/lib/plural.ts'
 import { url } from '@01edu/signal-router'
 import { A } from '/web/ui/link.tsx'
-import { type Login, people, personOf } from '/web/fixtures/people.ts'
+import { type Login, personOf } from '/web/fixtures/people.ts'
 import { projects } from '/web/fixtures/projects.ts'
 import {
   dimensions,
@@ -107,7 +107,7 @@ export const ProofsDrawer = ({ login }: { login: Login }) => {
       id={opened}
       label='Preuves'
       width={480}
-      header={<Eyebrow>Preuves · {people[login].name}</Eyebrow>}
+      header={<Eyebrow>Preuves · {personOf(login).name}</Eyebrow>}
     >
       <div class='flex flex-col gap-3.5 p-[22px]'>
         <h2 class='font-display text-[23px] leading-[29px] font-semibold'>

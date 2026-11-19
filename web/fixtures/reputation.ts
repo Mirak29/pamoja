@@ -533,7 +533,7 @@ export const badgesOf = (login: Login): Badge[] => {
       .filter((b) => b.count > 0 && definitions.some((d) => d.key === b.badge))
       .map(fromServer)
   }
-  const home = people[login].countryCode
+  const home = personOf(login).countryCode
   const countries = new Set(
     // The countries of the Collaboration Map: people helped or who helped
     linksOf(login).map((link) => personOf(link.login).countryCode)

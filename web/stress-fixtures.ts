@@ -4,7 +4,7 @@
 // when asked: open a page with ?stress, the tab keeps it until ?stress=0. With
 // the data of the API at volume: deno task stress.
 import { communities } from '/web/fixtures/communities.ts'
-import { me, people, type Person } from '/web/fixtures/people.ts'
+import { knownPeople, me, people, type Person } from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 
 const KEY = 'pamoja-stress'
@@ -23,7 +23,7 @@ const asked = () => {
 
 if (asked()) {
   const N = 3000
-  const base = Object.values(people) as Person[]
+  const base = knownPeople()
   const all = people as Record<string, Person>
   const long =
     'Ingénieure full-stack passionnée par les systèmes distribués, le paiement mobile et la formation des développeurs juniors en Afrique de l’Ouest'

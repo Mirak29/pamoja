@@ -1,4 +1,4 @@
-import { type Login, people } from '/web/fixtures/people.ts'
+import { type Login, personOf } from '/web/fixtures/people.ts'
 
 /*
  * The figure of the landing (PAM-128, §12.7): the loop of the demo (§18)
@@ -103,7 +103,7 @@ const discOf = (x: number, y: number): Point => {
 }
 
 const initialsOf = (login: Login) =>
-  people[login].name.split(' ').map((word) => word[0]).join('').slice(0, 2)
+  personOf(login).name.split(' ').map((word) => word[0]).join('').slice(0, 2)
 
 // Who stands where, and the proofs each one already has (their column)
 const cast: { login: Login; x: number; y: number; proofs: number }[] = [
@@ -210,7 +210,7 @@ const Person = (
         class='font-mono text-[9px] tracking-[.08em]'
         translate={false}
       >
-        {people[login].city.toUpperCase()}
+        {personOf(login).city.toUpperCase()}
       </text>
     </g>
   )

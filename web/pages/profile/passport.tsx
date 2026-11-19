@@ -1,7 +1,7 @@
 import { useEffect } from 'preact/hooks'
 import { A } from '/web/ui/link.tsx'
 import { Github } from '/web/assets/icons.tsx'
-import { type Login, people, placeOf } from '/web/fixtures/people.ts'
+import { type Login, personOf, placeOf } from '/web/fixtures/people.ts'
 import { badgesOf, profileStats, proofsOf } from '/web/fixtures/reputation.ts'
 import { plural } from '/web/lib/plural.ts'
 import { Portrait } from '/web/ui/avatar.tsx'
@@ -33,7 +33,7 @@ const stats = (login: Login) => {
  * it.
  */
 export const Passport = ({ login }: { login: Login }) => {
-  const person = people[login]
+  const person = personOf(login)
   const mine = proofsOf(login)
   const recent = [
     ...mine.filter((p) => p.verified),

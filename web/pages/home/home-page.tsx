@@ -28,9 +28,9 @@ import { communities } from '/web/fixtures/communities.ts'
 import { helpRequests, matchingRequests } from '/web/fixtures/help.ts'
 import {
   isMe,
+  knownPeople,
   type Login,
   me,
-  people,
   peopleChanged,
   type Person,
   personOf,
@@ -612,7 +612,7 @@ const Rail = () => {
   useEffect(loadForRail, [])
   const { matches, waiting, matchTitle, reviewTitle } = homeData()
   const followed = me.follows ?? []
-  const people_ = (Object.values(people) as Person[])
+  const people_ = knownPeople()
     .filter((p) => !isMe(p.login as Login) && !followed.includes(p.login))
     .map((p) => ({
       person: p,

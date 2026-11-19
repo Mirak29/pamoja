@@ -184,7 +184,7 @@ const Actions = (
 }
 
 const Hero = ({ login, write }: { login: Login; write?: string }) => {
-  const person: Person = people[login]
+  const person: Person = personOf(login)
   return (
     <section class='slab mr-2 overflow-hidden'>
       {/* An uploaded photo is the cover: it lives on the server */}
@@ -538,7 +538,7 @@ const Activity = ({ login }: { login: Login }) => {
   // Each tab and each profile starts again with a few lines
   useEffect(() => setShown(ACTIVITY_PAGE), [tab, login])
   const count = lists[tab].length
-  const first = people[login].name.split(' ')[0]
+  const first = personOf(login).name.split(' ')[0]
   return (
     <section class='slab flex flex-col gap-3 overflow-hidden pb-4'>
       <SectionHeader title='Activité'>
@@ -602,13 +602,13 @@ const Activity = ({ login }: { login: Login }) => {
 }
 
 const Communities = ({ login }: { login: Login }) =>
-  people[login].communities.length === 0
+  personOf(login).communities.length === 0
     ? null
     : (
       <section class='slab flex flex-col gap-3 p-[22px]'>
         <Eyebrow>Communautés</Eyebrow>
         <div class='flex flex-wrap gap-2.5 pb-[3px]'>
-          {people[login].communities.map((slug) => (
+          {personOf(login).communities.map((slug) => (
             <A
               key={slug}
               href={`community/${slug}`}
@@ -682,7 +682,7 @@ export const ProfilePage = () => {
   if (!login) return <Missing status={status} />
   const { theme, accent, order } = settingsOf(login)
   return (
-    <Page title={people[login].name} heading={false} class='pt-5'>
+    <Page title={personOf(login).name} heading={false} class='pt-5'>
       <div
         data-ptheme={theme}
         data-paccent={accent}

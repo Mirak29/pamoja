@@ -20,7 +20,7 @@ import {
   Share2,
 } from '/web/assets/icons.tsx'
 import { communities } from '/web/fixtures/communities.ts'
-import { isMe, me, people, personOf } from '/web/fixtures/people.ts'
+import { isMe, me, personOf } from '/web/fixtures/people.ts'
 import {
   childrenOf,
   descendantCount,
@@ -152,7 +152,7 @@ const accept = (question: Post, answer: Post) => {
   acceptServer(question, answer)
   notify({
     title: 'Réponse acceptée',
-    body: `${people[answer.author].name} progresse en Entraide.`,
+    body: `${personOf(answer.author).name} progresse en Entraide.`,
     icon: CircleCheck,
     tone: 'verified',
     href: `@${answer.author}`,
@@ -754,8 +754,7 @@ export const ParentChain = ({ post }: { post: Post }) => {
   )
 }
 
-const firstName = (login: string) =>
-  people[login as keyof typeof people].name.split(' ')[0]
+const firstName = (login: string) => personOf(login).name.split(' ')[0]
 
 /**
  * A post in a feed: author, community, type, title, body, images, linked

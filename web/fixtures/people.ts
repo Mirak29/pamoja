@@ -198,8 +198,22 @@ const fixturePeople = {
   },
 } satisfies Record<string, Person>
 
-export type Login = keyof typeof fixturePeople
-export const people: Record<Login, Person> = fixturePeople
+/**
+ * A login of Pamoja: one of the demo accounts or any developer of the
+ * server. Not only the keys of the fixtures: a real account (who reposts,
+ * replies, joins a project) is none of them.
+ */
+export type Login = string
+/**
+ * The developers the page knows: the demo accounts, then each one read from
+ * the server. A login may be missing: read it with personOf, which never
+ * fails, rather than people[login].
+ */
+export const people: typeof fixturePeople & Record<Login, Person | undefined> =
+  fixturePeople
+
+/** Every developer the page knows */
+export const knownPeople = () => Object.values(people) as Person[]
 
 // The signed-in developer: `abdou` of the fixtures until the session is
 // known, then the real developer, with the profile prefilled from GitHub.

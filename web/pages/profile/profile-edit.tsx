@@ -325,7 +325,7 @@ export const ProfileEditPage = () => {
       }
     }
     // « Photo » without a photo falls back on the thread
-    saveProfile(me.login, {
+    saveProfile({
       ...draft,
       cover: draft.cover === 'photo' && !photo ? 'fil' : draft.cover,
     })

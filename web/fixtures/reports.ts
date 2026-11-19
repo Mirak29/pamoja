@@ -1,7 +1,12 @@
 import { channels } from '/web/fixtures/channels.ts'
 import { helpRequests } from '/web/fixtures/help.ts'
 import { pushNotification } from '/web/fixtures/notifications.ts'
-import { type Login, people, type Person } from '/web/fixtures/people.ts'
+import {
+  knownPeople,
+  type Login,
+  people,
+  type Person,
+} from '/web/fixtures/people.ts'
 import { posts } from '/web/fixtures/posts.ts'
 import { t, translate } from '/web/lib/language.ts'
 
@@ -91,7 +96,7 @@ export const reportTarget = (
 export const submitReport = (draft: Report) => {
   const kindLabel = reportTarget(draft.kind, draft.target)?.kindLabel ??
     'Contenu'
-  for (const person of Object.values(people) as Person[]) {
+  for (const person of knownPeople()) {
     if (!person.moderator) continue
     pushNotification({
       to: person.login as Login,

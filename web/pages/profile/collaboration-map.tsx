@@ -2,6 +2,7 @@ import { A } from '/web/ui/link.tsx'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import {
   countries,
+  knownPeople,
   type Login,
   people,
   peopleChanged,
@@ -77,7 +78,7 @@ type Linked = {
 
 /** Collaborations of a profile by country, its own country left out */
 export const linkedCountries = (login: Login, links = linksOf(login)) => {
-  const home = people[login].countryCode
+  const home = personOf(login).countryCode
   const byCountry = new Map<string, Linked>()
   for (const link of links) {
     // A developer without a country is not on the map (§9.3)
@@ -403,12 +404,12 @@ type Marker = {
  * at each frame of a drag
  */
 const mapOf = (login: Login) => {
-  const person = people[login]
+  const person = personOf(login)
   const home = person.countryCode
   const ranked = linkedCountries(login)
   const linked = new Map(ranked)
   const max = Math.max(1, ...ranked.map(([, c]) => c.count))
-  const toLink = [...new Set(Object.values(people).map((p) => p.countryCode))]
+  const toLink = [...new Set(knownPeople().map((p) => p.countryCode))]
     .filter((code) => code !== home && !linked.has(code) && positions[code])
   const homeAt = positions[home] && vectorOf(...positions[home])
   const nodes: Marker[] = [

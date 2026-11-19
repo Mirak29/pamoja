@@ -20,9 +20,9 @@ import { helpChanged, matchingRequests } from '/web/fixtures/help.ts'
 import { issues } from '/web/fixtures/issues.ts'
 import {
   isMe,
+  knownPeople,
   type Login,
   me,
-  people,
   peopleChanged,
   type Person,
   personOf,
@@ -52,8 +52,7 @@ const activities = ['Très actif', 'Actif', 'Calme']
 
 const sorted = (values: string[]) => [...new Set(values)].sort()
 
-const allPeople = () =>
-  (Object.values(people) as Person[]).filter((p) => !isMe(p.login as Login))
+const allPeople = () => knownPeople().filter((p) => !isMe(p.login as Login))
 const allProjects = () => Object.values(projects as Record<string, Project>)
 
 // Filters live in the URL: ?skill=Go&country=Sénégal

@@ -12,9 +12,9 @@ import { loadCommunities } from '/web/lib/communities.ts'
 import { helpChanged, helpRequests } from '/web/fixtures/help.ts'
 import { match } from '/web/fixtures/matching.ts'
 import {
+  knownPeople,
   type Login,
   me,
-  people,
   type Person,
   personOf,
 } from '/web/fixtures/people.ts'
@@ -78,9 +78,7 @@ const statsOf = (post: Post) => {
 }
 
 const membersOf = (community: Community) =>
-  (Object.values(people) as Person[]).filter((p) =>
-    p.communities.includes(community.slug)
-  )
+  knownPeople().filter((p) => p.communities.includes(community.slug))
 
 /** Projects in its technology, its country, or built by its members */
 const projectsOf = (community: Community, members: Person[]) =>
@@ -100,8 +98,8 @@ const PostRow = ({ post, community }: { post: Post; community: Community }) => (
     class='flex items-start gap-3.5 border-t border-line px-5 py-4 text-ink no-underline hover:bg-surface-000 hover:no-underline'
   >
     <Avatar
-      name={people[post.author].name}
-      src={people[post.author].avatarUrl}
+      name={personOf(post.author).name}
+      src={personOf(post.author).avatarUrl}
       size={36}
     />
     <div class='flex min-w-0 flex-1 flex-col gap-1.5'>
@@ -109,7 +107,7 @@ const PostRow = ({ post, community }: { post: Post; community: Community }) => (
         <PostTypeBadge type={post.type} />
         {post.acceptedReply && <StatusBadge status='answered' />}
         <span class='text-[13px] text-ink-muted'>
-          {people[post.author].name} · {community.name} · {ago(post.at)}
+          {personOf(post.author).name} · {community.name} · {ago(post.at)}
         </span>
       </div>
       {post.title && (
@@ -222,12 +220,12 @@ const About = ({ community }: { community: Community }) => {
             class='flex items-center gap-2.5 text-ink no-underline hover:no-underline'
           >
             <Avatar
-              name={people[login].name}
-              src={people[login].avatarUrl}
+              name={personOf(login).name}
+              src={personOf(login).avatarUrl}
               size={32}
             />
             <span class='font-display text-[14px] leading-5 font-semibold'>
-              {people[login].name}
+              {personOf(login).name}
             </span>
           </A>
         ))}
