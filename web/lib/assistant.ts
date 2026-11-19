@@ -9,12 +9,17 @@ import { notify } from '/web/ui/toast.tsx'
 
 // The Assistant (§11, PAM-534): a panel on every page. Its conversation is
 // kept by the server; the panel stays open from a page to the next, and
-// from a visit to the next.
+// from a visit to the next, beside the page. On a phone it covers the whole
+// screen: a link followed closes it, else the page it opened stays hidden
+// under it, and a visit opens on the page, not on it.
 
 type State = ApiOutput['GET/api/assistant']
 export type AssistantMessage = State['messages'][number]
 
 const OPEN_KEY = 'pamoja-assistant-open'
+
+/** The panel takes the whole screen: below `sm` (assistant-panel.tsx) */
+const covers = () => matchMedia('(max-width: 639.98px)').matches
 
 // Private windows may refuse the storage: the panel then opens closed
 const stored = () => {
@@ -26,7 +31,17 @@ const stored = () => {
 }
 
 /** The panel is open */
-export const assistantOpen = signal(stored())
+export const assistantOpen = signal(stored() && !covers())
+
+// A page left, by a link of the panel or of the navigation: on a phone the
+// panel steps aside to show it
+let shownPath = url.peek().pathname
+effect(() => {
+  const path = url.path
+  if (path === shownPath) return
+  shownPath = path
+  if (assistantOpen.peek() && covers()) assistantOpen.value = false
+})
 /** The conversation and the point of the developer; undefined until read */
 export const assistant = signal<State | undefined>(undefined)
 /** The question on its way, until its answer comes */
